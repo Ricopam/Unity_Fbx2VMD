@@ -20,6 +20,8 @@ namespace Fbx2Vmd.FBXImporter
         // 표면 솔버와 지지 해제 계산을 독립적으로 버전 관리함.
         internal const int AlgorithmVersion = 35;
         private const int GroundingReleaseVersion = 1;
+        // 기존 키에는 사람 표식 적용 여부가 없어 이전 캐시와 분리함.
+        private const string PoseIdentityPrefix = "pose-v2:";
 
         internal readonly struct RendererIdentity
         {
@@ -50,7 +52,7 @@ namespace Fbx2Vmd.FBXImporter
             GameObject sourceModelAsset,
             Animator animator,
             NativeSkinningSurfaceContract[] contracts,
-            string supportCurveIdentity,
+            string poseIdentity,
             out byte[] keyHash,
             out string errorMessage)
         {
@@ -77,7 +79,7 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     "v" + AlgorithmVersion,
                     "grounding-release:" + GroundingReleaseVersion,
-                    "support-curve:" + supportCurveIdentity,
+                    PoseIdentityPrefix + poseIdentity,
                     Application.unityVersion,
                     "motion:" + (motionName ?? string.Empty),
                     "frames:" + frameCount,
@@ -142,7 +144,7 @@ namespace Fbx2Vmd.FBXImporter
             float frameRate,
             Animator animator,
             NativeSkinningSurfaceContract[] contracts,
-            string supportCurveIdentity,
+            string poseIdentity,
             out byte[] keyHash,
             out string errorMessage)
         {
@@ -171,7 +173,7 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     "v" + AlgorithmVersion,
                     "grounding-release:" + GroundingReleaseVersion,
-                    "support-curve:" + supportCurveIdentity,
+                    PoseIdentityPrefix + poseIdentity,
                     Application.unityVersion,
                     "runtime",
                     "motion:" + (motionName ?? string.Empty),

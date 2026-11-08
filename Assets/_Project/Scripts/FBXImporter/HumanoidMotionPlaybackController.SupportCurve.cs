@@ -21,6 +21,37 @@ namespace Fbx2Vmd.FBXImporter
             _isGroundResponseEnabled && _useFootStepDiffusion && IsIkGoalFootDriveActive && _footGoalAlpha == 1f &&
             (_poseCorrectionDocument == null || _poseCorrectionDocument.FrameCount == 0);
 
+        internal string GetNativePoseCacheIdentity()
+        {
+            string curveIdentity = GetSupportCurveCacheIdentity();
+            HumanoidFootContactIntentLabelSet labels = _footContactStabilizer.IntentLabels;
+            if (labels.RowCount == 0) return curveIdentity;
+
+            // 준비된 표식을 그대로 쓰고, 파일 경로·검토자·메모는 키에서 제외함.
+            using var stream = new MemoryStream();
+            using var writer = new BinaryWriter(stream);
+            WriteContactLabels(writer, labels.Left);
+            WriteContactLabels(writer, labels.Right);
+            writer.Flush();
+            stream.Position = 0;
+            using var hash = SHA256.Create();
+            return curveIdentity + "\ncontact-labels:" + BitConverter.ToString(hash.ComputeHash(stream));
+        }
+
+        private static void WriteContactLabels(BinaryWriter writer,
+            IReadOnlyList<HumanoidFootContactIntentLabel> labels)
+        {
+            writer.Write(labels.Count);
+            foreach (HumanoidFootContactIntentLabel label in labels)
+            {
+                writer.Write(label.StartFrame);
+                writer.Write(label.EndFrameInclusive);
+                writer.Write(label.IsSupport.HasValue);
+                writer.Write(label.IsSupport.GetValueOrDefault());
+                writer.Write((int?)label.Mode ?? -1);
+            }
+        }
+
         internal string GetSupportCurveCacheIdentity()
         {
             if (!CanUseSupportCurves || _supportCurves.Count == 0) return string.Empty;

@@ -697,7 +697,7 @@ namespace Fbx2Vmd.FBXImporter
                 _cacheSourceModelAsset,
                 _animator,
                 _contracts,
-                _playbackController.GetSupportCurveCacheIdentity(),
+                _playbackController.GetNativePoseCacheIdentity(),
                 out _cacheKeyHash,
                 out string keyError);
 #else
@@ -716,7 +716,7 @@ namespace Fbx2Vmd.FBXImporter
                 _playbackController.ClipFrameRate,
                 _animator,
                 _contracts,
-                _playbackController.GetSupportCurveCacheIdentity(),
+                _playbackController.GetNativePoseCacheIdentity(),
                 out _cacheKeyHash,
                 out string keyError);
 #endif

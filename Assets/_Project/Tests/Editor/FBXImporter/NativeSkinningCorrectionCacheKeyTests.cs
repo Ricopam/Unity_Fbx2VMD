@@ -11,6 +11,54 @@ namespace Tests.Editor.FBXImporter
     public class NativeSkinningCorrectionCacheKeyTests
     {
         [Test]
+        public void Given_PreparedContactLabels_When_ComputingPoseIdentity_Then_SeparatesEffectiveLabels()
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            Assembly assembly = typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly;
+            Type controllerType = assembly.GetType("Fbx2Vmd.FBXImporter.HumanoidMotionPlaybackController", true);
+            Type labelType = assembly.GetType("Fbx2Vmd.FBXImporter.HumanoidFootContactIntentLabel", true);
+            Type modeType = assembly.GetType("Fbx2Vmd.FBXImporter.HumanoidFootContactIntentMode", true);
+            Type setType = assembly.GetType("Fbx2Vmd.FBXImporter.HumanoidFootContactIntentLabelSet", true);
+            using var controller = (IDisposable)Activator.CreateInstance(controllerType, true);
+            object stabilizer = controllerType.GetField("_footContactStabilizer", flags).GetValue(controller);
+            PropertyInfo prepared = stabilizer.GetType().GetProperty("IntentLabels", flags);
+            MethodInfo poseIdentity = controllerType.GetMethod("GetNativePoseCacheIdentity", flags);
+            MethodInfo curveIdentity = controllerType.GetMethod("GetSupportCurveCacheIdentity", flags);
+
+            object Label(int end, bool? support, string mode = null) => Activator.CreateInstance(
+                labelType, flags, null, new[] { (object)13, end, support,
+                    mode == null ? null : Enum.Parse(modeType, mode) }, null);
+
+            Array Side(params object[] labels)
+            {
+                Array side = Array.CreateInstance(labelType, labels.Length);
+                for (int index = 0; index < labels.Length; index++) side.SetValue(labels[index], index);
+                return side;
+            }
+
+            string Identity(Array left, Array right, int files = 1)
+            {
+                object set = Activator.CreateInstance(setType, flags, null,
+                    new object[] { left, right, files, left.Length + right.Length }, null);
+                prepared.SetValue(stabilizer, set);
+                return (string)poseIdentity.Invoke(controller, null);
+            }
+
+            Array empty = Side();
+            object airborne = Label(24, false);
+            object plant = Label(24, true, "Plant");
+            string labeled = Identity(Side(airborne), empty);
+            Assert.That(Identity(empty, empty), Is.EqualTo(curveIdentity.Invoke(controller, null)));
+            Assert.That(labeled, Is.Not.EqualTo(Identity(empty, empty)));
+            Assert.That(labeled, Is.EqualTo(Identity(Side(Label(24, false)), empty, 2)));
+            Assert.That(labeled, Is.Not.EqualTo(Identity(empty, Side(airborne))));
+            Assert.That(labeled, Is.Not.EqualTo(Identity(Side(Label(25, false)), empty)));
+            Assert.That(labeled, Is.Not.EqualTo(Identity(Side(Label(24, null)), empty)));
+            Assert.That(Identity(Side(plant), empty), Is.Not.EqualTo(Identity(Side(Label(24, true, "Slide")), empty)));
+            Assert.That(Identity(Side(airborne, plant), empty), Is.Not.EqualTo(Identity(Side(plant, airborne), empty)));
+        }
+
+        [Test]
         public void Given_MetaOnlyImporterChange_When_ComputingAssetIdentity_Then_InvalidatesPreviousIdentity()
         {
             string path = "Assets/NativeSkinningCacheIdentity_" + Guid.NewGuid().ToString("N") + ".anim";
