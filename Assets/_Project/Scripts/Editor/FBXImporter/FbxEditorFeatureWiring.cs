@@ -9,6 +9,7 @@ namespace Fbx2Vmd.FBXImporter
         static FbxEditorFeatureWiring()
         {
             FBXVmdPipeline.EditorMotionVideoRecorderFactory = () => new EditorMotionVideoRecorder();
+            RetargetingEditorReferenceHooks.PoseReference = new Editor.EditorPoseReferenceDriver();
         }
     }
 }

@@ -1583,48 +1583,36 @@ namespace Fbx2Vmd.FBXImporter
             HumanBodyBones.RightThumbDistal
         };
 #if UNITY_EDITOR
-        private readonly Dictionary<int, AnimationCurve> _editorHumanoidMuscleCurves = new Dictionary<int, AnimationCurve>();
-        private bool _useEditorHumanoidMuscleReference;
-        private bool _useCompleteEditorHumanoidMuscleReference;
-        private bool _editorHumanoidMuscleReferenceLogged;
-        private HumanoidPoseReferencePlayer _editorHumanoidPoseReferencePlayer;
-        private HumanPose _editorHumanoidPoseReference;
-        private bool _hasEditorHumanoidPoseReferenceForFrame;
-        private AnimationCurve _editorRootTranslationX;
-        private AnimationCurve _editorRootTranslationZ;
-        private Vector3 _previousEditorRootTranslation;
-        private Vector3 _smoothedEditorRootTranslationDelta;
-        private bool _hasPreviousEditorRootTranslation;
-        private bool _hasSmoothedEditorRootTranslationDelta;
-        private bool _useEditorRootTranslationReference;
-        private bool _editorRootTranslationReferenceLogged;
-        private readonly List<int> _editorFingerReferenceMuscleIndices = new List<int>();
-        private GameObject _editorFingerReferenceInstance;
-        private Animator _editorFingerReferenceAnimator;
-        private HumanPoseHandler _editorFingerReferenceHandler;
-        private HumanPose _editorFingerReferencePose;
-        private int _editorFingerReferenceStateHash;
-        private float _editorFingerReferenceClipLength;
-        private bool _useEditorFingerPoseReference;
-        private bool _editorFingerPoseReferenceLogged;
-        private bool _editorBodyRotationReferenceLogged;
-        private bool _hasEditorReferenceBodyPosition;
-        private Vector3 _editorReferenceBodyPosition;
-        private bool _hasEditorReferenceHipsRestLocalPosition;
-        private Vector3 _editorReferenceHipsRestLocalPosition;
-        private bool _hasEditorReferenceLowestFootRestY;
-        private float _editorReferenceLowestFootRestY;
-        private bool _allowEditorFootHeightGroundingReference;
-        private bool _editorHandLocalRotationReferenceLogged;
-        private bool _editorFootLocalRotationReferenceLogged;
-        private bool _editorLowerBodySegmentDirectionReferenceLogged;
-        private bool _editorFootHipsAlignedResidualYawReferenceLogged;
-        private bool _editorThumbLocalRotationReferenceLogged;
-        private bool _editorThumbSegmentDirectionReferenceLogged;
-        private bool _editorHandPalmFrameReferenceLogged;
-        private bool _editorThumbBasePositionReferenceLogged;
-        private bool _editorHipsLocalPositionReferenceLogged;
-        private bool _editorBodyPositionXzReferenceLogged;
+        internal object _editorPoseReferenceSession;
+        internal readonly Dictionary<int, AnimationCurve> _editorHumanoidMuscleCurves = new Dictionary<int, AnimationCurve>();
+        internal bool _useEditorHumanoidMuscleReference;
+        internal bool _useCompleteEditorHumanoidMuscleReference;
+        internal bool _editorHumanoidMuscleReferenceLogged;
+        internal HumanoidPoseReferencePlayer _editorHumanoidPoseReferencePlayer;
+        internal HumanPose _editorHumanoidPoseReference;
+        internal bool _hasEditorHumanoidPoseReferenceForFrame;
+        internal bool _editorRootTranslationReferenceLogged;
+        internal Animator _editorFingerReferenceAnimator;
+        internal bool _useEditorFingerPoseReference;
+        internal bool _editorFingerPoseReferenceLogged;
+        internal bool _editorBodyRotationReferenceLogged;
+        internal bool _hasEditorReferenceBodyPosition;
+        internal Vector3 _editorReferenceBodyPosition;
+        internal bool _hasEditorReferenceHipsRestLocalPosition;
+        internal Vector3 _editorReferenceHipsRestLocalPosition;
+        internal bool _hasEditorReferenceLowestFootRestY;
+        internal float _editorReferenceLowestFootRestY;
+        internal bool _allowEditorFootHeightGroundingReference;
+        internal bool _editorHandLocalRotationReferenceLogged;
+        internal bool _editorFootLocalRotationReferenceLogged;
+        internal bool _editorLowerBodySegmentDirectionReferenceLogged;
+        internal bool _editorFootHipsAlignedResidualYawReferenceLogged;
+        internal bool _editorThumbLocalRotationReferenceLogged;
+        internal bool _editorThumbSegmentDirectionReferenceLogged;
+        internal bool _editorHandPalmFrameReferenceLogged;
+        internal bool _editorThumbBasePositionReferenceLogged;
+        internal bool _editorHipsLocalPositionReferenceLogged;
+        internal bool _editorBodyPositionXzReferenceLogged;
         private bool _editorFootIkPositionReferenceLogged;
         private BipedIK _editorManualFootBipedIk;
         private bool _editorManualFootBipedIkCreated;
@@ -1645,7 +1633,7 @@ namespace Fbx2Vmd.FBXImporter
 
         // --- 초기화 ---
         private bool _isInitialized = false;
-        private readonly LegacyAnimationDriver _legacyAnimationDriver = new LegacyAnimationDriver();
+        internal readonly LegacyAnimationDriver _legacyAnimationDriver = new LegacyAnimationDriver();
 
         public void Initialize(RetargetingContext context, RetargetingSettings settings)
         {
@@ -1902,104 +1890,12 @@ namespace Fbx2Vmd.FBXImporter
             AnimationClip referenceClip,
             bool shouldUseCompletePoseReference = false)
         {
-            _editorHumanoidMuscleCurves.Clear();
-            _useEditorHumanoidMuscleReference = false;
-            _useCompleteEditorHumanoidMuscleReference = false;
-            _editorHumanoidMuscleReferenceLogged = false;
-            _hasEditorHumanoidPoseReferenceForFrame = false;
-            _editorHumanoidPoseReferencePlayer?.Dispose();
-            _editorHumanoidPoseReferencePlayer = null;
-
-            if (referenceClip == null || !referenceClip.humanMotion)
-            {
-                return;
-            }
-
-            UnityEditor.EditorCurveBinding[] bindings = UnityEditor.AnimationUtility.GetCurveBindings(referenceClip);
-            for (int bindingIndex = 0; bindingIndex < bindings.Length; bindingIndex++)
-            {
-                UnityEditor.EditorCurveBinding binding = bindings[bindingIndex];
-                if (binding.type != typeof(Animator) || !string.IsNullOrEmpty(binding.path))
-                {
-                    continue;
-                }
-
-                int muscleIndex = RetargetingMuscleReferencePolicy.FindHumanMuscleIndex(binding.propertyName);
-                if (muscleIndex < 0)
-                {
-                    continue;
-                }
-
-                AnimationCurve curve = UnityEditor.AnimationUtility.GetEditorCurve(referenceClip, binding);
-                if (curve != null)
-                {
-                    _editorHumanoidMuscleCurves[muscleIndex] = curve;
-                }
-            }
-
-            _useEditorHumanoidMuscleReference = _editorHumanoidMuscleCurves.Count > 0;
-            _useCompleteEditorHumanoidMuscleReference =
-                shouldUseCompletePoseReference &&
-                _editorHumanoidMuscleCurves.Count == HumanTrait.MuscleCount;
-            if (_useCompleteEditorHumanoidMuscleReference && targetAnimator != null)
-            {
-                try
-                {
-                    _editorHumanoidPoseReferencePlayer =
-                        new HumanoidPoseReferencePlayer();
-                    _editorHumanoidPoseReferencePlayer.Initialize(targetAnimator, referenceClip);
-                }
-                catch (Exception exception)
-                {
-                    _editorHumanoidPoseReferencePlayer?.Dispose();
-                    _editorHumanoidPoseReferencePlayer = null;
-                    Debug.LogWarning(
-                        $"[PoseSpaceRetargeter] Native Humanoid pose reference를 준비하지 못해 muscle curve 기준을 사용합니다: {exception.Message}");
-                }
-            }
-            Debug.Log(
-                $"[PoseSpaceRetargeter] Editor Humanoid muscle reference curves: " +
-                $"{_editorHumanoidMuscleCurves.Count} from {referenceClip.name}, " +
-                $"complete={_useCompleteEditorHumanoidMuscleReference}");
+            RetargetingEditorReferenceHooks.PoseReference?.ConfigureMuscleReference(this, referenceClip, shouldUseCompletePoseReference);
         }
 
         public void ConfigureEditorHumanoidRootTranslationReference(AnimationClip referenceClip)
         {
-            _editorRootTranslationX = null;
-            _editorRootTranslationZ = null;
-            _useEditorRootTranslationReference = false;
-            _editorRootTranslationReferenceLogged = false;
-            ResetEditorHumanoidRootTranslationReferenceState();
-
-            if (referenceClip == null || !referenceClip.humanMotion)
-            {
-                return;
-            }
-
-            UnityEditor.EditorCurveBinding[] bindings = UnityEditor.AnimationUtility.GetCurveBindings(referenceClip);
-            for (int bindingIndex = 0; bindingIndex < bindings.Length; bindingIndex++)
-            {
-                UnityEditor.EditorCurveBinding binding = bindings[bindingIndex];
-                if (binding.type != typeof(Animator) || !string.IsNullOrEmpty(binding.path))
-                {
-                    continue;
-                }
-
-                if (binding.propertyName == "RootT.x")
-                {
-                    _editorRootTranslationX = UnityEditor.AnimationUtility.GetEditorCurve(referenceClip, binding);
-                }
-                else if (binding.propertyName == "RootT.z")
-                {
-                    _editorRootTranslationZ = UnityEditor.AnimationUtility.GetEditorCurve(referenceClip, binding);
-                }
-            }
-
-            _useEditorRootTranslationReference = _editorRootTranslationX != null && _editorRootTranslationZ != null;
-            if (_useEditorRootTranslationReference)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Editor Humanoid RootT translation reference ready from {referenceClip.name}");
-            }
+            RetargetingEditorReferenceHooks.PoseReference?.ConfigureRootTranslationReference(this, referenceClip);
         }
 
         public void ConfigureEditorHumanoidFingerPoseReference(
@@ -2018,155 +1914,28 @@ namespace Fbx2Vmd.FBXImporter
             float fullBodyPoseFrameGateStart = 0f,
             float fullBodyPoseFrameGateEnd = 0f)
         {
-            DisposeEditorHumanoidFingerPoseReference();
-            _useEditorFingerPoseReference = false;
-            _editorFingerPoseReferenceLogged = false;
-            _editorBodyRotationReferenceLogged = false;
-            _hasEditorReferenceBodyPosition = false;
-            _hasEditorReferenceHipsRestLocalPosition = false;
-            _hasEditorReferenceLowestFootRestY = false;
-            _allowEditorFootHeightGroundingReference = false;
-            _editorHandLocalRotationReferenceLogged = false;
-            _editorFootLocalRotationReferenceLogged = false;
-            _editorLowerBodySegmentDirectionReferenceLogged = false;
-            _editorFootHipsAlignedResidualYawReferenceLogged = false;
-            _editorThumbLocalRotationReferenceLogged = false;
-            _editorThumbSegmentDirectionReferenceLogged = false;
-            _editorHandPalmFrameReferenceLogged = false;
-            _editorThumbBasePositionReferenceLogged = false;
-            _editorHipsLocalPositionReferenceLogged = false;
-            _editorBodyPositionXzReferenceLogged = false;
-            _editorFingerReferenceMuscleIndices.Clear();
-
-            if (referencePrefab == null || referenceController == null || referenceClip == null || !referenceClip.humanMotion)
+            EditorFingerPoseReferenceOptions options = new EditorFingerPoseReferenceOptions
             {
-                return;
-            }
-
-            string stateName = ResolveFirstAnimatorStateName(referenceController);
-            if (string.IsNullOrEmpty(stateName))
-            {
-                stateName = referenceClip.name;
-            }
-
-            _editorFingerReferenceStateHash = Animator.StringToHash(stateName);
-            _editorFingerReferenceClipLength = Mathf.Max(0.0001f, referenceClip.length);
-            _editorFingerReferenceInstance = Instantiate(referencePrefab);
-            _editorFingerReferenceInstance.name = $"EditorFingerReference_{referencePrefab.name}";
-            _editorFingerReferenceInstance.hideFlags = HideFlags.HideAndDontSave;
-            _editorFingerReferenceInstance.transform.SetParent(transform, false);
-            DisableEditorReferenceRecordingComponents(_editorFingerReferenceInstance);
-            _editorFingerReferenceInstance.SetActive(true);
-
-            foreach (Renderer renderer in _editorFingerReferenceInstance.GetComponentsInChildren<Renderer>(true))
-            {
-                renderer.enabled = false;
-            }
-
-            _editorFingerReferenceAnimator = _editorFingerReferenceInstance.GetComponentInChildren<Animator>(true);
-            if (_editorFingerReferenceAnimator == null ||
-                _editorFingerReferenceAnimator.avatar == null ||
-                !_editorFingerReferenceAnimator.avatar.isValid ||
-                !_editorFingerReferenceAnimator.avatar.isHuman)
-            {
-                Debug.LogWarning("[PoseSpaceRetargeter] 수동 기준 손가락 Reference에 유효한 Humanoid Animator가 없습니다.");
-                DisposeEditorHumanoidFingerPoseReference();
-                return;
-            }
-
-            AnimatorOverrideController overrideController = new AnimatorOverrideController(referenceController);
-            List<KeyValuePair<AnimationClip, AnimationClip>> overrides = new List<KeyValuePair<AnimationClip, AnimationClip>>();
-            overrideController.GetOverrides(overrides);
-            if (overrides.Count > 0 && overrides[0].Key != null)
-            {
-                overrideController[overrides[0].Key] = referenceClip;
-            }
-
-            _editorFingerReferenceAnimator.runtimeAnimatorController = overrideController;
-            _editorFingerReferenceAnimator.applyRootMotion = false;
-            _editorFingerReferenceAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            _editorFingerReferenceAnimator.enabled = true;
-            _editorFingerReferenceAnimator.speed = 0f;
-            _editorFingerReferenceAnimator.Rebind();
-            _editorFingerReferenceAnimator.Update(0f);
-
-            if (!_editorFingerReferenceAnimator.HasState(0, _editorFingerReferenceStateHash))
-            {
-                Debug.LogWarning($"[PoseSpaceRetargeter] 수동 기준 손가락 Reference state를 찾지 못했습니다: {stateName}");
-                DisposeEditorHumanoidFingerPoseReference();
-                return;
-            }
-
-            for (int i = 0; i < HumanTrait.MuscleCount; i++)
-            {
-                if (RetargetingMuscleReferencePolicy.IsFingerMuscle(HumanTrait.MuscleName[i]))
-                {
-                    _editorFingerReferenceMuscleIndices.Add(i);
-                }
-            }
-
-            _editorFingerReferenceHandler = new HumanPoseHandler(_editorFingerReferenceAnimator.avatar, _editorFingerReferenceAnimator.transform);
-            _editorFingerReferencePose = new HumanPose();
-            ShouldUseManualAnimatorFullBodyPoseReference = enableFullBodyPoseReference;
-            manualAnimatorFullBodyPoseReferenceWeight = Mathf.Clamp01(fullBodyPoseReferenceWeight);
-            ShouldExcludeManualAnimatorFullBodyLowerMuscles = fullBodyPoseExcludeLowerBodyMuscles;
-            ShouldApplyManualAnimatorFullBodyLowerMusclesOnly = fullBodyPoseLowerBodyMusclesOnly;
-            ShouldApplyManualAnimatorFullBodyLegTwistMusclesOnly = fullBodyPoseLegTwistMusclesOnly;
-            manualAnimatorFullBodyPoseRightArmMusclesOnly = fullBodyPoseRightArmMusclesOnly;
-            manualAnimatorFullBodyPoseLeftArmMusclesOnly = fullBodyPoseLeftArmMusclesOnly;
-            manualAnimatorFullBodyPoseRightSleeveChainMusclesOnly = fullBodyPoseRightSleeveChainMusclesOnly;
-            manualAnimatorFullBodyPoseFrameGateStart = Mathf.Max(0f, fullBodyPoseFrameGateStart);
-            manualAnimatorFullBodyPoseFrameGateEnd = Mathf.Max(0f, fullBodyPoseFrameGateEnd);
-            _useEditorFingerPoseReference = RetargetingMuscleReferencePolicy.ShouldUsePoseReference(
-                enableFingerPoseReference,
-                ShouldUseManualAnimatorFullBodyPoseReference,
-                _editorFingerReferenceMuscleIndices.Count);
-
-            // testprefab의 clip 시작(frame 0) Hips localPosition을 캐시 — delta 기반 보정의 기준점
-            _hasEditorReferenceHipsRestLocalPosition = false;
-            _editorFingerReferenceAnimator.Play(_editorFingerReferenceStateHash, 0, 0f);
-            _editorFingerReferenceAnimator.Update(0f);
-            Transform refHipsRest = _editorFingerReferenceAnimator.GetBoneTransform(HumanBodyBones.Hips);
-            if (refHipsRest != null && IsFinite(refHipsRest.localPosition))
-            {
-                _editorReferenceHipsRestLocalPosition = refHipsRest.localPosition;
-                _hasEditorReferenceHipsRestLocalPosition = true;
-            }
-            Debug.Log($"[PoseSpaceRetargeter] Manual Animator finger reference ready: prefab={referencePrefab.name}, controller={referenceController.name}, state={stateName}, clip={referenceClip.name}, muscles={_editorFingerReferenceMuscleIndices.Count}, hipsRest={(_hasEditorReferenceHipsRestLocalPosition ? _editorReferenceHipsRestLocalPosition.y.ToString("F4") : "N/A")}");
+                EnableFingerPoseReference = enableFingerPoseReference,
+                EnableFullBodyPoseReference = enableFullBodyPoseReference,
+                FullBodyPoseReferenceWeight = fullBodyPoseReferenceWeight,
+                FullBodyPoseExcludeLowerBodyMuscles = fullBodyPoseExcludeLowerBodyMuscles,
+                FullBodyPoseLowerBodyMusclesOnly = fullBodyPoseLowerBodyMusclesOnly,
+                FullBodyPoseLegTwistMusclesOnly = fullBodyPoseLegTwistMusclesOnly,
+                FullBodyPoseRightArmMusclesOnly = fullBodyPoseRightArmMusclesOnly,
+                FullBodyPoseLeftArmMusclesOnly = fullBodyPoseLeftArmMusclesOnly,
+                FullBodyPoseRightSleeveChainMusclesOnly = fullBodyPoseRightSleeveChainMusclesOnly,
+                FullBodyPoseFrameGateStart = fullBodyPoseFrameGateStart,
+                FullBodyPoseFrameGateEnd = fullBodyPoseFrameGateEnd,
+            };
+            RetargetingEditorReferenceHooks.PoseReference?.ConfigureFingerPoseReference(
+                this,
+                referencePrefab,
+                referenceController,
+                referenceClip,
+                options);
         }
 
-        private static void DisableEditorReferenceRecordingComponents(GameObject referenceInstance)
-        {
-            if (referenceInstance == null)
-            {
-                return;
-            }
-
-            int disabledSampleCodeCount = 0;
-            foreach (global::HumanoidSampleCode sampleCode in referenceInstance.GetComponentsInChildren<global::HumanoidSampleCode>(true))
-            {
-                sampleCode.AutoStartRecording = false;
-                sampleCode.enabled = false;
-                disabledSampleCodeCount++;
-            }
-
-            int disabledRecorderCount = 0;
-            foreach (global::UnityHumanoidVMDRecorder recorder in referenceInstance.GetComponentsInChildren<global::UnityHumanoidVMDRecorder>(true))
-            {
-                if (recorder.IsRecording)
-                {
-                    recorder.StopRecording();
-                }
-
-                recorder.enabled = false;
-                disabledRecorderCount++;
-            }
-
-            if (disabledSampleCodeCount > 0 || disabledRecorderCount > 0)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Manual finger reference recording components disabled. sampleCode={disabledSampleCodeCount}, recorder={disabledRecorderCount}");
-            }
-        }
 #endif
 
         // 빌드에서는 에디터 muscle 클립이 없어 임포트된 소스 모델을 HumanPoseHandler로 샘플링해 참조로 사용함.
@@ -2835,183 +2604,22 @@ namespace Fbx2Vmd.FBXImporter
 #if UNITY_EDITOR
         private void ApplyEditorHumanoidMuscleReferenceEditor(ref HumanPose pose)
         {
-            _hasEditorHumanoidPoseReferenceForFrame = false;
-            if (!_useEditorHumanoidMuscleReference || pose.muscles == null || _editorHumanoidMuscleCurves.Count == 0)
-            {
-                return;
-            }
-
-            float time = _legacyAnimationDriver.CurrentTime;
-            if (_useCompleteEditorHumanoidMuscleReference &&
-                _editorHumanoidPoseReferencePlayer != null &&
-                _editorHumanoidPoseReferencePlayer.TryEvaluateAt(
-                    time,
-                    ref _editorHumanoidPoseReference))
-            {
-                int muscleCount = Mathf.Min(
-                    pose.muscles.Length,
-                    _editorHumanoidPoseReference.muscles.Length);
-                Array.Copy(
-                    _editorHumanoidPoseReference.muscles,
-                    pose.muscles,
-                    muscleCount);
-                pose.bodyRotation = _editorHumanoidPoseReference.bodyRotation;
-                _editorReferenceBodyPosition = _editorHumanoidPoseReference.bodyPosition;
-                _hasEditorReferenceBodyPosition = IsFinite(_editorReferenceBodyPosition);
-                _hasEditorHumanoidPoseReferenceForFrame = true;
-            }
-            else
-            {
-                RetargetingPoseInputTransformer.ApplyReferenceCurvesInPlace(
-                    pose.muscles,
-                    _editorHumanoidMuscleCurves,
-                    time,
-                    _useCompleteEditorHumanoidMuscleReference);
-            }
-
-            if (!_editorHumanoidMuscleReferenceLogged)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Editor Humanoid muscle reference applied at t={time:F3}s.");
-                _editorHumanoidMuscleReferenceLogged = true;
-            }
+            RetargetingEditorReferenceHooks.PoseReference?.ApplyMuscleReference(this, ref pose);
         }
 
         private void ApplyEditorHumanoidFingerPoseReferenceEditor(ref HumanPose pose)
         {
-            if (!_useEditorFingerPoseReference ||
-                pose.muscles == null ||
-                _editorFingerReferenceAnimator == null ||
-                _editorFingerReferenceHandler == null ||
-                _editorFingerReferenceMuscleIndices.Count == 0)
-            {
-                return;
-            }
-
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
-
-            _editorFingerReferenceHandler.GetHumanPose(ref _editorFingerReferencePose);
-
-            if (_editorFingerReferencePose.muscles == null)
-            {
-                return;
-            }
-
-            if (ShouldUseManualAnimatorFullBodyPoseReference)
-            {
-                float weight = Mathf.Clamp01(manualAnimatorFullBodyPoseReferenceWeight);
-                if (weight <= 0f)
-                {
-                    return;
-                }
-
-                if (!ShouldApplyManualFullBodyPoseReferenceFrameGate())
-                {
-                    return;
-                }
-
-                int count = Mathf.Min(pose.muscles.Length, _editorFingerReferencePose.muscles.Length);
-                for (int i = 0; i < count; i++)
-                {
-                    if (!RetargetingMuscleReferencePolicy.ShouldApplyManualFullBodyMuscle(
-                        i,
-                        manualAnimatorFullBodyPoseRightSleeveChainMusclesOnly,
-                        manualAnimatorFullBodyPoseRightArmMusclesOnly,
-                        manualAnimatorFullBodyPoseLeftArmMusclesOnly,
-                        ShouldApplyManualAnimatorFullBodyLegTwistMusclesOnly,
-                        ShouldApplyManualAnimatorFullBodyLowerMusclesOnly,
-                        ShouldExcludeManualAnimatorFullBodyLowerMuscles))
-                    {
-                        continue;
-                    }
-
-                    pose.muscles[i] = Mathf.Lerp(pose.muscles[i], _editorFingerReferencePose.muscles[i], weight);
-                }
-            }
-            else
-            {
-                foreach (int muscleIndex in _editorFingerReferenceMuscleIndices)
-                {
-                    if (muscleIndex < 0 || muscleIndex >= pose.muscles.Length || muscleIndex >= _editorFingerReferencePose.muscles.Length)
-                    {
-                        continue;
-                    }
-
-                    pose.muscles[muscleIndex] = _editorFingerReferencePose.muscles[muscleIndex];
-                }
-
-            }
-
-            if (!_editorFingerPoseReferenceLogged)
-            {
-                float time = _legacyAnimationDriver.CurrentTime;
-                string scope = ShouldUseManualAnimatorFullBodyPoseReference ? "full-body muscle" : "finger";
-                string weightSuffix = ShouldUseManualAnimatorFullBodyPoseReference
-                    ? $", weight={Mathf.Clamp01(manualAnimatorFullBodyPoseReferenceWeight):F2}"
-                    : string.Empty;
-                Debug.Log($"[PoseSpaceRetargeter] Manual Animator {scope} reference applied at t={time:F3}s{weightSuffix}.");
-                _editorFingerPoseReferenceLogged = true;
-            }
+            RetargetingEditorReferenceHooks.PoseReference?.ApplyFingerPoseReference(this, ref pose);
         }
 
         private void ApplyEditorHumanoidBodyRotationReferenceEditor(ref HumanPose pose)
         {
-            if (_hasEditorHumanoidPoseReferenceForFrame)
-            {
-                return;
-            }
-
-            if (!ShouldUseManualAnimatorBodyRotationReference ||
-                manualAnimatorBodyRotationReferenceWeight <= 0f ||
-                _editorFingerReferenceAnimator == null ||
-                _editorFingerReferenceHandler == null)
-            {
-                return;
-            }
-
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
-
-            _editorFingerReferenceHandler.GetHumanPose(ref _editorFingerReferencePose);
-            Quaternion referenceBodyRotation = _editorFingerReferencePose.bodyRotation;
-            if (!IsFinite(referenceBodyRotation))
-            {
-                return;
-            }
-
-            float weight = Mathf.Clamp01(manualAnimatorBodyRotationReferenceWeight);
-            pose.bodyRotation = Quaternion.Slerp(pose.bodyRotation, referenceBodyRotation, weight);
-
-            Vector3 refBodyPos = _editorFingerReferencePose.bodyPosition;
-            if (IsFinite(refBodyPos) && refBodyPos.y > 0.01f)
-            {
-                _editorReferenceBodyPosition = refBodyPos;
-                _hasEditorReferenceBodyPosition = true;
-            }
-            if (!_editorBodyRotationReferenceLogged)
-            {
-                float time = _legacyAnimationDriver.CurrentTime;
-                Debug.Log($"[PoseSpaceRetargeter] Manual Animator bodyRotation reference applied at t={time:F3}s, weight={weight:F2}.");
-                _editorBodyRotationReferenceLogged = true;
-            }
+            RetargetingEditorReferenceHooks.PoseReference?.ApplyBodyRotationReference(this, ref pose);
         }
 
         private bool UpdateEditorManualReferenceAnimator()
         {
-            if (_editorFingerReferenceAnimator == null || _editorFingerReferenceClipLength <= 0f)
-            {
-                return false;
-            }
-
-            float time = _legacyAnimationDriver.CurrentTime;
-            float normalizedTime = Mathf.Clamp01(time / _editorFingerReferenceClipLength);
-            _editorFingerReferenceAnimator.Play(_editorFingerReferenceStateHash, 0, normalizedTime);
-            _editorFingerReferenceAnimator.Update(0f);
-            return true;
+            return RetargetingEditorReferenceHooks.PoseReference?.UpdateManualReferenceAnimator(this) ?? false;
         }
 
         private void ApplyEditorHumanoidHipsLocalPositionReference()
@@ -5234,70 +4842,10 @@ namespace Fbx2Vmd.FBXImporter
 
         private void DisposeEditorHumanoidFingerPoseReference()
         {
-            if (_editorFingerReferenceHandler != null)
-            {
-                _editorFingerReferenceHandler.Dispose();
-                _editorFingerReferenceHandler = null;
-            }
-
-            if (_editorFingerReferenceInstance != null)
-            {
-                if (Application.isPlaying)
-                {
-                    Destroy(_editorFingerReferenceInstance);
-                }
-                else
-                {
-                    DestroyImmediate(_editorFingerReferenceInstance);
-                }
-            }
-
-            _editorFingerReferenceInstance = null;
-            _editorFingerReferenceAnimator = null;
-            _editorFingerReferenceMuscleIndices.Clear();
-            _useEditorFingerPoseReference = false;
-            _editorBodyRotationReferenceLogged = false;
-            _editorHandLocalRotationReferenceLogged = false;
-            _editorFootLocalRotationReferenceLogged = false;
-            _editorLowerBodySegmentDirectionReferenceLogged = false;
-            _editorFootHipsAlignedResidualYawReferenceLogged = false;
-            _editorHipsLocalPositionReferenceLogged = false;
-            _editorBodyPositionXzReferenceLogged = false;
-            _hasEditorReferenceBodyPosition = false;
-            _hasEditorReferenceHipsRestLocalPosition = false;
-            _hasEditorReferenceLowestFootRestY = false;
-            _allowEditorFootHeightGroundingReference = false;
+            RetargetingEditorReferenceHooks.PoseReference?.DisposeFingerPoseReference(this);
         }
 
-        private static string ResolveFirstAnimatorStateName(RuntimeAnimatorController controller)
-        {
-            if (controller == null)
-            {
-                return "";
-            }
 
-            AnimatorOverrideController overrideController = controller as AnimatorOverrideController;
-            if (overrideController != null && overrideController.runtimeAnimatorController != null)
-            {
-                controller = overrideController.runtimeAnimatorController;
-            }
-
-            UnityEditor.Animations.AnimatorController animatorController = controller as UnityEditor.Animations.AnimatorController;
-            if (animatorController == null || animatorController.layers == null || animatorController.layers.Length == 0)
-            {
-                return "";
-            }
-
-            UnityEditor.Animations.ChildAnimatorState[] states = animatorController.layers[0].stateMachine.states;
-            return states != null && states.Length > 0 ? states[0].state.name : "";
-        }
-
-        private bool ShouldApplyManualFullBodyPoseReferenceFrameGate()
-        {
-            return ShouldApplySingleFrameFallbackReferenceFrameGate(
-                manualAnimatorFullBodyPoseFrameGateStart,
-                manualAnimatorFullBodyPoseFrameGateEnd);
-        }
 
         private bool ShouldApplyRightSleeveSilhouetteLocalOffsetFrameGate()
         {
@@ -5306,7 +4854,7 @@ namespace Fbx2Vmd.FBXImporter
                 yybRightSleeveSilhouetteLocalOffsetFrameGateEnd);
         }
 
-        private bool ShouldApplySingleFrameFallbackReferenceFrameGate(float startFrame, float endFrame)
+        internal bool ShouldApplySingleFrameFallbackReferenceFrameGate(float startFrame, float endFrame)
         {
             if (!ManualPoseReferenceApplier.HasConfiguredFrameGate(startFrame, endFrame))
             {
@@ -5489,55 +5037,7 @@ namespace Fbx2Vmd.FBXImporter
         private Vector3 ExtractEditorRootTranslationDelta(Vector3 ghostDelta)
         {
 #if UNITY_EDITOR
-            if (!ShouldUseEditorHumanoidRootTranslationReference ||
-                !_useEditorRootTranslationReference ||
-                _editorRootTranslationX == null ||
-                _editorRootTranslationZ == null)
-            {
-                ResetEditorHumanoidRootTranslationReferenceState();
-                return Vector3.zero;
-            }
-
-            float time = _legacyAnimationDriver.CurrentTime;
-            Vector3 current = SampleEditorRootTranslation(time);
-            if (!IsFinite(current))
-            {
-                ResetEditorHumanoidRootTranslationReferenceState();
-                return Vector3.zero;
-            }
-
-            if (!_hasPreviousEditorRootTranslation)
-            {
-                _previousEditorRootTranslation = current;
-                _hasPreviousEditorRootTranslation = true;
-                return Vector3.zero;
-            }
-
-            Vector3 delta = current - _previousEditorRootTranslation;
-            _previousEditorRootTranslation = current;
-            Vector3 editorRootDelta = RootMotionGuard.CalculateEditorRootTranslationReferenceDelta(
-                delta,
-                ghostDelta,
-                editorHumanoidRootTranslationWeight,
-                editorHumanoidRootTranslationCurrentWeight,
-                _hasSmoothedEditorRootTranslationDelta,
-                _smoothedEditorRootTranslationDelta,
-                out _smoothedEditorRootTranslationDelta,
-                out _hasSmoothedEditorRootTranslationDelta,
-                out bool skippedByGhostDelta,
-                out bool skippedByNonFinite);
-            if (skippedByGhostDelta || skippedByNonFinite)
-            {
-                return Vector3.zero;
-            }
-
-            if (!_editorRootTranslationReferenceLogged)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Editor Humanoid RootT translation reference applied at t={time:F3}s.");
-                _editorRootTranslationReferenceLogged = true;
-            }
-
-            return editorRootDelta;
+            return RetargetingEditorReferenceHooks.PoseReference?.ExtractRootTranslationDelta(this, ghostDelta) ?? Vector3.zero;
 #else
             return Vector3.zero;
 #endif
@@ -5546,23 +5046,11 @@ namespace Fbx2Vmd.FBXImporter
         private void ResetEditorHumanoidRootTranslationReferenceState()
         {
 #if UNITY_EDITOR
-            _hasPreviousEditorRootTranslation = false;
-            _hasSmoothedEditorRootTranslationDelta = false;
-            _previousEditorRootTranslation = Vector3.zero;
-            _smoothedEditorRootTranslationDelta = Vector3.zero;
+            RetargetingEditorReferenceHooks.PoseReference?.ResetRootTranslationState(this);
 #endif
         }
 
 #if UNITY_EDITOR
-        private Vector3 SampleEditorRootTranslation(float time)
-        {
-            // Unity Humanoid RootT uses the FBX avatar basis. In this project the manual
-            // reference root path matches RootT with X/Z swapped in world space.
-            return new Vector3(
-                _editorRootTranslationZ.Evaluate(time),
-                0f,
-                _editorRootTranslationX.Evaluate(time));
-        }
 #endif
 
         private static Vector3 FlattenXZ(Vector3 value)
