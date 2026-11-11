@@ -218,9 +218,12 @@ namespace Tests.Editor.FBXImporter
 
         private static Type FindRuntimeType(string typeName)
         {
-            Type type = typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly.GetType(
-                $"Fbx2Vmd.FBXImporter.{typeName}",
-                throwOnError: false);
+            Type type = typeof(Fbx2Vmd.FBXImporter.UnityManualRefreshGuard).Assembly.GetType(
+                    $"Fbx2Vmd.FBXImporter.{typeName}",
+                    throwOnError: false)
+                ?? typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly.GetType(
+                    $"Fbx2Vmd.FBXImporter.{typeName}",
+                    throwOnError: false);
             Assert.That(type, Is.Not.Null, typeName);
             return type;
         }

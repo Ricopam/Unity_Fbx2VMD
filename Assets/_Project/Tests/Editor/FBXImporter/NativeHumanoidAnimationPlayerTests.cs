@@ -654,7 +654,7 @@ namespace Tests.Editor.FBXImporter
 
             try
             {
-                Type runnerType = typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly.GetType(
+                Type runnerType = typeof(Fbx2Vmd.FBXImporter.UnityManualRefreshGuard).Assembly.GetType(
                     "Fbx2Vmd.FBXImporter.NativeHumanoidPlaybackBaselineRunner",
                     throwOnError: false);
                 Assert.That(runnerType, Is.Not.Null,

@@ -184,7 +184,7 @@ namespace Tests.Editor.FBXImporter
 
         private static MethodInfo FindApplyMethod(string methodName)
         {
-            Type applierType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type applierType = typeof(UnityManualRefreshGuard).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.RetargetingRuntimeOverrideApplier",
                 throwOnError: false);
             Assert.That(applierType, Is.Not.Null, "모델 중립적인 리타게팅 override 적용기가 필요합니다.");
