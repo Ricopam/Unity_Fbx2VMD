@@ -5885,11 +5885,6 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         }
 
-
-
-
-
-
         private void CaptureSetHumanPoseInputDiagnostics(HumanPose pose)
         {
             _lastSetHumanPoseInputLeftShoulderFrontBackMuscle = ReadLeftShoulderFrontBackMuscle(pose);
