@@ -41,22 +41,6 @@ namespace Fbx2Vmd.FBXImporter
         bool UpdateManualReferenceAnimator(PoseSpaceRetargeter owner);
     }
 
-    /// <summary>손가락/전신 참조 구성의 선택 인자 묶음 — 런타임이 선언해 에디터 구현에 전달한다.</summary>
-    internal struct EditorFingerPoseReferenceOptions
-    {
-        internal bool EnableFingerPoseReference;
-        internal bool EnableFullBodyPoseReference;
-        internal float FullBodyPoseReferenceWeight;
-        internal bool FullBodyPoseExcludeLowerBodyMuscles;
-        internal bool FullBodyPoseLowerBodyMusclesOnly;
-        internal bool FullBodyPoseLegTwistMusclesOnly;
-        internal bool FullBodyPoseRightArmMusclesOnly;
-        internal bool FullBodyPoseLeftArmMusclesOnly;
-        internal bool FullBodyPoseRightSleeveChainMusclesOnly;
-        internal float FullBodyPoseFrameGateStart;
-        internal float FullBodyPoseFrameGateEnd;
-    }
-
     /// <summary>하체 세그먼트 방향 보정의 에디터 구현 계약 — 진입점은 Apply 하나다.</summary>
     internal interface IEditorLowerBodyDirectionDriver
     {
@@ -91,5 +75,6 @@ namespace Fbx2Vmd.FBXImporter
         internal static IEditorPoseReferenceDriver PoseReference;
         internal static IEditorLowerBodyDirectionDriver LowerBodyDirection;
         internal static IEditorFootReferenceDriver FootReference;
+        internal static IEditorThumbReferenceDriver ThumbReference;
     }
 }
