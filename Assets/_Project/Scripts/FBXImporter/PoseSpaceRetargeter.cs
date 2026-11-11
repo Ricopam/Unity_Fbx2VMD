@@ -1252,37 +1252,37 @@ namespace Fbx2Vmd.FBXImporter
         public float LastEditorLowerBodySegmentDirectionRightFootUpZ => _lastEditorLowerBodySegmentDirectionRightFootUp.z;
         public float LastEditorFootHipsAlignedResidualYawLeftFootXzDelta => _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta;
         public float LastEditorFootHipsAlignedResidualYawRightFootXzDelta => _lastEditorFootHipsAlignedResidualYawRightFootXzDelta;
-        public float LastPostSetHumanPoseRightEndpointDesiredFootWorldX => _lastPostSetHumanPoseRightEndpointDesiredFootWorldPosition.x;
-        public float LastPostSetHumanPoseRightEndpointDesiredFootWorldZ => _lastPostSetHumanPoseRightEndpointDesiredFootWorldPosition.z;
-        public float LastPostSetHumanPoseRightEndpointDesiredToesWorldX => _lastPostSetHumanPoseRightEndpointDesiredToesWorldPosition.x;
-        public float LastPostSetHumanPoseRightEndpointDesiredToesWorldZ => _lastPostSetHumanPoseRightEndpointDesiredToesWorldPosition.z;
-        public float LastPostSetHumanPoseRightEndpointCurrentFootWorldX => _lastPostSetHumanPoseRightEndpointCurrentFootWorldPosition.x;
-        public float LastPostSetHumanPoseRightEndpointCurrentFootWorldZ => _lastPostSetHumanPoseRightEndpointCurrentFootWorldPosition.z;
-        public float LastPostSetHumanPoseRightEndpointCurrentToesWorldX => _lastPostSetHumanPoseRightEndpointCurrentToesWorldPosition.x;
-        public float LastPostSetHumanPoseRightEndpointCurrentToesWorldZ => _lastPostSetHumanPoseRightEndpointCurrentToesWorldPosition.z;
-        public float LastPostSetHumanPoseRightEndpointDeltaBeforeClampX => _lastPostSetHumanPoseRightEndpointDeltaBeforeClamp.x;
-        public float LastPostSetHumanPoseRightEndpointDeltaBeforeClampZ => _lastPostSetHumanPoseRightEndpointDeltaBeforeClamp.z;
-        public float LastPostSetHumanPoseRightEndpointDeltaAfterClampX => _lastPostSetHumanPoseRightEndpointDeltaAfterClamp.x;
-        public float LastPostSetHumanPoseRightEndpointDeltaAfterClampZ => _lastPostSetHumanPoseRightEndpointDeltaAfterClamp.z;
-        public float LastPostSetHumanPoseRightEndpointDeltaAfterPositiveZScaleX => _lastPostSetHumanPoseRightEndpointDeltaAfterPositiveZScale.x;
-        public float LastPostSetHumanPoseRightEndpointDeltaAfterPositiveZScaleZ => _lastPostSetHumanPoseRightEndpointDeltaAfterPositiveZScale.z;
-        public float LastPostSetHumanPoseRightEndpointCorrectionX => _lastPostSetHumanPoseRightEndpointCorrection.x;
-        public float LastPostSetHumanPoseRightEndpointCorrectionZ => _lastPostSetHumanPoseRightEndpointCorrection.z;
-        public float LastPostSetHumanPoseRightEndpointNextFootWorldX => _lastPostSetHumanPoseRightEndpointNextFootWorldPosition.x;
-        public float LastPostSetHumanPoseRightEndpointNextFootWorldZ => _lastPostSetHumanPoseRightEndpointNextFootWorldPosition.z;
-        public float LastPostSetHumanPoseRightEndpointMaxYawAngle => _lastPostSetHumanPoseRightEndpointMaxYawAngle;
-        public float LastPostSetHumanPoseRightEndpointYawCorrectionAngle => _lastPostSetHumanPoseRightEndpointYawCorrectionAngle;
-        public float LastPostSetHumanPoseRightEndpointUpperLegRotationDeltaAngle => _lastPostSetHumanPoseRightEndpointUpperLegRotationDeltaAngle;
-        public float LastPostSetHumanPoseRightEndpointApplied => _lastPostSetHumanPoseRightEndpointApplied;
-        public float LastPostSetHumanPoseRightEndpointEvaluatorXzReferenceEnabled => _lastPostSetHumanPoseRightEndpointEvaluatorXzReferenceEnabled;
-        public float LastPostSetHumanPoseRightEndpointEvaluatorXzFirstOffsetX => _lastPostSetHumanPoseRightEndpointEvaluatorXzFirstOffset.x;
-        public float LastPostSetHumanPoseRightEndpointEvaluatorXzFirstOffsetZ => _lastPostSetHumanPoseRightEndpointEvaluatorXzFirstOffset.z;
-        public float LastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDeltaX => _lastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDelta.x;
-        public float LastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDeltaZ => _lastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDelta.z;
-        public float LastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedMagnitude => _lastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDelta.magnitude;
-        public float LastPostSetHumanPoseRightEndpointEvaluatorXzDesiredNormalizedDeltaX => _lastPostSetHumanPoseRightEndpointEvaluatorXzDesiredNormalizedDelta.x;
-        public float LastPostSetHumanPoseRightEndpointEvaluatorXzDesiredNormalizedDeltaZ => _lastPostSetHumanPoseRightEndpointEvaluatorXzDesiredNormalizedDelta.z;
-        public float LastPostSetHumanPoseRightEndpointEvaluatorXzTargetMagnitude => _lastPostSetHumanPoseRightEndpointEvaluatorXzTargetMagnitude;
+        public float LastPostSetHumanPoseRightEndpointDesiredFootWorldX => _postSetEndpointDiagnostics.DesiredFootWorldPosition.x;
+        public float LastPostSetHumanPoseRightEndpointDesiredFootWorldZ => _postSetEndpointDiagnostics.DesiredFootWorldPosition.z;
+        public float LastPostSetHumanPoseRightEndpointDesiredToesWorldX => _postSetEndpointDiagnostics.DesiredToesWorldPosition.x;
+        public float LastPostSetHumanPoseRightEndpointDesiredToesWorldZ => _postSetEndpointDiagnostics.DesiredToesWorldPosition.z;
+        public float LastPostSetHumanPoseRightEndpointCurrentFootWorldX => _postSetEndpointDiagnostics.CurrentFootWorldPosition.x;
+        public float LastPostSetHumanPoseRightEndpointCurrentFootWorldZ => _postSetEndpointDiagnostics.CurrentFootWorldPosition.z;
+        public float LastPostSetHumanPoseRightEndpointCurrentToesWorldX => _postSetEndpointDiagnostics.CurrentToesWorldPosition.x;
+        public float LastPostSetHumanPoseRightEndpointCurrentToesWorldZ => _postSetEndpointDiagnostics.CurrentToesWorldPosition.z;
+        public float LastPostSetHumanPoseRightEndpointDeltaBeforeClampX => _postSetEndpointDiagnostics.DeltaBeforeClamp.x;
+        public float LastPostSetHumanPoseRightEndpointDeltaBeforeClampZ => _postSetEndpointDiagnostics.DeltaBeforeClamp.z;
+        public float LastPostSetHumanPoseRightEndpointDeltaAfterClampX => _postSetEndpointDiagnostics.DeltaAfterClamp.x;
+        public float LastPostSetHumanPoseRightEndpointDeltaAfterClampZ => _postSetEndpointDiagnostics.DeltaAfterClamp.z;
+        public float LastPostSetHumanPoseRightEndpointDeltaAfterPositiveZScaleX => _postSetEndpointDiagnostics.DeltaAfterPositiveZScale.x;
+        public float LastPostSetHumanPoseRightEndpointDeltaAfterPositiveZScaleZ => _postSetEndpointDiagnostics.DeltaAfterPositiveZScale.z;
+        public float LastPostSetHumanPoseRightEndpointCorrectionX => _postSetEndpointDiagnostics.Correction.x;
+        public float LastPostSetHumanPoseRightEndpointCorrectionZ => _postSetEndpointDiagnostics.Correction.z;
+        public float LastPostSetHumanPoseRightEndpointNextFootWorldX => _postSetEndpointDiagnostics.NextFootWorldPosition.x;
+        public float LastPostSetHumanPoseRightEndpointNextFootWorldZ => _postSetEndpointDiagnostics.NextFootWorldPosition.z;
+        public float LastPostSetHumanPoseRightEndpointMaxYawAngle => _postSetEndpointDiagnostics.MaxYawAngle;
+        public float LastPostSetHumanPoseRightEndpointYawCorrectionAngle => _postSetEndpointDiagnostics.YawCorrectionAngle;
+        public float LastPostSetHumanPoseRightEndpointUpperLegRotationDeltaAngle => _postSetEndpointDiagnostics.UpperLegRotationDeltaAngle;
+        public float LastPostSetHumanPoseRightEndpointApplied => _postSetEndpointDiagnostics.Applied;
+        public float LastPostSetHumanPoseRightEndpointEvaluatorXzReferenceEnabled => _postSetEndpointDiagnostics.EvaluatorXzReferenceEnabled;
+        public float LastPostSetHumanPoseRightEndpointEvaluatorXzFirstOffsetX => _postSetEndpointDiagnostics.EvaluatorXzFirstOffset.x;
+        public float LastPostSetHumanPoseRightEndpointEvaluatorXzFirstOffsetZ => _postSetEndpointDiagnostics.EvaluatorXzFirstOffset.z;
+        public float LastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDeltaX => _postSetEndpointDiagnostics.EvaluatorXzNormalizedDelta.x;
+        public float LastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDeltaZ => _postSetEndpointDiagnostics.EvaluatorXzNormalizedDelta.z;
+        public float LastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedMagnitude => _postSetEndpointDiagnostics.EvaluatorXzNormalizedDelta.magnitude;
+        public float LastPostSetHumanPoseRightEndpointEvaluatorXzDesiredNormalizedDeltaX => _postSetEndpointDiagnostics.EvaluatorXzDesiredNormalizedDelta.x;
+        public float LastPostSetHumanPoseRightEndpointEvaluatorXzDesiredNormalizedDeltaZ => _postSetEndpointDiagnostics.EvaluatorXzDesiredNormalizedDelta.z;
+        public float LastPostSetHumanPoseRightEndpointEvaluatorXzTargetMagnitude => _postSetEndpointDiagnostics.EvaluatorXzTargetMagnitude;
 
         public void ResetPlaybackStabilityMetrics()
         {
@@ -1552,29 +1552,12 @@ namespace Fbx2Vmd.FBXImporter
         private Vector3 _lastEditorLowerBodySegmentDirectionRightFootUp = new Vector3(float.NaN, float.NaN, float.NaN);
         private float _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta = float.NaN;
         private float _lastEditorFootHipsAlignedResidualYawRightFootXzDelta = float.NaN;
-        private Vector3 _lastPostSetHumanPoseRightEndpointDesiredFootWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointDesiredToesWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointCurrentFootWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointCurrentToesWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointDeltaBeforeClamp = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointDeltaAfterClamp = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointDeltaAfterPositiveZScale = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointCorrection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointNextFootWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private float _lastPostSetHumanPoseRightEndpointMaxYawAngle = float.NaN;
-        private float _lastPostSetHumanPoseRightEndpointYawCorrectionAngle = float.NaN;
-        private float _lastPostSetHumanPoseRightEndpointUpperLegRotationDeltaAngle = float.NaN;
-        private float _lastPostSetHumanPoseRightEndpointApplied = float.NaN;
-        private float _lastPostSetHumanPoseRightEndpointEvaluatorXzReferenceEnabled = float.NaN;
-        private Vector3 _lastPostSetHumanPoseRightEndpointEvaluatorXzFirstOffset = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDelta = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastPostSetHumanPoseRightEndpointEvaluatorXzDesiredNormalizedDelta = new Vector3(float.NaN, float.NaN, float.NaN);
-        private float _lastPostSetHumanPoseRightEndpointEvaluatorXzTargetMagnitude = float.NaN;
         private bool _hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset;
         private Vector3 _postSetHumanPoseRightFootEvaluatorXzFirstOffset = new Vector3(float.NaN, float.NaN, float.NaN);
         private readonly RetargetingEndpointStageDiagnostics _endpointStageDiagnostics = new RetargetingEndpointStageDiagnostics();
         private readonly RetargetingStageMuscleDiagnostics _stageMuscleDiagnostics = new RetargetingStageMuscleDiagnostics();
         private readonly RetargetingSetHumanPoseDiagnostics _setHumanPoseDiagnostics = new RetargetingSetHumanPoseDiagnostics();
+        private readonly RetargetingPostSetEndpointDiagnostics _postSetEndpointDiagnostics = new RetargetingPostSetEndpointDiagnostics();
 
 
         private static Vector3 BuildNaNVector3()
@@ -3346,54 +3329,7 @@ namespace Fbx2Vmd.FBXImporter
             return Vector2.Distance(beforeXz, afterXz);
         }
 
-        private void ResetPostSetHumanPoseRightEndpointPositionDiagnostics()
-        {
-            _lastPostSetHumanPoseRightEndpointDesiredFootWorldPosition = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointDesiredToesWorldPosition = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointCurrentFootWorldPosition = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointCurrentToesWorldPosition = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointDeltaBeforeClamp = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointDeltaAfterClamp = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointDeltaAfterPositiveZScale = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointCorrection = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointNextFootWorldPosition = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointMaxYawAngle = float.NaN;
-            _lastPostSetHumanPoseRightEndpointYawCorrectionAngle = float.NaN;
-            _lastPostSetHumanPoseRightEndpointUpperLegRotationDeltaAngle = float.NaN;
-            _lastPostSetHumanPoseRightEndpointApplied = float.NaN;
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzReferenceEnabled = float.NaN;
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzFirstOffset = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDelta = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzDesiredNormalizedDelta = BuildNaNVector3();
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzTargetMagnitude = float.NaN;
-        }
 
-        private void RecordPostSetHumanPoseRightEndpointPositionDiagnostics(
-            RetargetingEndpointDiagnosticSnapshot diagnostics,
-            float maxYawAngle,
-            float yawCorrectionAngle,
-            float upperLegRotationDeltaAngle,
-            float applied)
-        {
-            _lastPostSetHumanPoseRightEndpointDesiredFootWorldPosition = diagnostics.DesiredFootPosition;
-            _lastPostSetHumanPoseRightEndpointDesiredToesWorldPosition = diagnostics.DesiredToesPosition;
-            _lastPostSetHumanPoseRightEndpointCurrentFootWorldPosition = diagnostics.CurrentFootPosition;
-            _lastPostSetHumanPoseRightEndpointCurrentToesWorldPosition = diagnostics.CurrentToesPosition;
-            _lastPostSetHumanPoseRightEndpointDeltaBeforeClamp = diagnostics.EndpointDeltaBeforeClamp;
-            _lastPostSetHumanPoseRightEndpointDeltaAfterClamp = diagnostics.EndpointDeltaAfterClamp;
-            _lastPostSetHumanPoseRightEndpointDeltaAfterPositiveZScale = diagnostics.EndpointDeltaAfterPositiveZScale;
-            _lastPostSetHumanPoseRightEndpointCorrection = diagnostics.Correction;
-            _lastPostSetHumanPoseRightEndpointNextFootWorldPosition = diagnostics.NextFootPosition;
-            _lastPostSetHumanPoseRightEndpointMaxYawAngle = maxYawAngle;
-            _lastPostSetHumanPoseRightEndpointYawCorrectionAngle = yawCorrectionAngle;
-            _lastPostSetHumanPoseRightEndpointUpperLegRotationDeltaAngle = upperLegRotationDeltaAngle;
-            _lastPostSetHumanPoseRightEndpointApplied = applied;
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzReferenceEnabled = diagnostics.EvaluatorXzReferenceEnabled;
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzFirstOffset = diagnostics.EvaluatorXzFirstOffset;
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzNormalizedDelta = diagnostics.EvaluatorXzNormalizedDelta;
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzDesiredNormalizedDelta = diagnostics.EvaluatorXzDesiredNormalizedDelta;
-            _lastPostSetHumanPoseRightEndpointEvaluatorXzTargetMagnitude = diagnostics.EvaluatorXzTargetMagnitude;
-        }
 
         private void RecordEditorLowerBodySegmentDirectionEndpointDiagnostics()
         {
@@ -4154,7 +4090,7 @@ namespace Fbx2Vmd.FBXImporter
 
         private void ApplyPostSetHumanPoseRightEndpointPositionReference()
         {
-            ResetPostSetHumanPoseRightEndpointPositionDiagnostics();
+            _postSetEndpointDiagnostics.Reset();
             if (!usePostSetHumanPoseRightFootEvaluatorXzReference)
             {
                 _hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset = false;
@@ -4268,7 +4204,7 @@ namespace Fbx2Vmd.FBXImporter
 
             if (!calculated)
             {
-                RecordPostSetHumanPoseRightEndpointPositionDiagnostics(
+                _postSetEndpointDiagnostics.Record(
                     endpointDiagnostics,
                     maxYawAngle: float.NaN,
                     yawCorrectionAngle: float.NaN,
@@ -4291,7 +4227,7 @@ namespace Fbx2Vmd.FBXImporter
                     out Quaternion nextWorldRotation,
                     out float yawCorrectionAngle))
             {
-                RecordPostSetHumanPoseRightEndpointPositionDiagnostics(
+                _postSetEndpointDiagnostics.Record(
                     endpointDiagnostics,
                     maxAngleDegrees,
                     yawCorrectionAngle,
@@ -4301,7 +4237,7 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             float upperLegRotationDeltaAngle = Quaternion.Angle(targetUpperLeg.rotation, nextWorldRotation);
-            RecordPostSetHumanPoseRightEndpointPositionDiagnostics(
+            _postSetEndpointDiagnostics.Record(
                 endpointDiagnostics,
                 maxAngleDegrees,
                 yawCorrectionAngle,
@@ -5788,7 +5724,7 @@ namespace Fbx2Vmd.FBXImporter
             _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta = float.NaN;
             _lastEditorFootHipsAlignedResidualYawRightFootXzDelta = float.NaN;
 #if UNITY_EDITOR
-            ResetPostSetHumanPoseRightEndpointPositionDiagnostics();
+            _postSetEndpointDiagnostics.Reset();
 #endif
             _endpointStageDiagnostics.GhostPositions = RetargetEndpointStageWorldPositions.Empty;
             _endpointStageDiagnostics.AfterSetHumanPosePositions = RetargetEndpointStageWorldPositions.Empty;
