@@ -1167,88 +1167,88 @@ namespace Fbx2Vmd.FBXImporter
         public float LastRetargetEndpointFirstJumpDeltaZ => _endpointStageDiagnostics.FirstJumpDelta.z;
         public float LastEditorFootLocalRotationLeftFootXzDelta => _lastEditorFootLocalRotationLeftFootXzDelta;
         public float LastEditorFootLocalRotationRightFootXzDelta => _lastEditorFootLocalRotationRightFootXzDelta;
-        public float LastEditorLowerBodySegmentDirectionLeftFootXzDelta => _lastEditorLowerBodySegmentDirectionLeftFootXzDelta;
-        public float LastEditorLowerBodySegmentDirectionRightFootXzDelta => _lastEditorLowerBodySegmentDirectionRightFootXzDelta;
-        public string LastEditorLowerBodySegmentDirectionMaxCorrectionSegment => _lastEditorLowerBodySegmentDirectionMaxCorrectionSegment;
-        public float LastEditorLowerBodySegmentDirectionMaxCorrectionAngle => _lastEditorLowerBodySegmentDirectionMaxCorrectionAngle;
-        public float LastEditorLowerBodySegmentDirectionMaxPreAngle => _lastEditorLowerBodySegmentDirectionMaxPreAngle;
-        public float LastEditorLowerBodySegmentDirectionMaxPostAngle => _lastEditorLowerBodySegmentDirectionMaxPostAngle;
-        public float LastEditorLowerBodySegmentDirectionMaxCorrectionAxisX => _lastEditorLowerBodySegmentDirectionMaxCorrectionAxis.x;
-        public float LastEditorLowerBodySegmentDirectionMaxCorrectionAxisY => _lastEditorLowerBodySegmentDirectionMaxCorrectionAxis.y;
-        public float LastEditorLowerBodySegmentDirectionMaxCorrectionAxisZ => _lastEditorLowerBodySegmentDirectionMaxCorrectionAxis.z;
-        public float LastEditorLowerBodySegmentDirectionMaxReferenceDirectionX => _lastEditorLowerBodySegmentDirectionMaxReferenceDirection.x;
-        public float LastEditorLowerBodySegmentDirectionMaxReferenceDirectionY => _lastEditorLowerBodySegmentDirectionMaxReferenceDirection.y;
-        public float LastEditorLowerBodySegmentDirectionMaxReferenceDirectionZ => _lastEditorLowerBodySegmentDirectionMaxReferenceDirection.z;
-        public float LastEditorLowerBodySegmentDirectionMaxPreDirectionX => _lastEditorLowerBodySegmentDirectionMaxPreDirection.x;
-        public float LastEditorLowerBodySegmentDirectionMaxPreDirectionY => _lastEditorLowerBodySegmentDirectionMaxPreDirection.y;
-        public float LastEditorLowerBodySegmentDirectionMaxPreDirectionZ => _lastEditorLowerBodySegmentDirectionMaxPreDirection.z;
-        public float LastEditorLowerBodySegmentDirectionMaxPostDirectionX => _lastEditorLowerBodySegmentDirectionMaxPostDirection.x;
-        public float LastEditorLowerBodySegmentDirectionMaxPostDirectionY => _lastEditorLowerBodySegmentDirectionMaxPostDirection.y;
-        public float LastEditorLowerBodySegmentDirectionMaxPostDirectionZ => _lastEditorLowerBodySegmentDirectionMaxPostDirection.z;
-        public float LastEditorLowerBodySegmentDirectionLeftUpperLegLowerLegCorrectionAngle => _lastEditorLowerBodySegmentDirectionLeftUpperLegLowerLegCorrectionAngle;
-        public float LastEditorLowerBodySegmentDirectionRightUpperLegLowerLegCorrectionAngle => _lastEditorLowerBodySegmentDirectionRightUpperLegLowerLegCorrectionAngle;
-        public float LastEditorLowerBodySegmentDirectionLeftLowerLegFootCorrectionAngle => _lastEditorLowerBodySegmentDirectionLeftLowerLegFootCorrectionAngle;
-        public float LastEditorLowerBodySegmentDirectionRightLowerLegFootCorrectionAngle => _lastEditorLowerBodySegmentDirectionRightLowerLegFootCorrectionAngle;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToesCorrectionAngle => _lastEditorLowerBodySegmentDirectionLeftFootToesCorrectionAngle;
-        public float LastEditorLowerBodySegmentDirectionRightFootToesCorrectionAngle => _lastEditorLowerBodySegmentDirectionRightFootToesCorrectionAngle;
-        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootParentWorldRotationDeltaAngle => _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootParentWorldRotationDeltaAngle;
-        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootParentWorldRotationDeltaAngle => _lastEditorLowerBodySegmentDirectionRightLowerLegToFootParentWorldRotationDeltaAngle;
-        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootChildFootLocalRotationDeltaAngle => _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootChildFootLocalRotationDeltaAngle;
-        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootChildFootLocalRotationDeltaAngle => _lastEditorLowerBodySegmentDirectionRightLowerLegToFootChildFootLocalRotationDeltaAngle;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirectionX => _lastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirection.x;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirectionY => _lastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirection.y;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirectionZ => _lastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirection.z;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPreDirectionX => _lastEditorLowerBodySegmentDirectionLeftFootToToesPreDirection.x;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPreDirectionY => _lastEditorLowerBodySegmentDirectionLeftFootToToesPreDirection.y;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPreDirectionZ => _lastEditorLowerBodySegmentDirectionLeftFootToToesPreDirection.z;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPostDirectionX => _lastEditorLowerBodySegmentDirectionLeftFootToToesPostDirection.x;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPostDirectionY => _lastEditorLowerBodySegmentDirectionLeftFootToToesPostDirection.y;
-        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPostDirectionZ => _lastEditorLowerBodySegmentDirectionLeftFootToToesPostDirection.z;
-        public float LastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirectionX => _lastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirection.x;
-        public float LastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirectionY => _lastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirection.y;
-        public float LastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirectionZ => _lastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirection.z;
-        public float LastEditorLowerBodySegmentDirectionRightFootToToesPreDirectionX => _lastEditorLowerBodySegmentDirectionRightFootToToesPreDirection.x;
-        public float LastEditorLowerBodySegmentDirectionRightFootToToesPreDirectionY => _lastEditorLowerBodySegmentDirectionRightFootToToesPreDirection.y;
-        public float LastEditorLowerBodySegmentDirectionRightFootToToesPreDirectionZ => _lastEditorLowerBodySegmentDirectionRightFootToToesPreDirection.z;
-        public float LastEditorLowerBodySegmentDirectionRightFootToToesPostDirectionX => _lastEditorLowerBodySegmentDirectionRightFootToToesPostDirection.x;
-        public float LastEditorLowerBodySegmentDirectionRightFootToToesPostDirectionY => _lastEditorLowerBodySegmentDirectionRightFootToToesPostDirection.y;
-        public float LastEditorLowerBodySegmentDirectionRightFootToToesPostDirectionZ => _lastEditorLowerBodySegmentDirectionRightFootToToesPostDirection.z;
-        public float LastEditorLowerBodySegmentDirectionLeftLowerLegWorldX => _lastEditorLowerBodySegmentDirectionLeftLowerLegWorldPosition.x;
-        public float LastEditorLowerBodySegmentDirectionLeftLowerLegWorldY => _lastEditorLowerBodySegmentDirectionLeftLowerLegWorldPosition.y;
-        public float LastEditorLowerBodySegmentDirectionLeftLowerLegWorldZ => _lastEditorLowerBodySegmentDirectionLeftLowerLegWorldPosition.z;
-        public float LastEditorLowerBodySegmentDirectionLeftFootWorldX => _lastEditorLowerBodySegmentDirectionLeftFootWorldPosition.x;
-        public float LastEditorLowerBodySegmentDirectionLeftFootWorldY => _lastEditorLowerBodySegmentDirectionLeftFootWorldPosition.y;
-        public float LastEditorLowerBodySegmentDirectionLeftFootWorldZ => _lastEditorLowerBodySegmentDirectionLeftFootWorldPosition.z;
-        public float LastEditorLowerBodySegmentDirectionLeftToesWorldX => _lastEditorLowerBodySegmentDirectionLeftToesWorldPosition.x;
-        public float LastEditorLowerBodySegmentDirectionLeftToesWorldY => _lastEditorLowerBodySegmentDirectionLeftToesWorldPosition.y;
-        public float LastEditorLowerBodySegmentDirectionLeftToesWorldZ => _lastEditorLowerBodySegmentDirectionLeftToesWorldPosition.z;
-        public float LastEditorLowerBodySegmentDirectionRightLowerLegWorldX => _lastEditorLowerBodySegmentDirectionRightLowerLegWorldPosition.x;
-        public float LastEditorLowerBodySegmentDirectionRightLowerLegWorldY => _lastEditorLowerBodySegmentDirectionRightLowerLegWorldPosition.y;
-        public float LastEditorLowerBodySegmentDirectionRightLowerLegWorldZ => _lastEditorLowerBodySegmentDirectionRightLowerLegWorldPosition.z;
-        public float LastEditorLowerBodySegmentDirectionRightFootWorldX => _lastEditorLowerBodySegmentDirectionRightFootWorldPosition.x;
-        public float LastEditorLowerBodySegmentDirectionRightFootWorldY => _lastEditorLowerBodySegmentDirectionRightFootWorldPosition.y;
-        public float LastEditorLowerBodySegmentDirectionRightFootWorldZ => _lastEditorLowerBodySegmentDirectionRightFootWorldPosition.z;
-        public float LastEditorLowerBodySegmentDirectionRightToesWorldX => _lastEditorLowerBodySegmentDirectionRightToesWorldPosition.x;
-        public float LastEditorLowerBodySegmentDirectionRightToesWorldY => _lastEditorLowerBodySegmentDirectionRightToesWorldPosition.y;
-        public float LastEditorLowerBodySegmentDirectionRightToesWorldZ => _lastEditorLowerBodySegmentDirectionRightToesWorldPosition.z;
-        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxisX => _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxis.x;
-        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxisY => _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxis.y;
-        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxisZ => _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxis.z;
-        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxisX => _lastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxis.x;
-        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxisY => _lastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxis.y;
-        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxisZ => _lastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxis.z;
-        public float LastEditorLowerBodySegmentDirectionLeftFootForwardX => _lastEditorLowerBodySegmentDirectionLeftFootForward.x;
-        public float LastEditorLowerBodySegmentDirectionLeftFootForwardY => _lastEditorLowerBodySegmentDirectionLeftFootForward.y;
-        public float LastEditorLowerBodySegmentDirectionLeftFootForwardZ => _lastEditorLowerBodySegmentDirectionLeftFootForward.z;
-        public float LastEditorLowerBodySegmentDirectionLeftFootUpX => _lastEditorLowerBodySegmentDirectionLeftFootUp.x;
-        public float LastEditorLowerBodySegmentDirectionLeftFootUpY => _lastEditorLowerBodySegmentDirectionLeftFootUp.y;
-        public float LastEditorLowerBodySegmentDirectionLeftFootUpZ => _lastEditorLowerBodySegmentDirectionLeftFootUp.z;
-        public float LastEditorLowerBodySegmentDirectionRightFootForwardX => _lastEditorLowerBodySegmentDirectionRightFootForward.x;
-        public float LastEditorLowerBodySegmentDirectionRightFootForwardY => _lastEditorLowerBodySegmentDirectionRightFootForward.y;
-        public float LastEditorLowerBodySegmentDirectionRightFootForwardZ => _lastEditorLowerBodySegmentDirectionRightFootForward.z;
-        public float LastEditorLowerBodySegmentDirectionRightFootUpX => _lastEditorLowerBodySegmentDirectionRightFootUp.x;
-        public float LastEditorLowerBodySegmentDirectionRightFootUpY => _lastEditorLowerBodySegmentDirectionRightFootUp.y;
-        public float LastEditorLowerBodySegmentDirectionRightFootUpZ => _lastEditorLowerBodySegmentDirectionRightFootUp.z;
+        public float LastEditorLowerBodySegmentDirectionLeftFootXzDelta => _lowerBodySegmentDiagnostics.LeftFootXzDelta;
+        public float LastEditorLowerBodySegmentDirectionRightFootXzDelta => _lowerBodySegmentDiagnostics.RightFootXzDelta;
+        public string LastEditorLowerBodySegmentDirectionMaxCorrectionSegment => _lowerBodySegmentDiagnostics.MaxCorrectionSegment;
+        public float LastEditorLowerBodySegmentDirectionMaxCorrectionAngle => _lowerBodySegmentDiagnostics.MaxCorrectionAngle;
+        public float LastEditorLowerBodySegmentDirectionMaxPreAngle => _lowerBodySegmentDiagnostics.MaxPreAngle;
+        public float LastEditorLowerBodySegmentDirectionMaxPostAngle => _lowerBodySegmentDiagnostics.MaxPostAngle;
+        public float LastEditorLowerBodySegmentDirectionMaxCorrectionAxisX => _lowerBodySegmentDiagnostics.MaxCorrectionAxis.x;
+        public float LastEditorLowerBodySegmentDirectionMaxCorrectionAxisY => _lowerBodySegmentDiagnostics.MaxCorrectionAxis.y;
+        public float LastEditorLowerBodySegmentDirectionMaxCorrectionAxisZ => _lowerBodySegmentDiagnostics.MaxCorrectionAxis.z;
+        public float LastEditorLowerBodySegmentDirectionMaxReferenceDirectionX => _lowerBodySegmentDiagnostics.MaxReferenceDirection.x;
+        public float LastEditorLowerBodySegmentDirectionMaxReferenceDirectionY => _lowerBodySegmentDiagnostics.MaxReferenceDirection.y;
+        public float LastEditorLowerBodySegmentDirectionMaxReferenceDirectionZ => _lowerBodySegmentDiagnostics.MaxReferenceDirection.z;
+        public float LastEditorLowerBodySegmentDirectionMaxPreDirectionX => _lowerBodySegmentDiagnostics.MaxPreDirection.x;
+        public float LastEditorLowerBodySegmentDirectionMaxPreDirectionY => _lowerBodySegmentDiagnostics.MaxPreDirection.y;
+        public float LastEditorLowerBodySegmentDirectionMaxPreDirectionZ => _lowerBodySegmentDiagnostics.MaxPreDirection.z;
+        public float LastEditorLowerBodySegmentDirectionMaxPostDirectionX => _lowerBodySegmentDiagnostics.MaxPostDirection.x;
+        public float LastEditorLowerBodySegmentDirectionMaxPostDirectionY => _lowerBodySegmentDiagnostics.MaxPostDirection.y;
+        public float LastEditorLowerBodySegmentDirectionMaxPostDirectionZ => _lowerBodySegmentDiagnostics.MaxPostDirection.z;
+        public float LastEditorLowerBodySegmentDirectionLeftUpperLegLowerLegCorrectionAngle => _lowerBodySegmentDiagnostics.LeftUpperLegLowerLegCorrectionAngle;
+        public float LastEditorLowerBodySegmentDirectionRightUpperLegLowerLegCorrectionAngle => _lowerBodySegmentDiagnostics.RightUpperLegLowerLegCorrectionAngle;
+        public float LastEditorLowerBodySegmentDirectionLeftLowerLegFootCorrectionAngle => _lowerBodySegmentDiagnostics.LeftLowerLegFootCorrectionAngle;
+        public float LastEditorLowerBodySegmentDirectionRightLowerLegFootCorrectionAngle => _lowerBodySegmentDiagnostics.RightLowerLegFootCorrectionAngle;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToesCorrectionAngle => _lowerBodySegmentDiagnostics.LeftFootToesCorrectionAngle;
+        public float LastEditorLowerBodySegmentDirectionRightFootToesCorrectionAngle => _lowerBodySegmentDiagnostics.RightFootToesCorrectionAngle;
+        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootParentWorldRotationDeltaAngle => _lowerBodySegmentDiagnostics.LeftLowerLegToFootParentWorldRotationDeltaAngle;
+        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootParentWorldRotationDeltaAngle => _lowerBodySegmentDiagnostics.RightLowerLegToFootParentWorldRotationDeltaAngle;
+        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootChildFootLocalRotationDeltaAngle => _lowerBodySegmentDiagnostics.LeftLowerLegToFootChildFootLocalRotationDeltaAngle;
+        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootChildFootLocalRotationDeltaAngle => _lowerBodySegmentDiagnostics.RightLowerLegToFootChildFootLocalRotationDeltaAngle;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirectionX => _lowerBodySegmentDiagnostics.LeftFootToToesReferenceDirection.x;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirectionY => _lowerBodySegmentDiagnostics.LeftFootToToesReferenceDirection.y;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirectionZ => _lowerBodySegmentDiagnostics.LeftFootToToesReferenceDirection.z;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPreDirectionX => _lowerBodySegmentDiagnostics.LeftFootToToesPreDirection.x;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPreDirectionY => _lowerBodySegmentDiagnostics.LeftFootToToesPreDirection.y;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPreDirectionZ => _lowerBodySegmentDiagnostics.LeftFootToToesPreDirection.z;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPostDirectionX => _lowerBodySegmentDiagnostics.LeftFootToToesPostDirection.x;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPostDirectionY => _lowerBodySegmentDiagnostics.LeftFootToToesPostDirection.y;
+        public float LastEditorLowerBodySegmentDirectionLeftFootToToesPostDirectionZ => _lowerBodySegmentDiagnostics.LeftFootToToesPostDirection.z;
+        public float LastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirectionX => _lowerBodySegmentDiagnostics.RightFootToToesReferenceDirection.x;
+        public float LastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirectionY => _lowerBodySegmentDiagnostics.RightFootToToesReferenceDirection.y;
+        public float LastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirectionZ => _lowerBodySegmentDiagnostics.RightFootToToesReferenceDirection.z;
+        public float LastEditorLowerBodySegmentDirectionRightFootToToesPreDirectionX => _lowerBodySegmentDiagnostics.RightFootToToesPreDirection.x;
+        public float LastEditorLowerBodySegmentDirectionRightFootToToesPreDirectionY => _lowerBodySegmentDiagnostics.RightFootToToesPreDirection.y;
+        public float LastEditorLowerBodySegmentDirectionRightFootToToesPreDirectionZ => _lowerBodySegmentDiagnostics.RightFootToToesPreDirection.z;
+        public float LastEditorLowerBodySegmentDirectionRightFootToToesPostDirectionX => _lowerBodySegmentDiagnostics.RightFootToToesPostDirection.x;
+        public float LastEditorLowerBodySegmentDirectionRightFootToToesPostDirectionY => _lowerBodySegmentDiagnostics.RightFootToToesPostDirection.y;
+        public float LastEditorLowerBodySegmentDirectionRightFootToToesPostDirectionZ => _lowerBodySegmentDiagnostics.RightFootToToesPostDirection.z;
+        public float LastEditorLowerBodySegmentDirectionLeftLowerLegWorldX => _lowerBodySegmentDiagnostics.LeftLowerLegWorldPosition.x;
+        public float LastEditorLowerBodySegmentDirectionLeftLowerLegWorldY => _lowerBodySegmentDiagnostics.LeftLowerLegWorldPosition.y;
+        public float LastEditorLowerBodySegmentDirectionLeftLowerLegWorldZ => _lowerBodySegmentDiagnostics.LeftLowerLegWorldPosition.z;
+        public float LastEditorLowerBodySegmentDirectionLeftFootWorldX => _lowerBodySegmentDiagnostics.LeftFootWorldPosition.x;
+        public float LastEditorLowerBodySegmentDirectionLeftFootWorldY => _lowerBodySegmentDiagnostics.LeftFootWorldPosition.y;
+        public float LastEditorLowerBodySegmentDirectionLeftFootWorldZ => _lowerBodySegmentDiagnostics.LeftFootWorldPosition.z;
+        public float LastEditorLowerBodySegmentDirectionLeftToesWorldX => _lowerBodySegmentDiagnostics.LeftToesWorldPosition.x;
+        public float LastEditorLowerBodySegmentDirectionLeftToesWorldY => _lowerBodySegmentDiagnostics.LeftToesWorldPosition.y;
+        public float LastEditorLowerBodySegmentDirectionLeftToesWorldZ => _lowerBodySegmentDiagnostics.LeftToesWorldPosition.z;
+        public float LastEditorLowerBodySegmentDirectionRightLowerLegWorldX => _lowerBodySegmentDiagnostics.RightLowerLegWorldPosition.x;
+        public float LastEditorLowerBodySegmentDirectionRightLowerLegWorldY => _lowerBodySegmentDiagnostics.RightLowerLegWorldPosition.y;
+        public float LastEditorLowerBodySegmentDirectionRightLowerLegWorldZ => _lowerBodySegmentDiagnostics.RightLowerLegWorldPosition.z;
+        public float LastEditorLowerBodySegmentDirectionRightFootWorldX => _lowerBodySegmentDiagnostics.RightFootWorldPosition.x;
+        public float LastEditorLowerBodySegmentDirectionRightFootWorldY => _lowerBodySegmentDiagnostics.RightFootWorldPosition.y;
+        public float LastEditorLowerBodySegmentDirectionRightFootWorldZ => _lowerBodySegmentDiagnostics.RightFootWorldPosition.z;
+        public float LastEditorLowerBodySegmentDirectionRightToesWorldX => _lowerBodySegmentDiagnostics.RightToesWorldPosition.x;
+        public float LastEditorLowerBodySegmentDirectionRightToesWorldY => _lowerBodySegmentDiagnostics.RightToesWorldPosition.y;
+        public float LastEditorLowerBodySegmentDirectionRightToesWorldZ => _lowerBodySegmentDiagnostics.RightToesWorldPosition.z;
+        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxisX => _lowerBodySegmentDiagnostics.LeftLowerLegToFootCorrectionAxis.x;
+        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxisY => _lowerBodySegmentDiagnostics.LeftLowerLegToFootCorrectionAxis.y;
+        public float LastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxisZ => _lowerBodySegmentDiagnostics.LeftLowerLegToFootCorrectionAxis.z;
+        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxisX => _lowerBodySegmentDiagnostics.RightLowerLegToFootCorrectionAxis.x;
+        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxisY => _lowerBodySegmentDiagnostics.RightLowerLegToFootCorrectionAxis.y;
+        public float LastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxisZ => _lowerBodySegmentDiagnostics.RightLowerLegToFootCorrectionAxis.z;
+        public float LastEditorLowerBodySegmentDirectionLeftFootForwardX => _lowerBodySegmentDiagnostics.LeftFootForward.x;
+        public float LastEditorLowerBodySegmentDirectionLeftFootForwardY => _lowerBodySegmentDiagnostics.LeftFootForward.y;
+        public float LastEditorLowerBodySegmentDirectionLeftFootForwardZ => _lowerBodySegmentDiagnostics.LeftFootForward.z;
+        public float LastEditorLowerBodySegmentDirectionLeftFootUpX => _lowerBodySegmentDiagnostics.LeftFootUp.x;
+        public float LastEditorLowerBodySegmentDirectionLeftFootUpY => _lowerBodySegmentDiagnostics.LeftFootUp.y;
+        public float LastEditorLowerBodySegmentDirectionLeftFootUpZ => _lowerBodySegmentDiagnostics.LeftFootUp.z;
+        public float LastEditorLowerBodySegmentDirectionRightFootForwardX => _lowerBodySegmentDiagnostics.RightFootForward.x;
+        public float LastEditorLowerBodySegmentDirectionRightFootForwardY => _lowerBodySegmentDiagnostics.RightFootForward.y;
+        public float LastEditorLowerBodySegmentDirectionRightFootForwardZ => _lowerBodySegmentDiagnostics.RightFootForward.z;
+        public float LastEditorLowerBodySegmentDirectionRightFootUpX => _lowerBodySegmentDiagnostics.RightFootUp.x;
+        public float LastEditorLowerBodySegmentDirectionRightFootUpY => _lowerBodySegmentDiagnostics.RightFootUp.y;
+        public float LastEditorLowerBodySegmentDirectionRightFootUpZ => _lowerBodySegmentDiagnostics.RightFootUp.z;
         public float LastEditorFootHipsAlignedResidualYawLeftFootXzDelta => _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta;
         public float LastEditorFootHipsAlignedResidualYawRightFootXzDelta => _lastEditorFootHipsAlignedResidualYawRightFootXzDelta;
         public float LastPostSetHumanPoseRightEndpointDesiredFootWorldX => _postSetEndpointDiagnostics.DesiredFootWorldPosition.x;
@@ -1511,44 +1511,7 @@ namespace Fbx2Vmd.FBXImporter
         private Vector3 _lastPreSetHumanPoseEndpointBodyPositionDelta = BuildNaNVector3();
         private float _lastEditorFootLocalRotationLeftFootXzDelta = float.NaN;
         private float _lastEditorFootLocalRotationRightFootXzDelta = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionLeftFootXzDelta = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionRightFootXzDelta = float.NaN;
-        private string _lastEditorLowerBodySegmentDirectionMaxCorrectionSegment = string.Empty;
-        private float _lastEditorLowerBodySegmentDirectionMaxCorrectionAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionMaxPreAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionMaxPostAngle = float.NaN;
-        private Vector3 _lastEditorLowerBodySegmentDirectionMaxCorrectionAxis = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionMaxReferenceDirection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionMaxPreDirection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionMaxPostDirection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private float _lastEditorLowerBodySegmentDirectionLeftUpperLegLowerLegCorrectionAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionRightUpperLegLowerLegCorrectionAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionLeftLowerLegFootCorrectionAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionRightLowerLegFootCorrectionAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionLeftFootToesCorrectionAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionRightFootToesCorrectionAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootParentWorldRotationDeltaAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionRightLowerLegToFootParentWorldRotationDeltaAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootChildFootLocalRotationDeltaAngle = float.NaN;
-        private float _lastEditorLowerBodySegmentDirectionRightLowerLegToFootChildFootLocalRotationDeltaAngle = float.NaN;
-        private Vector3 _lastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionLeftFootToToesPreDirection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionLeftFootToToesPostDirection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionRightFootToToesPreDirection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionRightFootToToesPostDirection = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionLeftLowerLegWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionLeftFootWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionLeftToesWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionRightLowerLegWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionRightFootWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionRightToesWorldPosition = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxis = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxis = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionLeftFootForward = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionLeftFootUp = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionRightFootForward = new Vector3(float.NaN, float.NaN, float.NaN);
-        private Vector3 _lastEditorLowerBodySegmentDirectionRightFootUp = new Vector3(float.NaN, float.NaN, float.NaN);
+        internal readonly RetargetingLowerBodySegmentDiagnostics _lowerBodySegmentDiagnostics = new RetargetingLowerBodySegmentDiagnostics();
         private float _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta = float.NaN;
         private float _lastEditorFootHipsAlignedResidualYawRightFootXzDelta = float.NaN;
         private bool _hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset;
@@ -1559,7 +1522,7 @@ namespace Fbx2Vmd.FBXImporter
         private readonly RetargetingPostSetEndpointDiagnostics _postSetEndpointDiagnostics = new RetargetingPostSetEndpointDiagnostics();
         private readonly RetargetingMuscleIndexMap _muscleIndexMap = new RetargetingMuscleIndexMap();
 
-        private static Vector3 BuildNaNVector3()
+        internal static Vector3 BuildNaNVector3()
         {
             return new Vector3(float.NaN, float.NaN, float.NaN);
         }
@@ -2137,7 +2100,7 @@ namespace Fbx2Vmd.FBXImporter
 #if UNITY_EDITOR
             ApplyEditorHumanoidHipsLocalPositionReference();
             ApplyEditorHumanoidFootLocalRotationReference();
-            ApplyEditorHumanoidLowerBodySegmentDirectionReference();
+            RetargetingEditorReferenceHooks.LowerBodyDirection?.Apply(this);
             ApplyEditorHumanoidFootHipsAlignedResidualYawReference();
             ApplyPostSetHumanPoseRightEndpointPositionReference();
             ApplyEditorHumanoidThumbBasePositionReference();
@@ -2806,13 +2769,13 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        private void CaptureTargetFootPositions(out Vector3 leftFootPosition, out Vector3 rightFootPosition)
+        internal void CaptureTargetFootPositions(out Vector3 leftFootPosition, out Vector3 rightFootPosition)
         {
             leftFootPosition = ReadTargetBoneWorldPosition(HumanBodyBones.LeftFoot);
             rightFootPosition = ReadTargetBoneWorldPosition(HumanBodyBones.RightFoot);
         }
 
-        private Vector3 ReadTargetBoneWorldPosition(HumanBodyBones bone)
+        internal Vector3 ReadTargetBoneWorldPosition(HumanBodyBones bone)
         {
             if (targetAnimator == null)
             {
@@ -2829,12 +2792,6 @@ namespace Fbx2Vmd.FBXImporter
             _lastEditorFootLocalRotationRightFootXzDelta = CalculateTargetFootXzDelta(rightFootBefore, HumanBodyBones.RightFoot);
         }
 
-        private void RecordEditorLowerBodySegmentDirectionReferenceDiagnostics(Vector3 leftFootBefore, Vector3 rightFootBefore)
-        {
-            _lastEditorLowerBodySegmentDirectionLeftFootXzDelta = CalculateTargetFootXzDelta(leftFootBefore, HumanBodyBones.LeftFoot);
-            _lastEditorLowerBodySegmentDirectionRightFootXzDelta = CalculateTargetFootXzDelta(rightFootBefore, HumanBodyBones.RightFoot);
-            RecordEditorLowerBodySegmentDirectionEndpointDiagnostics();
-        }
 
         private void RecordEditorFootHipsAlignedResidualYawReferenceDiagnostics(Vector3 leftFootBefore, Vector3 rightFootBefore)
         {
@@ -2842,7 +2799,7 @@ namespace Fbx2Vmd.FBXImporter
             _lastEditorFootHipsAlignedResidualYawRightFootXzDelta = CalculateTargetFootXzDelta(rightFootBefore, HumanBodyBones.RightFoot);
         }
 
-        private float CalculateTargetFootXzDelta(Vector3 beforePosition, HumanBodyBones footBone)
+        internal float CalculateTargetFootXzDelta(Vector3 beforePosition, HumanBodyBones footBone)
         {
             Vector3 afterPosition = ReadTargetBoneWorldPosition(footBone);
             if (!IsFinite(beforePosition) || !IsFinite(afterPosition))
@@ -2855,145 +2812,39 @@ namespace Fbx2Vmd.FBXImporter
             return Vector2.Distance(beforeXz, afterXz);
         }
 
-        private void RecordEditorLowerBodySegmentDirectionEndpointDiagnostics()
-        {
-            _lastEditorLowerBodySegmentDirectionLeftLowerLegWorldPosition = ReadTargetBoneWorldPosition(HumanBodyBones.LeftLowerLeg);
-            _lastEditorLowerBodySegmentDirectionLeftFootWorldPosition = ReadTargetBoneWorldPosition(HumanBodyBones.LeftFoot);
-            _lastEditorLowerBodySegmentDirectionLeftToesWorldPosition = ReadTargetBoneWorldPosition(HumanBodyBones.LeftToes);
-            _lastEditorLowerBodySegmentDirectionRightLowerLegWorldPosition = ReadTargetBoneWorldPosition(HumanBodyBones.RightLowerLeg);
-            _lastEditorLowerBodySegmentDirectionRightFootWorldPosition = ReadTargetBoneWorldPosition(HumanBodyBones.RightFoot);
-            _lastEditorLowerBodySegmentDirectionRightToesWorldPosition = ReadTargetBoneWorldPosition(HumanBodyBones.RightToes);
-            _lastEditorLowerBodySegmentDirectionLeftFootForward = ReadTargetBoneWorldForward(HumanBodyBones.LeftFoot);
-            _lastEditorLowerBodySegmentDirectionLeftFootUp = ReadTargetBoneWorldUp(HumanBodyBones.LeftFoot);
-            _lastEditorLowerBodySegmentDirectionRightFootForward = ReadTargetBoneWorldForward(HumanBodyBones.RightFoot);
-            _lastEditorLowerBodySegmentDirectionRightFootUp = ReadTargetBoneWorldUp(HumanBodyBones.RightFoot);
-        }
 
-        private Vector3 ReadTargetBoneWorldForward(HumanBodyBones bone)
+        internal Vector3 ReadTargetBoneWorldForward(HumanBodyBones bone)
         {
             Transform targetBone = targetAnimator != null ? targetAnimator.GetBoneTransform(bone) : null;
             return targetBone != null && IsFinite(targetBone.forward) ? targetBone.forward : BuildNaNVector3();
         }
 
-        private Vector3 ReadTargetBoneWorldUp(HumanBodyBones bone)
+        internal Vector3 ReadTargetBoneWorldUp(HumanBodyBones bone)
         {
             Transform targetBone = targetAnimator != null ? targetAnimator.GetBoneTransform(bone) : null;
             return targetBone != null && IsFinite(targetBone.up) ? targetBone.up : BuildNaNVector3();
         }
 
-        private void ApplyEditorHumanoidLowerBodySegmentDirectionReference()
-        {
-            if (!ShouldUseManualAnimatorLowerBodySegmentDirectionReference ||
-                manualAnimatorLowerBodySegmentDirectionReferenceWeight <= 0f ||
-                _editorFingerReferenceAnimator == null ||
-                targetAnimator == null)
-            {
-                return;
-            }
 
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
 
-            float weight = Mathf.Clamp01(manualAnimatorLowerBodySegmentDirectionReferenceWeight);
-            float maxAngle = Mathf.Max(0f, manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle);
-            float upperLegToLowerLegMaxAngle = ResolveManualAnimatorUpperLegToLowerLegSegmentDirectionMaxAngle(maxAngle);
-            float lowerLegToFootMaxAngle = ResolveManualAnimatorLowerLegToFootSegmentDirectionMaxAngle(maxAngle);
-            float footToToesMaxAngle = ResolveManualAnimatorFootToToesSegmentDirectionMaxAngle(maxAngle);
-            CaptureTargetFootPositions(out Vector3 leftFootBefore, out Vector3 rightFootBefore);
-            ResetEditorLowerBodySegmentDirectionDetailedDiagnostics();
-            int changed = 0;
-            if (!ShouldDisableManualAnimatorUpperLegToLowerLegSegmentDirectionReference)
-            {
-                changed += AlignEditorHumanoidLowerBodySegmentDirection(HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, weight, upperLegToLowerLegMaxAngle);
-                changed += AlignEditorHumanoidLowerBodySegmentDirection(HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, weight, upperLegToLowerLegMaxAngle);
-            }
 
-            if (!ShouldDisableManualAnimatorLowerLegToFootSegmentDirectionReference)
-            {
-                changed += AlignEditorHumanoidLowerBodySegmentDirection(
-                    HumanBodyBones.LeftLowerLeg,
-                    HumanBodyBones.LeftFoot,
-                    weight,
-                    ResolveManualAnimatorLowerLegToFootSegmentDirectionMaxAngle(lowerLegToFootMaxAngle, rightSide: false));
-                changed += AlignEditorHumanoidLowerBodySegmentDirection(
-                    HumanBodyBones.RightLowerLeg,
-                    HumanBodyBones.RightFoot,
-                    ResolveManualAnimatorRightLowerLegToFootSegmentDirectionBlendWeight(weight),
-                    ResolveManualAnimatorLowerLegToFootSegmentDirectionMaxAngle(lowerLegToFootMaxAngle, rightSide: true),
-                    manualAnimatorRightLowerLegToFootSegmentDirectionReferenceAxisXzScale,
-                    manualAnimatorRightLowerLegToFootSegmentDirectionReferenceEndpointBlendWeight);
-            }
 
-            if (!ShouldDisableManualAnimatorFootToToesSegmentDirectionReference)
-            {
-                changed += AlignEditorHumanoidLowerBodySegmentDirection(HumanBodyBones.LeftFoot, HumanBodyBones.LeftToes, weight, footToToesMaxAngle);
-                changed += AlignEditorHumanoidLowerBodySegmentDirection(HumanBodyBones.RightFoot, HumanBodyBones.RightToes, weight, footToToesMaxAngle);
-            }
 
-            RecordEditorLowerBodySegmentDirectionReferenceDiagnostics(leftFootBefore, rightFootBefore);
-
-            if (changed > 0 && !_editorLowerBodySegmentDirectionReferenceLogged)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Manual Animator lower-body segment direction reference applied. segments={changed}, weight={weight:F2}, maxAngle={maxAngle:F1}deg");
-                _editorLowerBodySegmentDirectionReferenceLogged = true;
-            }
-        }
-
-        private float ResolveManualAnimatorUpperLegToLowerLegSegmentDirectionMaxAngle(float fallbackMaxAngle)
-        {
-            float segmentMaxAngle = Mathf.Max(0f, manualAnimatorUpperLegToLowerLegSegmentDirectionReferenceMaxAngle);
-            return segmentMaxAngle > 0f ? segmentMaxAngle : fallbackMaxAngle;
-        }
-
-        private float ResolveManualAnimatorLowerLegToFootSegmentDirectionMaxAngle(float fallbackMaxAngle)
-        {
-            float segmentMaxAngle = Mathf.Max(0f, manualAnimatorLowerLegToFootSegmentDirectionReferenceMaxAngle);
-            return segmentMaxAngle > 0f ? segmentMaxAngle : fallbackMaxAngle;
-        }
-
-        private float ResolveManualAnimatorLowerLegToFootSegmentDirectionMaxAngle(
-            float fallbackMaxAngle,
-            bool rightSide)
-        {
-            float sideMaxAngle = Mathf.Max(
-                0f,
-                rightSide
-                    ? manualAnimatorRightLowerLegToFootSegmentDirectionReferenceMaxAngle
-                    : manualAnimatorLeftLowerLegToFootSegmentDirectionReferenceMaxAngle);
-            if (rightSide && sideMaxAngle > 0f && !ShouldApplyManualAnimatorRightLowerLegToFootFrameGate())
-            {
-                sideMaxAngle = 0f;
-            }
-
-            return sideMaxAngle > 0f
-                ? sideMaxAngle
-                : ResolveManualAnimatorLowerLegToFootSegmentDirectionMaxAngle(fallbackMaxAngle);
-        }
-
-        private bool ShouldApplyManualAnimatorRightLowerLegToFootFrameGate()
-        {
-            return ShouldApplyManualReferenceFrameGate(
-                manualAnimatorRightLowerLegToFootSegmentDirectionReferenceFrameGateStart,
-                manualAnimatorRightLowerLegToFootSegmentDirectionReferenceFrameGateEnd);
-        }
-
-        private bool ShouldApplyPostSetHumanPoseRightEndpointPositionFrameGate()
+        internal bool ShouldApplyPostSetHumanPoseRightEndpointPositionFrameGate()
         {
             return ShouldApplyManualReferenceFrameGate(
                 postSetHumanPoseRightEndpointPositionReferenceFrameGateStart,
                 postSetHumanPoseRightEndpointPositionReferenceFrameGateEnd);
         }
 
-        private bool ShouldApplyPreSetHumanPoseRightEndpointPositionFrameGate()
+        internal bool ShouldApplyPreSetHumanPoseRightEndpointPositionFrameGate()
         {
             return ShouldApplyManualReferenceFrameGate(
                 preSetHumanPoseRightEndpointPositionReferenceFrameGateStart,
                 preSetHumanPoseRightEndpointPositionReferenceFrameGateEnd);
         }
 
-        private bool ShouldApplyManualReferenceFrameGate(float startFrame, float endFrame)
+        internal bool ShouldApplyManualReferenceFrameGate(float startFrame, float endFrame)
         {
             if (!ManualPoseReferenceApplier.HasActiveFrameGate(startFrame, endFrame))
             {
@@ -3008,7 +2859,7 @@ namespace Fbx2Vmd.FBXImporter
                 endFrame);
         }
 
-        private float ResolveManualAnimatorBodyPositionXzFrameGateWeight()
+        internal float ResolveManualAnimatorBodyPositionXzFrameGateWeight()
         {
             float start = Mathf.Max(0f, manualAnimatorBodyPositionXzReferenceFrameGateStart);
             float end = Mathf.Max(0f, manualAnimatorBodyPositionXzReferenceFrameGateEnd);
@@ -3021,290 +2872,14 @@ namespace Fbx2Vmd.FBXImporter
                 Mathf.Max(0f, manualAnimatorBodyPositionXzReferenceFrameGateBlendFrames));
         }
 
-        private float ResolveManualAnimatorRightLowerLegToFootSegmentDirectionBlendWeight(float fallbackWeight)
-        {
-            return Mathf.Clamp01(fallbackWeight) *
-                Mathf.Clamp01(manualAnimatorRightLowerLegToFootSegmentDirectionReferenceBlendWeight);
-        }
 
-        private float ResolveManualAnimatorFootToToesSegmentDirectionMaxAngle(float fallbackMaxAngle)
-        {
-            float footToToesMaxAngle = Mathf.Max(0f, manualAnimatorFootToToesSegmentDirectionReferenceMaxAngle);
-            return footToToesMaxAngle > 0f ? footToToesMaxAngle : fallbackMaxAngle;
-        }
 
-        private int AlignEditorHumanoidLowerBodySegmentDirection(
-            HumanBodyBones parentBone,
-            HumanBodyBones childBone,
-            float weight,
-            float maxAngle,
-            float correctionAxisXzScale = 1f,
-            float childWorldRotationBlendWeight = 1f)
-        {
-            Transform targetParent = targetAnimator.GetBoneTransform(parentBone);
-            Transform targetChild = targetAnimator.GetBoneTransform(childBone);
-            Transform referenceParent = _editorFingerReferenceAnimator.GetBoneTransform(parentBone);
-            Transform referenceChild = _editorFingerReferenceAnimator.GetBoneTransform(childBone);
-            if (targetParent == null || targetChild == null || referenceParent == null || referenceChild == null)
-            {
-                return 0;
-            }
 
-            Vector3 currentSegment = targetChild.position - targetParent.position;
-            Vector3 referenceSegment = referenceChild.position - referenceParent.position;
-            if (!TryNormalize(currentSegment, out Vector3 currentDirection) ||
-                !TryNormalize(referenceSegment, out Vector3 referenceDirection))
-            {
-                return 0;
-            }
 
-            Vector3 referenceRootDirection = _editorFingerReferenceAnimator.transform.InverseTransformDirection(referenceDirection).normalized;
-            Vector3 desiredWorldDirection = targetAnimator.transform.TransformDirection(referenceRootDirection).normalized;
-            if (!IsFinite(referenceRootDirection) || !IsFinite(desiredWorldDirection))
-            {
-                return 0;
-            }
 
-            Quaternion currentParentRotation = targetParent.rotation;
-            Quaternion childWorldRotationBefore = targetChild.rotation;
-            Quaternion childLocalRotationBefore = targetChild.localRotation;
-            float preAngle = Vector3.Angle(currentDirection, desiredWorldDirection);
-            if (!ManualPoseReferenceApplier.TryCalculateSegmentDirectionReference(
-                    desiredWorldDirection,
-                    currentDirection,
-                    currentParentRotation,
-                    weight,
-                    maxAngle,
-                    correctionAxisXzScale,
-                    out Quaternion nextWorldRotation))
-            {
-                return 0;
-            }
 
-            targetParent.rotation = nextWorldRotation;
-            float clampedChildWorldRotationBlend = Mathf.Clamp01(childWorldRotationBlendWeight);
-            if (clampedChildWorldRotationBlend < 0.9999f)
-            {
-                targetChild.rotation = Quaternion.Slerp(
-                    childWorldRotationBefore,
-                    targetChild.rotation,
-                    clampedChildWorldRotationBlend);
-            }
 
-            Vector3 postSegment = targetChild.position - targetParent.position;
-            if (TryNormalize(postSegment, out Vector3 postDirection))
-            {
-                Quaternion correction = nextWorldRotation * Quaternion.Inverse(currentParentRotation);
-                float correctionAngle = Quaternion.Angle(Quaternion.identity, correction);
-                float parentWorldRotationDeltaAngle = Quaternion.Angle(currentParentRotation, targetParent.rotation);
-                float childLocalRotationDeltaAngle = Quaternion.Angle(childLocalRotationBefore, targetChild.localRotation);
-                float postAngle = Vector3.Angle(postDirection, desiredWorldDirection);
-                RecordEditorLowerBodySegmentDirectionSegmentDiagnostics(
-                    parentBone,
-                    childBone,
-                    correctionAngle,
-                    parentWorldRotationDeltaAngle,
-                    childLocalRotationDeltaAngle,
-                    preAngle,
-                    postAngle,
-                    ReadFiniteCorrectionAxis(correction),
-                    desiredWorldDirection,
-                    currentDirection,
-                    postDirection);
-            }
 
-            return 1;
-        }
-
-        private void ResetEditorLowerBodySegmentDirectionDetailedDiagnostics()
-        {
-            _lastEditorLowerBodySegmentDirectionMaxCorrectionSegment = string.Empty;
-            _lastEditorLowerBodySegmentDirectionMaxCorrectionAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionMaxPreAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionMaxPostAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionMaxCorrectionAxis = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionMaxReferenceDirection = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionMaxPreDirection = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionMaxPostDirection = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionLeftUpperLegLowerLegCorrectionAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionRightUpperLegLowerLegCorrectionAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionLeftLowerLegFootCorrectionAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionRightLowerLegFootCorrectionAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionLeftFootToesCorrectionAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionRightFootToesCorrectionAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootParentWorldRotationDeltaAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionRightLowerLegToFootParentWorldRotationDeltaAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootChildFootLocalRotationDeltaAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionRightLowerLegToFootChildFootLocalRotationDeltaAngle = float.NaN;
-            _lastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirection = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionLeftFootToToesPreDirection = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionLeftFootToToesPostDirection = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirection = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionRightFootToToesPreDirection = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionRightFootToToesPostDirection = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionLeftLowerLegWorldPosition = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionLeftFootWorldPosition = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionLeftToesWorldPosition = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionRightLowerLegWorldPosition = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionRightFootWorldPosition = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionRightToesWorldPosition = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxis = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxis = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionLeftFootForward = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionLeftFootUp = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionRightFootForward = BuildNaNVector3();
-            _lastEditorLowerBodySegmentDirectionRightFootUp = BuildNaNVector3();
-        }
-
-        private void RecordEditorLowerBodySegmentDirectionSegmentDiagnostics(
-            HumanBodyBones parentBone,
-            HumanBodyBones childBone,
-            float correctionAngle,
-            float parentWorldRotationDeltaAngle,
-            float childLocalRotationDeltaAngle,
-            float preAngle,
-            float postAngle,
-            Vector3 correctionAxis,
-            Vector3 referenceDirection,
-            Vector3 preDirection,
-            Vector3 postDirection)
-        {
-            string segmentName = BuildLowerBodySegmentName(parentBone, childBone);
-            SetEditorLowerBodySegmentDirectionCorrectionAngle(segmentName, correctionAngle);
-            SetEditorLowerBodySegmentDirectionCouplingDiagnostics(
-                segmentName,
-                parentWorldRotationDeltaAngle,
-                childLocalRotationDeltaAngle,
-                correctionAxis,
-                referenceDirection,
-                preDirection,
-                postDirection);
-            if (!IsFinite(correctionAngle) ||
-                (!float.IsNaN(_lastEditorLowerBodySegmentDirectionMaxCorrectionAngle) &&
-                    correctionAngle <= _lastEditorLowerBodySegmentDirectionMaxCorrectionAngle))
-            {
-                return;
-            }
-
-            _lastEditorLowerBodySegmentDirectionMaxCorrectionSegment = segmentName;
-            _lastEditorLowerBodySegmentDirectionMaxCorrectionAngle = correctionAngle;
-            _lastEditorLowerBodySegmentDirectionMaxPreAngle = preAngle;
-            _lastEditorLowerBodySegmentDirectionMaxPostAngle = postAngle;
-            _lastEditorLowerBodySegmentDirectionMaxCorrectionAxis = correctionAxis;
-            _lastEditorLowerBodySegmentDirectionMaxReferenceDirection = referenceDirection;
-            _lastEditorLowerBodySegmentDirectionMaxPreDirection = preDirection;
-            _lastEditorLowerBodySegmentDirectionMaxPostDirection = postDirection;
-        }
-
-        private void SetEditorLowerBodySegmentDirectionCouplingDiagnostics(
-            string segmentName,
-            float parentWorldRotationDeltaAngle,
-            float childLocalRotationDeltaAngle,
-            Vector3 correctionAxis,
-            Vector3 referenceDirection,
-            Vector3 preDirection,
-            Vector3 postDirection)
-        {
-            switch (segmentName)
-            {
-                case "LeftLowerLegToFoot":
-                    _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootParentWorldRotationDeltaAngle = parentWorldRotationDeltaAngle;
-                    _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootChildFootLocalRotationDeltaAngle = childLocalRotationDeltaAngle;
-                    _lastEditorLowerBodySegmentDirectionLeftLowerLegToFootCorrectionAxis = correctionAxis;
-                    break;
-                case "RightLowerLegToFoot":
-                    _lastEditorLowerBodySegmentDirectionRightLowerLegToFootParentWorldRotationDeltaAngle = parentWorldRotationDeltaAngle;
-                    _lastEditorLowerBodySegmentDirectionRightLowerLegToFootChildFootLocalRotationDeltaAngle = childLocalRotationDeltaAngle;
-                    _lastEditorLowerBodySegmentDirectionRightLowerLegToFootCorrectionAxis = correctionAxis;
-                    break;
-                case "LeftFootToToes":
-                    _lastEditorLowerBodySegmentDirectionLeftFootToToesReferenceDirection = referenceDirection;
-                    _lastEditorLowerBodySegmentDirectionLeftFootToToesPreDirection = preDirection;
-                    _lastEditorLowerBodySegmentDirectionLeftFootToToesPostDirection = postDirection;
-                    break;
-                case "RightFootToToes":
-                    _lastEditorLowerBodySegmentDirectionRightFootToToesReferenceDirection = referenceDirection;
-                    _lastEditorLowerBodySegmentDirectionRightFootToToesPreDirection = preDirection;
-                    _lastEditorLowerBodySegmentDirectionRightFootToToesPostDirection = postDirection;
-                    break;
-            }
-        }
-
-        private void SetEditorLowerBodySegmentDirectionCorrectionAngle(string segmentName, float correctionAngle)
-        {
-            switch (segmentName)
-            {
-                case "LeftUpperLegToLowerLeg":
-                    _lastEditorLowerBodySegmentDirectionLeftUpperLegLowerLegCorrectionAngle = correctionAngle;
-                    break;
-                case "RightUpperLegToLowerLeg":
-                    _lastEditorLowerBodySegmentDirectionRightUpperLegLowerLegCorrectionAngle = correctionAngle;
-                    break;
-                case "LeftLowerLegToFoot":
-                    _lastEditorLowerBodySegmentDirectionLeftLowerLegFootCorrectionAngle = correctionAngle;
-                    break;
-                case "RightLowerLegToFoot":
-                    _lastEditorLowerBodySegmentDirectionRightLowerLegFootCorrectionAngle = correctionAngle;
-                    break;
-                case "LeftFootToToes":
-                    _lastEditorLowerBodySegmentDirectionLeftFootToesCorrectionAngle = correctionAngle;
-                    break;
-                case "RightFootToToes":
-                    _lastEditorLowerBodySegmentDirectionRightFootToesCorrectionAngle = correctionAngle;
-                    break;
-            }
-        }
-
-        private static string BuildLowerBodySegmentName(HumanBodyBones parentBone, HumanBodyBones childBone)
-        {
-            if (parentBone == HumanBodyBones.LeftUpperLeg && childBone == HumanBodyBones.LeftLowerLeg)
-            {
-                return "LeftUpperLegToLowerLeg";
-            }
-
-            if (parentBone == HumanBodyBones.RightUpperLeg && childBone == HumanBodyBones.RightLowerLeg)
-            {
-                return "RightUpperLegToLowerLeg";
-            }
-
-            if (parentBone == HumanBodyBones.LeftLowerLeg && childBone == HumanBodyBones.LeftFoot)
-            {
-                return "LeftLowerLegToFoot";
-            }
-
-            if (parentBone == HumanBodyBones.RightLowerLeg && childBone == HumanBodyBones.RightFoot)
-            {
-                return "RightLowerLegToFoot";
-            }
-
-            if (parentBone == HumanBodyBones.LeftFoot && childBone == HumanBodyBones.LeftToes)
-            {
-                return "LeftFootToToes";
-            }
-
-            if (parentBone == HumanBodyBones.RightFoot && childBone == HumanBodyBones.RightToes)
-            {
-                return "RightFootToToes";
-            }
-
-            return $"{parentBone}To{childBone}";
-        }
-
-        private static Vector3 ReadFiniteCorrectionAxis(Quaternion correction)
-        {
-            if (!IsFinite(correction))
-            {
-                return BuildNaNVector3();
-            }
-
-            correction.ToAngleAxis(out float angle, out Vector3 axis);
-            if (!IsFinite(angle) || angle <= 0.001f || !IsFinite(axis))
-            {
-                return BuildNaNVector3();
-            }
-
-            return axis.normalized;
-        }
 
         private void ApplyEditorHumanoidFootHipsAlignedResidualYawReference()
         {
@@ -4828,7 +4403,7 @@ namespace Fbx2Vmd.FBXImporter
             return count > 0 ? sum / count : 0f;
         }
 
-        private static bool TryNormalize(Vector3 value, out Vector3 normalized)
+        internal static bool TryNormalize(Vector3 value, out Vector3 normalized)
         {
             normalized = Vector3.zero;
             if (!IsFinite(value) || value.sqrMagnitude <= 0.00000001f)
@@ -5120,10 +4695,9 @@ namespace Fbx2Vmd.FBXImporter
             _setHumanPoseDiagnostics.ResetExtendedMuscles();
             _lastEditorFootLocalRotationLeftFootXzDelta = float.NaN;
             _lastEditorFootLocalRotationRightFootXzDelta = float.NaN;
-            _lastEditorLowerBodySegmentDirectionLeftFootXzDelta = float.NaN;
-            _lastEditorLowerBodySegmentDirectionRightFootXzDelta = float.NaN;
+            _lowerBodySegmentDiagnostics.ResetFootXzDeltas();
 #if UNITY_EDITOR
-            ResetEditorLowerBodySegmentDirectionDetailedDiagnostics();
+            _lowerBodySegmentDiagnostics.ResetDetailed();
 #endif
             _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta = float.NaN;
             _lastEditorFootHipsAlignedResidualYawRightFootXzDelta = float.NaN;

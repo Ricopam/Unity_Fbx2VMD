@@ -57,8 +57,15 @@ namespace Fbx2Vmd.FBXImporter
         internal float FullBodyPoseFrameGateEnd;
     }
 
+    /// <summary>하체 세그먼트 방향 보정의 에디터 구현 계약 — 진입점은 Apply 하나다.</summary>
+    internal interface IEditorLowerBodyDirectionDriver
+    {
+        void Apply(PoseSpaceRetargeter owner);
+    }
+
     internal static class RetargetingEditorReferenceHooks
     {
         internal static IEditorPoseReferenceDriver PoseReference;
+        internal static IEditorLowerBodyDirectionDriver LowerBodyDirection;
     }
 }
