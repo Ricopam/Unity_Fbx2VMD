@@ -1,5 +1,3 @@
-﻿
-#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -1192,5 +1190,3 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 }
-#endif
-

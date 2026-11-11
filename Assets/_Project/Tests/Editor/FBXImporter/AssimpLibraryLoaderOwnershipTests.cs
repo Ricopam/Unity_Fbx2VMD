@@ -77,7 +77,7 @@ namespace Tests.Editor.FBXImporter
         {
             string importerSource = ReadFbxImporterSource("AssimpFBXImporter.cs");
             string inspectorSource = ReadFbxImporterSource("AssimpAnimationInspector.cs");
-            string comparisonRunnerSource = ReadFbxImporterSource("FbxRuntimePoseClipCompareRunner.cs");
+            string comparisonRunnerSource = ReadEditorFbxImporterSource("FbxRuntimePoseClipCompareRunner.cs");
 
             Assert.That(Regex.Matches(importerSource, @"AssimpLibraryLoader\.IsLoaded").Count, Is.EqualTo(2));
             Assert.That(Regex.Matches(importerSource, @"AssimpLibraryLoader\.LoadLibrary\(\)").Count, Is.EqualTo(2));
@@ -115,6 +115,18 @@ namespace Tests.Editor.FBXImporter
                 "Assets",
                 "_Project",
                 "Scripts",
+                "FBXImporter",
+                fileName));
+        }
+
+        private static string ReadEditorFbxImporterSource(string fileName)
+        {
+            return File.ReadAllText(Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "Assets",
+                "_Project",
+                "Scripts",
+                "Editor",
                 "FBXImporter",
                 fileName));
         }

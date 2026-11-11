@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -633,4 +632,3 @@ namespace Fbx2Vmd.FBXImporter
         private static float[] ToArray(Vector3 value) => new[] { value.x, value.y, value.z };
     }
 }
-#endif

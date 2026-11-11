@@ -24,7 +24,6 @@ namespace Tests.Editor.FBXImporter
             bool hasPendingJobs,
             string expectedAction)
         {
-            Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
             Type plannerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonRunResumePlanner",
                 throwOnError: false);
