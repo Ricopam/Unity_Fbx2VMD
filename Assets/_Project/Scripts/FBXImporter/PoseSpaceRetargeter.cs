@@ -3039,10 +3039,10 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
-            Vector3 ghostRightFootPosition = ReadAnimatorBoneWorldPosition(ghostAnimator, HumanBodyBones.RightFoot);
-            Vector3 ghostRightToesPosition = ReadAnimatorBoneWorldPosition(ghostAnimator, HumanBodyBones.RightToes);
-            Vector3 beforeRightFootPosition = ReadAnimatorBoneWorldPosition(targetAnimator, HumanBodyBones.RightFoot);
-            Vector3 beforeRightToesPosition = ReadAnimatorBoneWorldPosition(targetAnimator, HumanBodyBones.RightToes);
+            Vector3 ghostRightFootPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(ghostAnimator, HumanBodyBones.RightFoot);
+            Vector3 ghostRightToesPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(ghostAnimator, HumanBodyBones.RightToes);
+            Vector3 beforeRightFootPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(targetAnimator, HumanBodyBones.RightFoot);
+            Vector3 beforeRightToesPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(targetAnimator, HumanBodyBones.RightToes);
             // Delta 방식: testprefab의 clip 시작 대비 현재 변위만 YYB 자연 위치에 더한다.
             // 절대 복사는 모델 비율 차이(YYB Hips Y≈1.024 vs testprefab≈1.056)로 인해 YYB Hips를 잘못된 높이로 강제한다.
             if (!ManualPoseReferenceApplier.TryCalculateHipsLocalPositionReference(
@@ -3060,8 +3060,8 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             ManualPoseReferenceApplier.ApplyHipsLocalPosition(targetHips, nextLocalPosition);
-            Vector3 afterRightFootPosition = ReadAnimatorBoneWorldPosition(targetAnimator, HumanBodyBones.RightFoot);
-            Vector3 afterRightToesPosition = ReadAnimatorBoneWorldPosition(targetAnimator, HumanBodyBones.RightToes);
+            Vector3 afterRightFootPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(targetAnimator, HumanBodyBones.RightFoot);
+            Vector3 afterRightToesPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(targetAnimator, HumanBodyBones.RightToes);
             if (!RetargetingEndpointDiagnostics.ShouldKeepHipsLocalPositionReferenceByTargetGap(
                 ghostRightFootPosition,
                 ghostRightToesPosition,
@@ -3213,56 +3213,6 @@ namespace Fbx2Vmd.FBXImporter
 
             Transform targetBone = targetAnimator.GetBoneTransform(bone);
             return targetBone != null ? targetBone.position : BuildNaNVector3();
-        }
-
-        private static Vector3 ReadAnimatorBoneWorldPosition(Animator animator, HumanBodyBones bone)
-        {
-            if (animator == null)
-            {
-                return BuildNaNVector3();
-            }
-
-            Transform targetBone = animator.GetBoneTransform(bone);
-            return targetBone != null ? targetBone.position : BuildNaNVector3();
-        }
-
-        private static Vector3 ReadAnimatorBoneLocalPosition(Animator animator, HumanBodyBones bone)
-        {
-            if (animator == null)
-            {
-                return BuildNaNVector3();
-            }
-
-            Transform targetBone = animator.GetBoneTransform(bone);
-            if (targetBone == null)
-            {
-                return BuildNaNVector3();
-            }
-
-            Vector3 localPosition = targetBone.localPosition;
-            return IsFinite(localPosition) ? localPosition : BuildNaNVector3();
-        }
-
-        private static Vector3 ReadAnimatorRootWorldPosition(Animator animator)
-        {
-            if (animator == null)
-            {
-                return BuildNaNVector3();
-            }
-
-            Vector3 position = animator.transform.position;
-            return IsFinite(position) ? position : BuildNaNVector3();
-        }
-
-        private static Quaternion ReadAnimatorRootWorldRotation(Animator animator)
-        {
-            if (animator == null)
-            {
-                return BuildNaNQuaternion();
-            }
-
-            Quaternion rotation = animator.transform.rotation;
-            return IsFinite(rotation) ? rotation : BuildNaNQuaternion();
         }
 
         private void RecordEditorFootLocalRotationReferenceDiagnostics(Vector3 leftFootBefore, Vector3 rightFootBefore)
@@ -5710,12 +5660,12 @@ namespace Fbx2Vmd.FBXImporter
 #if UNITY_EDITOR
             _setHumanPoseDiagnostics.CapturePreSolveBasis(new RetargetingSetHumanPosePreSolveBasis
             {
-                GhostRootWorldPosition = ReadAnimatorRootWorldPosition(ghostAnimator),
-                GhostRootWorldRotation = ReadAnimatorRootWorldRotation(ghostAnimator),
-                TargetRootWorldPosition = ReadAnimatorRootWorldPosition(targetAnimator),
-                TargetRootWorldRotation = ReadAnimatorRootWorldRotation(targetAnimator),
-                TargetHipsWorldPosition = ReadAnimatorBoneWorldPosition(targetAnimator, HumanBodyBones.Hips),
-                TargetHipsLocalPosition = ReadAnimatorBoneLocalPosition(targetAnimator, HumanBodyBones.Hips),
+                GhostRootWorldPosition = RetargetingAnimatorPoseReader.ReadRootWorldPosition(ghostAnimator),
+                GhostRootWorldRotation = RetargetingAnimatorPoseReader.ReadRootWorldRotation(ghostAnimator),
+                TargetRootWorldPosition = RetargetingAnimatorPoseReader.ReadRootWorldPosition(targetAnimator),
+                TargetRootWorldRotation = RetargetingAnimatorPoseReader.ReadRootWorldRotation(targetAnimator),
+                TargetHipsWorldPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(targetAnimator, HumanBodyBones.Hips),
+                TargetHipsLocalPosition = RetargetingAnimatorPoseReader.ReadBoneLocalPosition(targetAnimator, HumanBodyBones.Hips),
                 BodyPosition = IsFinite(pose.bodyPosition) ? pose.bodyPosition : BuildNaNVector3(),
                 BodyRotation = IsFinite(pose.bodyRotation) ? pose.bodyRotation : BuildNaNQuaternion(),
                 GhostEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(ghostAnimator),
