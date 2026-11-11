@@ -256,6 +256,26 @@ test("queueCharacterCommand rejects an unsupported action", async () => {
   assert.equal(saved.pendingCommand?.commandId ?? "", "");
 });
 
+test("queueCharacterCommand accepts the character×FBX override actions", async () => {
+  // Unity 측 MainRecordingSettingsCommandEnvelope 상수와 허용 목록이 어긋나면
+  // UI 명령이 전부 400으로 거절되는 침묵 장애가 된다 — 신규 액션 3종을 명시 고정한다.
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "main-recording-settings-"));
+  const settingsPath = path.join(tempRoot, "settings.json");
+
+  for (const [index, action] of ["SaveFbxOverride", "ApplyFbxOverride", "DeleteFbxOverride"].entries()) {
+    await queueCharacterCommand({
+      settingsPath,
+      action,
+      characterId: "char-01",
+      createCommandId: () => `cmd-override-${index}`
+    });
+    const saved = JSON.parse(await fs.readFile(settingsPath, "utf8"));
+    assert.equal(saved.pendingCommand.action, action);
+    saved.pendingCommand = null;
+    await fs.writeFile(settingsPath, JSON.stringify(saved), "utf8");
+  }
+});
+
 test("queueImportFbxCommand rejects while a command is pending", async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "main-recording-settings-"));
   const settingsPath = path.join(tempRoot, "settings.json");

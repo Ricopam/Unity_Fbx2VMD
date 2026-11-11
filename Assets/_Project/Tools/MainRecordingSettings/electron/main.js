@@ -27,6 +27,7 @@ import {
   isSmokeTestMode
 } from "./rendererEntry.js";
 import { openAllowedExternalNavigation } from "./shellNavigationPolicy.js";
+import { isUiAuditMode, attachUiAudit } from "./uiAudit.js";
 import { createSettingsBridgeServer } from "../server/settingsBridgeServer.js";
 
 const require = createRequire(import.meta.url);
@@ -58,9 +59,9 @@ const preloadPath = path.join(__dirname, "preload.cjs");
 let bridgeServer = null;
 let boogleWorkbench = null;
 let editorLifetimeTimer = null;
-// E2E 구동은 사용자가 열어둔 설정창과 별개로 돌아가는 검증이라
+// UI 감사·E2E 구동은 사용자가 열어둔 설정창과 별개로 돌아가는 검증이라
 // 싱글 인스턴스 락에서 제외한다. 브리지 포트는 0(임의)이라 충돌하지 않는다.
-const gotSingleInstanceLock = isE2eTestMode() ? true : app.requestSingleInstanceLock({
+const gotSingleInstanceLock = isUiAuditMode() || isE2eTestMode() ? true : app.requestSingleInstanceLock({
   unityEditorPid: process.env.UNITY_FBX2VMD_EDITOR_PID
 });
 
@@ -103,7 +104,11 @@ async function createMainWindow() {
       });
     }
   });
-  attachSmokeTestExit(mainWindow, entry, bridgeServer);
+  if (isUiAuditMode()) {
+    attachUiAudit({ app, mainWindow, bridge: bridgeServer, applyConfig: applyRendererBridgeConfig });
+  } else {
+    attachSmokeTestExit(mainWindow, entry, bridgeServer);
+  }
   if (e2eEntryUrl) {
     await mainWindow.loadURL(e2eEntryUrl);
     return;
@@ -392,20 +397,24 @@ async function startApplication() {
   const smokeSettingsPath = getSmokeSettingsPath()
     || (smokeImportFbxPath
       ? path.join(app.getPath("temp"), `main-recording-settings-smoke-${Date.now()}.json`)
-      : undefined);
+      : isUiAuditMode()
+        // 감사는 실제 사용자 설정을 읽지 않게 임시 경로를 쓴다 — 매 실행이
+        // 동일한 초기 상태를 보장하고 설정 파일 오염도 막는다.
+        ? path.join(app.getPath("temp"), `main-recording-settings-audit-${Date.now()}.json`)
+        : undefined);
 
   if (smokeImportFbxPath) {
     await initializeSmokeSettings(smokeSettingsPath);
   }
 
   bridgeServer = createSettingsBridgeServer({
-    port: isSmokeTestMode() || isE2eTestMode() ? 0 : undefined,
+    port: isSmokeTestMode() || isUiAuditMode() || isE2eTestMode() ? 0 : undefined,
     settingsPath: smokeSettingsPath
   });
   await bridgeServer.listen();
   console.log(`SETTINGS_BRIDGE_READY ${bridgeServer.baseUrl}`);
 
-  if (!isSmokeTestMode() && !isE2eTestMode()) {
+  if (!isSmokeTestMode() && !isUiAuditMode() && !isE2eTestMode()) {
     launchWorkbench();
   }
 
@@ -480,8 +489,8 @@ function registerIpcHandlers() {
     } : null;
   });
   ipcMain.handle("boogle:get-workbench-url", async () => {
-    // e2e 모드에서는 developer 패널 진입이 workbench를 spawn하지 않게 차단
-    if (isE2eTestMode()) {
+    // 감사·e2e 모드에서는 developer 패널 진입이 workbench를 spawn하지 않게 차단
+    if (isUiAuditMode() || isE2eTestMode()) {
       return "";
     }
     const workbench = boogleWorkbench ?? launchWorkbench();

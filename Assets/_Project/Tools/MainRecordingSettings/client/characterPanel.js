@@ -121,7 +121,7 @@ export function bootstrapCharacterPanel(root = document, deps = {}) {
       const empty = root.createElement("p");
       empty.className = "lb-hint";
       empty.textContent = library.characters.length === 0
-        ? "등록된 캐릭터가 없습니다. VRM 파일 추가로 라이브러리를 시작하세요."
+        ? "등록된 캐릭터가 없습니다. 캐릭터 파일 추가로 라이브러리를 시작하세요."
         : "검색 조건에 맞는 캐릭터가 없습니다.";
       el.listBody.appendChild(empty);
       return;
@@ -160,7 +160,7 @@ export function bootstrapCharacterPanel(root = document, deps = {}) {
     const badges = root.createElement("div");
     badges.className = "char-badges";
     for (const chip of [
-      { cls: "lb-chip", label: `VRM ${character.vrmSpecVersion || "?"}` },
+      { cls: "lb-chip", label: character.sourcePath && character.sourcePath.toLowerCase().endsWith(".fbx") ? "FBX" : character.sourcePath && character.sourcePath.toLowerCase().endsWith(".pmx") ? "PMX" : `VRM ${character.vrmSpecVersion || "?"}` },
       statusChip(character.status),
       isActive ? { cls: "lb-chip-ok", label: "활성 (Active)" } : null,
       character.humanoidValid ? { cls: "lb-chip-ok", label: "Humanoid" } : null
@@ -275,6 +275,30 @@ export function bootstrapCharacterPanel(root = document, deps = {}) {
       });
     }));
     wrap.appendChild(actions);
+
+    // 캐릭터×FBX 예외 — 현재 임포트된 FBX와 이 캐릭터 조합 전용 덮어쓰기
+    const fbxRow = root.createElement("div");
+    fbxRow.className = "char-actions char-preset-actions";
+    fbxRow.appendChild(miniButton("FBX 예외 저장", () => {
+      const next = el.presetName?.value?.trim();
+      send(CHARACTER_ACTIONS.saveFbxOverride, {
+        characterId: character.id,
+        params: next ? { presetName: next } : {}
+      });
+    }));
+    fbxRow.appendChild(miniButton("FBX 예외 적용", () =>
+      send(CHARACTER_ACTIONS.applyFbxOverride, { characterId: character.id })));
+    fbxRow.appendChild(miniButton("FBX 예외 해제", () =>
+      send(CHARACTER_ACTIONS.deleteFbxOverride, { characterId: character.id })));
+    wrap.appendChild(fbxRow);
+
+    if (Array.isArray(character.fbxOverrides) && character.fbxOverrides.length > 0) {
+      const list = root.createElement("div");
+      list.className = "char-preset";
+      const names = character.fbxOverrides.map((o) => o.name || o.fbxKey).join(", ");
+      list.appendChild(root.createTextNode(`FBX 예외 ${character.fbxOverrides.length}건: ${names}`));
+      wrap.appendChild(list);
+    }
     return wrap;
   }
 
@@ -436,7 +460,8 @@ export function bootstrapCharacterPanel(root = document, deps = {}) {
           setResult(result.state, `${pendingActionLabel}: ${result.message || (done ? "완료" : "실패")}`);
           // 저장·갱신 성공 후에는 이름 입력을 비워 다른 캐릭터에 잔여 이름이 섞이지 않게 한다.
           if (done && (pendingActionLabel === CHARACTER_ACTIONS.savePreset ||
-            pendingActionLabel === CHARACTER_ACTIONS.updatePreset)) {
+            pendingActionLabel === CHARACTER_ACTIONS.updatePreset ||
+            pendingActionLabel === CHARACTER_ACTIONS.saveFbxOverride)) {
             if (el.presetName) el.presetName.value = "";
             editingPreset = null;
           }

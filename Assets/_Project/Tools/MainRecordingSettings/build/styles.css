@@ -9,8 +9,8 @@
   --muted-text: #9aa2ab;
   --body-text: #2f3b49;
   --card-primary: #3e3a81;
-  --card-secondary: #ea3f97;
-  --card-tertiary: #189e91;
+  --card-secondary: #c2185b;
+  --card-tertiary: #0f766e;
   color-scheme: light;
   font-family:
     "Malgun Gothic",
@@ -132,7 +132,7 @@ input:focus-visible {
 }
 
 .rail-menu-label {
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1;
 }
 
@@ -206,7 +206,7 @@ input:focus-visible {
   align-items: center;
   gap: 4px;
   margin: 0 0 4px;
-  color: #4e5c6c;
+  color: var(--lb-text-2);
   font-size: 11px;
   font-weight: 800;
 }
@@ -437,7 +437,7 @@ h1 {
 
 .card-copy p {
   margin-top: 18px;
-  color: rgb(255 255 255 / 82%);
+  color: var(--lb-on-accent);
   font-size: 16px;
   font-weight: 700;
   line-height: 1.55;
@@ -777,7 +777,7 @@ input {
   --lb-border-soft: #edf1f5;
   --lb-text: #273444;
   --lb-text-2: #536173;
-  --lb-text-3: #8a94a3;
+  --lb-text-3: #6d7482;
   --lb-accent: #3d3984;
   --lb-accent-hover: #4a4982;
   --lb-accent-dim: #e7e9f7;
@@ -791,7 +791,7 @@ input {
   --lb-alert-border: rgb(245 158 11 / 24%);
   --lb-alert-text: #92600a;
   --lb-chip-ok-bg: rgb(16 185 129 / 18%);
-  --lb-chip-ok-text: #059669;
+  --lb-chip-ok-text: #047857;
   --lb-danger-bg: rgb(239 68 68 / 10%);
   --lb-danger-bg-hover: rgb(239 68 68 / 18%);
   --lb-danger-border: rgb(239 68 68 / 32%);
@@ -820,7 +820,7 @@ input {
   --lb-border-soft: #20243a;
   --lb-text: #e8eaf2;
   --lb-text-2: #9aa0b4;
-  --lb-text-3: #6b7190;
+  --lb-text-3: #868ca2;
   --lb-accent: #5a56e0;
   --lb-accent-hover: #6a66ea;
   --lb-accent-dim: #2a2a52;
@@ -839,7 +839,7 @@ input {
 .settings-app[data-theme="dark"] .rail-button {
   border-color: #20243a;
   background: #12141c;
-  color: #6b7190;
+  color: var(--lb-text-3);
 }
 
 .settings-app[data-theme="dark"] .rail-button:hover {
@@ -864,7 +864,7 @@ input {
 }
 
 .settings-app[data-theme="dark"] .tree-section h2 {
-  color: #6b7190;
+  color: var(--lb-text-3);
 }
 
 .settings-app[data-theme="dark"] .tree-item.disabled {
@@ -1015,7 +1015,7 @@ input {
   justify-content: space-between;
   border-top: 1px solid #edf1f5;
   background: inherit;
-  color: #4e5c6c;
+  color: var(--lb-text-2);
   padding: 0 12px;
   font-size: 11px;
 }

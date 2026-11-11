@@ -30,9 +30,10 @@ export function createAudioFileDialogOptions() {
 
 export function createVrmFileDialogOptions() {
   return {
-    title: "VRM 파일 선택",
+    title: "캐릭터 파일 선택",
     properties: ["openFile"],
     filters: [
+      { name: "캐릭터 파일", extensions: ["vrm", "fbx", "pmx"] },
       { name: "VRM 파일", extensions: ["vrm"] },
       { name: "모든 파일", extensions: ["*"] }
     ]

@@ -18,7 +18,7 @@ if (session.phase !== "prepared" || session.runId !== fixture.runId ||
 
 export default {
   projectId: "main-recording-settings-live",
-  tests: ["tests-e2e/product-settings.live.ts"],
+  tests: ["tests-e2e/product-settings.live.ts", "tests-e2e/product-settings-preset.live.ts"],
   workers: 1,
   reporters: ["list", "junit"],
   output: path.join(".e2e", "live", fixture.runId),

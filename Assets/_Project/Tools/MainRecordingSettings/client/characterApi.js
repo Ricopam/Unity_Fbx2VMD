@@ -18,7 +18,10 @@ export const CHARACTER_ACTIONS = Object.freeze({
   deletePreset: "DeletePreset",
   renamePreset: "RenamePreset",
   copyPreset: "CopyPreset",
-  updatePreset: "UpdatePreset"
+  updatePreset: "UpdatePreset",
+  saveFbxOverride: "SaveFbxOverride",
+  applyFbxOverride: "ApplyFbxOverride",
+  deleteFbxOverride: "DeleteFbxOverride"
 });
 
 export function createCharactersRequest({ apiBaseUrl = DEFAULT_API_BASE_URL } = {}) {

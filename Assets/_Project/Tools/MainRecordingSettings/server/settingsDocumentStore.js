@@ -30,7 +30,10 @@ export const CHARACTER_COMMAND_ACTIONS = Object.freeze([
   "RenamePreset",
   "CancelLoad",
   "CopyPreset",
-  "UpdatePreset"
+  "UpdatePreset",
+  "SaveFbxOverride",
+  "ApplyFbxOverride",
+  "DeleteFbxOverride"
 ]);
 
 export function resolveSettingsFilePath({

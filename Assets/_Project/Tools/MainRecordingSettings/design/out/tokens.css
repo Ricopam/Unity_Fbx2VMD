@@ -1,0 +1,54 @@
+/* 생성물 — design/tokens.json에서 자동 생성됨. 직접 수정 금지. */
+:root {
+  --page-color: #eef2f6;
+  --line-color: #d8e0e8;
+  --body-text: #2f3b49;
+  --muted-text: #9aa2ab;
+  --active-color: #3d3984;
+  --lb-accent: #3d3984;
+  --lb-card: #ffffff;
+  --lb-card-head: #f7f9fd;
+  --lb-inset: #f4f6f9;
+  --lb-hover: #eef2f7;
+  --lb-border: #d9e1ea;
+  --lb-border-soft: #edf1f5;
+  --lb-text: #273444;
+  --lb-text-2: #536173;
+  --lb-text-3: #6d7482;
+  --lb-accent-hover: #4a4982;
+  --lb-accent-dim: #e7e9f7;
+  --lb-accent-text: #3d3984;
+  --lb-on-accent: #ffffff;
+  --lb-ok: #168251;
+  --lb-chip-ok-text: #047857;
+  --lb-warn: #8a5b00;
+  --lb-track: #e2e8f0;
+  --lb-danger-text: #dc2626;
+}
+
+[data-theme="dark"] {
+  --page-color: #0e0f16;
+  --line-color: #262b3d;
+  --body-text: #e8eaf2;
+  --muted-text: #6b7190;
+  --active-color: #7a76e0;
+  --lb-accent: #5a56e0;
+  --lb-card: #1a1d29;
+  --lb-card-head: #1e2130;
+  --lb-inset: #14161f;
+  --lb-hover: #232738;
+  --lb-border: #262b3d;
+  --lb-border-soft: #20243a;
+  --lb-text: #e8eaf2;
+  --lb-text-2: #9aa0b4;
+  --lb-text-3: #868ca2;
+  --lb-accent-hover: #6a66ea;
+  --lb-accent-dim: #2a2a52;
+  --lb-accent-text: #b7b4f2;
+  --lb-on-accent: #ffffff;
+  --lb-ok: #2dd4a7;
+  --lb-chip-ok-text: #34d399;
+  --lb-warn: #c9a86a;
+  --lb-track: #2e3347;
+  --lb-danger-text: #f87171;
+}

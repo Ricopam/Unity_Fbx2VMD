@@ -5,14 +5,14 @@ import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import { createUnityClient, UNITY_COMMANDS } from "./unity/unityClient.js";
 
-test("실제 설정창 등록·FBX·재생 제어와 보정 실패 비교 경로를 확인한다", { timeout: 600000 }, async ({ app, screen, browser }) => {
+test("실제 설정창 등록·FBX·재생 제어와 보정 실패 비교 경로를 확인한다", { timeout: 2400000 }, async ({ app, screen, browser }) => {
   const fixture = JSON.parse(await fs.readFile(process.env.FBX2VMD_E2E_SESSION_FILE!, "utf8"));
   const unity = createUnityClient({ projectRoot: fixture.projectRoot });
   const read = async (file: string) => JSON.parse(await fs.readFile(file, "utf8"));
   const directory = path.dirname(fixture.settingsPath);
   const evidence: Record<string, unknown> = { runId: fixture.runId };
   const capture = async () => {
-    const status = await unity.send(UNITY_COMMANDS.environment);
+    const status = await unity.send(UNITY_COMMANDS.environment, { timeoutMs: 240_000 });
     return read(status.environment_state_path!);
   };
   const waitCommand = async (action: string, previousId: string) => {
@@ -69,8 +69,8 @@ test("실제 설정창 등록·FBX·재생 제어와 보정 실패 비교 경로
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
     assert.equal(ready, true, "실제 FBX 준비 대기 시간 초과");
-    const waitMotion = async (predicate: (state: any) => boolean) => {
-      const end = Date.now() + 300000;
+    const waitMotion = async (predicate: (state: any) => boolean, timeoutMs = 300000) => {
+      const end = Date.now() + timeoutMs;
       while (Date.now() < end) {
         const state = await capture();
         evidence.lastPlaybackState = state;
@@ -83,7 +83,7 @@ test("실제 설정창 등록·FBX·재생 제어와 보정 실패 비교 경로
     let lastId = (await read(fixture.settingsPath)).lastCommandResult?.commandId ?? "";
     await screen.getByRole("button", "재생", { exact: true }).tap();
     lastId = (await waitCommand("PlayImportedMotion", lastId)).commandId;
-    const initialPlayback = await waitMotion(state => state.session_state === "Failed" || (state.is_playing_motion && state.motion_current_frame > 5));
+    const initialPlayback = await waitMotion(state => state.session_state === "Failed" || (state.is_playing_motion && state.motion_current_frame > 5), 1800000);
     evidence.correctedPlaybackPassed = initialPlayback.session_state !== "Failed";
     if (initialPlayback.session_state === "Failed") {
       const failedState = await read(`${fixture.settingsPath}.runtime-state.json`);

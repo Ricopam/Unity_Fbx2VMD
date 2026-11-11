@@ -50,8 +50,11 @@ export async function readCharacterLibrary({
       ? await loadJsonOrDefault(presetPath, createDefaultPresetDocument)
       : createDefaultPresetDocument();
     const presets = Array.isArray(presetDocument.presets) ? presetDocument.presets : [];
+    const fbxOverrides = Array.isArray(presetDocument.fbxOverrides)
+      ? presetDocument.fbxOverrides
+      : [];
 
-    characters.push(normalizeEntry(entry, libraryPath, presets));
+    characters.push(normalizeEntry(entry, libraryPath, presets, fbxOverrides));
   }
 
   return {
@@ -79,7 +82,7 @@ export function resolveThumbnailPath(libraryPath, thumbnailFileName) {
     path.dirname(libraryPath), LIBRARY_THUMBNAILS_FOLDER_NAME, thumbnailFileName);
 }
 
-function normalizeEntry(entry, libraryPath, presets) {
+function normalizeEntry(entry, libraryPath, presets, fbxOverrides = []) {
   const meta = entry.meta && typeof entry.meta === "object" ? entry.meta : {};
   const compatibility = entry.compatibility && typeof entry.compatibility === "object"
     ? entry.compatibility
@@ -120,6 +123,13 @@ function normalizeEntry(entry, libraryPath, presets) {
         sections: preset.sections && typeof preset.sections === "object"
           ? preset.sections
           : {}
+      })),
+    fbxOverrides: fbxOverrides
+      .filter((item) => item && typeof item === "object")
+      .map((item) => ({
+        fbxKey: text(item.fbxKey),
+        name: text(item.name),
+        updatedAtUtc: text(item.updatedAtUtc)
       }))
   };
 }
