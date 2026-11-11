@@ -912,51 +912,51 @@ namespace Fbx2Vmd.FBXImporter
         public float LastRightThumbProximalWorldRotationPreserveLimitedRisk => _lastRightThumbProximalWorldRotationPreserveLimitedRisk;
         public float LastLeftThumbIntermediateWorldRotationPreserveLimitedRisk => _lastLeftThumbIntermediateWorldRotationPreserveLimitedRisk;
         public float LastRightThumbIntermediateWorldRotationPreserveLimitedRisk => _lastRightThumbIntermediateWorldRotationPreserveLimitedRisk;
-        public float LastPoseInputLeftShoulderFrontBackMuscle => _lastPoseInputLeftShoulderFrontBackMuscle;
-        public float LastAfterEditorMuscleReferenceLeftShoulderFrontBackMuscle => _lastAfterEditorMuscleReferenceLeftShoulderFrontBackMuscle;
-        public float LastAfterClampPoseMusclesLeftShoulderFrontBackMuscle => _lastAfterClampPoseMusclesLeftShoulderFrontBackMuscle;
-        public float LastAfterAnatomicalArmGuardLeftShoulderFrontBackMuscle => _lastAfterAnatomicalArmGuardLeftShoulderFrontBackMuscle;
-        public float LastAfterVisualSpikeSmoothingLeftShoulderFrontBackMuscle => _lastAfterVisualSpikeSmoothingLeftShoulderFrontBackMuscle;
+        public float LastPoseInputLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.PoseInput.LeftShoulderFrontBack;
+        public float LastAfterEditorMuscleReferenceLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.LeftShoulderFrontBack;
+        public float LastAfterClampPoseMusclesLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.LeftShoulderFrontBack;
+        public float LastAfterAnatomicalArmGuardLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.LeftShoulderFrontBack;
+        public float LastAfterVisualSpikeSmoothingLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.LeftShoulderFrontBack;
         public float LastSetHumanPoseInputLeftShoulderFrontBackMuscle => _lastSetHumanPoseInputLeftShoulderFrontBackMuscle;
         public float LastSetHumanPoseOutputLeftShoulderFrontBackMuscle => _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle;
         public float LastSetHumanPoseLeftShoulderFrontBackDelta => CalculateFiniteAbsDelta(
             _lastSetHumanPoseInputLeftShoulderFrontBackMuscle,
             _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle);
-        public float LastPoseInputLeftArmTwistMuscle => _lastPoseInputLeftArmTwistMuscle;
-        public float LastAfterEditorMuscleReferenceLeftArmTwistMuscle => _lastAfterEditorMuscleReferenceLeftArmTwistMuscle;
-        public float LastAfterClampPoseMusclesLeftArmTwistMuscle => _lastAfterClampPoseMusclesLeftArmTwistMuscle;
-        public float LastAfterAnatomicalArmGuardLeftArmTwistMuscle => _lastAfterAnatomicalArmGuardLeftArmTwistMuscle;
-        public float LastAfterVisualSpikeSmoothingLeftArmTwistMuscle => _lastAfterVisualSpikeSmoothingLeftArmTwistMuscle;
+        public float LastPoseInputLeftArmTwistMuscle => _stageMuscleDiagnostics.PoseInput.LeftArmTwist;
+        public float LastAfterEditorMuscleReferenceLeftArmTwistMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.LeftArmTwist;
+        public float LastAfterClampPoseMusclesLeftArmTwistMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.LeftArmTwist;
+        public float LastAfterAnatomicalArmGuardLeftArmTwistMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.LeftArmTwist;
+        public float LastAfterVisualSpikeSmoothingLeftArmTwistMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.LeftArmTwist;
         public float LastSetHumanPoseInputLeftArmTwistMuscle => _lastSetHumanPoseInputLeftArmTwistMuscle;
         public float LastSetHumanPoseOutputLeftArmTwistMuscle => _lastSetHumanPoseOutputLeftArmTwistMuscle;
         public float LastSetHumanPoseLeftArmTwistDelta => CalculateFiniteAbsDelta(
             _lastSetHumanPoseInputLeftArmTwistMuscle,
             _lastSetHumanPoseOutputLeftArmTwistMuscle);
-        public float LastPoseInputLeftForearmStretchMuscle => _lastPoseInputLeftForearmStretchMuscle;
-        public float LastAfterEditorMuscleReferenceLeftForearmStretchMuscle => _lastAfterEditorMuscleReferenceLeftForearmStretchMuscle;
-        public float LastAfterClampPoseMusclesLeftForearmStretchMuscle => _lastAfterClampPoseMusclesLeftForearmStretchMuscle;
-        public float LastAfterAnatomicalArmGuardLeftForearmStretchMuscle => _lastAfterAnatomicalArmGuardLeftForearmStretchMuscle;
-        public float LastAfterVisualSpikeSmoothingLeftForearmStretchMuscle => _lastAfterVisualSpikeSmoothingLeftForearmStretchMuscle;
+        public float LastPoseInputLeftForearmStretchMuscle => _stageMuscleDiagnostics.PoseInput.LeftForearmStretch;
+        public float LastAfterEditorMuscleReferenceLeftForearmStretchMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.LeftForearmStretch;
+        public float LastAfterClampPoseMusclesLeftForearmStretchMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.LeftForearmStretch;
+        public float LastAfterAnatomicalArmGuardLeftForearmStretchMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.LeftForearmStretch;
+        public float LastAfterVisualSpikeSmoothingLeftForearmStretchMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.LeftForearmStretch;
         public float LastSetHumanPoseInputLeftForearmStretchMuscle => _lastSetHumanPoseInputLeftForearmStretchMuscle;
         public float LastSetHumanPoseOutputLeftForearmStretchMuscle => _lastSetHumanPoseOutputLeftForearmStretchMuscle;
         public float LastSetHumanPoseLeftForearmStretchDelta => CalculateFiniteAbsDelta(
             _lastSetHumanPoseInputLeftForearmStretchMuscle,
             _lastSetHumanPoseOutputLeftForearmStretchMuscle);
-        public float LastPoseInputRightForearmStretchMuscle => _lastPoseInputRightForearmStretchMuscle;
-        public float LastAfterEditorMuscleReferenceRightForearmStretchMuscle => _lastAfterEditorMuscleReferenceRightForearmStretchMuscle;
-        public float LastAfterClampPoseMusclesRightForearmStretchMuscle => _lastAfterClampPoseMusclesRightForearmStretchMuscle;
-        public float LastAfterAnatomicalArmGuardRightForearmStretchMuscle => _lastAfterAnatomicalArmGuardRightForearmStretchMuscle;
-        public float LastAfterVisualSpikeSmoothingRightForearmStretchMuscle => _lastAfterVisualSpikeSmoothingRightForearmStretchMuscle;
+        public float LastPoseInputRightForearmStretchMuscle => _stageMuscleDiagnostics.PoseInput.RightForearmStretch;
+        public float LastAfterEditorMuscleReferenceRightForearmStretchMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.RightForearmStretch;
+        public float LastAfterClampPoseMusclesRightForearmStretchMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.RightForearmStretch;
+        public float LastAfterAnatomicalArmGuardRightForearmStretchMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.RightForearmStretch;
+        public float LastAfterVisualSpikeSmoothingRightForearmStretchMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.RightForearmStretch;
         public float LastSetHumanPoseInputRightForearmStretchMuscle => _lastSetHumanPoseInputRightForearmStretchMuscle;
         public float LastSetHumanPoseOutputRightForearmStretchMuscle => _lastSetHumanPoseOutputRightForearmStretchMuscle;
         public float LastSetHumanPoseRightForearmStretchDelta => CalculateFiniteAbsDelta(
             _lastSetHumanPoseInputRightForearmStretchMuscle,
             _lastSetHumanPoseOutputRightForearmStretchMuscle);
-        public float LastPoseInputRightArmTwistMuscle => _lastPoseInputRightArmTwistMuscle;
-        public float LastAfterEditorMuscleReferenceRightArmTwistMuscle => _lastAfterEditorMuscleReferenceRightArmTwistMuscle;
-        public float LastAfterClampPoseMusclesRightArmTwistMuscle => _lastAfterClampPoseMusclesRightArmTwistMuscle;
-        public float LastAfterAnatomicalArmGuardRightArmTwistMuscle => _lastAfterAnatomicalArmGuardRightArmTwistMuscle;
-        public float LastAfterVisualSpikeSmoothingRightArmTwistMuscle => _lastAfterVisualSpikeSmoothingRightArmTwistMuscle;
+        public float LastPoseInputRightArmTwistMuscle => _stageMuscleDiagnostics.PoseInput.RightArmTwist;
+        public float LastAfterEditorMuscleReferenceRightArmTwistMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.RightArmTwist;
+        public float LastAfterClampPoseMusclesRightArmTwistMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.RightArmTwist;
+        public float LastAfterAnatomicalArmGuardRightArmTwistMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.RightArmTwist;
+        public float LastAfterVisualSpikeSmoothingRightArmTwistMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.RightArmTwist;
         public float LastSetHumanPoseInputRightArmTwistMuscle => _lastSetHumanPoseInputRightArmTwistMuscle;
         public float LastSetHumanPoseOutputRightArmTwistMuscle => _lastSetHumanPoseOutputRightArmTwistMuscle;
         public float LastSetHumanPoseRightArmTwistDelta => CalculateFiniteAbsDelta(
@@ -1507,39 +1507,14 @@ namespace Fbx2Vmd.FBXImporter
         private float _lastRightThumbProximalWorldRotationPreserveLimitedRisk = float.NaN;
         private float _lastLeftThumbIntermediateWorldRotationPreserveLimitedRisk = float.NaN;
         private float _lastRightThumbIntermediateWorldRotationPreserveLimitedRisk = float.NaN;
-        private float _lastPoseInputLeftShoulderFrontBackMuscle = float.NaN;
-        private float _lastAfterEditorMuscleReferenceLeftShoulderFrontBackMuscle = float.NaN;
-        private float _lastAfterClampPoseMusclesLeftShoulderFrontBackMuscle = float.NaN;
-        private float _lastAfterAnatomicalArmGuardLeftShoulderFrontBackMuscle = float.NaN;
-        private float _lastAfterVisualSpikeSmoothingLeftShoulderFrontBackMuscle = float.NaN;
         private float _lastSetHumanPoseInputLeftShoulderFrontBackMuscle = float.NaN;
         private float _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle = float.NaN;
-        private float _lastPoseInputLeftArmTwistMuscle = float.NaN;
-        private float _lastAfterEditorMuscleReferenceLeftArmTwistMuscle = float.NaN;
-        private float _lastAfterClampPoseMusclesLeftArmTwistMuscle = float.NaN;
-        private float _lastAfterAnatomicalArmGuardLeftArmTwistMuscle = float.NaN;
-        private float _lastAfterVisualSpikeSmoothingLeftArmTwistMuscle = float.NaN;
         private float _lastSetHumanPoseInputLeftArmTwistMuscle = float.NaN;
         private float _lastSetHumanPoseOutputLeftArmTwistMuscle = float.NaN;
-        private float _lastPoseInputLeftForearmStretchMuscle = float.NaN;
-        private float _lastAfterEditorMuscleReferenceLeftForearmStretchMuscle = float.NaN;
-        private float _lastAfterClampPoseMusclesLeftForearmStretchMuscle = float.NaN;
-        private float _lastAfterAnatomicalArmGuardLeftForearmStretchMuscle = float.NaN;
-        private float _lastAfterVisualSpikeSmoothingLeftForearmStretchMuscle = float.NaN;
         private float _lastSetHumanPoseInputLeftForearmStretchMuscle = float.NaN;
         private float _lastSetHumanPoseOutputLeftForearmStretchMuscle = float.NaN;
-        private float _lastPoseInputRightForearmStretchMuscle = float.NaN;
-        private float _lastAfterEditorMuscleReferenceRightForearmStretchMuscle = float.NaN;
-        private float _lastAfterClampPoseMusclesRightForearmStretchMuscle = float.NaN;
-        private float _lastAfterAnatomicalArmGuardRightForearmStretchMuscle = float.NaN;
-        private float _lastAfterVisualSpikeSmoothingRightForearmStretchMuscle = float.NaN;
         private float _lastSetHumanPoseInputRightForearmStretchMuscle = float.NaN;
         private float _lastSetHumanPoseOutputRightForearmStretchMuscle = float.NaN;
-        private float _lastPoseInputRightArmTwistMuscle = float.NaN;
-        private float _lastAfterEditorMuscleReferenceRightArmTwistMuscle = float.NaN;
-        private float _lastAfterClampPoseMusclesRightArmTwistMuscle = float.NaN;
-        private float _lastAfterAnatomicalArmGuardRightArmTwistMuscle = float.NaN;
-        private float _lastAfterVisualSpikeSmoothingRightArmTwistMuscle = float.NaN;
         private float _lastSetHumanPoseInputRightArmTwistMuscle = float.NaN;
         private float _lastSetHumanPoseOutputRightArmTwistMuscle = float.NaN;
         private float _lastSetHumanPoseInputLeftUpperLegFrontBackMuscle = float.NaN;
@@ -1656,6 +1631,7 @@ namespace Fbx2Vmd.FBXImporter
         private bool _hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset;
         private Vector3 _postSetHumanPoseRightFootEvaluatorXzFirstOffset = new Vector3(float.NaN, float.NaN, float.NaN);
         private readonly RetargetingEndpointStageDiagnostics _endpointStageDiagnostics = new RetargetingEndpointStageDiagnostics();
+        private readonly RetargetingStageMuscleDiagnostics _stageMuscleDiagnostics = new RetargetingStageMuscleDiagnostics();
 
         private RetargetEndpointStageWorldPositions _lastSetHumanPosePreSolveGhostEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
         private RetargetEndpointStageWorldPositions _lastSetHumanPosePreSolveCurrentEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
@@ -2380,9 +2356,9 @@ namespace Fbx2Vmd.FBXImporter
                     _legacyAnimationDriver.CurrentTime);
             }
 #endif
-            CapturePoseInputDiagnostics(_humanPose);
+            _stageMuscleDiagnostics.PoseInput = ReadStageMuscles(_humanPose);
             ApplyEditorHumanoidMuscleReference(ref _humanPose);
-            CaptureAfterEditorMuscleReferenceDiagnostics(_humanPose);
+            _stageMuscleDiagnostics.AfterEditorMuscleReference = ReadStageMuscles(_humanPose);
             ApplyEditorHumanoidFingerPoseReference(ref _humanPose);
             ApplyEditorHumanoidBodyRotationReference(ref _humanPose);
             if (ShouldApplyRetargetSafetyGuards())
@@ -2390,11 +2366,11 @@ namespace Fbx2Vmd.FBXImporter
                 ApplyThumbAnatomicalGuard(ref _humanPose, ShouldApplyThumbStretchOffset());
             }
             ClampPoseMuscles(ref _humanPose);
-            CaptureAfterClampPoseMusclesDiagnostics(_humanPose);
+            _stageMuscleDiagnostics.AfterClampPoseMuscles = ReadStageMuscles(_humanPose);
             ApplyAnatomicalArmGuard(ref _humanPose);
-            CaptureAfterAnatomicalArmGuardDiagnostics(_humanPose);
+            _stageMuscleDiagnostics.AfterAnatomicalArmGuard = ReadStageMuscles(_humanPose);
             SmoothPoseOnVisualSpike(ref _humanPose);
-            CaptureAfterVisualSpikeSmoothingDiagnostics(_humanPose);
+            _stageMuscleDiagnostics.AfterVisualSpikeSmoothing = ReadStageMuscles(_humanPose);
             Quaternion poseRootRotation = _humanPose.bodyRotation;
             if (ShouldPreserveFbxRootRotation && !_hasPoseRootRotationCorrection && IsFinite(poseRootRotation) && _legacyAnimationDriver.IsPlaying)
             {
@@ -5853,39 +5829,15 @@ namespace Fbx2Vmd.FBXImporter
 
         private void ResetRetargetPoseStageDiagnostics()
         {
-            _lastPoseInputLeftShoulderFrontBackMuscle = float.NaN;
-            _lastAfterEditorMuscleReferenceLeftShoulderFrontBackMuscle = float.NaN;
-            _lastAfterClampPoseMusclesLeftShoulderFrontBackMuscle = float.NaN;
-            _lastAfterAnatomicalArmGuardLeftShoulderFrontBackMuscle = float.NaN;
-            _lastAfterVisualSpikeSmoothingLeftShoulderFrontBackMuscle = float.NaN;
+            _stageMuscleDiagnostics.Reset();
             _lastSetHumanPoseInputLeftShoulderFrontBackMuscle = float.NaN;
             _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle = float.NaN;
-            _lastPoseInputLeftArmTwistMuscle = float.NaN;
-            _lastAfterEditorMuscleReferenceLeftArmTwistMuscle = float.NaN;
-            _lastAfterClampPoseMusclesLeftArmTwistMuscle = float.NaN;
-            _lastAfterAnatomicalArmGuardLeftArmTwistMuscle = float.NaN;
-            _lastAfterVisualSpikeSmoothingLeftArmTwistMuscle = float.NaN;
             _lastSetHumanPoseInputLeftArmTwistMuscle = float.NaN;
             _lastSetHumanPoseOutputLeftArmTwistMuscle = float.NaN;
-            _lastPoseInputLeftForearmStretchMuscle = float.NaN;
-            _lastAfterEditorMuscleReferenceLeftForearmStretchMuscle = float.NaN;
-            _lastAfterClampPoseMusclesLeftForearmStretchMuscle = float.NaN;
-            _lastAfterAnatomicalArmGuardLeftForearmStretchMuscle = float.NaN;
-            _lastAfterVisualSpikeSmoothingLeftForearmStretchMuscle = float.NaN;
             _lastSetHumanPoseInputLeftForearmStretchMuscle = float.NaN;
             _lastSetHumanPoseOutputLeftForearmStretchMuscle = float.NaN;
-            _lastPoseInputRightForearmStretchMuscle = float.NaN;
-            _lastAfterEditorMuscleReferenceRightForearmStretchMuscle = float.NaN;
-            _lastAfterClampPoseMusclesRightForearmStretchMuscle = float.NaN;
-            _lastAfterAnatomicalArmGuardRightForearmStretchMuscle = float.NaN;
-            _lastAfterVisualSpikeSmoothingRightForearmStretchMuscle = float.NaN;
             _lastSetHumanPoseInputRightForearmStretchMuscle = float.NaN;
             _lastSetHumanPoseOutputRightForearmStretchMuscle = float.NaN;
-            _lastPoseInputRightArmTwistMuscle = float.NaN;
-            _lastAfterEditorMuscleReferenceRightArmTwistMuscle = float.NaN;
-            _lastAfterClampPoseMusclesRightArmTwistMuscle = float.NaN;
-            _lastAfterAnatomicalArmGuardRightArmTwistMuscle = float.NaN;
-            _lastAfterVisualSpikeSmoothingRightArmTwistMuscle = float.NaN;
             _lastSetHumanPoseInputRightArmTwistMuscle = float.NaN;
             _lastSetHumanPoseOutputRightArmTwistMuscle = float.NaN;
             _lastSetHumanPoseInputLeftUpperLegFrontBackMuscle = float.NaN;
@@ -5933,50 +5885,10 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         }
 
-        private void CapturePoseInputDiagnostics(HumanPose pose)
-        {
-            _lastPoseInputLeftShoulderFrontBackMuscle = ReadLeftShoulderFrontBackMuscle(pose);
-            _lastPoseInputLeftArmTwistMuscle = ReadLeftArmTwistMuscle(pose);
-            _lastPoseInputLeftForearmStretchMuscle = ReadLeftForearmStretchMuscle(pose);
-            _lastPoseInputRightForearmStretchMuscle = ReadRightForearmStretchMuscle(pose);
-            _lastPoseInputRightArmTwistMuscle = ReadRightArmTwistMuscle(pose);
-        }
 
-        private void CaptureAfterEditorMuscleReferenceDiagnostics(HumanPose pose)
-        {
-            _lastAfterEditorMuscleReferenceLeftShoulderFrontBackMuscle = ReadLeftShoulderFrontBackMuscle(pose);
-            _lastAfterEditorMuscleReferenceLeftArmTwistMuscle = ReadLeftArmTwistMuscle(pose);
-            _lastAfterEditorMuscleReferenceLeftForearmStretchMuscle = ReadLeftForearmStretchMuscle(pose);
-            _lastAfterEditorMuscleReferenceRightForearmStretchMuscle = ReadRightForearmStretchMuscle(pose);
-            _lastAfterEditorMuscleReferenceRightArmTwistMuscle = ReadRightArmTwistMuscle(pose);
-        }
 
-        private void CaptureAfterClampPoseMusclesDiagnostics(HumanPose pose)
-        {
-            _lastAfterClampPoseMusclesLeftShoulderFrontBackMuscle = ReadLeftShoulderFrontBackMuscle(pose);
-            _lastAfterClampPoseMusclesLeftArmTwistMuscle = ReadLeftArmTwistMuscle(pose);
-            _lastAfterClampPoseMusclesLeftForearmStretchMuscle = ReadLeftForearmStretchMuscle(pose);
-            _lastAfterClampPoseMusclesRightForearmStretchMuscle = ReadRightForearmStretchMuscle(pose);
-            _lastAfterClampPoseMusclesRightArmTwistMuscle = ReadRightArmTwistMuscle(pose);
-        }
 
-        private void CaptureAfterAnatomicalArmGuardDiagnostics(HumanPose pose)
-        {
-            _lastAfterAnatomicalArmGuardLeftShoulderFrontBackMuscle = ReadLeftShoulderFrontBackMuscle(pose);
-            _lastAfterAnatomicalArmGuardLeftArmTwistMuscle = ReadLeftArmTwistMuscle(pose);
-            _lastAfterAnatomicalArmGuardLeftForearmStretchMuscle = ReadLeftForearmStretchMuscle(pose);
-            _lastAfterAnatomicalArmGuardRightForearmStretchMuscle = ReadRightForearmStretchMuscle(pose);
-            _lastAfterAnatomicalArmGuardRightArmTwistMuscle = ReadRightArmTwistMuscle(pose);
-        }
 
-        private void CaptureAfterVisualSpikeSmoothingDiagnostics(HumanPose pose)
-        {
-            _lastAfterVisualSpikeSmoothingLeftShoulderFrontBackMuscle = ReadLeftShoulderFrontBackMuscle(pose);
-            _lastAfterVisualSpikeSmoothingLeftArmTwistMuscle = ReadLeftArmTwistMuscle(pose);
-            _lastAfterVisualSpikeSmoothingLeftForearmStretchMuscle = ReadLeftForearmStretchMuscle(pose);
-            _lastAfterVisualSpikeSmoothingRightForearmStretchMuscle = ReadRightForearmStretchMuscle(pose);
-            _lastAfterVisualSpikeSmoothingRightArmTwistMuscle = ReadRightArmTwistMuscle(pose);
-        }
 
         private void CaptureSetHumanPoseInputDiagnostics(HumanPose pose)
         {
@@ -6143,6 +6055,18 @@ namespace Fbx2Vmd.FBXImporter
             _lastSetHumanPoseOutputBodyRotation = IsFinite(_appliedTargetPose.bodyRotation)
                 ? _appliedTargetPose.bodyRotation
                 : BuildNaNQuaternion();
+        }
+
+        private RetargetingStageMuscleSnapshot ReadStageMuscles(HumanPose pose)
+        {
+            return new RetargetingStageMuscleSnapshot
+            {
+                LeftShoulderFrontBack = ReadLeftShoulderFrontBackMuscle(pose),
+                LeftArmTwist = ReadLeftArmTwistMuscle(pose),
+                LeftForearmStretch = ReadLeftForearmStretchMuscle(pose),
+                RightForearmStretch = ReadRightForearmStretchMuscle(pose),
+                RightArmTwist = ReadRightArmTwistMuscle(pose)
+            };
         }
 
         private float ReadLeftShoulderFrontBackMuscle(HumanPose pose)
