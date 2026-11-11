@@ -917,113 +917,113 @@ namespace Fbx2Vmd.FBXImporter
         public float LastAfterClampPoseMusclesLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.LeftShoulderFrontBack;
         public float LastAfterAnatomicalArmGuardLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.LeftShoulderFrontBack;
         public float LastAfterVisualSpikeSmoothingLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.LeftShoulderFrontBack;
-        public float LastSetHumanPoseInputLeftShoulderFrontBackMuscle => _lastSetHumanPoseInputLeftShoulderFrontBackMuscle;
-        public float LastSetHumanPoseOutputLeftShoulderFrontBackMuscle => _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle;
+        public float LastSetHumanPoseInputLeftShoulderFrontBackMuscle => _setHumanPoseDiagnostics.Input.LeftShoulderFrontBack;
+        public float LastSetHumanPoseOutputLeftShoulderFrontBackMuscle => _setHumanPoseDiagnostics.Output.LeftShoulderFrontBack;
         public float LastSetHumanPoseLeftShoulderFrontBackDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputLeftShoulderFrontBackMuscle,
-            _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle);
+            _setHumanPoseDiagnostics.Input.LeftShoulderFrontBack,
+            _setHumanPoseDiagnostics.Output.LeftShoulderFrontBack);
         public float LastPoseInputLeftArmTwistMuscle => _stageMuscleDiagnostics.PoseInput.LeftArmTwist;
         public float LastAfterEditorMuscleReferenceLeftArmTwistMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.LeftArmTwist;
         public float LastAfterClampPoseMusclesLeftArmTwistMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.LeftArmTwist;
         public float LastAfterAnatomicalArmGuardLeftArmTwistMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.LeftArmTwist;
         public float LastAfterVisualSpikeSmoothingLeftArmTwistMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.LeftArmTwist;
-        public float LastSetHumanPoseInputLeftArmTwistMuscle => _lastSetHumanPoseInputLeftArmTwistMuscle;
-        public float LastSetHumanPoseOutputLeftArmTwistMuscle => _lastSetHumanPoseOutputLeftArmTwistMuscle;
+        public float LastSetHumanPoseInputLeftArmTwistMuscle => _setHumanPoseDiagnostics.Input.LeftArmTwist;
+        public float LastSetHumanPoseOutputLeftArmTwistMuscle => _setHumanPoseDiagnostics.Output.LeftArmTwist;
         public float LastSetHumanPoseLeftArmTwistDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputLeftArmTwistMuscle,
-            _lastSetHumanPoseOutputLeftArmTwistMuscle);
+            _setHumanPoseDiagnostics.Input.LeftArmTwist,
+            _setHumanPoseDiagnostics.Output.LeftArmTwist);
         public float LastPoseInputLeftForearmStretchMuscle => _stageMuscleDiagnostics.PoseInput.LeftForearmStretch;
         public float LastAfterEditorMuscleReferenceLeftForearmStretchMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.LeftForearmStretch;
         public float LastAfterClampPoseMusclesLeftForearmStretchMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.LeftForearmStretch;
         public float LastAfterAnatomicalArmGuardLeftForearmStretchMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.LeftForearmStretch;
         public float LastAfterVisualSpikeSmoothingLeftForearmStretchMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.LeftForearmStretch;
-        public float LastSetHumanPoseInputLeftForearmStretchMuscle => _lastSetHumanPoseInputLeftForearmStretchMuscle;
-        public float LastSetHumanPoseOutputLeftForearmStretchMuscle => _lastSetHumanPoseOutputLeftForearmStretchMuscle;
+        public float LastSetHumanPoseInputLeftForearmStretchMuscle => _setHumanPoseDiagnostics.Input.LeftForearmStretch;
+        public float LastSetHumanPoseOutputLeftForearmStretchMuscle => _setHumanPoseDiagnostics.Output.LeftForearmStretch;
         public float LastSetHumanPoseLeftForearmStretchDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputLeftForearmStretchMuscle,
-            _lastSetHumanPoseOutputLeftForearmStretchMuscle);
+            _setHumanPoseDiagnostics.Input.LeftForearmStretch,
+            _setHumanPoseDiagnostics.Output.LeftForearmStretch);
         public float LastPoseInputRightForearmStretchMuscle => _stageMuscleDiagnostics.PoseInput.RightForearmStretch;
         public float LastAfterEditorMuscleReferenceRightForearmStretchMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.RightForearmStretch;
         public float LastAfterClampPoseMusclesRightForearmStretchMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.RightForearmStretch;
         public float LastAfterAnatomicalArmGuardRightForearmStretchMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.RightForearmStretch;
         public float LastAfterVisualSpikeSmoothingRightForearmStretchMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.RightForearmStretch;
-        public float LastSetHumanPoseInputRightForearmStretchMuscle => _lastSetHumanPoseInputRightForearmStretchMuscle;
-        public float LastSetHumanPoseOutputRightForearmStretchMuscle => _lastSetHumanPoseOutputRightForearmStretchMuscle;
+        public float LastSetHumanPoseInputRightForearmStretchMuscle => _setHumanPoseDiagnostics.Input.RightForearmStretch;
+        public float LastSetHumanPoseOutputRightForearmStretchMuscle => _setHumanPoseDiagnostics.Output.RightForearmStretch;
         public float LastSetHumanPoseRightForearmStretchDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightForearmStretchMuscle,
-            _lastSetHumanPoseOutputRightForearmStretchMuscle);
+            _setHumanPoseDiagnostics.Input.RightForearmStretch,
+            _setHumanPoseDiagnostics.Output.RightForearmStretch);
         public float LastPoseInputRightArmTwistMuscle => _stageMuscleDiagnostics.PoseInput.RightArmTwist;
         public float LastAfterEditorMuscleReferenceRightArmTwistMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.RightArmTwist;
         public float LastAfterClampPoseMusclesRightArmTwistMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.RightArmTwist;
         public float LastAfterAnatomicalArmGuardRightArmTwistMuscle => _stageMuscleDiagnostics.AfterAnatomicalArmGuard.RightArmTwist;
         public float LastAfterVisualSpikeSmoothingRightArmTwistMuscle => _stageMuscleDiagnostics.AfterVisualSpikeSmoothing.RightArmTwist;
-        public float LastSetHumanPoseInputRightArmTwistMuscle => _lastSetHumanPoseInputRightArmTwistMuscle;
-        public float LastSetHumanPoseOutputRightArmTwistMuscle => _lastSetHumanPoseOutputRightArmTwistMuscle;
+        public float LastSetHumanPoseInputRightArmTwistMuscle => _setHumanPoseDiagnostics.Input.RightArmTwist;
+        public float LastSetHumanPoseOutputRightArmTwistMuscle => _setHumanPoseDiagnostics.Output.RightArmTwist;
         public float LastSetHumanPoseRightArmTwistDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightArmTwistMuscle,
-            _lastSetHumanPoseOutputRightArmTwistMuscle);
-        public float LastSetHumanPoseInputLeftUpperLegFrontBackMuscle => _lastSetHumanPoseInputLeftUpperLegFrontBackMuscle;
-        public float LastSetHumanPoseOutputLeftUpperLegFrontBackMuscle => _lastSetHumanPoseOutputLeftUpperLegFrontBackMuscle;
+            _setHumanPoseDiagnostics.Input.RightArmTwist,
+            _setHumanPoseDiagnostics.Output.RightArmTwist);
+        public float LastSetHumanPoseInputLeftUpperLegFrontBackMuscle => _setHumanPoseDiagnostics.Input.LeftUpperLegFrontBack;
+        public float LastSetHumanPoseOutputLeftUpperLegFrontBackMuscle => _setHumanPoseDiagnostics.Output.LeftUpperLegFrontBack;
         public float LastSetHumanPoseLeftUpperLegFrontBackDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputLeftUpperLegFrontBackMuscle,
-            _lastSetHumanPoseOutputLeftUpperLegFrontBackMuscle);
-        public float LastSetHumanPoseInputRightUpperLegFrontBackMuscle => _lastSetHumanPoseInputRightUpperLegFrontBackMuscle;
-        public float LastSetHumanPoseOutputRightUpperLegFrontBackMuscle => _lastSetHumanPoseOutputRightUpperLegFrontBackMuscle;
+            _setHumanPoseDiagnostics.Input.LeftUpperLegFrontBack,
+            _setHumanPoseDiagnostics.Output.LeftUpperLegFrontBack);
+        public float LastSetHumanPoseInputRightUpperLegFrontBackMuscle => _setHumanPoseDiagnostics.Input.RightUpperLegFrontBack;
+        public float LastSetHumanPoseOutputRightUpperLegFrontBackMuscle => _setHumanPoseDiagnostics.Output.RightUpperLegFrontBack;
         public float LastSetHumanPoseRightUpperLegFrontBackDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightUpperLegFrontBackMuscle,
-            _lastSetHumanPoseOutputRightUpperLegFrontBackMuscle);
-        public float LastSetHumanPoseInputLeftLowerLegStretchMuscle => _lastSetHumanPoseInputLeftLowerLegStretchMuscle;
-        public float LastSetHumanPoseOutputLeftLowerLegStretchMuscle => _lastSetHumanPoseOutputLeftLowerLegStretchMuscle;
+            _setHumanPoseDiagnostics.Input.RightUpperLegFrontBack,
+            _setHumanPoseDiagnostics.Output.RightUpperLegFrontBack);
+        public float LastSetHumanPoseInputLeftLowerLegStretchMuscle => _setHumanPoseDiagnostics.Input.LeftLowerLegStretch;
+        public float LastSetHumanPoseOutputLeftLowerLegStretchMuscle => _setHumanPoseDiagnostics.Output.LeftLowerLegStretch;
         public float LastSetHumanPoseLeftLowerLegStretchDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputLeftLowerLegStretchMuscle,
-            _lastSetHumanPoseOutputLeftLowerLegStretchMuscle);
-        public float LastSetHumanPoseInputRightLowerLegStretchMuscle => _lastSetHumanPoseInputRightLowerLegStretchMuscle;
-        public float LastSetHumanPoseOutputRightLowerLegStretchMuscle => _lastSetHumanPoseOutputRightLowerLegStretchMuscle;
+            _setHumanPoseDiagnostics.Input.LeftLowerLegStretch,
+            _setHumanPoseDiagnostics.Output.LeftLowerLegStretch);
+        public float LastSetHumanPoseInputRightLowerLegStretchMuscle => _setHumanPoseDiagnostics.Input.RightLowerLegStretch;
+        public float LastSetHumanPoseOutputRightLowerLegStretchMuscle => _setHumanPoseDiagnostics.Output.RightLowerLegStretch;
         public float LastSetHumanPoseRightLowerLegStretchDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightLowerLegStretchMuscle,
-            _lastSetHumanPoseOutputRightLowerLegStretchMuscle);
-        public float LastSetHumanPoseInputLeftFootUpDownMuscle => _lastSetHumanPoseInputLeftFootUpDownMuscle;
-        public float LastSetHumanPoseOutputLeftFootUpDownMuscle => _lastSetHumanPoseOutputLeftFootUpDownMuscle;
+            _setHumanPoseDiagnostics.Input.RightLowerLegStretch,
+            _setHumanPoseDiagnostics.Output.RightLowerLegStretch);
+        public float LastSetHumanPoseInputLeftFootUpDownMuscle => _setHumanPoseDiagnostics.Input.LeftFootUpDown;
+        public float LastSetHumanPoseOutputLeftFootUpDownMuscle => _setHumanPoseDiagnostics.Output.LeftFootUpDown;
         public float LastSetHumanPoseLeftFootUpDownDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputLeftFootUpDownMuscle,
-            _lastSetHumanPoseOutputLeftFootUpDownMuscle);
-        public float LastSetHumanPoseInputRightFootUpDownMuscle => _lastSetHumanPoseInputRightFootUpDownMuscle;
-        public float LastSetHumanPoseOutputRightFootUpDownMuscle => _lastSetHumanPoseOutputRightFootUpDownMuscle;
+            _setHumanPoseDiagnostics.Input.LeftFootUpDown,
+            _setHumanPoseDiagnostics.Output.LeftFootUpDown);
+        public float LastSetHumanPoseInputRightFootUpDownMuscle => _setHumanPoseDiagnostics.Input.RightFootUpDown;
+        public float LastSetHumanPoseOutputRightFootUpDownMuscle => _setHumanPoseDiagnostics.Output.RightFootUpDown;
         public float LastSetHumanPoseRightFootUpDownDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightFootUpDownMuscle,
-            _lastSetHumanPoseOutputRightFootUpDownMuscle);
-        public float LastSetHumanPoseInputBodyPositionX => _lastSetHumanPoseInputBodyPosition.x;
-        public float LastSetHumanPoseInputBodyPositionY => _lastSetHumanPoseInputBodyPosition.y;
-        public float LastSetHumanPoseInputBodyPositionZ => _lastSetHumanPoseInputBodyPosition.z;
-        public float LastSetHumanPoseOutputBodyPositionX => _lastSetHumanPoseOutputBodyPosition.x;
-        public float LastSetHumanPoseOutputBodyPositionY => _lastSetHumanPoseOutputBodyPosition.y;
-        public float LastSetHumanPoseOutputBodyPositionZ => _lastSetHumanPoseOutputBodyPosition.z;
+            _setHumanPoseDiagnostics.Input.RightFootUpDown,
+            _setHumanPoseDiagnostics.Output.RightFootUpDown);
+        public float LastSetHumanPoseInputBodyPositionX => _setHumanPoseDiagnostics.Input.BodyPosition.x;
+        public float LastSetHumanPoseInputBodyPositionY => _setHumanPoseDiagnostics.Input.BodyPosition.y;
+        public float LastSetHumanPoseInputBodyPositionZ => _setHumanPoseDiagnostics.Input.BodyPosition.z;
+        public float LastSetHumanPoseOutputBodyPositionX => _setHumanPoseDiagnostics.Output.BodyPosition.x;
+        public float LastSetHumanPoseOutputBodyPositionY => _setHumanPoseDiagnostics.Output.BodyPosition.y;
+        public float LastSetHumanPoseOutputBodyPositionZ => _setHumanPoseDiagnostics.Output.BodyPosition.z;
         public float LastSetHumanPoseBodyPositionDeltaXZ => CalculateFiniteXzDelta(
-            _lastSetHumanPoseInputBodyPosition,
-            _lastSetHumanPoseOutputBodyPosition);
-        public float LastSetHumanPoseInputBodyRotationYaw => ReadBodyRotationYaw(_lastSetHumanPoseInputBodyRotation);
-        public float LastSetHumanPoseOutputBodyRotationYaw => ReadBodyRotationYaw(_lastSetHumanPoseOutputBodyRotation);
+            _setHumanPoseDiagnostics.Input.BodyPosition,
+            _setHumanPoseDiagnostics.Output.BodyPosition);
+        public float LastSetHumanPoseInputBodyRotationYaw => ReadBodyRotationYaw(_setHumanPoseDiagnostics.Input.BodyRotation);
+        public float LastSetHumanPoseOutputBodyRotationYaw => ReadBodyRotationYaw(_setHumanPoseDiagnostics.Output.BodyRotation);
         public float LastSetHumanPoseBodyRotationDeltaAngle => CalculateFiniteAngleDelta(
-            _lastSetHumanPoseInputBodyRotation,
-            _lastSetHumanPoseOutputBodyRotation);
-        public float LastSetHumanPosePreSolveGhostRootWorldX => _lastSetHumanPosePreSolveGhostRootWorldPosition.x;
-        public float LastSetHumanPosePreSolveGhostRootWorldY => _lastSetHumanPosePreSolveGhostRootWorldPosition.y;
-        public float LastSetHumanPosePreSolveGhostRootWorldZ => _lastSetHumanPosePreSolveGhostRootWorldPosition.z;
-        public float LastSetHumanPosePreSolveGhostRootYaw => ReadBodyRotationYaw(_lastSetHumanPosePreSolveGhostRootWorldRotation);
-        public float LastSetHumanPosePreSolveTargetRootWorldX => _lastSetHumanPosePreSolveTargetRootWorldPosition.x;
-        public float LastSetHumanPosePreSolveTargetRootWorldY => _lastSetHumanPosePreSolveTargetRootWorldPosition.y;
-        public float LastSetHumanPosePreSolveTargetRootWorldZ => _lastSetHumanPosePreSolveTargetRootWorldPosition.z;
-        public float LastSetHumanPosePreSolveTargetRootYaw => ReadBodyRotationYaw(_lastSetHumanPosePreSolveTargetRootWorldRotation);
-        public float LastSetHumanPosePreSolveTargetHipsWorldX => _lastSetHumanPosePreSolveTargetHipsWorldPosition.x;
-        public float LastSetHumanPosePreSolveTargetHipsWorldY => _lastSetHumanPosePreSolveTargetHipsWorldPosition.y;
-        public float LastSetHumanPosePreSolveTargetHipsWorldZ => _lastSetHumanPosePreSolveTargetHipsWorldPosition.z;
-        public float LastSetHumanPosePreSolveTargetHipsLocalX => _lastSetHumanPosePreSolveTargetHipsLocalPosition.x;
-        public float LastSetHumanPosePreSolveTargetHipsLocalY => _lastSetHumanPosePreSolveTargetHipsLocalPosition.y;
-        public float LastSetHumanPosePreSolveTargetHipsLocalZ => _lastSetHumanPosePreSolveTargetHipsLocalPosition.z;
-        public float LastSetHumanPosePreSolveBodyPositionX => _lastSetHumanPosePreSolveBodyPosition.x;
-        public float LastSetHumanPosePreSolveBodyPositionY => _lastSetHumanPosePreSolveBodyPosition.y;
-        public float LastSetHumanPosePreSolveBodyPositionZ => _lastSetHumanPosePreSolveBodyPosition.z;
-        public float LastSetHumanPosePreSolveBodyRotationYaw => ReadBodyRotationYaw(_lastSetHumanPosePreSolveBodyRotation);
+            _setHumanPoseDiagnostics.Input.BodyRotation,
+            _setHumanPoseDiagnostics.Output.BodyRotation);
+        public float LastSetHumanPosePreSolveGhostRootWorldX => _setHumanPoseDiagnostics.PreSolveBasis.GhostRootWorldPosition.x;
+        public float LastSetHumanPosePreSolveGhostRootWorldY => _setHumanPoseDiagnostics.PreSolveBasis.GhostRootWorldPosition.y;
+        public float LastSetHumanPosePreSolveGhostRootWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.GhostRootWorldPosition.z;
+        public float LastSetHumanPosePreSolveGhostRootYaw => ReadBodyRotationYaw(_setHumanPoseDiagnostics.PreSolveBasis.GhostRootWorldRotation);
+        public float LastSetHumanPosePreSolveTargetRootWorldX => _setHumanPoseDiagnostics.PreSolveBasis.TargetRootWorldPosition.x;
+        public float LastSetHumanPosePreSolveTargetRootWorldY => _setHumanPoseDiagnostics.PreSolveBasis.TargetRootWorldPosition.y;
+        public float LastSetHumanPosePreSolveTargetRootWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.TargetRootWorldPosition.z;
+        public float LastSetHumanPosePreSolveTargetRootYaw => ReadBodyRotationYaw(_setHumanPoseDiagnostics.PreSolveBasis.TargetRootWorldRotation);
+        public float LastSetHumanPosePreSolveTargetHipsWorldX => _setHumanPoseDiagnostics.PreSolveBasis.TargetHipsWorldPosition.x;
+        public float LastSetHumanPosePreSolveTargetHipsWorldY => _setHumanPoseDiagnostics.PreSolveBasis.TargetHipsWorldPosition.y;
+        public float LastSetHumanPosePreSolveTargetHipsWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.TargetHipsWorldPosition.z;
+        public float LastSetHumanPosePreSolveTargetHipsLocalX => _setHumanPoseDiagnostics.PreSolveBasis.TargetHipsLocalPosition.x;
+        public float LastSetHumanPosePreSolveTargetHipsLocalY => _setHumanPoseDiagnostics.PreSolveBasis.TargetHipsLocalPosition.y;
+        public float LastSetHumanPosePreSolveTargetHipsLocalZ => _setHumanPoseDiagnostics.PreSolveBasis.TargetHipsLocalPosition.z;
+        public float LastSetHumanPosePreSolveBodyPositionX => _setHumanPoseDiagnostics.PreSolveBasis.BodyPosition.x;
+        public float LastSetHumanPosePreSolveBodyPositionY => _setHumanPoseDiagnostics.PreSolveBasis.BodyPosition.y;
+        public float LastSetHumanPosePreSolveBodyPositionZ => _setHumanPoseDiagnostics.PreSolveBasis.BodyPosition.z;
+        public float LastSetHumanPosePreSolveBodyRotationYaw => ReadBodyRotationYaw(_setHumanPoseDiagnostics.PreSolveBasis.BodyRotation);
         public float LastPreSetHumanPoseEndpointBodyPositionBeforeX => _lastPreSetHumanPoseEndpointBodyPositionBefore.x;
         public float LastPreSetHumanPoseEndpointBodyPositionBeforeZ => _lastPreSetHumanPoseEndpointBodyPositionBefore.z;
         public float LastPreSetHumanPoseEndpointBodyPositionAfterX => _lastPreSetHumanPoseEndpointBodyPositionAfter.x;
@@ -1033,69 +1033,69 @@ namespace Fbx2Vmd.FBXImporter
         public float LastPreSetHumanPoseEndpointBodyPositionDeltaMagnitudeXZ => CalculateFiniteXzDelta(
             Vector3.zero,
             _lastPreSetHumanPoseEndpointBodyPositionDelta);
-        public float LastSetHumanPosePreSolveGhostLeftFootWorldX => _lastSetHumanPosePreSolveGhostEndpointPositions.LeftFoot.x;
-        public float LastSetHumanPosePreSolveGhostLeftFootWorldZ => _lastSetHumanPosePreSolveGhostEndpointPositions.LeftFoot.z;
-        public float LastSetHumanPosePreSolveGhostLeftToesWorldX => _lastSetHumanPosePreSolveGhostEndpointPositions.LeftToes.x;
-        public float LastSetHumanPosePreSolveGhostLeftToesWorldZ => _lastSetHumanPosePreSolveGhostEndpointPositions.LeftToes.z;
-        public float LastSetHumanPosePreSolveCurrentLeftFootWorldX => _lastSetHumanPosePreSolveCurrentEndpointPositions.LeftFoot.x;
-        public float LastSetHumanPosePreSolveCurrentLeftFootWorldZ => _lastSetHumanPosePreSolveCurrentEndpointPositions.LeftFoot.z;
-        public float LastSetHumanPosePreSolveCurrentLeftToesWorldX => _lastSetHumanPosePreSolveCurrentEndpointPositions.LeftToes.x;
-        public float LastSetHumanPosePreSolveCurrentLeftToesWorldZ => _lastSetHumanPosePreSolveCurrentEndpointPositions.LeftToes.z;
-        public float LastSetHumanPosePreSolveTargetLeftFootWorldX => _lastSetHumanPosePreSolveTargetEndpointPositions.LeftFoot.x;
-        public float LastSetHumanPosePreSolveTargetLeftFootWorldZ => _lastSetHumanPosePreSolveTargetEndpointPositions.LeftFoot.z;
-        public float LastSetHumanPosePreSolveTargetLeftToesWorldX => _lastSetHumanPosePreSolveTargetEndpointPositions.LeftToes.x;
-        public float LastSetHumanPosePreSolveTargetLeftToesWorldZ => _lastSetHumanPosePreSolveTargetEndpointPositions.LeftToes.z;
-        public float LastSetHumanPosePreSolveGhostRightFootWorldX => _lastSetHumanPosePreSolveGhostEndpointPositions.RightFoot.x;
-        public float LastSetHumanPosePreSolveGhostRightFootWorldZ => _lastSetHumanPosePreSolveGhostEndpointPositions.RightFoot.z;
-        public float LastSetHumanPosePreSolveGhostRightToesWorldX => _lastSetHumanPosePreSolveGhostEndpointPositions.RightToes.x;
-        public float LastSetHumanPosePreSolveGhostRightToesWorldZ => _lastSetHumanPosePreSolveGhostEndpointPositions.RightToes.z;
-        public float LastSetHumanPosePreSolveCurrentRightFootWorldX => _lastSetHumanPosePreSolveCurrentEndpointPositions.RightFoot.x;
-        public float LastSetHumanPosePreSolveCurrentRightFootWorldZ => _lastSetHumanPosePreSolveCurrentEndpointPositions.RightFoot.z;
-        public float LastSetHumanPosePreSolveCurrentRightToesWorldX => _lastSetHumanPosePreSolveCurrentEndpointPositions.RightToes.x;
-        public float LastSetHumanPosePreSolveCurrentRightToesWorldZ => _lastSetHumanPosePreSolveCurrentEndpointPositions.RightToes.z;
-        public float LastSetHumanPosePreSolveTargetRightFootWorldX => _lastSetHumanPosePreSolveTargetEndpointPositions.RightFoot.x;
-        public float LastSetHumanPosePreSolveTargetRightFootWorldZ => _lastSetHumanPosePreSolveTargetEndpointPositions.RightFoot.z;
-        public float LastSetHumanPosePreSolveTargetRightToesWorldX => _lastSetHumanPosePreSolveTargetEndpointPositions.RightToes.x;
-        public float LastSetHumanPosePreSolveTargetRightToesWorldZ => _lastSetHumanPosePreSolveTargetEndpointPositions.RightToes.z;
-        public float LastSetHumanPoseInputSpineFrontBackMuscle => _lastSetHumanPoseInputSpineFrontBackMuscle;
-        public float LastSetHumanPoseInputSpineLeftRightMuscle => _lastSetHumanPoseInputSpineLeftRightMuscle;
-        public float LastSetHumanPoseInputSpineTwistLeftRightMuscle => _lastSetHumanPoseInputSpineTwistLeftRightMuscle;
-        public float LastSetHumanPoseInputChestFrontBackMuscle => _lastSetHumanPoseInputChestFrontBackMuscle;
-        public float LastSetHumanPoseInputChestLeftRightMuscle => _lastSetHumanPoseInputChestLeftRightMuscle;
-        public float LastSetHumanPoseInputChestTwistLeftRightMuscle => _lastSetHumanPoseInputChestTwistLeftRightMuscle;
-        public float LastSetHumanPoseInputUpperChestFrontBackMuscle => _lastSetHumanPoseInputUpperChestFrontBackMuscle;
-        public float LastSetHumanPoseInputUpperChestLeftRightMuscle => _lastSetHumanPoseInputUpperChestLeftRightMuscle;
-        public float LastSetHumanPoseInputUpperChestTwistLeftRightMuscle => _lastSetHumanPoseInputUpperChestTwistLeftRightMuscle;
-        public float LastSetHumanPoseInputLeftUpperLegInOutMuscle => _lastSetHumanPoseInputLeftUpperLegInOutMuscle;
-        public float LastSetHumanPoseInputRightUpperLegInOutMuscle => _lastSetHumanPoseInputRightUpperLegInOutMuscle;
-        public float LastSetHumanPoseInputLeftUpperLegTwistInOutMuscle => _lastSetHumanPoseInputLeftUpperLegTwistInOutMuscle;
-        public float LastSetHumanPoseInputRightUpperLegTwistInOutMuscle => _lastSetHumanPoseInputRightUpperLegTwistInOutMuscle;
-        public float LastSetHumanPoseInputLeftLowerLegTwistInOutMuscle => _lastSetHumanPoseInputLeftLowerLegTwistInOutMuscle;
-        public float LastSetHumanPoseInputRightLowerLegTwistInOutMuscle => _lastSetHumanPoseInputRightLowerLegTwistInOutMuscle;
-        public float LastSetHumanPoseInputLeftFootTwistInOutMuscle => _lastSetHumanPoseInputLeftFootTwistInOutMuscle;
-        public float LastSetHumanPoseInputRightFootTwistInOutMuscle => _lastSetHumanPoseInputRightFootTwistInOutMuscle;
-        public float LastSetHumanPoseInputLeftToesUpDownMuscle => _lastSetHumanPoseInputLeftToesUpDownMuscle;
-        public float LastSetHumanPoseInputRightToesUpDownMuscle => _lastSetHumanPoseInputRightToesUpDownMuscle;
-        public float LastSetHumanPoseOutputRightUpperLegInOutMuscle => _lastSetHumanPoseOutputRightUpperLegInOutMuscle;
+        public float LastSetHumanPosePreSolveGhostLeftFootWorldX => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.LeftFoot.x;
+        public float LastSetHumanPosePreSolveGhostLeftFootWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.LeftFoot.z;
+        public float LastSetHumanPosePreSolveGhostLeftToesWorldX => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.LeftToes.x;
+        public float LastSetHumanPosePreSolveGhostLeftToesWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.LeftToes.z;
+        public float LastSetHumanPosePreSolveCurrentLeftFootWorldX => _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions.LeftFoot.x;
+        public float LastSetHumanPosePreSolveCurrentLeftFootWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions.LeftFoot.z;
+        public float LastSetHumanPosePreSolveCurrentLeftToesWorldX => _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions.LeftToes.x;
+        public float LastSetHumanPosePreSolveCurrentLeftToesWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions.LeftToes.z;
+        public float LastSetHumanPosePreSolveTargetLeftFootWorldX => _setHumanPoseDiagnostics.PreSolveBasis.TargetEndpointPositions.LeftFoot.x;
+        public float LastSetHumanPosePreSolveTargetLeftFootWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.TargetEndpointPositions.LeftFoot.z;
+        public float LastSetHumanPosePreSolveTargetLeftToesWorldX => _setHumanPoseDiagnostics.PreSolveBasis.TargetEndpointPositions.LeftToes.x;
+        public float LastSetHumanPosePreSolveTargetLeftToesWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.TargetEndpointPositions.LeftToes.z;
+        public float LastSetHumanPosePreSolveGhostRightFootWorldX => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.RightFoot.x;
+        public float LastSetHumanPosePreSolveGhostRightFootWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.RightFoot.z;
+        public float LastSetHumanPosePreSolveGhostRightToesWorldX => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.RightToes.x;
+        public float LastSetHumanPosePreSolveGhostRightToesWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.RightToes.z;
+        public float LastSetHumanPosePreSolveCurrentRightFootWorldX => _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions.RightFoot.x;
+        public float LastSetHumanPosePreSolveCurrentRightFootWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions.RightFoot.z;
+        public float LastSetHumanPosePreSolveCurrentRightToesWorldX => _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions.RightToes.x;
+        public float LastSetHumanPosePreSolveCurrentRightToesWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions.RightToes.z;
+        public float LastSetHumanPosePreSolveTargetRightFootWorldX => _setHumanPoseDiagnostics.PreSolveBasis.TargetEndpointPositions.RightFoot.x;
+        public float LastSetHumanPosePreSolveTargetRightFootWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.TargetEndpointPositions.RightFoot.z;
+        public float LastSetHumanPosePreSolveTargetRightToesWorldX => _setHumanPoseDiagnostics.PreSolveBasis.TargetEndpointPositions.RightToes.x;
+        public float LastSetHumanPosePreSolveTargetRightToesWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.TargetEndpointPositions.RightToes.z;
+        public float LastSetHumanPoseInputSpineFrontBackMuscle => _setHumanPoseDiagnostics.Input.SpineFrontBack;
+        public float LastSetHumanPoseInputSpineLeftRightMuscle => _setHumanPoseDiagnostics.Input.SpineLeftRight;
+        public float LastSetHumanPoseInputSpineTwistLeftRightMuscle => _setHumanPoseDiagnostics.Input.SpineTwistLeftRight;
+        public float LastSetHumanPoseInputChestFrontBackMuscle => _setHumanPoseDiagnostics.Input.ChestFrontBack;
+        public float LastSetHumanPoseInputChestLeftRightMuscle => _setHumanPoseDiagnostics.Input.ChestLeftRight;
+        public float LastSetHumanPoseInputChestTwistLeftRightMuscle => _setHumanPoseDiagnostics.Input.ChestTwistLeftRight;
+        public float LastSetHumanPoseInputUpperChestFrontBackMuscle => _setHumanPoseDiagnostics.Input.UpperChestFrontBack;
+        public float LastSetHumanPoseInputUpperChestLeftRightMuscle => _setHumanPoseDiagnostics.Input.UpperChestLeftRight;
+        public float LastSetHumanPoseInputUpperChestTwistLeftRightMuscle => _setHumanPoseDiagnostics.Input.UpperChestTwistLeftRight;
+        public float LastSetHumanPoseInputLeftUpperLegInOutMuscle => _setHumanPoseDiagnostics.Input.LeftUpperLegInOut;
+        public float LastSetHumanPoseInputRightUpperLegInOutMuscle => _setHumanPoseDiagnostics.Input.RightUpperLegInOut;
+        public float LastSetHumanPoseInputLeftUpperLegTwistInOutMuscle => _setHumanPoseDiagnostics.Input.LeftUpperLegTwistInOut;
+        public float LastSetHumanPoseInputRightUpperLegTwistInOutMuscle => _setHumanPoseDiagnostics.Input.RightUpperLegTwistInOut;
+        public float LastSetHumanPoseInputLeftLowerLegTwistInOutMuscle => _setHumanPoseDiagnostics.Input.LeftLowerLegTwistInOut;
+        public float LastSetHumanPoseInputRightLowerLegTwistInOutMuscle => _setHumanPoseDiagnostics.Input.RightLowerLegTwistInOut;
+        public float LastSetHumanPoseInputLeftFootTwistInOutMuscle => _setHumanPoseDiagnostics.Input.LeftFootTwistInOut;
+        public float LastSetHumanPoseInputRightFootTwistInOutMuscle => _setHumanPoseDiagnostics.Input.RightFootTwistInOut;
+        public float LastSetHumanPoseInputLeftToesUpDownMuscle => _setHumanPoseDiagnostics.Input.LeftToesUpDown;
+        public float LastSetHumanPoseInputRightToesUpDownMuscle => _setHumanPoseDiagnostics.Input.RightToesUpDown;
+        public float LastSetHumanPoseOutputRightUpperLegInOutMuscle => _setHumanPoseDiagnostics.Output.RightUpperLegInOut;
         public float LastSetHumanPoseRightUpperLegInOutDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightUpperLegInOutMuscle,
-            _lastSetHumanPoseOutputRightUpperLegInOutMuscle);
-        public float LastSetHumanPoseOutputRightUpperLegTwistInOutMuscle => _lastSetHumanPoseOutputRightUpperLegTwistInOutMuscle;
+            _setHumanPoseDiagnostics.Input.RightUpperLegInOut,
+            _setHumanPoseDiagnostics.Output.RightUpperLegInOut);
+        public float LastSetHumanPoseOutputRightUpperLegTwistInOutMuscle => _setHumanPoseDiagnostics.Output.RightUpperLegTwistInOut;
         public float LastSetHumanPoseRightUpperLegTwistInOutDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightUpperLegTwistInOutMuscle,
-            _lastSetHumanPoseOutputRightUpperLegTwistInOutMuscle);
-        public float LastSetHumanPoseOutputRightLowerLegTwistInOutMuscle => _lastSetHumanPoseOutputRightLowerLegTwistInOutMuscle;
+            _setHumanPoseDiagnostics.Input.RightUpperLegTwistInOut,
+            _setHumanPoseDiagnostics.Output.RightUpperLegTwistInOut);
+        public float LastSetHumanPoseOutputRightLowerLegTwistInOutMuscle => _setHumanPoseDiagnostics.Output.RightLowerLegTwistInOut;
         public float LastSetHumanPoseRightLowerLegTwistInOutDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightLowerLegTwistInOutMuscle,
-            _lastSetHumanPoseOutputRightLowerLegTwistInOutMuscle);
-        public float LastSetHumanPoseOutputRightFootTwistInOutMuscle => _lastSetHumanPoseOutputRightFootTwistInOutMuscle;
+            _setHumanPoseDiagnostics.Input.RightLowerLegTwistInOut,
+            _setHumanPoseDiagnostics.Output.RightLowerLegTwistInOut);
+        public float LastSetHumanPoseOutputRightFootTwistInOutMuscle => _setHumanPoseDiagnostics.Output.RightFootTwistInOut;
         public float LastSetHumanPoseRightFootTwistInOutDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightFootTwistInOutMuscle,
-            _lastSetHumanPoseOutputRightFootTwistInOutMuscle);
-        public float LastSetHumanPoseOutputRightToesUpDownMuscle => _lastSetHumanPoseOutputRightToesUpDownMuscle;
+            _setHumanPoseDiagnostics.Input.RightFootTwistInOut,
+            _setHumanPoseDiagnostics.Output.RightFootTwistInOut);
+        public float LastSetHumanPoseOutputRightToesUpDownMuscle => _setHumanPoseDiagnostics.Output.RightToesUpDown;
         public float LastSetHumanPoseRightToesUpDownDelta => CalculateFiniteAbsDelta(
-            _lastSetHumanPoseInputRightToesUpDownMuscle,
-            _lastSetHumanPoseOutputRightToesUpDownMuscle);
+            _setHumanPoseDiagnostics.Input.RightToesUpDown,
+            _setHumanPoseDiagnostics.Output.RightToesUpDown);
         public float LastRetargetStageGhostLeftFootWorldX => _endpointStageDiagnostics.GhostPositions.LeftFoot.x;
         public float LastRetargetStageGhostLeftFootWorldZ => _endpointStageDiagnostics.GhostPositions.LeftFoot.z;
         public float LastRetargetStageGhostLeftToesWorldX => _endpointStageDiagnostics.GhostPositions.LeftToes.x;
@@ -1507,67 +1507,9 @@ namespace Fbx2Vmd.FBXImporter
         private float _lastRightThumbProximalWorldRotationPreserveLimitedRisk = float.NaN;
         private float _lastLeftThumbIntermediateWorldRotationPreserveLimitedRisk = float.NaN;
         private float _lastRightThumbIntermediateWorldRotationPreserveLimitedRisk = float.NaN;
-        private float _lastSetHumanPoseInputLeftShoulderFrontBackMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftArmTwistMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputLeftArmTwistMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftForearmStretchMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputLeftForearmStretchMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightForearmStretchMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightForearmStretchMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightArmTwistMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightArmTwistMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftUpperLegFrontBackMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputLeftUpperLegFrontBackMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightUpperLegFrontBackMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightUpperLegFrontBackMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftLowerLegStretchMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputLeftLowerLegStretchMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightLowerLegStretchMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightLowerLegStretchMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftFootUpDownMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputLeftFootUpDownMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightFootUpDownMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightFootUpDownMuscle = float.NaN;
-        private Vector3 _lastSetHumanPoseInputBodyPosition = BuildNaNVector3();
-        private Vector3 _lastSetHumanPoseOutputBodyPosition = BuildNaNVector3();
-        private Quaternion _lastSetHumanPoseInputBodyRotation = BuildNaNQuaternion();
-        private Quaternion _lastSetHumanPoseOutputBodyRotation = BuildNaNQuaternion();
-        private Vector3 _lastSetHumanPosePreSolveGhostRootWorldPosition = BuildNaNVector3();
-        private Quaternion _lastSetHumanPosePreSolveGhostRootWorldRotation = BuildNaNQuaternion();
-        private Vector3 _lastSetHumanPosePreSolveTargetRootWorldPosition = BuildNaNVector3();
-        private Quaternion _lastSetHumanPosePreSolveTargetRootWorldRotation = BuildNaNQuaternion();
-        private Vector3 _lastSetHumanPosePreSolveTargetHipsWorldPosition = BuildNaNVector3();
-        private Vector3 _lastSetHumanPosePreSolveTargetHipsLocalPosition = BuildNaNVector3();
-        private Vector3 _lastSetHumanPosePreSolveBodyPosition = BuildNaNVector3();
-        private Quaternion _lastSetHumanPosePreSolveBodyRotation = BuildNaNQuaternion();
         private Vector3 _lastPreSetHumanPoseEndpointBodyPositionBefore = BuildNaNVector3();
         private Vector3 _lastPreSetHumanPoseEndpointBodyPositionAfter = BuildNaNVector3();
         private Vector3 _lastPreSetHumanPoseEndpointBodyPositionDelta = BuildNaNVector3();
-        private float _lastSetHumanPoseInputSpineFrontBackMuscle = float.NaN;
-        private float _lastSetHumanPoseInputSpineLeftRightMuscle = float.NaN;
-        private float _lastSetHumanPoseInputSpineTwistLeftRightMuscle = float.NaN;
-        private float _lastSetHumanPoseInputChestFrontBackMuscle = float.NaN;
-        private float _lastSetHumanPoseInputChestLeftRightMuscle = float.NaN;
-        private float _lastSetHumanPoseInputChestTwistLeftRightMuscle = float.NaN;
-        private float _lastSetHumanPoseInputUpperChestFrontBackMuscle = float.NaN;
-        private float _lastSetHumanPoseInputUpperChestLeftRightMuscle = float.NaN;
-        private float _lastSetHumanPoseInputUpperChestTwistLeftRightMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftUpperLegInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightUpperLegInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftUpperLegTwistInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightUpperLegTwistInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftLowerLegTwistInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightLowerLegTwistInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftFootTwistInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightFootTwistInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseInputLeftToesUpDownMuscle = float.NaN;
-        private float _lastSetHumanPoseInputRightToesUpDownMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightUpperLegInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightUpperLegTwistInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightLowerLegTwistInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightFootTwistInOutMuscle = float.NaN;
-        private float _lastSetHumanPoseOutputRightToesUpDownMuscle = float.NaN;
         private float _lastEditorFootLocalRotationLeftFootXzDelta = float.NaN;
         private float _lastEditorFootLocalRotationRightFootXzDelta = float.NaN;
         private float _lastEditorLowerBodySegmentDirectionLeftFootXzDelta = float.NaN;
@@ -1632,10 +1574,8 @@ namespace Fbx2Vmd.FBXImporter
         private Vector3 _postSetHumanPoseRightFootEvaluatorXzFirstOffset = new Vector3(float.NaN, float.NaN, float.NaN);
         private readonly RetargetingEndpointStageDiagnostics _endpointStageDiagnostics = new RetargetingEndpointStageDiagnostics();
         private readonly RetargetingStageMuscleDiagnostics _stageMuscleDiagnostics = new RetargetingStageMuscleDiagnostics();
+        private readonly RetargetingSetHumanPoseDiagnostics _setHumanPoseDiagnostics = new RetargetingSetHumanPoseDiagnostics();
 
-        private RetargetEndpointStageWorldPositions _lastSetHumanPosePreSolveGhostEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private RetargetEndpointStageWorldPositions _lastSetHumanPosePreSolveCurrentEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private RetargetEndpointStageWorldPositions _lastSetHumanPosePreSolveTargetEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
 
         private static Vector3 BuildNaNVector3()
         {
@@ -2453,17 +2393,18 @@ namespace Fbx2Vmd.FBXImporter
 
             Vector3 targetPositionBeforePose = targetAnimator.transform.position;
 #if UNITY_EDITOR
-            _lastSetHumanPosePreSolveCurrentEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
+            _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
             ApplyPreSetHumanPoseSignCorrectedRowLocalBodyPositionReference(ref _humanPose);
             if (!preSetHumanPoseEndpointPositionUseGhostCurrentBasis)
             {
                 ApplyPreSetHumanPoseRightEndpointPositionReference();
             }
 #endif
-            CaptureSetHumanPoseInputDiagnostics(_humanPose);
+            _setHumanPoseDiagnostics.CaptureInput(ReadSetHumanPoseInputSnapshot(_humanPose));
+            CaptureSetHumanPosePreSolveBasisDiagnostics(_humanPose);
             _targetHandler.SetHumanPose(ref _humanPose);
             ApplySetHumanPoseRightLegTwistOutputReference(_humanPose);
-            CaptureSetHumanPoseOutputDiagnostics();
+            _setHumanPoseDiagnostics.CaptureOutput(ReadSetHumanPoseOutputSnapshot());
 #if UNITY_EDITOR
             _endpointStageDiagnostics.AfterSetHumanPosePositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
 #endif
@@ -4168,7 +4109,7 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             RetargetEndpointStageWorldPositions ghostPositions = RetargetingEndpointStageDiagnostics.CapturePositions(ghostAnimator);
-            RetargetEndpointStageWorldPositions currentPositions = _lastSetHumanPosePreSolveCurrentEndpointPositions;
+            RetargetEndpointStageWorldPositions currentPositions = _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions;
             bool useLeftSide = ShouldUseLeftSideForPreSetHumanPoseEndpointPosition;
             Vector3 ghostFootPosition = useLeftSide ? ghostPositions.LeftFoot : ghostPositions.RightFoot;
             Vector3 currentFootPosition = useLeftSide ? currentPositions.LeftFoot : currentPositions.RightFoot;
@@ -5830,34 +5771,13 @@ namespace Fbx2Vmd.FBXImporter
         private void ResetRetargetPoseStageDiagnostics()
         {
             _stageMuscleDiagnostics.Reset();
-            _lastSetHumanPoseInputLeftShoulderFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftArmTwistMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftArmTwistMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftForearmStretchMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftForearmStretchMuscle = float.NaN;
-            _lastSetHumanPoseInputRightForearmStretchMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightForearmStretchMuscle = float.NaN;
-            _lastSetHumanPoseInputRightArmTwistMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightArmTwistMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftUpperLegFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftUpperLegFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseInputRightUpperLegFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightUpperLegFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftLowerLegStretchMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftLowerLegStretchMuscle = float.NaN;
-            _lastSetHumanPoseInputRightLowerLegStretchMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightLowerLegStretchMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftFootUpDownMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftFootUpDownMuscle = float.NaN;
-            _lastSetHumanPoseInputRightFootUpDownMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightFootUpDownMuscle = float.NaN;
-            _lastSetHumanPoseInputBodyPosition = BuildNaNVector3();
-            _lastSetHumanPoseOutputBodyPosition = BuildNaNVector3();
-            _lastSetHumanPoseInputBodyRotation = BuildNaNQuaternion();
-            _lastSetHumanPoseOutputBodyRotation = BuildNaNQuaternion();
-            ResetSetHumanPosePreSolveBasisDiagnostics();
-            ResetSetHumanPoseExtendedInputDiagnostics();
+            _setHumanPoseDiagnostics.Input.ClearCore();
+            _setHumanPoseDiagnostics.Output.ClearCore();
+            _setHumanPoseDiagnostics.ResetPreSolveBasis();
+#if UNITY_EDITOR
+            ResetPreSetHumanPoseEndpointBodyPositionDiagnostics();
+#endif
+            _setHumanPoseDiagnostics.ResetExtendedMuscles();
             _lastEditorFootLocalRotationLeftFootXzDelta = float.NaN;
             _lastEditorFootLocalRotationRightFootXzDelta = float.NaN;
             _lastEditorLowerBodySegmentDirectionLeftFootXzDelta = float.NaN;
@@ -5871,8 +5791,6 @@ namespace Fbx2Vmd.FBXImporter
             ResetPostSetHumanPoseRightEndpointPositionDiagnostics();
 #endif
             _endpointStageDiagnostics.GhostPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastSetHumanPosePreSolveGhostEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastSetHumanPosePreSolveTargetEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
             _endpointStageDiagnostics.AfterSetHumanPosePositions = RetargetEndpointStageWorldPositions.Empty;
             _endpointStageDiagnostics.AfterManualReferencesPositions = RetargetEndpointStageWorldPositions.Empty;
             _endpointStageDiagnostics.AfterRootRestorePositions = RetargetEndpointStageWorldPositions.Empty;
@@ -5885,171 +5803,96 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         }
 
-        private void CaptureSetHumanPoseInputDiagnostics(HumanPose pose)
-        {
-            _lastSetHumanPoseInputLeftShoulderFrontBackMuscle = ReadLeftShoulderFrontBackMuscle(pose);
-            _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftArmTwistMuscle = ReadLeftArmTwistMuscle(pose);
-            _lastSetHumanPoseOutputLeftArmTwistMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftForearmStretchMuscle = ReadLeftForearmStretchMuscle(pose);
-            _lastSetHumanPoseOutputLeftForearmStretchMuscle = float.NaN;
-            _lastSetHumanPoseInputRightForearmStretchMuscle = ReadRightForearmStretchMuscle(pose);
-            _lastSetHumanPoseOutputRightForearmStretchMuscle = float.NaN;
-            _lastSetHumanPoseInputRightArmTwistMuscle = ReadRightArmTwistMuscle(pose);
-            _lastSetHumanPoseOutputRightArmTwistMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftUpperLegFrontBackMuscle = ReadLeftUpperLegFrontBackMuscle(pose);
-            _lastSetHumanPoseOutputLeftUpperLegFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseInputRightUpperLegFrontBackMuscle = ReadRightUpperLegFrontBackMuscle(pose);
-            _lastSetHumanPoseOutputRightUpperLegFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftLowerLegStretchMuscle = ReadLeftLowerLegStretchMuscle(pose);
-            _lastSetHumanPoseOutputLeftLowerLegStretchMuscle = float.NaN;
-            _lastSetHumanPoseInputRightLowerLegStretchMuscle = ReadRightLowerLegStretchMuscle(pose);
-            _lastSetHumanPoseOutputRightLowerLegStretchMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftFootUpDownMuscle = ReadLeftFootUpDownMuscle(pose);
-            _lastSetHumanPoseOutputLeftFootUpDownMuscle = float.NaN;
-            _lastSetHumanPoseInputRightFootUpDownMuscle = ReadRightFootUpDownMuscle(pose);
-            _lastSetHumanPoseOutputRightFootUpDownMuscle = float.NaN;
-            _lastSetHumanPoseInputBodyPosition = IsFinite(pose.bodyPosition) ? pose.bodyPosition : BuildNaNVector3();
-            _lastSetHumanPoseOutputBodyPosition = BuildNaNVector3();
-            _lastSetHumanPoseInputBodyRotation = IsFinite(pose.bodyRotation) ? pose.bodyRotation : BuildNaNQuaternion();
-            _lastSetHumanPoseOutputBodyRotation = BuildNaNQuaternion();
-            CaptureSetHumanPosePreSolveBasisDiagnostics(pose);
-            CaptureSetHumanPoseExtendedInputDiagnostics(pose);
-        }
-
-        private void ResetSetHumanPosePreSolveBasisDiagnostics()
-        {
-            _lastSetHumanPosePreSolveGhostRootWorldPosition = BuildNaNVector3();
-            _lastSetHumanPosePreSolveGhostRootWorldRotation = BuildNaNQuaternion();
-            _lastSetHumanPosePreSolveTargetRootWorldPosition = BuildNaNVector3();
-            _lastSetHumanPosePreSolveTargetRootWorldRotation = BuildNaNQuaternion();
-            _lastSetHumanPosePreSolveTargetHipsWorldPosition = BuildNaNVector3();
-            _lastSetHumanPosePreSolveTargetHipsLocalPosition = BuildNaNVector3();
-            _lastSetHumanPosePreSolveBodyPosition = BuildNaNVector3();
-            _lastSetHumanPosePreSolveBodyRotation = BuildNaNQuaternion();
-            _lastSetHumanPosePreSolveGhostEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastSetHumanPosePreSolveCurrentEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastSetHumanPosePreSolveTargetEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-#if UNITY_EDITOR
-            ResetPreSetHumanPoseEndpointBodyPositionDiagnostics();
-#endif
-        }
-
         private void CaptureSetHumanPosePreSolveBasisDiagnostics(HumanPose pose)
         {
 #if UNITY_EDITOR
-            _lastSetHumanPosePreSolveGhostRootWorldPosition = ReadAnimatorRootWorldPosition(ghostAnimator);
-            _lastSetHumanPosePreSolveGhostRootWorldRotation = ReadAnimatorRootWorldRotation(ghostAnimator);
-            _lastSetHumanPosePreSolveTargetRootWorldPosition = ReadAnimatorRootWorldPosition(targetAnimator);
-            _lastSetHumanPosePreSolveTargetRootWorldRotation = ReadAnimatorRootWorldRotation(targetAnimator);
-            _lastSetHumanPosePreSolveTargetHipsWorldPosition = ReadAnimatorBoneWorldPosition(targetAnimator, HumanBodyBones.Hips);
-            _lastSetHumanPosePreSolveTargetHipsLocalPosition = ReadAnimatorBoneLocalPosition(targetAnimator, HumanBodyBones.Hips);
-            _lastSetHumanPosePreSolveBodyPosition = IsFinite(pose.bodyPosition) ? pose.bodyPosition : BuildNaNVector3();
-            _lastSetHumanPosePreSolveBodyRotation = IsFinite(pose.bodyRotation) ? pose.bodyRotation : BuildNaNQuaternion();
-            _lastSetHumanPosePreSolveGhostEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(ghostAnimator);
-            _lastSetHumanPosePreSolveTargetEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
+            _setHumanPoseDiagnostics.CapturePreSolveBasis(new RetargetingSetHumanPosePreSolveBasis
+            {
+                GhostRootWorldPosition = ReadAnimatorRootWorldPosition(ghostAnimator),
+                GhostRootWorldRotation = ReadAnimatorRootWorldRotation(ghostAnimator),
+                TargetRootWorldPosition = ReadAnimatorRootWorldPosition(targetAnimator),
+                TargetRootWorldRotation = ReadAnimatorRootWorldRotation(targetAnimator),
+                TargetHipsWorldPosition = ReadAnimatorBoneWorldPosition(targetAnimator, HumanBodyBones.Hips),
+                TargetHipsLocalPosition = ReadAnimatorBoneLocalPosition(targetAnimator, HumanBodyBones.Hips),
+                BodyPosition = IsFinite(pose.bodyPosition) ? pose.bodyPosition : BuildNaNVector3(),
+                BodyRotation = IsFinite(pose.bodyRotation) ? pose.bodyRotation : BuildNaNQuaternion(),
+                GhostEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(ghostAnimator),
+                TargetEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator)
+            });
 #endif
         }
 
-        private void ResetSetHumanPoseExtendedInputDiagnostics()
+        private RetargetingSetHumanPoseInputSnapshot ReadSetHumanPoseInputSnapshot(HumanPose pose)
         {
-            _lastSetHumanPoseInputSpineFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseInputSpineLeftRightMuscle = float.NaN;
-            _lastSetHumanPoseInputSpineTwistLeftRightMuscle = float.NaN;
-            _lastSetHumanPoseInputChestFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseInputChestLeftRightMuscle = float.NaN;
-            _lastSetHumanPoseInputChestTwistLeftRightMuscle = float.NaN;
-            _lastSetHumanPoseInputUpperChestFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseInputUpperChestLeftRightMuscle = float.NaN;
-            _lastSetHumanPoseInputUpperChestTwistLeftRightMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftUpperLegInOutMuscle = float.NaN;
-            _lastSetHumanPoseInputRightUpperLegInOutMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftUpperLegTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseInputRightUpperLegTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftLowerLegTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseInputRightLowerLegTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftFootTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseInputRightFootTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseInputLeftToesUpDownMuscle = float.NaN;
-            _lastSetHumanPoseInputRightToesUpDownMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightUpperLegInOutMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightUpperLegTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightLowerLegTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightFootTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightToesUpDownMuscle = float.NaN;
+            return new RetargetingSetHumanPoseInputSnapshot
+            {
+                LeftShoulderFrontBack = ReadLeftShoulderFrontBackMuscle(pose),
+                LeftArmTwist = ReadLeftArmTwistMuscle(pose),
+                LeftForearmStretch = ReadLeftForearmStretchMuscle(pose),
+                RightForearmStretch = ReadRightForearmStretchMuscle(pose),
+                RightArmTwist = ReadRightArmTwistMuscle(pose),
+                LeftUpperLegFrontBack = ReadLeftUpperLegFrontBackMuscle(pose),
+                RightUpperLegFrontBack = ReadRightUpperLegFrontBackMuscle(pose),
+                LeftLowerLegStretch = ReadLeftLowerLegStretchMuscle(pose),
+                RightLowerLegStretch = ReadRightLowerLegStretchMuscle(pose),
+                LeftFootUpDown = ReadLeftFootUpDownMuscle(pose),
+                RightFootUpDown = ReadRightFootUpDownMuscle(pose),
+                SpineFrontBack = ReadSpineFrontBackMuscle(pose),
+                SpineLeftRight = ReadSpineLeftRightMuscle(pose),
+                SpineTwistLeftRight = ReadSpineTwistLeftRightMuscle(pose),
+                ChestFrontBack = ReadChestFrontBackMuscle(pose),
+                ChestLeftRight = ReadChestLeftRightMuscle(pose),
+                ChestTwistLeftRight = ReadChestTwistLeftRightMuscle(pose),
+                UpperChestFrontBack = ReadUpperChestFrontBackMuscle(pose),
+                UpperChestLeftRight = ReadUpperChestLeftRightMuscle(pose),
+                UpperChestTwistLeftRight = ReadUpperChestTwistLeftRightMuscle(pose),
+                LeftUpperLegInOut = ReadLeftUpperLegInOutMuscle(pose),
+                RightUpperLegInOut = ReadRightUpperLegInOutMuscle(pose),
+                LeftUpperLegTwistInOut = ReadLeftUpperLegTwistInOutMuscle(pose),
+                RightUpperLegTwistInOut = ReadRightUpperLegTwistInOutMuscle(pose),
+                LeftLowerLegTwistInOut = ReadLeftLowerLegTwistInOutMuscle(pose),
+                RightLowerLegTwistInOut = ReadRightLowerLegTwistInOutMuscle(pose),
+                LeftFootTwistInOut = ReadLeftFootTwistInOutMuscle(pose),
+                RightFootTwistInOut = ReadRightFootTwistInOutMuscle(pose),
+                LeftToesUpDown = ReadLeftToesUpDownMuscle(pose),
+                RightToesUpDown = ReadRightToesUpDownMuscle(pose),
+                BodyPosition = IsFinite(pose.bodyPosition) ? pose.bodyPosition : BuildNaNVector3(),
+                BodyRotation = IsFinite(pose.bodyRotation) ? pose.bodyRotation : BuildNaNQuaternion()
+            };
         }
 
-        private void CaptureSetHumanPoseExtendedInputDiagnostics(HumanPose pose)
+        private RetargetingSetHumanPoseOutputSnapshot ReadSetHumanPoseOutputSnapshot()
         {
-            _lastSetHumanPoseInputSpineFrontBackMuscle = ReadSpineFrontBackMuscle(pose);
-            _lastSetHumanPoseInputSpineLeftRightMuscle = ReadSpineLeftRightMuscle(pose);
-            _lastSetHumanPoseInputSpineTwistLeftRightMuscle = ReadSpineTwistLeftRightMuscle(pose);
-            _lastSetHumanPoseInputChestFrontBackMuscle = ReadChestFrontBackMuscle(pose);
-            _lastSetHumanPoseInputChestLeftRightMuscle = ReadChestLeftRightMuscle(pose);
-            _lastSetHumanPoseInputChestTwistLeftRightMuscle = ReadChestTwistLeftRightMuscle(pose);
-            _lastSetHumanPoseInputUpperChestFrontBackMuscle = ReadUpperChestFrontBackMuscle(pose);
-            _lastSetHumanPoseInputUpperChestLeftRightMuscle = ReadUpperChestLeftRightMuscle(pose);
-            _lastSetHumanPoseInputUpperChestTwistLeftRightMuscle = ReadUpperChestTwistLeftRightMuscle(pose);
-            _lastSetHumanPoseInputLeftUpperLegInOutMuscle = ReadLeftUpperLegInOutMuscle(pose);
-            _lastSetHumanPoseInputRightUpperLegInOutMuscle = ReadRightUpperLegInOutMuscle(pose);
-            _lastSetHumanPoseInputLeftUpperLegTwistInOutMuscle = ReadLeftUpperLegTwistInOutMuscle(pose);
-            _lastSetHumanPoseInputRightUpperLegTwistInOutMuscle = ReadRightUpperLegTwistInOutMuscle(pose);
-            _lastSetHumanPoseInputLeftLowerLegTwistInOutMuscle = ReadLeftLowerLegTwistInOutMuscle(pose);
-            _lastSetHumanPoseInputRightLowerLegTwistInOutMuscle = ReadRightLowerLegTwistInOutMuscle(pose);
-            _lastSetHumanPoseInputLeftFootTwistInOutMuscle = ReadLeftFootTwistInOutMuscle(pose);
-            _lastSetHumanPoseInputRightFootTwistInOutMuscle = ReadRightFootTwistInOutMuscle(pose);
-            _lastSetHumanPoseInputLeftToesUpDownMuscle = ReadLeftToesUpDownMuscle(pose);
-            _lastSetHumanPoseInputRightToesUpDownMuscle = ReadRightToesUpDownMuscle(pose);
-        }
-
-        private void CaptureSetHumanPoseOutputDiagnostics()
-        {
-            _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftArmTwistMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftForearmStretchMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightForearmStretchMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightArmTwistMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftUpperLegFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightUpperLegFrontBackMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftLowerLegStretchMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightLowerLegStretchMuscle = float.NaN;
-            _lastSetHumanPoseOutputLeftFootUpDownMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightFootUpDownMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightUpperLegInOutMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightUpperLegTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightLowerLegTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightFootTwistInOutMuscle = float.NaN;
-            _lastSetHumanPoseOutputRightToesUpDownMuscle = float.NaN;
-            _lastSetHumanPoseOutputBodyPosition = BuildNaNVector3();
-            _lastSetHumanPoseOutputBodyRotation = BuildNaNQuaternion();
+            RetargetingSetHumanPoseOutputSnapshot output = RetargetingSetHumanPoseOutputSnapshot.NaN;
             if (_targetHandler == null)
             {
-                return;
+                return output;
             }
 
             _targetHandler.GetHumanPose(ref _appliedTargetPose);
-            _lastSetHumanPoseOutputLeftShoulderFrontBackMuscle = ReadLeftShoulderFrontBackMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputLeftArmTwistMuscle = ReadLeftArmTwistMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputLeftForearmStretchMuscle = ReadLeftForearmStretchMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightForearmStretchMuscle = ReadRightForearmStretchMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightArmTwistMuscle = ReadRightArmTwistMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputLeftUpperLegFrontBackMuscle = ReadLeftUpperLegFrontBackMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightUpperLegFrontBackMuscle = ReadRightUpperLegFrontBackMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputLeftLowerLegStretchMuscle = ReadLeftLowerLegStretchMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightLowerLegStretchMuscle = ReadRightLowerLegStretchMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputLeftFootUpDownMuscle = ReadLeftFootUpDownMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightFootUpDownMuscle = ReadRightFootUpDownMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightUpperLegInOutMuscle = ReadRightUpperLegInOutMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightUpperLegTwistInOutMuscle = ReadRightUpperLegTwistInOutMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightLowerLegTwistInOutMuscle = ReadRightLowerLegTwistInOutMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightFootTwistInOutMuscle = ReadRightFootTwistInOutMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputRightToesUpDownMuscle = ReadRightToesUpDownMuscle(_appliedTargetPose);
-            _lastSetHumanPoseOutputBodyPosition = IsFinite(_appliedTargetPose.bodyPosition)
+            output.LeftShoulderFrontBack = ReadLeftShoulderFrontBackMuscle(_appliedTargetPose);
+            output.LeftArmTwist = ReadLeftArmTwistMuscle(_appliedTargetPose);
+            output.LeftForearmStretch = ReadLeftForearmStretchMuscle(_appliedTargetPose);
+            output.RightForearmStretch = ReadRightForearmStretchMuscle(_appliedTargetPose);
+            output.RightArmTwist = ReadRightArmTwistMuscle(_appliedTargetPose);
+            output.LeftUpperLegFrontBack = ReadLeftUpperLegFrontBackMuscle(_appliedTargetPose);
+            output.RightUpperLegFrontBack = ReadRightUpperLegFrontBackMuscle(_appliedTargetPose);
+            output.LeftLowerLegStretch = ReadLeftLowerLegStretchMuscle(_appliedTargetPose);
+            output.RightLowerLegStretch = ReadRightLowerLegStretchMuscle(_appliedTargetPose);
+            output.LeftFootUpDown = ReadLeftFootUpDownMuscle(_appliedTargetPose);
+            output.RightFootUpDown = ReadRightFootUpDownMuscle(_appliedTargetPose);
+            output.RightUpperLegInOut = ReadRightUpperLegInOutMuscle(_appliedTargetPose);
+            output.RightUpperLegTwistInOut = ReadRightUpperLegTwistInOutMuscle(_appliedTargetPose);
+            output.RightLowerLegTwistInOut = ReadRightLowerLegTwistInOutMuscle(_appliedTargetPose);
+            output.RightFootTwistInOut = ReadRightFootTwistInOutMuscle(_appliedTargetPose);
+            output.RightToesUpDown = ReadRightToesUpDownMuscle(_appliedTargetPose);
+            output.BodyPosition = IsFinite(_appliedTargetPose.bodyPosition)
                 ? _appliedTargetPose.bodyPosition
                 : BuildNaNVector3();
-            _lastSetHumanPoseOutputBodyRotation = IsFinite(_appliedTargetPose.bodyRotation)
+            output.BodyRotation = IsFinite(_appliedTargetPose.bodyRotation)
                 ? _appliedTargetPose.bodyRotation
                 : BuildNaNQuaternion();
+            return output;
         }
 
         private RetargetingStageMuscleSnapshot ReadStageMuscles(HumanPose pose)
