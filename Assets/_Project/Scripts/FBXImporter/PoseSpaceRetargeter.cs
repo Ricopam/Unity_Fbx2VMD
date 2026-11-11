@@ -1096,76 +1096,76 @@ namespace Fbx2Vmd.FBXImporter
         public float LastSetHumanPoseRightToesUpDownDelta => CalculateFiniteAbsDelta(
             _lastSetHumanPoseInputRightToesUpDownMuscle,
             _lastSetHumanPoseOutputRightToesUpDownMuscle);
-        public float LastRetargetStageGhostLeftFootWorldX => _lastRetargetStageGhostEndpointPositions.LeftFoot.x;
-        public float LastRetargetStageGhostLeftFootWorldZ => _lastRetargetStageGhostEndpointPositions.LeftFoot.z;
-        public float LastRetargetStageGhostLeftToesWorldX => _lastRetargetStageGhostEndpointPositions.LeftToes.x;
-        public float LastRetargetStageGhostLeftToesWorldZ => _lastRetargetStageGhostEndpointPositions.LeftToes.z;
-        public float LastRetargetStageGhostRightFootWorldX => _lastRetargetStageGhostEndpointPositions.RightFoot.x;
-        public float LastRetargetStageGhostRightFootWorldZ => _lastRetargetStageGhostEndpointPositions.RightFoot.z;
-        public float LastRetargetStageGhostRightToesWorldX => _lastRetargetStageGhostEndpointPositions.RightToes.x;
-        public float LastRetargetStageGhostRightToesWorldZ => _lastRetargetStageGhostEndpointPositions.RightToes.z;
-        public float LastRetargetStageAfterSetHumanPoseLeftFootWorldX => _lastRetargetStageAfterSetHumanPoseEndpointPositions.LeftFoot.x;
-        public float LastRetargetStageAfterSetHumanPoseLeftFootWorldZ => _lastRetargetStageAfterSetHumanPoseEndpointPositions.LeftFoot.z;
-        public float LastRetargetStageAfterSetHumanPoseLeftToesWorldX => _lastRetargetStageAfterSetHumanPoseEndpointPositions.LeftToes.x;
-        public float LastRetargetStageAfterSetHumanPoseLeftToesWorldZ => _lastRetargetStageAfterSetHumanPoseEndpointPositions.LeftToes.z;
-        public float LastRetargetStageAfterSetHumanPoseRightFootWorldX => _lastRetargetStageAfterSetHumanPoseEndpointPositions.RightFoot.x;
-        public float LastRetargetStageAfterSetHumanPoseRightFootWorldZ => _lastRetargetStageAfterSetHumanPoseEndpointPositions.RightFoot.z;
-        public float LastRetargetStageAfterSetHumanPoseRightToesWorldX => _lastRetargetStageAfterSetHumanPoseEndpointPositions.RightToes.x;
-        public float LastRetargetStageAfterSetHumanPoseRightToesWorldZ => _lastRetargetStageAfterSetHumanPoseEndpointPositions.RightToes.z;
-        public float LastRetargetStageAfterManualReferencesLeftFootWorldX => _lastRetargetStageAfterManualReferencesEndpointPositions.LeftFoot.x;
-        public float LastRetargetStageAfterManualReferencesLeftFootWorldZ => _lastRetargetStageAfterManualReferencesEndpointPositions.LeftFoot.z;
-        public float LastRetargetStageAfterManualReferencesLeftToesWorldX => _lastRetargetStageAfterManualReferencesEndpointPositions.LeftToes.x;
-        public float LastRetargetStageAfterManualReferencesLeftToesWorldZ => _lastRetargetStageAfterManualReferencesEndpointPositions.LeftToes.z;
-        public float LastRetargetStageAfterManualReferencesRightFootWorldX => _lastRetargetStageAfterManualReferencesEndpointPositions.RightFoot.x;
-        public float LastRetargetStageAfterManualReferencesRightFootWorldZ => _lastRetargetStageAfterManualReferencesEndpointPositions.RightFoot.z;
-        public float LastRetargetStageAfterManualReferencesRightToesWorldX => _lastRetargetStageAfterManualReferencesEndpointPositions.RightToes.x;
-        public float LastRetargetStageAfterManualReferencesRightToesWorldZ => _lastRetargetStageAfterManualReferencesEndpointPositions.RightToes.z;
-        public float LastRetargetStageAfterRootRestoreLeftFootWorldX => _lastRetargetStageAfterRootRestoreEndpointPositions.LeftFoot.x;
-        public float LastRetargetStageAfterRootRestoreLeftFootWorldZ => _lastRetargetStageAfterRootRestoreEndpointPositions.LeftFoot.z;
-        public float LastRetargetStageAfterRootRestoreLeftToesWorldX => _lastRetargetStageAfterRootRestoreEndpointPositions.LeftToes.x;
-        public float LastRetargetStageAfterRootRestoreLeftToesWorldZ => _lastRetargetStageAfterRootRestoreEndpointPositions.LeftToes.z;
-        public float LastRetargetStageAfterRootRestoreRightFootWorldX => _lastRetargetStageAfterRootRestoreEndpointPositions.RightFoot.x;
-        public float LastRetargetStageAfterRootRestoreRightFootWorldZ => _lastRetargetStageAfterRootRestoreEndpointPositions.RightFoot.z;
-        public float LastRetargetStageAfterRootRestoreRightToesWorldX => _lastRetargetStageAfterRootRestoreEndpointPositions.RightToes.x;
-        public float LastRetargetStageAfterRootRestoreRightToesWorldZ => _lastRetargetStageAfterRootRestoreEndpointPositions.RightToes.z;
-        public float LastRetargetStageAfterRootDeltaLeftFootWorldX => _lastRetargetStageAfterRootDeltaEndpointPositions.LeftFoot.x;
-        public float LastRetargetStageAfterRootDeltaLeftFootWorldZ => _lastRetargetStageAfterRootDeltaEndpointPositions.LeftFoot.z;
-        public float LastRetargetStageAfterRootDeltaLeftToesWorldX => _lastRetargetStageAfterRootDeltaEndpointPositions.LeftToes.x;
-        public float LastRetargetStageAfterRootDeltaLeftToesWorldZ => _lastRetargetStageAfterRootDeltaEndpointPositions.LeftToes.z;
-        public float LastRetargetStageAfterRootDeltaRightFootWorldX => _lastRetargetStageAfterRootDeltaEndpointPositions.RightFoot.x;
-        public float LastRetargetStageAfterRootDeltaRightFootWorldZ => _lastRetargetStageAfterRootDeltaEndpointPositions.RightFoot.z;
-        public float LastRetargetStageAfterRootDeltaRightToesWorldX => _lastRetargetStageAfterRootDeltaEndpointPositions.RightToes.x;
-        public float LastRetargetStageAfterRootDeltaRightToesWorldZ => _lastRetargetStageAfterRootDeltaEndpointPositions.RightToes.z;
-        public float LastRetargetStageAfterGroundingLeftFootWorldX => _lastRetargetStageAfterGroundingEndpointPositions.LeftFoot.x;
-        public float LastRetargetStageAfterGroundingLeftFootWorldZ => _lastRetargetStageAfterGroundingEndpointPositions.LeftFoot.z;
-        public float LastRetargetStageAfterGroundingLeftToesWorldX => _lastRetargetStageAfterGroundingEndpointPositions.LeftToes.x;
-        public float LastRetargetStageAfterGroundingLeftToesWorldZ => _lastRetargetStageAfterGroundingEndpointPositions.LeftToes.z;
-        public float LastRetargetStageAfterGroundingRightFootWorldX => _lastRetargetStageAfterGroundingEndpointPositions.RightFoot.x;
-        public float LastRetargetStageAfterGroundingRightFootWorldZ => _lastRetargetStageAfterGroundingEndpointPositions.RightFoot.z;
-        public float LastRetargetStageAfterGroundingRightToesWorldX => _lastRetargetStageAfterGroundingEndpointPositions.RightToes.x;
-        public float LastRetargetStageAfterGroundingRightToesWorldZ => _lastRetargetStageAfterGroundingEndpointPositions.RightToes.z;
-        public float LastRetargetStageAfterBipedIKLeftFootWorldX => _lastRetargetStageAfterBipedIKEndpointPositions.LeftFoot.x;
-        public float LastRetargetStageAfterBipedIKLeftFootWorldZ => _lastRetargetStageAfterBipedIKEndpointPositions.LeftFoot.z;
-        public float LastRetargetStageAfterBipedIKLeftToesWorldX => _lastRetargetStageAfterBipedIKEndpointPositions.LeftToes.x;
-        public float LastRetargetStageAfterBipedIKLeftToesWorldZ => _lastRetargetStageAfterBipedIKEndpointPositions.LeftToes.z;
-        public float LastRetargetStageAfterBipedIKRightFootWorldX => _lastRetargetStageAfterBipedIKEndpointPositions.RightFoot.x;
-        public float LastRetargetStageAfterBipedIKRightFootWorldZ => _lastRetargetStageAfterBipedIKEndpointPositions.RightFoot.z;
-        public float LastRetargetStageAfterBipedIKRightToesWorldX => _lastRetargetStageAfterBipedIKEndpointPositions.RightToes.x;
-        public float LastRetargetStageAfterBipedIKRightToesWorldZ => _lastRetargetStageAfterBipedIKEndpointPositions.RightToes.z;
-        public float LastRetargetStageAfterLateVisualGroundingLeftFootWorldX => _lastRetargetStageAfterLateVisualGroundingEndpointPositions.LeftFoot.x;
-        public float LastRetargetStageAfterLateVisualGroundingLeftFootWorldZ => _lastRetargetStageAfterLateVisualGroundingEndpointPositions.LeftFoot.z;
-        public float LastRetargetStageAfterLateVisualGroundingLeftToesWorldX => _lastRetargetStageAfterLateVisualGroundingEndpointPositions.LeftToes.x;
-        public float LastRetargetStageAfterLateVisualGroundingLeftToesWorldZ => _lastRetargetStageAfterLateVisualGroundingEndpointPositions.LeftToes.z;
-        public float LastRetargetStageAfterLateVisualGroundingRightFootWorldX => _lastRetargetStageAfterLateVisualGroundingEndpointPositions.RightFoot.x;
-        public float LastRetargetStageAfterLateVisualGroundingRightFootWorldZ => _lastRetargetStageAfterLateVisualGroundingEndpointPositions.RightFoot.z;
-        public float LastRetargetStageAfterLateVisualGroundingRightToesWorldX => _lastRetargetStageAfterLateVisualGroundingEndpointPositions.RightToes.x;
-        public float LastRetargetStageAfterLateVisualGroundingRightToesWorldZ => _lastRetargetStageAfterLateVisualGroundingEndpointPositions.RightToes.z;
-        public string LastRetargetEndpointFirstJumpStage => _lastRetargetEndpointFirstJumpStage;
-        public string LastRetargetEndpointFirstJumpEndpoint => _lastRetargetEndpointFirstJumpEndpoint;
-        public float LastRetargetEndpointFirstJumpMagnitude => _lastRetargetEndpointFirstJumpMagnitude;
-        public float LastRetargetEndpointFirstJumpDeltaX => _lastRetargetEndpointFirstJumpDelta.x;
-        public float LastRetargetEndpointFirstJumpDeltaY => _lastRetargetEndpointFirstJumpDelta.y;
-        public float LastRetargetEndpointFirstJumpDeltaZ => _lastRetargetEndpointFirstJumpDelta.z;
+        public float LastRetargetStageGhostLeftFootWorldX => _endpointStageDiagnostics.GhostPositions.LeftFoot.x;
+        public float LastRetargetStageGhostLeftFootWorldZ => _endpointStageDiagnostics.GhostPositions.LeftFoot.z;
+        public float LastRetargetStageGhostLeftToesWorldX => _endpointStageDiagnostics.GhostPositions.LeftToes.x;
+        public float LastRetargetStageGhostLeftToesWorldZ => _endpointStageDiagnostics.GhostPositions.LeftToes.z;
+        public float LastRetargetStageGhostRightFootWorldX => _endpointStageDiagnostics.GhostPositions.RightFoot.x;
+        public float LastRetargetStageGhostRightFootWorldZ => _endpointStageDiagnostics.GhostPositions.RightFoot.z;
+        public float LastRetargetStageGhostRightToesWorldX => _endpointStageDiagnostics.GhostPositions.RightToes.x;
+        public float LastRetargetStageGhostRightToesWorldZ => _endpointStageDiagnostics.GhostPositions.RightToes.z;
+        public float LastRetargetStageAfterSetHumanPoseLeftFootWorldX => _endpointStageDiagnostics.AfterSetHumanPosePositions.LeftFoot.x;
+        public float LastRetargetStageAfterSetHumanPoseLeftFootWorldZ => _endpointStageDiagnostics.AfterSetHumanPosePositions.LeftFoot.z;
+        public float LastRetargetStageAfterSetHumanPoseLeftToesWorldX => _endpointStageDiagnostics.AfterSetHumanPosePositions.LeftToes.x;
+        public float LastRetargetStageAfterSetHumanPoseLeftToesWorldZ => _endpointStageDiagnostics.AfterSetHumanPosePositions.LeftToes.z;
+        public float LastRetargetStageAfterSetHumanPoseRightFootWorldX => _endpointStageDiagnostics.AfterSetHumanPosePositions.RightFoot.x;
+        public float LastRetargetStageAfterSetHumanPoseRightFootWorldZ => _endpointStageDiagnostics.AfterSetHumanPosePositions.RightFoot.z;
+        public float LastRetargetStageAfterSetHumanPoseRightToesWorldX => _endpointStageDiagnostics.AfterSetHumanPosePositions.RightToes.x;
+        public float LastRetargetStageAfterSetHumanPoseRightToesWorldZ => _endpointStageDiagnostics.AfterSetHumanPosePositions.RightToes.z;
+        public float LastRetargetStageAfterManualReferencesLeftFootWorldX => _endpointStageDiagnostics.AfterManualReferencesPositions.LeftFoot.x;
+        public float LastRetargetStageAfterManualReferencesLeftFootWorldZ => _endpointStageDiagnostics.AfterManualReferencesPositions.LeftFoot.z;
+        public float LastRetargetStageAfterManualReferencesLeftToesWorldX => _endpointStageDiagnostics.AfterManualReferencesPositions.LeftToes.x;
+        public float LastRetargetStageAfterManualReferencesLeftToesWorldZ => _endpointStageDiagnostics.AfterManualReferencesPositions.LeftToes.z;
+        public float LastRetargetStageAfterManualReferencesRightFootWorldX => _endpointStageDiagnostics.AfterManualReferencesPositions.RightFoot.x;
+        public float LastRetargetStageAfterManualReferencesRightFootWorldZ => _endpointStageDiagnostics.AfterManualReferencesPositions.RightFoot.z;
+        public float LastRetargetStageAfterManualReferencesRightToesWorldX => _endpointStageDiagnostics.AfterManualReferencesPositions.RightToes.x;
+        public float LastRetargetStageAfterManualReferencesRightToesWorldZ => _endpointStageDiagnostics.AfterManualReferencesPositions.RightToes.z;
+        public float LastRetargetStageAfterRootRestoreLeftFootWorldX => _endpointStageDiagnostics.AfterRootRestorePositions.LeftFoot.x;
+        public float LastRetargetStageAfterRootRestoreLeftFootWorldZ => _endpointStageDiagnostics.AfterRootRestorePositions.LeftFoot.z;
+        public float LastRetargetStageAfterRootRestoreLeftToesWorldX => _endpointStageDiagnostics.AfterRootRestorePositions.LeftToes.x;
+        public float LastRetargetStageAfterRootRestoreLeftToesWorldZ => _endpointStageDiagnostics.AfterRootRestorePositions.LeftToes.z;
+        public float LastRetargetStageAfterRootRestoreRightFootWorldX => _endpointStageDiagnostics.AfterRootRestorePositions.RightFoot.x;
+        public float LastRetargetStageAfterRootRestoreRightFootWorldZ => _endpointStageDiagnostics.AfterRootRestorePositions.RightFoot.z;
+        public float LastRetargetStageAfterRootRestoreRightToesWorldX => _endpointStageDiagnostics.AfterRootRestorePositions.RightToes.x;
+        public float LastRetargetStageAfterRootRestoreRightToesWorldZ => _endpointStageDiagnostics.AfterRootRestorePositions.RightToes.z;
+        public float LastRetargetStageAfterRootDeltaLeftFootWorldX => _endpointStageDiagnostics.AfterRootDeltaPositions.LeftFoot.x;
+        public float LastRetargetStageAfterRootDeltaLeftFootWorldZ => _endpointStageDiagnostics.AfterRootDeltaPositions.LeftFoot.z;
+        public float LastRetargetStageAfterRootDeltaLeftToesWorldX => _endpointStageDiagnostics.AfterRootDeltaPositions.LeftToes.x;
+        public float LastRetargetStageAfterRootDeltaLeftToesWorldZ => _endpointStageDiagnostics.AfterRootDeltaPositions.LeftToes.z;
+        public float LastRetargetStageAfterRootDeltaRightFootWorldX => _endpointStageDiagnostics.AfterRootDeltaPositions.RightFoot.x;
+        public float LastRetargetStageAfterRootDeltaRightFootWorldZ => _endpointStageDiagnostics.AfterRootDeltaPositions.RightFoot.z;
+        public float LastRetargetStageAfterRootDeltaRightToesWorldX => _endpointStageDiagnostics.AfterRootDeltaPositions.RightToes.x;
+        public float LastRetargetStageAfterRootDeltaRightToesWorldZ => _endpointStageDiagnostics.AfterRootDeltaPositions.RightToes.z;
+        public float LastRetargetStageAfterGroundingLeftFootWorldX => _endpointStageDiagnostics.AfterGroundingPositions.LeftFoot.x;
+        public float LastRetargetStageAfterGroundingLeftFootWorldZ => _endpointStageDiagnostics.AfterGroundingPositions.LeftFoot.z;
+        public float LastRetargetStageAfterGroundingLeftToesWorldX => _endpointStageDiagnostics.AfterGroundingPositions.LeftToes.x;
+        public float LastRetargetStageAfterGroundingLeftToesWorldZ => _endpointStageDiagnostics.AfterGroundingPositions.LeftToes.z;
+        public float LastRetargetStageAfterGroundingRightFootWorldX => _endpointStageDiagnostics.AfterGroundingPositions.RightFoot.x;
+        public float LastRetargetStageAfterGroundingRightFootWorldZ => _endpointStageDiagnostics.AfterGroundingPositions.RightFoot.z;
+        public float LastRetargetStageAfterGroundingRightToesWorldX => _endpointStageDiagnostics.AfterGroundingPositions.RightToes.x;
+        public float LastRetargetStageAfterGroundingRightToesWorldZ => _endpointStageDiagnostics.AfterGroundingPositions.RightToes.z;
+        public float LastRetargetStageAfterBipedIKLeftFootWorldX => _endpointStageDiagnostics.AfterBipedIKPositions.LeftFoot.x;
+        public float LastRetargetStageAfterBipedIKLeftFootWorldZ => _endpointStageDiagnostics.AfterBipedIKPositions.LeftFoot.z;
+        public float LastRetargetStageAfterBipedIKLeftToesWorldX => _endpointStageDiagnostics.AfterBipedIKPositions.LeftToes.x;
+        public float LastRetargetStageAfterBipedIKLeftToesWorldZ => _endpointStageDiagnostics.AfterBipedIKPositions.LeftToes.z;
+        public float LastRetargetStageAfterBipedIKRightFootWorldX => _endpointStageDiagnostics.AfterBipedIKPositions.RightFoot.x;
+        public float LastRetargetStageAfterBipedIKRightFootWorldZ => _endpointStageDiagnostics.AfterBipedIKPositions.RightFoot.z;
+        public float LastRetargetStageAfterBipedIKRightToesWorldX => _endpointStageDiagnostics.AfterBipedIKPositions.RightToes.x;
+        public float LastRetargetStageAfterBipedIKRightToesWorldZ => _endpointStageDiagnostics.AfterBipedIKPositions.RightToes.z;
+        public float LastRetargetStageAfterLateVisualGroundingLeftFootWorldX => _endpointStageDiagnostics.AfterLateVisualGroundingPositions.LeftFoot.x;
+        public float LastRetargetStageAfterLateVisualGroundingLeftFootWorldZ => _endpointStageDiagnostics.AfterLateVisualGroundingPositions.LeftFoot.z;
+        public float LastRetargetStageAfterLateVisualGroundingLeftToesWorldX => _endpointStageDiagnostics.AfterLateVisualGroundingPositions.LeftToes.x;
+        public float LastRetargetStageAfterLateVisualGroundingLeftToesWorldZ => _endpointStageDiagnostics.AfterLateVisualGroundingPositions.LeftToes.z;
+        public float LastRetargetStageAfterLateVisualGroundingRightFootWorldX => _endpointStageDiagnostics.AfterLateVisualGroundingPositions.RightFoot.x;
+        public float LastRetargetStageAfterLateVisualGroundingRightFootWorldZ => _endpointStageDiagnostics.AfterLateVisualGroundingPositions.RightFoot.z;
+        public float LastRetargetStageAfterLateVisualGroundingRightToesWorldX => _endpointStageDiagnostics.AfterLateVisualGroundingPositions.RightToes.x;
+        public float LastRetargetStageAfterLateVisualGroundingRightToesWorldZ => _endpointStageDiagnostics.AfterLateVisualGroundingPositions.RightToes.z;
+        public string LastRetargetEndpointFirstJumpStage => _endpointStageDiagnostics.FirstJumpStage;
+        public string LastRetargetEndpointFirstJumpEndpoint => _endpointStageDiagnostics.FirstJumpEndpoint;
+        public float LastRetargetEndpointFirstJumpMagnitude => _endpointStageDiagnostics.FirstJumpMagnitude;
+        public float LastRetargetEndpointFirstJumpDeltaX => _endpointStageDiagnostics.FirstJumpDelta.x;
+        public float LastRetargetEndpointFirstJumpDeltaY => _endpointStageDiagnostics.FirstJumpDelta.y;
+        public float LastRetargetEndpointFirstJumpDeltaZ => _endpointStageDiagnostics.FirstJumpDelta.z;
         public float LastEditorFootLocalRotationLeftFootXzDelta => _lastEditorFootLocalRotationLeftFootXzDelta;
         public float LastEditorFootLocalRotationRightFootXzDelta => _lastEditorFootLocalRotationRightFootXzDelta;
         public float LastEditorLowerBodySegmentDirectionLeftFootXzDelta => _lastEditorLowerBodySegmentDirectionLeftFootXzDelta;
@@ -1655,37 +1655,11 @@ namespace Fbx2Vmd.FBXImporter
         private float _lastPostSetHumanPoseRightEndpointEvaluatorXzTargetMagnitude = float.NaN;
         private bool _hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset;
         private Vector3 _postSetHumanPoseRightFootEvaluatorXzFirstOffset = new Vector3(float.NaN, float.NaN, float.NaN);
-        private RetargetEndpointStageWorldPositions _lastRetargetStageGhostEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
+        private readonly RetargetingEndpointStageDiagnostics _endpointStageDiagnostics = new RetargetingEndpointStageDiagnostics();
+
         private RetargetEndpointStageWorldPositions _lastSetHumanPosePreSolveGhostEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
         private RetargetEndpointStageWorldPositions _lastSetHumanPosePreSolveCurrentEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
         private RetargetEndpointStageWorldPositions _lastSetHumanPosePreSolveTargetEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private RetargetEndpointStageWorldPositions _lastRetargetStageAfterSetHumanPoseEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private RetargetEndpointStageWorldPositions _lastRetargetStageAfterManualReferencesEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private RetargetEndpointStageWorldPositions _lastRetargetStageAfterRootRestoreEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private RetargetEndpointStageWorldPositions _lastRetargetStageAfterRootDeltaEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private RetargetEndpointStageWorldPositions _lastRetargetStageAfterGroundingEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private RetargetEndpointStageWorldPositions _lastRetargetStageAfterBipedIKEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private RetargetEndpointStageWorldPositions _lastRetargetStageAfterLateVisualGroundingEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-        private string _lastRetargetEndpointFirstJumpStage = "";
-        private string _lastRetargetEndpointFirstJumpEndpoint = "";
-        private Vector3 _lastRetargetEndpointFirstJumpDelta = BuildNaNVector3();
-        private float _lastRetargetEndpointFirstJumpMagnitude = float.NaN;
-
-        private struct RetargetEndpointStageWorldPositions
-        {
-            public Vector3 LeftFoot;
-            public Vector3 LeftToes;
-            public Vector3 RightFoot;
-            public Vector3 RightToes;
-
-            public static RetargetEndpointStageWorldPositions Empty => new RetargetEndpointStageWorldPositions
-            {
-                LeftFoot = BuildNaNVector3(),
-                LeftToes = BuildNaNVector3(),
-                RightFoot = BuildNaNVector3(),
-                RightToes = BuildNaNVector3()
-            };
-        }
 
         private static Vector3 BuildNaNVector3()
         {
@@ -2385,7 +2359,7 @@ namespace Fbx2Vmd.FBXImporter
             ResetRetargetPoseStageDiagnostics();
             _ghostHandler.GetHumanPose(ref _humanPose);
 #if UNITY_EDITOR
-            _lastRetargetStageGhostEndpointPositions = CaptureEndpointStageWorldPositions(ghostAnimator);
+            _endpointStageDiagnostics.GhostPositions = RetargetingEndpointStageDiagnostics.CapturePositions(ghostAnimator);
 #endif
             if (!IsFinite(_humanPose))
             {
@@ -2503,7 +2477,7 @@ namespace Fbx2Vmd.FBXImporter
 
             Vector3 targetPositionBeforePose = targetAnimator.transform.position;
 #if UNITY_EDITOR
-            _lastSetHumanPosePreSolveCurrentEndpointPositions = CaptureEndpointStageWorldPositions(targetAnimator);
+            _lastSetHumanPosePreSolveCurrentEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
             ApplyPreSetHumanPoseSignCorrectedRowLocalBodyPositionReference(ref _humanPose);
             if (!preSetHumanPoseEndpointPositionUseGhostCurrentBasis)
             {
@@ -2515,7 +2489,7 @@ namespace Fbx2Vmd.FBXImporter
             ApplySetHumanPoseRightLegTwistOutputReference(_humanPose);
             CaptureSetHumanPoseOutputDiagnostics();
 #if UNITY_EDITOR
-            _lastRetargetStageAfterSetHumanPoseEndpointPositions = CaptureEndpointStageWorldPositions(targetAnimator);
+            _endpointStageDiagnostics.AfterSetHumanPosePositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
 #endif
             ClampAppliedTargetPose();
 #if UNITY_EDITOR
@@ -2531,7 +2505,7 @@ namespace Fbx2Vmd.FBXImporter
             ApplyEditorHumanoidThumbBasePositionReference();
 #endif
 #if UNITY_EDITOR
-            _lastRetargetStageAfterManualReferencesEndpointPositions = CaptureEndpointStageWorldPositions(targetAnimator);
+            _endpointStageDiagnostics.AfterManualReferencesPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
 #endif
             ClampTargetHipsLocalPositionSpike();
             ClampTargetThumbLocalRotations();
@@ -2558,7 +2532,7 @@ namespace Fbx2Vmd.FBXImporter
                 targetAnimator.transform.position,
                 useBodyPositionXZRootMotion);
 #if UNITY_EDITOR
-            _lastRetargetStageAfterRootRestoreEndpointPositions = CaptureEndpointStageWorldPositions(targetAnimator);
+            _endpointStageDiagnostics.AfterRootRestorePositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
 #endif
 
             // 월드 회전 동기화 (180도 문제 해결)
@@ -2623,7 +2597,7 @@ namespace Fbx2Vmd.FBXImporter
             // 이동 적용
             targetAnimator.transform.position += targetDelta;
 #if UNITY_EDITOR
-            _lastRetargetStageAfterRootDeltaEndpointPositions = CaptureEndpointStageWorldPositions(targetAnimator);
+            _endpointStageDiagnostics.AfterRootDeltaPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
 #endif
 
             // 위치 갱신
@@ -2635,14 +2609,14 @@ namespace Fbx2Vmd.FBXImporter
                 ApplyRaycastGrounding();
             }
 #if UNITY_EDITOR
-            _lastRetargetStageAfterGroundingEndpointPositions = CaptureEndpointStageWorldPositions(targetAnimator);
+            _endpointStageDiagnostics.AfterGroundingPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
 #endif
 
             RestoreTargetLocalScales();
 #if UNITY_EDITOR
             ApplyEditorHumanoidBipedIkFootPositionReference();
-            _lastRetargetStageAfterBipedIKEndpointPositions = CaptureEndpointStageWorldPositions(targetAnimator);
-            CaptureRetargetEndpointStageAttributionDiagnostics();
+            _endpointStageDiagnostics.AfterBipedIKPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
+            _endpointStageDiagnostics.CaptureAttribution();
 #endif
         }
 
@@ -3422,118 +3396,6 @@ namespace Fbx2Vmd.FBXImporter
             return IsFinite(rotation) ? rotation : BuildNaNQuaternion();
         }
 
-        private static RetargetEndpointStageWorldPositions CaptureEndpointStageWorldPositions(Animator animator)
-        {
-            return new RetargetEndpointStageWorldPositions
-            {
-                LeftFoot = ReadAnimatorBoneWorldPosition(animator, HumanBodyBones.LeftFoot),
-                LeftToes = ReadAnimatorBoneWorldPosition(animator, HumanBodyBones.LeftToes),
-                RightFoot = ReadAnimatorBoneWorldPosition(animator, HumanBodyBones.RightFoot),
-                RightToes = ReadAnimatorBoneWorldPosition(animator, HumanBodyBones.RightToes)
-            };
-        }
-
-        private static readonly string[] RetargetEndpointStageNames =
-        {
-            "ghost",
-            "after_set_human_pose",
-            "after_manual_reference",
-            "after_root_restore",
-            "after_root_delta",
-            "after_grounding",
-            "after_biped_ik",
-            "after_late_visual_grounding"
-        };
-
-        private const float RetargetEndpointStageJumpAttributionThreshold = 0.001f;
-
-        private void CaptureRetargetEndpointStageAttributionDiagnostics()
-        {
-            ResetRetargetEndpointStageAttributionDiagnostics();
-            bool hasBest = false;
-            int bestStageIndex = int.MaxValue;
-            TryRecordRetargetEndpointStageJump(
-                "left_foot",
-                BuildRetargetEndpointStagePositions(endpoint => endpoint.LeftFoot),
-                ref hasBest,
-                ref bestStageIndex);
-            TryRecordRetargetEndpointStageJump(
-                "left_toes",
-                BuildRetargetEndpointStagePositions(endpoint => endpoint.LeftToes),
-                ref hasBest,
-                ref bestStageIndex);
-            TryRecordRetargetEndpointStageJump(
-                "right_foot",
-                BuildRetargetEndpointStagePositions(endpoint => endpoint.RightFoot),
-                ref hasBest,
-                ref bestStageIndex);
-            TryRecordRetargetEndpointStageJump(
-                "right_toes",
-                BuildRetargetEndpointStagePositions(endpoint => endpoint.RightToes),
-                ref hasBest,
-                ref bestStageIndex);
-        }
-
-        private delegate Vector3 RetargetEndpointStageSelector(RetargetEndpointStageWorldPositions endpointPositions);
-
-        private Vector3[] BuildRetargetEndpointStagePositions(RetargetEndpointStageSelector selector)
-        {
-            return new[]
-            {
-                selector(_lastRetargetStageGhostEndpointPositions),
-                selector(_lastRetargetStageAfterSetHumanPoseEndpointPositions),
-                selector(_lastRetargetStageAfterManualReferencesEndpointPositions),
-                selector(_lastRetargetStageAfterRootRestoreEndpointPositions),
-                selector(_lastRetargetStageAfterRootDeltaEndpointPositions),
-                selector(_lastRetargetStageAfterGroundingEndpointPositions),
-                selector(_lastRetargetStageAfterBipedIKEndpointPositions),
-                selector(_lastRetargetStageAfterLateVisualGroundingEndpointPositions)
-            };
-        }
-
-        private void TryRecordRetargetEndpointStageJump(
-            string endpointName,
-            Vector3[] positions,
-            ref bool hasBest,
-            ref int bestStageIndex)
-        {
-            if (!RetargetingEndpointDiagnostics.TryFindFirstStagePositionJump(
-                    RetargetEndpointStageNames,
-                    positions,
-                    RetargetEndpointStageJumpAttributionThreshold,
-                    out string stage,
-                    out Vector3 delta,
-                    out float magnitude))
-            {
-                return;
-            }
-
-            int stageIndex = Array.IndexOf(RetargetEndpointStageNames, stage);
-            if (stageIndex < 0)
-            {
-                return;
-            }
-
-            if (hasBest && stageIndex >= bestStageIndex)
-            {
-                return;
-            }
-
-            hasBest = true;
-            bestStageIndex = stageIndex;
-            _lastRetargetEndpointFirstJumpStage = stage;
-            _lastRetargetEndpointFirstJumpEndpoint = endpointName ?? "";
-            _lastRetargetEndpointFirstJumpDelta = delta;
-            _lastRetargetEndpointFirstJumpMagnitude = magnitude;
-        }
-
-        private void ResetRetargetEndpointStageAttributionDiagnostics()
-        {
-            _lastRetargetEndpointFirstJumpStage = "";
-            _lastRetargetEndpointFirstJumpEndpoint = "";
-            _lastRetargetEndpointFirstJumpDelta = BuildNaNVector3();
-            _lastRetargetEndpointFirstJumpMagnitude = float.NaN;
-        }
 
         private void RecordEditorFootLocalRotationReferenceDiagnostics(Vector3 leftFootBefore, Vector3 rightFootBefore)
         {
@@ -4329,7 +4191,7 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
-            RetargetEndpointStageWorldPositions ghostPositions = CaptureEndpointStageWorldPositions(ghostAnimator);
+            RetargetEndpointStageWorldPositions ghostPositions = RetargetingEndpointStageDiagnostics.CapturePositions(ghostAnimator);
             RetargetEndpointStageWorldPositions currentPositions = _lastSetHumanPosePreSolveCurrentEndpointPositions;
             bool useLeftSide = ShouldUseLeftSideForPreSetHumanPoseEndpointPosition;
             Vector3 ghostFootPosition = useLeftSide ? ghostPositions.LeftFoot : ghostPositions.RightFoot;
@@ -6056,18 +5918,18 @@ namespace Fbx2Vmd.FBXImporter
 #if UNITY_EDITOR
             ResetPostSetHumanPoseRightEndpointPositionDiagnostics();
 #endif
-            _lastRetargetStageGhostEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
+            _endpointStageDiagnostics.GhostPositions = RetargetEndpointStageWorldPositions.Empty;
             _lastSetHumanPosePreSolveGhostEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
             _lastSetHumanPosePreSolveTargetEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastRetargetStageAfterSetHumanPoseEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastRetargetStageAfterManualReferencesEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastRetargetStageAfterRootRestoreEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastRetargetStageAfterRootDeltaEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastRetargetStageAfterGroundingEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastRetargetStageAfterBipedIKEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
-            _lastRetargetStageAfterLateVisualGroundingEndpointPositions = RetargetEndpointStageWorldPositions.Empty;
+            _endpointStageDiagnostics.AfterSetHumanPosePositions = RetargetEndpointStageWorldPositions.Empty;
+            _endpointStageDiagnostics.AfterManualReferencesPositions = RetargetEndpointStageWorldPositions.Empty;
+            _endpointStageDiagnostics.AfterRootRestorePositions = RetargetEndpointStageWorldPositions.Empty;
+            _endpointStageDiagnostics.AfterRootDeltaPositions = RetargetEndpointStageWorldPositions.Empty;
+            _endpointStageDiagnostics.AfterGroundingPositions = RetargetEndpointStageWorldPositions.Empty;
+            _endpointStageDiagnostics.AfterBipedIKPositions = RetargetEndpointStageWorldPositions.Empty;
+            _endpointStageDiagnostics.AfterLateVisualGroundingPositions = RetargetEndpointStageWorldPositions.Empty;
 #if UNITY_EDITOR
-            ResetRetargetEndpointStageAttributionDiagnostics();
+            _endpointStageDiagnostics.ResetAttribution();
 #endif
         }
 
@@ -6177,8 +6039,8 @@ namespace Fbx2Vmd.FBXImporter
             _lastSetHumanPosePreSolveTargetHipsLocalPosition = ReadAnimatorBoneLocalPosition(targetAnimator, HumanBodyBones.Hips);
             _lastSetHumanPosePreSolveBodyPosition = IsFinite(pose.bodyPosition) ? pose.bodyPosition : BuildNaNVector3();
             _lastSetHumanPosePreSolveBodyRotation = IsFinite(pose.bodyRotation) ? pose.bodyRotation : BuildNaNQuaternion();
-            _lastSetHumanPosePreSolveGhostEndpointPositions = CaptureEndpointStageWorldPositions(ghostAnimator);
-            _lastSetHumanPosePreSolveTargetEndpointPositions = CaptureEndpointStageWorldPositions(targetAnimator);
+            _lastSetHumanPosePreSolveGhostEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(ghostAnimator);
+            _lastSetHumanPosePreSolveTargetEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
 #endif
         }
 
@@ -8745,8 +8607,8 @@ namespace Fbx2Vmd.FBXImporter
                 if (targetAnimator != null)
                 {
 #if UNITY_EDITOR
-                    _lastRetargetStageAfterLateVisualGroundingEndpointPositions = CaptureEndpointStageWorldPositions(targetAnimator);
-                    CaptureRetargetEndpointStageAttributionDiagnostics();
+                    _endpointStageDiagnostics.AfterLateVisualGroundingPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
+                    _endpointStageDiagnostics.CaptureAttribution();
 #endif
                 }
             }
