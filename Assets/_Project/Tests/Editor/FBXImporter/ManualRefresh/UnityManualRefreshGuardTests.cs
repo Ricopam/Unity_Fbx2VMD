@@ -21,7 +21,7 @@ namespace Tests.Editor.FBXImporter.ManualRefresh
             };
 
             Type guardType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.UnityManualRefreshGuard, Fbx2Vmd.FBXImporter",
+                "Fbx2Vmd.FBXImporter.UnityManualRefreshGuard, Assembly-CSharp-Editor",
                 throwOnError: true);
             MethodInfo method = guardType.GetMethod(
                 "GetRefreshableAssetPaths",

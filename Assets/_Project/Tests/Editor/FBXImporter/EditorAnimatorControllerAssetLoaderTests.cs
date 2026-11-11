@@ -53,7 +53,7 @@ namespace Tests.Editor.FBXImporter
 
         private static RuntimeAnimatorController LoadFirst(params string[] assetPaths)
         {
-            Type loaderType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type loaderType = typeof(UnityManualRefreshGuard).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.EditorAnimatorControllerAssetLoader",
                 throwOnError: false);
             Assert.That(loaderType, Is.Not.Null, "모델 중립 Animator Controller asset loader 타입이 필요합니다.");
