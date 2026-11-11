@@ -14,7 +14,7 @@ namespace Fbx2Vmd.FBXImporter
     public class PoseSpaceRetargeter : MonoBehaviour
     {
         private const float RecordingStartHipsBaselineFlipWarningThreshold = 0.02f;
-        private const float HipsLocalPositionTargetGapGuardMaxIncreaseMeters = 0.0005f;
+        internal const float HipsLocalPositionTargetGapGuardMaxIncreaseMeters = 0.0005f;
         private const string RecordingStartHipsReferenceStagePrewarmComplete = "prewarm-complete";
         private static readonly string[] RightSleeveSilhouetteLocalOffsetTransformSuffixes =
         {
@@ -1023,15 +1023,15 @@ namespace Fbx2Vmd.FBXImporter
         public float LastSetHumanPosePreSolveBodyPositionY => _setHumanPoseDiagnostics.PreSolveBasis.BodyPosition.y;
         public float LastSetHumanPosePreSolveBodyPositionZ => _setHumanPoseDiagnostics.PreSolveBasis.BodyPosition.z;
         public float LastSetHumanPosePreSolveBodyRotationYaw => ReadBodyRotationYaw(_setHumanPoseDiagnostics.PreSolveBasis.BodyRotation);
-        public float LastPreSetHumanPoseEndpointBodyPositionBeforeX => _lastPreSetHumanPoseEndpointBodyPositionBefore.x;
-        public float LastPreSetHumanPoseEndpointBodyPositionBeforeZ => _lastPreSetHumanPoseEndpointBodyPositionBefore.z;
-        public float LastPreSetHumanPoseEndpointBodyPositionAfterX => _lastPreSetHumanPoseEndpointBodyPositionAfter.x;
-        public float LastPreSetHumanPoseEndpointBodyPositionAfterZ => _lastPreSetHumanPoseEndpointBodyPositionAfter.z;
-        public float LastPreSetHumanPoseEndpointBodyPositionDeltaX => _lastPreSetHumanPoseEndpointBodyPositionDelta.x;
-        public float LastPreSetHumanPoseEndpointBodyPositionDeltaZ => _lastPreSetHumanPoseEndpointBodyPositionDelta.z;
+        public float LastPreSetHumanPoseEndpointBodyPositionBeforeX => _footReferenceDiagnostics.PreSetEndpointBodyPositionBefore.x;
+        public float LastPreSetHumanPoseEndpointBodyPositionBeforeZ => _footReferenceDiagnostics.PreSetEndpointBodyPositionBefore.z;
+        public float LastPreSetHumanPoseEndpointBodyPositionAfterX => _footReferenceDiagnostics.PreSetEndpointBodyPositionAfter.x;
+        public float LastPreSetHumanPoseEndpointBodyPositionAfterZ => _footReferenceDiagnostics.PreSetEndpointBodyPositionAfter.z;
+        public float LastPreSetHumanPoseEndpointBodyPositionDeltaX => _footReferenceDiagnostics.PreSetEndpointBodyPositionDelta.x;
+        public float LastPreSetHumanPoseEndpointBodyPositionDeltaZ => _footReferenceDiagnostics.PreSetEndpointBodyPositionDelta.z;
         public float LastPreSetHumanPoseEndpointBodyPositionDeltaMagnitudeXZ => CalculateFiniteXzDelta(
             Vector3.zero,
-            _lastPreSetHumanPoseEndpointBodyPositionDelta);
+            _footReferenceDiagnostics.PreSetEndpointBodyPositionDelta);
         public float LastSetHumanPosePreSolveGhostLeftFootWorldX => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.LeftFoot.x;
         public float LastSetHumanPosePreSolveGhostLeftFootWorldZ => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.LeftFoot.z;
         public float LastSetHumanPosePreSolveGhostLeftToesWorldX => _setHumanPoseDiagnostics.PreSolveBasis.GhostEndpointPositions.LeftToes.x;
@@ -1165,8 +1165,8 @@ namespace Fbx2Vmd.FBXImporter
         public float LastRetargetEndpointFirstJumpDeltaX => _endpointStageDiagnostics.FirstJumpDelta.x;
         public float LastRetargetEndpointFirstJumpDeltaY => _endpointStageDiagnostics.FirstJumpDelta.y;
         public float LastRetargetEndpointFirstJumpDeltaZ => _endpointStageDiagnostics.FirstJumpDelta.z;
-        public float LastEditorFootLocalRotationLeftFootXzDelta => _lastEditorFootLocalRotationLeftFootXzDelta;
-        public float LastEditorFootLocalRotationRightFootXzDelta => _lastEditorFootLocalRotationRightFootXzDelta;
+        public float LastEditorFootLocalRotationLeftFootXzDelta => _footReferenceDiagnostics.FootLocalRotationLeftFootXzDelta;
+        public float LastEditorFootLocalRotationRightFootXzDelta => _footReferenceDiagnostics.FootLocalRotationRightFootXzDelta;
         public float LastEditorLowerBodySegmentDirectionLeftFootXzDelta => _lowerBodySegmentDiagnostics.LeftFootXzDelta;
         public float LastEditorLowerBodySegmentDirectionRightFootXzDelta => _lowerBodySegmentDiagnostics.RightFootXzDelta;
         public string LastEditorLowerBodySegmentDirectionMaxCorrectionSegment => _lowerBodySegmentDiagnostics.MaxCorrectionSegment;
@@ -1249,8 +1249,8 @@ namespace Fbx2Vmd.FBXImporter
         public float LastEditorLowerBodySegmentDirectionRightFootUpX => _lowerBodySegmentDiagnostics.RightFootUp.x;
         public float LastEditorLowerBodySegmentDirectionRightFootUpY => _lowerBodySegmentDiagnostics.RightFootUp.y;
         public float LastEditorLowerBodySegmentDirectionRightFootUpZ => _lowerBodySegmentDiagnostics.RightFootUp.z;
-        public float LastEditorFootHipsAlignedResidualYawLeftFootXzDelta => _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta;
-        public float LastEditorFootHipsAlignedResidualYawRightFootXzDelta => _lastEditorFootHipsAlignedResidualYawRightFootXzDelta;
+        public float LastEditorFootHipsAlignedResidualYawLeftFootXzDelta => _footReferenceDiagnostics.FootHipsAlignedResidualYawLeftFootXzDelta;
+        public float LastEditorFootHipsAlignedResidualYawRightFootXzDelta => _footReferenceDiagnostics.FootHipsAlignedResidualYawRightFootXzDelta;
         public float LastPostSetHumanPoseRightEndpointDesiredFootWorldX => _postSetEndpointDiagnostics.DesiredFootWorldPosition.x;
         public float LastPostSetHumanPoseRightEndpointDesiredFootWorldZ => _postSetEndpointDiagnostics.DesiredFootWorldPosition.z;
         public float LastPostSetHumanPoseRightEndpointDesiredToesWorldX => _postSetEndpointDiagnostics.DesiredToesWorldPosition.x;
@@ -1339,9 +1339,9 @@ namespace Fbx2Vmd.FBXImporter
                 _recordingStartHipsY = IsFinite(hipsPosition) ? hipsPosition.y : float.NaN;
             }
 
-            _recordingStartHipsReferenceBeforeLocalY = _lastEditorHipsLocalReferenceBeforeLocalY;
-            _recordingStartHipsReferenceAfterLocalY = _lastEditorHipsLocalReferenceAfterLocalY;
-            _recordingStartHipsReferenceDeltaY = _lastEditorHipsLocalReferenceDeltaY;
+            _recordingStartHipsReferenceBeforeLocalY = _footReferenceDiagnostics.HipsLocalReferenceBeforeLocalY;
+            _recordingStartHipsReferenceAfterLocalY = _footReferenceDiagnostics.HipsLocalReferenceAfterLocalY;
+            _recordingStartHipsReferenceDeltaY = _footReferenceDiagnostics.HipsLocalReferenceDeltaY;
             _recordingStartHipsReferenceFlipDetected = IsRecordingStartHipsBaselineFlip(
                 _recordingStartHipsReferenceBeforeLocalY,
                 _recordingStartHipsReferenceAfterLocalY,
@@ -1406,8 +1406,8 @@ namespace Fbx2Vmd.FBXImporter
         private readonly Dictionary<Transform, Vector3> _targetInitialHumanoidLocalPositions = new Dictionary<Transform, Vector3>();
         private readonly Dictionary<Transform, Vector3> _targetInitialThumbBaseHelperLocalPositions = new Dictionary<Transform, Vector3>();
         private readonly Dictionary<Transform, Quaternion> _targetInitialThumbLocalRotations = new Dictionary<Transform, Quaternion>();
-        private Vector3 _targetHipsRestLocalPosition;
-        private bool _hasTargetHipsRestLocalPosition;
+        internal Vector3 _targetHipsRestLocalPosition;
+        internal bool _hasTargetHipsRestLocalPosition;
         private readonly Dictionary<bool, Transform> _cachedThumbBaseHelpers = new Dictionary<bool, Transform>();
         private readonly Dictionary<bool, Transform> _cachedThumbBaseExplicitSources = new Dictionary<bool, Transform>();
         private readonly Dictionary<bool, float> _initialThumbBaseHelperSourceDistances = new Dictionary<bool, float>();
@@ -1445,9 +1445,6 @@ namespace Fbx2Vmd.FBXImporter
         private float _lastGroundingTargetY = float.NaN;
         private float _lastGroundingLowestFootBottomY = float.NaN;
         private float _lastEditorFootHeightGroundingReferenceLift = float.NaN;
-        private float _lastEditorHipsLocalReferenceBeforeLocalY = float.NaN;
-        private float _lastEditorHipsLocalReferenceAfterLocalY = float.NaN;
-        private float _lastEditorHipsLocalReferenceDeltaY = float.NaN;
         private float _recordingStartRootY = float.NaN;
         private float _recordingStartBodyPositionY = float.NaN;
         private float _recordingStartHipsLocalY = float.NaN;
@@ -1506,20 +1503,12 @@ namespace Fbx2Vmd.FBXImporter
         private float _lastRightThumbProximalWorldRotationPreserveLimitedRisk = float.NaN;
         private float _lastLeftThumbIntermediateWorldRotationPreserveLimitedRisk = float.NaN;
         private float _lastRightThumbIntermediateWorldRotationPreserveLimitedRisk = float.NaN;
-        private Vector3 _lastPreSetHumanPoseEndpointBodyPositionBefore = BuildNaNVector3();
-        private Vector3 _lastPreSetHumanPoseEndpointBodyPositionAfter = BuildNaNVector3();
-        private Vector3 _lastPreSetHumanPoseEndpointBodyPositionDelta = BuildNaNVector3();
-        private float _lastEditorFootLocalRotationLeftFootXzDelta = float.NaN;
-        private float _lastEditorFootLocalRotationRightFootXzDelta = float.NaN;
         internal readonly RetargetingLowerBodySegmentDiagnostics _lowerBodySegmentDiagnostics = new RetargetingLowerBodySegmentDiagnostics();
-        private float _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta = float.NaN;
-        private float _lastEditorFootHipsAlignedResidualYawRightFootXzDelta = float.NaN;
-        private bool _hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset;
-        private Vector3 _postSetHumanPoseRightFootEvaluatorXzFirstOffset = new Vector3(float.NaN, float.NaN, float.NaN);
+        internal readonly RetargetingFootReferenceDiagnostics _footReferenceDiagnostics = new RetargetingFootReferenceDiagnostics();
         private readonly RetargetingEndpointStageDiagnostics _endpointStageDiagnostics = new RetargetingEndpointStageDiagnostics();
         private readonly RetargetingStageMuscleDiagnostics _stageMuscleDiagnostics = new RetargetingStageMuscleDiagnostics();
-        private readonly RetargetingSetHumanPoseDiagnostics _setHumanPoseDiagnostics = new RetargetingSetHumanPoseDiagnostics();
-        private readonly RetargetingPostSetEndpointDiagnostics _postSetEndpointDiagnostics = new RetargetingPostSetEndpointDiagnostics();
+        internal readonly RetargetingSetHumanPoseDiagnostics _setHumanPoseDiagnostics = new RetargetingSetHumanPoseDiagnostics();
+        internal readonly RetargetingPostSetEndpointDiagnostics _postSetEndpointDiagnostics = new RetargetingPostSetEndpointDiagnostics();
         private readonly RetargetingMuscleIndexMap _muscleIndexMap = new RetargetingMuscleIndexMap();
 
         internal static Vector3 BuildNaNVector3()
@@ -1547,6 +1536,7 @@ namespace Fbx2Vmd.FBXImporter
         };
 #if UNITY_EDITOR
         internal object _editorPoseReferenceSession;
+        internal object _editorFootReferenceSession;
         internal readonly Dictionary<int, AnimationCurve> _editorHumanoidMuscleCurves = new Dictionary<int, AnimationCurve>();
         internal bool _useEditorHumanoidMuscleReference;
         internal bool _useCompleteEditorHumanoidMuscleReference;
@@ -1561,25 +1551,22 @@ namespace Fbx2Vmd.FBXImporter
         internal bool _editorBodyRotationReferenceLogged;
         internal bool _hasEditorReferenceBodyPosition;
         internal Vector3 _editorReferenceBodyPosition;
-        internal bool _hasEditorReferenceHipsRestLocalPosition;
-        internal Vector3 _editorReferenceHipsRestLocalPosition;
         internal bool _hasEditorReferenceLowestFootRestY;
         internal float _editorReferenceLowestFootRestY;
         internal bool _allowEditorFootHeightGroundingReference;
+        internal bool _hasEditorReferenceHipsRestLocalPosition;
+        internal Vector3 _editorReferenceHipsRestLocalPosition;
         internal bool _editorHandLocalRotationReferenceLogged;
         internal bool _editorFootLocalRotationReferenceLogged;
-        internal bool _editorLowerBodySegmentDirectionReferenceLogged;
         internal bool _editorFootHipsAlignedResidualYawReferenceLogged;
+        internal bool _editorHipsLocalPositionReferenceLogged;
+        internal bool _editorFootIkPositionReferenceLogged;
+        internal bool _editorLowerBodySegmentDirectionReferenceLogged;
         internal bool _editorThumbLocalRotationReferenceLogged;
         internal bool _editorThumbSegmentDirectionReferenceLogged;
         internal bool _editorHandPalmFrameReferenceLogged;
         internal bool _editorThumbBasePositionReferenceLogged;
-        internal bool _editorHipsLocalPositionReferenceLogged;
         internal bool _editorBodyPositionXzReferenceLogged;
-        private bool _editorFootIkPositionReferenceLogged;
-        private BipedIK _editorManualFootBipedIk;
-        private bool _editorManualFootBipedIkCreated;
-        private bool _editorManualFootBipedIkInitiated;
 #else
         private Animator _editorFingerReferenceAnimator;
         private bool _useEditorFingerPoseReference;
@@ -2078,10 +2065,10 @@ namespace Fbx2Vmd.FBXImporter
             Vector3 targetPositionBeforePose = targetAnimator.transform.position;
 #if UNITY_EDITOR
             _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
-            ApplyPreSetHumanPoseSignCorrectedRowLocalBodyPositionReference(ref _humanPose);
+            RetargetingEditorReferenceHooks.FootReference?.ApplyPreSetSignCorrectedRowLocalBodyPositionReference(this, ref _humanPose);
             if (!preSetHumanPoseEndpointPositionUseGhostCurrentBasis)
             {
-                ApplyPreSetHumanPoseRightEndpointPositionReference();
+                RetargetingEditorReferenceHooks.FootReference?.ApplyPreSetEndpointPositionReference(this);
             }
 #endif
             _setHumanPoseDiagnostics.CaptureInput(ReadSetHumanPoseInputSnapshot(_humanPose));
@@ -2098,11 +2085,11 @@ namespace Fbx2Vmd.FBXImporter
 #endif
             RestoreTargetHumanoidLocalPositions();
 #if UNITY_EDITOR
-            ApplyEditorHumanoidHipsLocalPositionReference();
-            ApplyEditorHumanoidFootLocalRotationReference();
+            RetargetingEditorReferenceHooks.FootReference?.ApplyHipsLocalPositionReference(this);
+            RetargetingEditorReferenceHooks.FootReference?.ApplyFootLocalRotationReference(this);
             RetargetingEditorReferenceHooks.LowerBodyDirection?.Apply(this);
-            ApplyEditorHumanoidFootHipsAlignedResidualYawReference();
-            ApplyPostSetHumanPoseRightEndpointPositionReference();
+            RetargetingEditorReferenceHooks.FootReference?.ApplyFootHipsAlignedResidualYawReference(this);
+            RetargetingEditorReferenceHooks.FootReference?.ApplyPostSetEndpointPositionReference(this);
             ApplyEditorHumanoidThumbBasePositionReference();
 #endif
 #if UNITY_EDITOR
@@ -2113,7 +2100,7 @@ namespace Fbx2Vmd.FBXImporter
 #if UNITY_EDITOR
             ApplyEditorHumanoidThumbLocalRotationReference();
             ApplyEditorHumanoidHandPalmFrameReference();
-            ApplyEditorHumanoidHandLocalRotationReference();
+            RetargetingEditorReferenceHooks.FootReference?.ApplyHandLocalRotationReference(this);
             ApplyEditorHumanoidThumbSegmentDirectionReference();
             ApplyEditorHumanoidThumbHandDirectionReference();
             ApplyRightSleeveSilhouetteLocalOffsetReference();
@@ -2215,7 +2202,7 @@ namespace Fbx2Vmd.FBXImporter
 
             RestoreTargetLocalScales();
 #if UNITY_EDITOR
-            ApplyEditorHumanoidBipedIkFootPositionReference();
+            RetargetingEditorReferenceHooks.FootReference?.ApplyBipedIkFootPositionReference(this);
             _endpointStageDiagnostics.AfterBipedIKPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
             _endpointStageDiagnostics.CaptureAttribution();
 #endif
@@ -2401,9 +2388,7 @@ namespace Fbx2Vmd.FBXImporter
 
         private void ResetLastEditorHipsLocalReferenceDiagnostics()
         {
-            _lastEditorHipsLocalReferenceBeforeLocalY = float.NaN;
-            _lastEditorHipsLocalReferenceAfterLocalY = float.NaN;
-            _lastEditorHipsLocalReferenceDeltaY = float.NaN;
+            _footReferenceDiagnostics.ResetHipsLocal();
         }
 
         private void ResetRecordingStartHipsBaselineDiagnostics()
@@ -2448,7 +2433,7 @@ namespace Fbx2Vmd.FBXImporter
             return Mathf.Abs(afterLocalY - beforeLocalY) > Mathf.Max(0f, warningThreshold);
         }
 
-        private bool ShouldSuppressCompetingManualThumbOverride(bool leftHand)
+        internal bool ShouldSuppressCompetingManualThumbOverride(bool leftHand)
         {
 #if UNITY_EDITOR
             return ShouldSuppressCompetingManualThumbOverrideEditor(leftHand);
@@ -2585,189 +2570,9 @@ namespace Fbx2Vmd.FBXImporter
             return RetargetingEditorReferenceHooks.PoseReference?.UpdateManualReferenceAnimator(this) ?? false;
         }
 
-        private void ApplyEditorHumanoidHipsLocalPositionReference()
-        {
-            if (!ShouldUseManualAnimatorHipsLocalPositionReference ||
-                manualAnimatorHipsLocalPositionWeight <= 0f ||
-                _editorFingerReferenceAnimator == null ||
-                targetAnimator == null)
-            {
-                return;
-            }
 
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
 
-            if (!ManualPoseReferenceApplier.TryResolveHipsLocalPositionReference(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                out Transform targetHips,
-                out Vector3 refCurrentLocalPosition,
-                out Vector3 currentLocalPosition))
-            {
-                return;
-            }
 
-            Vector3 ghostRightFootPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(ghostAnimator, HumanBodyBones.RightFoot);
-            Vector3 ghostRightToesPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(ghostAnimator, HumanBodyBones.RightToes);
-            Vector3 beforeRightFootPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(targetAnimator, HumanBodyBones.RightFoot);
-            Vector3 beforeRightToesPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(targetAnimator, HumanBodyBones.RightToes);
-            // Delta 방식: testprefab의 clip 시작 대비 현재 변위만 YYB 자연 위치에 더한다.
-            // 절대 복사는 모델 비율 차이(YYB Hips Y≈1.024 vs testprefab≈1.056)로 인해 YYB Hips를 잘못된 높이로 강제한다.
-            if (!ManualPoseReferenceApplier.TryCalculateHipsLocalPositionReference(
-                refCurrentLocalPosition,
-                _editorReferenceHipsRestLocalPosition,
-                _hasEditorReferenceHipsRestLocalPosition,
-                _targetHipsRestLocalPosition,
-                _hasTargetHipsRestLocalPosition,
-                currentLocalPosition,
-                manualAnimatorHipsLocalPositionWeight,
-                manualAnimatorHipsLocalPositionMaxOffset,
-                out Vector3 nextLocalPosition))
-            {
-                return;
-            }
-
-            ManualPoseReferenceApplier.ApplyHipsLocalPosition(targetHips, nextLocalPosition);
-            Vector3 afterRightFootPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(targetAnimator, HumanBodyBones.RightFoot);
-            Vector3 afterRightToesPosition = RetargetingAnimatorPoseReader.ReadBoneWorldPosition(targetAnimator, HumanBodyBones.RightToes);
-            if (!RetargetingEndpointDiagnostics.ShouldKeepHipsLocalPositionReferenceByTargetGap(
-                ghostRightFootPosition,
-                ghostRightToesPosition,
-                beforeRightFootPosition,
-                beforeRightToesPosition,
-                afterRightFootPosition,
-                afterRightToesPosition,
-                HipsLocalPositionTargetGapGuardMaxIncreaseMeters))
-            {
-                ManualPoseReferenceApplier.ApplyHipsLocalPosition(targetHips, currentLocalPosition);
-                RecordEditorHipsLocalReferenceDiagnostics(currentLocalPosition, currentLocalPosition);
-                return;
-            }
-
-            RecordEditorHipsLocalReferenceDiagnostics(currentLocalPosition, nextLocalPosition);
-            if (!_editorHipsLocalPositionReferenceLogged)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Manual Animator Hips localPosition reference applied. weight={manualAnimatorHipsLocalPositionWeight:F2}, maxOffset={manualAnimatorHipsLocalPositionMaxOffset:F3}m");
-                _editorHipsLocalPositionReferenceLogged = true;
-            }
-        }
-
-        private void RecordEditorHipsLocalReferenceDiagnostics(Vector3 beforeLocalPosition, Vector3 afterLocalPosition)
-        {
-            _lastEditorHipsLocalReferenceBeforeLocalY = IsFinite(beforeLocalPosition) ? beforeLocalPosition.y : float.NaN;
-            _lastEditorHipsLocalReferenceAfterLocalY = IsFinite(afterLocalPosition) ? afterLocalPosition.y : float.NaN;
-            _lastEditorHipsLocalReferenceDeltaY =
-                IsFinite(_lastEditorHipsLocalReferenceBeforeLocalY) && IsFinite(_lastEditorHipsLocalReferenceAfterLocalY)
-                    ? _lastEditorHipsLocalReferenceAfterLocalY - _lastEditorHipsLocalReferenceBeforeLocalY
-                    : float.NaN;
-        }
-
-        private void ApplyEditorHumanoidHandLocalRotationReference()
-        {
-            if (!useManualAnimatorHandLocalRotationReference ||
-                _editorFingerReferenceAnimator == null ||
-                targetAnimator == null)
-            {
-                return;
-            }
-
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
-
-            int changed = 0;
-            if (!ShouldSuppressCompetingManualThumbOverride(true))
-            {
-                changed += ManualPoseReferenceApplier.ApplyExactLocalRotationReference(
-                    _editorFingerReferenceAnimator,
-                    targetAnimator,
-                    HumanBodyBones.LeftHand);
-            }
-
-            if (!ShouldSuppressCompetingManualThumbOverride(false))
-            {
-                changed += ManualPoseReferenceApplier.ApplyExactLocalRotationReference(
-                    _editorFingerReferenceAnimator,
-                    targetAnimator,
-                    HumanBodyBones.RightHand);
-            }
-
-            if (changed > 0 && !_editorHandLocalRotationReferenceLogged)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Manual Animator hand localRotation reference applied. bones={changed}");
-                _editorHandLocalRotationReferenceLogged = true;
-            }
-        }
-
-        private void ApplyEditorHumanoidFootLocalRotationReference()
-        {
-            if (!ShouldUseManualAnimatorFootLocalRotationReference ||
-                manualAnimatorFootLocalRotationReferenceWeight <= 0f ||
-                _editorFingerReferenceAnimator == null ||
-                targetAnimator == null)
-            {
-                return;
-            }
-
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
-
-            CaptureTargetFootPositions(out Vector3 leftFootBefore, out Vector3 rightFootBefore);
-            int changed = 0;
-            changed += ManualPoseReferenceApplier.ApplyBlendedLocalRotationReference(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                HumanBodyBones.LeftUpperLeg,
-                manualAnimatorFootLocalRotationReferenceWeight);
-            changed += ManualPoseReferenceApplier.ApplyBlendedLocalRotationReference(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                HumanBodyBones.RightUpperLeg,
-                manualAnimatorFootLocalRotationReferenceWeight);
-            changed += ManualPoseReferenceApplier.ApplyBlendedLocalRotationReference(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                HumanBodyBones.LeftLowerLeg,
-                manualAnimatorFootLocalRotationReferenceWeight);
-            changed += ManualPoseReferenceApplier.ApplyBlendedLocalRotationReference(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                HumanBodyBones.RightLowerLeg,
-                manualAnimatorFootLocalRotationReferenceWeight);
-            changed += ManualPoseReferenceApplier.ApplyBlendedLocalRotationReference(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                HumanBodyBones.LeftFoot,
-                manualAnimatorFootLocalRotationReferenceWeight);
-            changed += ManualPoseReferenceApplier.ApplyBlendedLocalRotationReference(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                HumanBodyBones.RightFoot,
-                manualAnimatorFootLocalRotationReferenceWeight);
-            changed += ManualPoseReferenceApplier.ApplyBlendedLocalRotationReference(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                HumanBodyBones.LeftToes,
-                manualAnimatorFootLocalRotationReferenceWeight);
-            changed += ManualPoseReferenceApplier.ApplyBlendedLocalRotationReference(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                HumanBodyBones.RightToes,
-                manualAnimatorFootLocalRotationReferenceWeight);
-            RecordEditorFootLocalRotationReferenceDiagnostics(leftFootBefore, rightFootBefore);
-
-            if (changed > 0 && !_editorFootLocalRotationReferenceLogged)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Manual Animator lower-body localRotation reference applied. bones={changed}, weight={manualAnimatorFootLocalRotationReferenceWeight:F2}");
-                _editorFootLocalRotationReferenceLogged = true;
-            }
-        }
 
         internal void CaptureTargetFootPositions(out Vector3 leftFootPosition, out Vector3 rightFootPosition)
         {
@@ -2786,18 +2591,8 @@ namespace Fbx2Vmd.FBXImporter
             return targetBone != null ? targetBone.position : BuildNaNVector3();
         }
 
-        private void RecordEditorFootLocalRotationReferenceDiagnostics(Vector3 leftFootBefore, Vector3 rightFootBefore)
-        {
-            _lastEditorFootLocalRotationLeftFootXzDelta = CalculateTargetFootXzDelta(leftFootBefore, HumanBodyBones.LeftFoot);
-            _lastEditorFootLocalRotationRightFootXzDelta = CalculateTargetFootXzDelta(rightFootBefore, HumanBodyBones.RightFoot);
-        }
 
 
-        private void RecordEditorFootHipsAlignedResidualYawReferenceDiagnostics(Vector3 leftFootBefore, Vector3 rightFootBefore)
-        {
-            _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta = CalculateTargetFootXzDelta(leftFootBefore, HumanBodyBones.LeftFoot);
-            _lastEditorFootHipsAlignedResidualYawRightFootXzDelta = CalculateTargetFootXzDelta(rightFootBefore, HumanBodyBones.RightFoot);
-        }
 
         internal float CalculateTargetFootXzDelta(Vector3 beforePosition, HumanBodyBones footBone)
         {
@@ -2881,643 +2676,18 @@ namespace Fbx2Vmd.FBXImporter
 
 
 
-        private void ApplyEditorHumanoidFootHipsAlignedResidualYawReference()
-        {
-            if (!ShouldUseManualAnimatorFootHipsAlignedResidualYawReference ||
-                manualAnimatorFootHipsAlignedResidualYawReferenceWeight <= 0f ||
-                _editorFingerReferenceAnimator == null ||
-                targetAnimator == null)
-            {
-                return;
-            }
 
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
 
-            Transform referenceHips = _editorFingerReferenceAnimator.GetBoneTransform(HumanBodyBones.Hips);
-            Transform targetHips = targetAnimator.GetBoneTransform(HumanBodyBones.Hips);
-            if (referenceHips == null || targetHips == null)
-            {
-                return;
-            }
 
-            float weight = Mathf.Clamp01(manualAnimatorFootHipsAlignedResidualYawReferenceWeight);
-            float maxAngle = Mathf.Max(0f, manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle);
-            float leftResidual = float.NaN;
-            float rightResidual = float.NaN;
-            TryCalculateEditorFootHipsAlignedResidualForBone(
-                HumanBodyBones.LeftFoot,
-                referenceHips,
-                targetHips,
-                out leftResidual);
-            TryCalculateEditorFootHipsAlignedResidualForBone(
-                HumanBodyBones.RightFoot,
-                referenceHips,
-                targetHips,
-                out rightResidual);
 
-            bool leftDominantResidual = IsFinite(leftResidual) &&
-                (!IsFinite(rightResidual) || leftResidual > rightResidual);
-            bool rightDominantResidual = IsFinite(rightResidual) &&
-                (!IsFinite(leftResidual) || rightResidual > leftResidual);
-            float leftMaxAngle = RetargetingEndpointDiagnostics.ResolveEditorFootHipsAlignedResidualYawSideAwareMaxAngle(
-                leftResidual,
-                rightResidual,
-                maxAngle,
-                leftDominantResidual);
-            float rightMaxAngle = RetargetingEndpointDiagnostics.ResolveEditorFootHipsAlignedResidualYawSideAwareMaxAngle(
-                rightResidual,
-                leftResidual,
-                maxAngle,
-                rightDominantResidual);
-            CaptureTargetFootPositions(out Vector3 leftFootBefore, out Vector3 rightFootBefore);
-            int changed = 0;
-            changed += ApplyEditorHumanoidFootHipsAlignedResidualYawReferenceBone(
-                HumanBodyBones.LeftUpperLeg,
-                HumanBodyBones.LeftFoot,
-                referenceHips,
-                targetHips,
-                weight,
-                leftMaxAngle);
-            changed += ApplyEditorHumanoidFootHipsAlignedResidualYawReferenceBone(
-                HumanBodyBones.RightUpperLeg,
-                HumanBodyBones.RightFoot,
-                referenceHips,
-                targetHips,
-                weight,
-                rightMaxAngle);
-            RecordEditorFootHipsAlignedResidualYawReferenceDiagnostics(leftFootBefore, rightFootBefore);
 
-            if (changed > 0 && !_editorFootHipsAlignedResidualYawReferenceLogged)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Manual Animator hips-aligned foot X/Z residual yaw reference applied. feet={changed}, weight={weight:F2}, maxAngle={maxAngle:F1}deg");
-                _editorFootHipsAlignedResidualYawReferenceLogged = true;
-            }
-        }
 
-        private bool TryCalculateEditorFootHipsAlignedResidualForBone(
-            HumanBodyBones footBone,
-            Transform referenceHips,
-            Transform targetHips,
-            out float residual)
-        {
-            residual = float.NaN;
-            Transform targetFoot = targetAnimator.GetBoneTransform(footBone);
-            if (targetFoot == null ||
-                !ManualPoseReferenceApplier.TryResolveHipsAlignedEndpointPositionReference(
-                    _editorFingerReferenceAnimator,
-                    targetAnimator,
-                    footBone,
-                    referenceHips,
-                    targetHips,
-                    targetFoot,
-                    out Vector3 desiredFootPosition))
-            {
-                return false;
-            }
 
-            Vector3 residualVector = desiredFootPosition - targetFoot.position;
-            residualVector.y = 0f;
-            residual = residualVector.magnitude;
-            return IsFinite(residual);
-        }
 
-        private int ApplyEditorHumanoidFootHipsAlignedResidualYawReferenceBone(
-            HumanBodyBones upperLegBone,
-            HumanBodyBones footBone,
-            Transform referenceHips,
-            Transform targetHips,
-            float weight,
-            float maxAngle)
-        {
-            Transform targetUpperLeg = targetAnimator.GetBoneTransform(upperLegBone);
-            Transform targetFoot = targetAnimator.GetBoneTransform(footBone);
-            if (targetUpperLeg == null || targetFoot == null)
-            {
-                return 0;
-            }
 
-            if (!ManualPoseReferenceApplier.TryResolveHipsAlignedEndpointPositionReference(
-                    _editorFingerReferenceAnimator,
-                    targetAnimator,
-                    footBone,
-                    referenceHips,
-                    targetHips,
-                    targetFoot,
-                    out Vector3 desiredFootPosition))
-            {
-                return 0;
-            }
 
-            if (!RetargetingEndpointDiagnostics.TryCalculateEditorFootHipsAlignedResidualYawReference(
-                    desiredFootPosition,
-                    targetFoot.position,
-                    targetUpperLeg.position,
-                    targetUpperLeg.rotation,
-                    weight,
-                    maxAngle,
-                    out Quaternion nextWorldRotation))
-            {
-                return 0;
-            }
 
-            targetUpperLeg.rotation = nextWorldRotation;
-            return 1;
-        }
 
-        private void ApplyPreSetHumanPoseRightEndpointPositionReference()
-        {
-            if (!usePreSetHumanPoseRightEndpointPositionReference ||
-                preSetHumanPoseRightEndpointPositionReferenceWeight <= 0f ||
-                preSetHumanPoseRightEndpointPositionReferenceMaxOffset <= 0f ||
-                _editorFingerReferenceAnimator == null ||
-                targetAnimator == null)
-            {
-                return;
-            }
-
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
-
-            Transform referenceHips = _editorFingerReferenceAnimator.GetBoneTransform(HumanBodyBones.Hips);
-            Transform targetHips = targetAnimator.GetBoneTransform(HumanBodyBones.Hips);
-            bool useLeftSide = ShouldUseLeftSideForPreSetHumanPoseEndpointPosition;
-            HumanBodyBones footBone = useLeftSide ? HumanBodyBones.LeftFoot : HumanBodyBones.RightFoot;
-            HumanBodyBones toesBone = useLeftSide ? HumanBodyBones.LeftToes : HumanBodyBones.RightToes;
-            HumanBodyBones upperLegBone = useLeftSide ? HumanBodyBones.LeftUpperLeg : HumanBodyBones.RightUpperLeg;
-            Transform targetUpperLeg = targetAnimator.GetBoneTransform(upperLegBone);
-            Transform targetFoot = targetAnimator.GetBoneTransform(footBone);
-            Transform targetToes = targetAnimator.GetBoneTransform(toesBone);
-            if (referenceHips == null ||
-                targetHips == null ||
-                targetUpperLeg == null ||
-                targetFoot == null)
-            {
-                return;
-            }
-
-            if (!ShouldApplyPreSetHumanPoseRightEndpointPositionFrameGate())
-            {
-                return;
-            }
-
-            if (!ManualPoseReferenceApplier.TryResolveHipsAlignedEndpointPositionReference(
-                    _editorFingerReferenceAnimator,
-                    targetAnimator,
-                    footBone,
-                    referenceHips,
-                    targetHips,
-                    targetFoot,
-                    out Vector3 desiredFootPosition))
-            {
-                return;
-            }
-
-            Vector3 desiredToesPosition = BuildNaNVector3();
-            if (targetToes != null)
-            {
-                ManualPoseReferenceApplier.TryResolveHipsAlignedEndpointPositionReference(
-                    _editorFingerReferenceAnimator,
-                    targetAnimator,
-                    toesBone,
-                    referenceHips,
-                    targetHips,
-                    targetToes,
-                    out desiredToesPosition);
-            }
-
-            if (!RetargetingEndpointDiagnostics.TryCalculateReferencePosition(
-                    desiredFootPosition,
-                    desiredToesPosition,
-                    targetFoot.position,
-                    targetToes != null ? targetToes.position : BuildNaNVector3(),
-                    preSetHumanPoseRightEndpointPositionReferenceWeight,
-                    preSetHumanPoseRightEndpointPositionReferenceMaxOffset,
-                    preSetHumanPoseRightEndpointPositionReferencePositiveZScale,
-                    preSetHumanPoseRightEndpointPositionReferenceToesBlendWeight,
-                    out Vector3 nextFootPosition))
-            {
-                return;
-            }
-
-            float maxAngleDegrees = RetargetingEndpointDiagnostics.CalculateEndpointPositionMaxYawAngle(
-                targetFoot.position,
-                targetUpperLeg.position,
-                preSetHumanPoseRightEndpointPositionReferenceMaxOffset);
-            if (!RetargetingEndpointDiagnostics.TryCalculateEditorFootHipsAlignedResidualYawReference(
-                    nextFootPosition,
-                    targetFoot.position,
-                    targetUpperLeg.position,
-                    targetUpperLeg.rotation,
-                    1f,
-                    maxAngleDegrees,
-                    out Quaternion nextWorldRotation,
-                    out _))
-            {
-                return;
-            }
-
-            targetUpperLeg.rotation = nextWorldRotation;
-        }
-
-        private void ApplyPreSetHumanPoseSignCorrectedRowLocalBodyPositionReference(ref HumanPose pose)
-        {
-            ResetPreSetHumanPoseEndpointBodyPositionDiagnostics();
-            if (!usePreSetHumanPoseRightEndpointPositionReference ||
-                !preSetHumanPoseEndpointPositionUseGhostCurrentBasis ||
-                preSetHumanPoseRightEndpointPositionReferenceWeight <= 0f ||
-                preSetHumanPoseRightEndpointPositionReferenceMaxOffset <= 0f ||
-                ghostAnimator == null ||
-                targetAnimator == null ||
-                !IsFinite(pose.bodyPosition))
-            {
-                return;
-            }
-
-            if (!ShouldApplyPreSetHumanPoseRightEndpointPositionFrameGate())
-            {
-                return;
-            }
-
-            RetargetEndpointStageWorldPositions ghostPositions = RetargetingEndpointStageDiagnostics.CapturePositions(ghostAnimator);
-            RetargetEndpointStageWorldPositions currentPositions = _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions;
-            bool useLeftSide = ShouldUseLeftSideForPreSetHumanPoseEndpointPosition;
-            Vector3 ghostFootPosition = useLeftSide ? ghostPositions.LeftFoot : ghostPositions.RightFoot;
-            Vector3 currentFootPosition = useLeftSide ? currentPositions.LeftFoot : currentPositions.RightFoot;
-            Vector3 bodyPositionBefore = pose.bodyPosition;
-
-            if (ManualPoseReferenceApplier.TryCalculateSignCorrectedBodyPositionXzReference(
-                    bodyPositionBefore,
-                    ghostFootPosition,
-                    currentFootPosition,
-                    preSetHumanPoseRightEndpointPositionReferenceWeight,
-                    preSetHumanPoseRightEndpointPositionReferenceMaxOffset,
-                    axisXScale: 1f,
-                    axisZScale: 1f,
-                    invertX: ShouldInvertPreSetHumanPoseEndpointPositionBodyX,
-                    invertZ: ShouldInvertPreSetHumanPoseEndpointPositionBodyZ,
-                    out Vector3 nextBodyPosition))
-            {
-                CapturePreSetHumanPoseEndpointBodyPositionDiagnostics(bodyPositionBefore, nextBodyPosition);
-                pose.bodyPosition = nextBodyPosition;
-            }
-        }
-
-        private void ResetPreSetHumanPoseEndpointBodyPositionDiagnostics()
-        {
-            _lastPreSetHumanPoseEndpointBodyPositionBefore = BuildNaNVector3();
-            _lastPreSetHumanPoseEndpointBodyPositionAfter = BuildNaNVector3();
-            _lastPreSetHumanPoseEndpointBodyPositionDelta = BuildNaNVector3();
-        }
-
-        private void CapturePreSetHumanPoseEndpointBodyPositionDiagnostics(Vector3 before, Vector3 after)
-        {
-            if (!IsFinite(before) || !IsFinite(after))
-            {
-                ResetPreSetHumanPoseEndpointBodyPositionDiagnostics();
-                return;
-            }
-
-            _lastPreSetHumanPoseEndpointBodyPositionBefore = before;
-            _lastPreSetHumanPoseEndpointBodyPositionAfter = after;
-            _lastPreSetHumanPoseEndpointBodyPositionDelta = after - before;
-        }
-
-        private void ApplyPostSetHumanPoseRightEndpointPositionReference()
-        {
-            _postSetEndpointDiagnostics.Reset();
-            if (!usePostSetHumanPoseRightFootEvaluatorXzReference)
-            {
-                _hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset = false;
-                _postSetHumanPoseRightFootEvaluatorXzFirstOffset = BuildNaNVector3();
-            }
-
-            if (!usePostSetHumanPoseRightEndpointPositionReference ||
-                postSetHumanPoseRightEndpointPositionReferenceWeight <= 0f ||
-                postSetHumanPoseRightEndpointPositionReferenceMaxOffset <= 0f ||
-                _editorFingerReferenceAnimator == null ||
-                targetAnimator == null)
-            {
-                return;
-            }
-
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
-
-            Transform referenceHips = _editorFingerReferenceAnimator.GetBoneTransform(HumanBodyBones.Hips);
-            Transform targetHips = targetAnimator.GetBoneTransform(HumanBodyBones.Hips);
-            bool useLeftSide = ShouldUseLeftSideForPostSetHumanPoseEndpointPosition;
-            HumanBodyBones footBone = useLeftSide ? HumanBodyBones.LeftFoot : HumanBodyBones.RightFoot;
-            HumanBodyBones toesBone = useLeftSide ? HumanBodyBones.LeftToes : HumanBodyBones.RightToes;
-            HumanBodyBones upperLegBone = useLeftSide ? HumanBodyBones.LeftUpperLeg : HumanBodyBones.RightUpperLeg;
-            Transform referenceFoot = _editorFingerReferenceAnimator.GetBoneTransform(footBone);
-            Transform targetUpperLeg = targetAnimator.GetBoneTransform(upperLegBone);
-            Transform targetFoot = targetAnimator.GetBoneTransform(footBone);
-            Transform targetToes = targetAnimator.GetBoneTransform(toesBone);
-            if (referenceHips == null ||
-                targetHips == null ||
-                targetUpperLeg == null ||
-                targetFoot == null)
-            {
-                return;
-            }
-
-            Vector3 evaluatorXzFirstOffset = BuildNaNVector3();
-            if (usePostSetHumanPoseRightFootEvaluatorXzReference)
-            {
-                if (referenceFoot == null ||
-                    !TryResolvePostSetHumanPoseRightFootEvaluatorXzFirstOffset(
-                        referenceFoot.position,
-                        targetFoot.position,
-                        out evaluatorXzFirstOffset))
-                {
-                    return;
-                }
-            }
-
-            if (!ShouldApplyPostSetHumanPoseRightEndpointPositionFrameGate())
-            {
-                return;
-            }
-
-            Vector3 nextFootPosition;
-            RetargetingEndpointDiagnosticSnapshot endpointDiagnostics;
-            bool calculated;
-            if (usePostSetHumanPoseRightFootEvaluatorXzReference)
-            {
-                calculated = RetargetingEndpointDiagnostics.TryCalculateEvaluatorXzReferencePosition(
-                    referenceFoot.position,
-                    targetFoot.position,
-                    evaluatorXzFirstOffset,
-                    postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude,
-                    postSetHumanPoseRightEndpointPositionReferenceWeight,
-                    postSetHumanPoseRightEndpointPositionReferenceMaxOffset,
-                    out nextFootPosition,
-                    out endpointDiagnostics);
-            }
-            else
-            {
-                if (!ManualPoseReferenceApplier.TryResolveHipsAlignedEndpointPositionReference(
-                        _editorFingerReferenceAnimator,
-                        targetAnimator,
-                        footBone,
-                        referenceHips,
-                        targetHips,
-                        targetFoot,
-                        out Vector3 desiredFootPosition))
-                {
-                    return;
-                }
-
-                Vector3 desiredToesPosition = BuildNaNVector3();
-                if (targetToes != null)
-                {
-                    ManualPoseReferenceApplier.TryResolveHipsAlignedEndpointPositionReference(
-                        _editorFingerReferenceAnimator,
-                        targetAnimator,
-                        toesBone,
-                        referenceHips,
-                        targetHips,
-                        targetToes,
-                        out desiredToesPosition);
-                }
-
-                calculated = RetargetingEndpointDiagnostics.TryCalculateReferencePosition(
-                    desiredFootPosition,
-                    desiredToesPosition,
-                    targetFoot.position,
-                    targetToes != null ? targetToes.position : BuildNaNVector3(),
-                    postSetHumanPoseRightEndpointPositionReferenceWeight,
-                    postSetHumanPoseRightEndpointPositionReferenceMaxOffset,
-                    postSetHumanPoseRightEndpointPositionReferencePositiveZScale,
-                    postSetHumanPoseRightEndpointPositionReferenceToesBlendWeight,
-                    out nextFootPosition,
-                    out endpointDiagnostics);
-            }
-
-            if (!calculated)
-            {
-                _postSetEndpointDiagnostics.Record(
-                    endpointDiagnostics,
-                    maxYawAngle: float.NaN,
-                    yawCorrectionAngle: float.NaN,
-                    upperLegRotationDeltaAngle: float.NaN,
-                    applied: 0f);
-                return;
-            }
-
-            float maxAngleDegrees = RetargetingEndpointDiagnostics.CalculateEndpointPositionMaxYawAngle(
-                targetFoot.position,
-                targetUpperLeg.position,
-                postSetHumanPoseRightEndpointPositionReferenceMaxOffset);
-            if (!RetargetingEndpointDiagnostics.TryCalculateEditorFootHipsAlignedResidualYawReference(
-                    nextFootPosition,
-                    targetFoot.position,
-                    targetUpperLeg.position,
-                    targetUpperLeg.rotation,
-                    1f,
-                    maxAngleDegrees,
-                    out Quaternion nextWorldRotation,
-                    out float yawCorrectionAngle))
-            {
-                _postSetEndpointDiagnostics.Record(
-                    endpointDiagnostics,
-                    maxAngleDegrees,
-                    yawCorrectionAngle,
-                    upperLegRotationDeltaAngle: float.NaN,
-                    applied: 0f);
-                return;
-            }
-
-            float upperLegRotationDeltaAngle = Quaternion.Angle(targetUpperLeg.rotation, nextWorldRotation);
-            _postSetEndpointDiagnostics.Record(
-                endpointDiagnostics,
-                maxAngleDegrees,
-                yawCorrectionAngle,
-                upperLegRotationDeltaAngle,
-                applied: 1f);
-
-            targetUpperLeg.rotation = nextWorldRotation;
-        }
-
-        private bool TryResolvePostSetHumanPoseRightFootEvaluatorXzFirstOffset(
-            Vector3 referenceFootPosition,
-            Vector3 currentFootPosition,
-            out Vector3 firstOffset)
-        {
-            firstOffset = _postSetHumanPoseRightFootEvaluatorXzFirstOffset;
-            if (!IsFinite(referenceFootPosition) || !IsFinite(currentFootPosition))
-            {
-                return false;
-            }
-
-            if (!_hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset ||
-                !IsFinite(_postSetHumanPoseRightFootEvaluatorXzFirstOffset))
-            {
-                _postSetHumanPoseRightFootEvaluatorXzFirstOffset = currentFootPosition - referenceFootPosition;
-                _postSetHumanPoseRightFootEvaluatorXzFirstOffset.y = 0f;
-                _hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset =
-                    IsFinite(_postSetHumanPoseRightFootEvaluatorXzFirstOffset);
-            }
-
-            firstOffset = _postSetHumanPoseRightFootEvaluatorXzFirstOffset;
-            return _hasPostSetHumanPoseRightFootEvaluatorXzFirstOffset && IsFinite(firstOffset);
-        }
-
-        private void ApplyEditorHumanoidBipedIkFootPositionReference()
-        {
-            if (!useManualAnimatorBipedIkFootPositionReference ||
-                manualAnimatorBipedIkFootPositionReferenceWeight <= 0f ||
-                _editorFingerReferenceAnimator == null ||
-                targetAnimator == null)
-            {
-                DisableOwnedEditorManualFootBipedIk();
-                return;
-            }
-
-            if (!UpdateEditorManualReferenceAnimator())
-            {
-                return;
-            }
-
-            BipedIK bipedIk = EnsureEditorManualFootBipedIk();
-            if (bipedIk == null)
-            {
-                return;
-            }
-
-            if (!ManualPoseReferenceApplier.TryResolveHipsTransforms(
-                _editorFingerReferenceAnimator,
-                targetAnimator,
-                out Transform referenceHips,
-                out Transform targetHips))
-            {
-                return;
-            }
-
-            int changed = 0;
-            changed += ApplyEditorHumanoidBipedIkFootPositionReferenceGoal(
-                bipedIk,
-                AvatarIKGoal.LeftFoot,
-                HumanBodyBones.LeftFoot,
-                referenceHips,
-                targetHips);
-            changed += ApplyEditorHumanoidBipedIkFootPositionReferenceGoal(
-                bipedIk,
-                AvatarIKGoal.RightFoot,
-                HumanBodyBones.RightFoot,
-                referenceHips,
-                targetHips);
-
-            if (changed <= 0)
-            {
-                return;
-            }
-
-            bipedIk.UpdateSolverExternal();
-            if (!_editorFootIkPositionReferenceLogged)
-            {
-                Debug.Log($"[PoseSpaceRetargeter] Manual Animator BipedIK foot position reference applied. feet={changed}, weight={manualAnimatorBipedIkFootPositionReferenceWeight:F2}, maxOffset={manualAnimatorBipedIkFootPositionReferenceMaxOffset:F3}m");
-                _editorFootIkPositionReferenceLogged = true;
-            }
-        }
-
-        private BipedIK EnsureEditorManualFootBipedIk()
-        {
-            if (targetAnimator == null)
-            {
-                return null;
-            }
-
-            if (_editorManualFootBipedIk == null)
-            {
-                _editorManualFootBipedIk = targetAnimator.GetComponent<BipedIK>();
-                if (_editorManualFootBipedIk == null)
-                {
-                    _editorManualFootBipedIk = targetAnimator.gameObject.AddComponent<BipedIK>();
-                    _editorManualFootBipedIkCreated = true;
-                }
-                _editorManualFootBipedIkInitiated = false;
-            }
-
-            if (_editorManualFootBipedIk == null)
-            {
-                return null;
-            }
-
-            if (targetAnimator.isHuman)
-            {
-                BipedReferences references = _editorManualFootBipedIk.references;
-                BipedReferences.AutoDetectReferences(
-                    ref references,
-                    targetAnimator.transform,
-                    BipedReferences.AutoDetectParams.Default);
-                _editorManualFootBipedIk.references = references;
-            }
-
-            _editorManualFootBipedIk.enabled = true;
-            _editorManualFootBipedIk.fixTransforms = false;
-            if (!_editorManualFootBipedIkInitiated)
-            {
-                _editorManualFootBipedIk.InitiateBipedIK();
-                _editorManualFootBipedIkInitiated = true;
-            }
-            _editorManualFootBipedIk.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 0f);
-            _editorManualFootBipedIk.SetIKRotationWeight(AvatarIKGoal.RightFoot, 0f);
-            _editorManualFootBipedIk.solvers.leftFoot.maintainRotationWeight = 1f;
-            _editorManualFootBipedIk.solvers.rightFoot.maintainRotationWeight = 1f;
-            return _editorManualFootBipedIk;
-        }
-
-        private void DisableOwnedEditorManualFootBipedIk()
-        {
-            if (_editorManualFootBipedIk == null)
-            {
-                return;
-            }
-
-            _editorManualFootBipedIk.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 0f);
-            _editorManualFootBipedIk.SetIKPositionWeight(AvatarIKGoal.RightFoot, 0f);
-            _editorManualFootBipedIk.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 0f);
-            _editorManualFootBipedIk.SetIKRotationWeight(AvatarIKGoal.RightFoot, 0f);
-            if (_editorManualFootBipedIkCreated)
-            {
-                _editorManualFootBipedIk.fixTransforms = false;
-                _editorManualFootBipedIk.enabled = false;
-            }
-        }
-
-        private int ApplyEditorHumanoidBipedIkFootPositionReferenceGoal(
-            BipedIK bipedIk,
-            AvatarIKGoal goal,
-            HumanBodyBones footBone,
-            Transform referenceHips,
-            Transform targetHips)
-        {
-            if (!ManualPoseReferenceApplier.TryResolveFootIkPositionReference(
-                    _editorFingerReferenceAnimator,
-                    targetAnimator,
-                    footBone,
-                    referenceHips,
-                    targetHips,
-                    manualAnimatorBipedIkFootPositionReferenceWeight,
-                    manualAnimatorBipedIkFootPositionReferenceMaxOffset,
-                    out Vector3 nextPosition))
-            {
-                bipedIk.SetIKPositionWeight(goal, 0f);
-                return 0;
-            }
-
-            bipedIk.SetIKPosition(goal, nextPosition);
-            bipedIk.SetIKPositionWeight(goal, 1f);
-            return 1;
-        }
 
         private void ApplyEditorHumanoidThumbLocalRotationReference()
         {
@@ -4690,17 +3860,14 @@ namespace Fbx2Vmd.FBXImporter
             _setHumanPoseDiagnostics.Output.ClearCore();
             _setHumanPoseDiagnostics.ResetPreSolveBasis();
 #if UNITY_EDITOR
-            ResetPreSetHumanPoseEndpointBodyPositionDiagnostics();
+            _footReferenceDiagnostics.ResetPreSetEndpoint();
 #endif
             _setHumanPoseDiagnostics.ResetExtendedMuscles();
-            _lastEditorFootLocalRotationLeftFootXzDelta = float.NaN;
-            _lastEditorFootLocalRotationRightFootXzDelta = float.NaN;
+            _footReferenceDiagnostics.ResetXzDeltas();
             _lowerBodySegmentDiagnostics.ResetFootXzDeltas();
 #if UNITY_EDITOR
             _lowerBodySegmentDiagnostics.ResetDetailed();
 #endif
-            _lastEditorFootHipsAlignedResidualYawLeftFootXzDelta = float.NaN;
-            _lastEditorFootHipsAlignedResidualYawRightFootXzDelta = float.NaN;
 #if UNITY_EDITOR
             _postSetEndpointDiagnostics.Reset();
 #endif

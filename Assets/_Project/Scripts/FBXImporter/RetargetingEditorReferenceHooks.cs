@@ -63,9 +63,33 @@ namespace Fbx2Vmd.FBXImporter
         void Apply(PoseSpaceRetargeter owner);
     }
 
+    /// <summary>
+    /// 발 참조군(hips local·손/발 로컬회전·FootHips yaw·Pre/PostSet 엔드포인트·BipedIK)의
+    /// 에디터 구현 계약 — 적용 파이프라인의 각 호출 지점이 개별 진입점이다.
+    /// </summary>
+    internal interface IEditorFootReferenceDriver
+    {
+        void ApplyHipsLocalPositionReference(PoseSpaceRetargeter owner);
+
+        void ApplyHandLocalRotationReference(PoseSpaceRetargeter owner);
+
+        void ApplyFootLocalRotationReference(PoseSpaceRetargeter owner);
+
+        void ApplyFootHipsAlignedResidualYawReference(PoseSpaceRetargeter owner);
+
+        void ApplyPreSetEndpointPositionReference(PoseSpaceRetargeter owner);
+
+        void ApplyPreSetSignCorrectedRowLocalBodyPositionReference(PoseSpaceRetargeter owner, ref HumanPose pose);
+
+        void ApplyPostSetEndpointPositionReference(PoseSpaceRetargeter owner);
+
+        void ApplyBipedIkFootPositionReference(PoseSpaceRetargeter owner);
+    }
+
     internal static class RetargetingEditorReferenceHooks
     {
         internal static IEditorPoseReferenceDriver PoseReference;
         internal static IEditorLowerBodyDirectionDriver LowerBodyDirection;
+        internal static IEditorFootReferenceDriver FootReference;
     }
 }

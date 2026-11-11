@@ -11,6 +11,7 @@ namespace Fbx2Vmd.FBXImporter
             FBXVmdPipeline.EditorMotionVideoRecorderFactory = () => new EditorMotionVideoRecorder();
             RetargetingEditorReferenceHooks.PoseReference = new Editor.EditorPoseReferenceDriver();
             RetargetingEditorReferenceHooks.LowerBodyDirection = new Editor.EditorLowerBodyDirectionDriver();
+            RetargetingEditorReferenceHooks.FootReference = new Editor.EditorFootReferenceDriver();
         }
     }
 }
