@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 namespace Fbx2Vmd.CharacterLibrary
 {
     /// <summary>
-    /// UniVRM 런타임 로드 래퍼. 비동기 로드 → 비활성 상태 반환 → Humanoid 검증까지 담당한다.
+    /// 캐릭터 런타임 로드 래퍼. VRM은 UniVRM, FBX·PMX는 에디터 임포트 경로로 비동기 로드 → 비활성 상태 반환 → Humanoid 검증까지 담당한다.
     /// 호출자는 결과의 커밋/파기를 결정한다(늦은 커밋으로 실패 시 기존 캐릭터를 보존).
     /// </summary>
     public sealed class CharacterLoader
@@ -18,22 +18,44 @@ namespace Fbx2Vmd.CharacterLibrary
         public sealed class Result
         {
             public RuntimeGltfInstance instance;
+            // 비VRM(FBX) 로드 경로의 루트. VRM은 instance.Root를 우선한다.
+            public GameObject loadedRoot;
             public string error = string.Empty;
             public bool cancelled;
-            public bool success => instance != null && string.IsNullOrEmpty(error) && !cancelled;
+            public GameObject Root => instance != null ? instance.Root : loadedRoot;
+            public bool success => Root != null && string.IsNullOrEmpty(error) && !cancelled;
         }
 
         /// <summary>
-        /// VRM 파일을 로드하고 Humanoid Avatar까지 검증한다.
+        /// 캐릭터 파일을 로드하고 Humanoid Avatar까지 검증한다.
         /// 성공 결과의 Root는 SetActive(false) 상태이며 메시는 아직 표시되지 않았다.
         /// 취소 토큰은 UniVRM 0.x에 미지원이므로 로드 완료 후 결과를 폐기하는 방식으로 처리한다.
         /// </summary>
-        public async Task<Result> LoadAsync(string path, CancellationToken cancellationToken)
+        public async Task<Result> LoadAsync(
+            string path, CancellationToken cancellationToken, string entryId = null)
         {
+            string extension = Path.GetExtension(path ?? string.Empty);
+            if (string.Equals(extension, ".fbx", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(extension, ".pmx", StringComparison.OrdinalIgnoreCase))
+            {
+                // 동기 임포트는 완료 전 중단이 불가하므로 진입 시점에 취소를 검사한다.
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new Result { cancelled = true };
+                }
+                Result fbxResult = FbxCharacterLoader.Load(path, entryId);
+                if (cancellationToken.IsCancellationRequested && fbxResult.Root != null)
+                {
+                    fbxResult.cancelled = true;
+                    DestroyResult(fbxResult);
+                }
+                return fbxResult;
+            }
+
             var result = new Result();
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             {
-                result.error = $"VRM 파일이 없습니다: {path}";
+                result.error = $"캐릭터 파일이 없습니다: {path}";
                 return result;
             }
 
@@ -81,6 +103,30 @@ namespace Fbx2Vmd.CharacterLibrary
                 result.error = $"VRM 로드 실패: {error.Message}";
                 DestroyInstance(loaded);
                 return result;
+            }
+        }
+
+        /// <summary>
+        /// 로드 결과의 루트를 파괴한다. VRM·FBX 경로를 모두 처리한다.
+        /// </summary>
+        public static void DestroyResult(Result result)
+        {
+            if (result == null)
+            {
+                return;
+            }
+            GameObject root = result.Root;
+            if (root == null)
+            {
+                return;
+            }
+            if (Application.isPlaying)
+            {
+                Object.Destroy(root);
+            }
+            else
+            {
+                Object.DestroyImmediate(root);
             }
         }
 

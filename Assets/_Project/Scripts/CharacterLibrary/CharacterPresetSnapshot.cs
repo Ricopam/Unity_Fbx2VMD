@@ -143,6 +143,79 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 return warnings;
             }
+            return ApplySections(preset.sections, pipeline, characterRoot, guard, warnings);
+        }
+
+        /// <summary>
+        /// 기본 섹션 위에 예외 섹션을 키 단위로 덮어쓴 병합본을 돌려준다.
+        /// 예외에 없는 키는 기본값이 유지된다(캐릭터×FBX 예외의 상속 규칙).
+        /// 입력 목록은 변경하지 않는다.
+        /// </summary>
+        public static CharacterPresetSections MergeSections(
+            CharacterPresetSections baseSections, CharacterPresetSections overlaySections)
+        {
+            var merged = new CharacterPresetSections();
+            MergeFieldList(merged.retarget,
+                baseSections?.retarget, overlaySections?.retarget);
+            MergeFieldList(merged.physics,
+                baseSections?.physics, overlaySections?.physics);
+            MergeFieldList(merged.appearance,
+                baseSections?.appearance, overlaySections?.appearance);
+            MergeFieldList(merged.placement,
+                baseSections?.placement, overlaySections?.placement);
+            return merged;
+        }
+
+        private static void MergeFieldList(
+            List<PresetFieldValue> target,
+            List<PresetFieldValue> baseList,
+            List<PresetFieldValue> overlayList)
+        {
+            var indexByKey = new Dictionary<string, int>(StringComparer.Ordinal);
+            void AddOrReplace(List<PresetFieldValue> source)
+            {
+                if (source == null)
+                {
+                    return;
+                }
+                foreach (PresetFieldValue field in source)
+                {
+                    if (field == null || string.IsNullOrEmpty(field.key))
+                    {
+                        continue;
+                    }
+                    if (indexByKey.TryGetValue(field.key, out int existing))
+                    {
+                        target[existing] = field;
+                    }
+                    else
+                    {
+                        indexByKey[field.key] = target.Count;
+                        target.Add(field);
+                    }
+                }
+            }
+            AddOrReplace(baseList);
+            AddOrReplace(overlayList);
+        }
+
+        /// <summary>
+        /// 섹션 값만 직접 적용한다. 캐릭터×FBX 예외처럼 프리셋 id 없이
+        /// 값 묶음만 덮어쓸 때 사용한다. 기본 프리셋 뒤에 호출하면
+        /// 예외에 있는 값만 덮어쓰는 상속 효과가 난다.
+        /// </summary>
+        public static List<string> ApplySections(
+            CharacterPresetSections sections,
+            FBXVmdPipeline pipeline,
+            GameObject characterRoot,
+            TargetIdlePoseGuard guard,
+            List<string> warnings = null)
+        {
+            warnings = warnings ?? new List<string>();
+            if (sections == null)
+            {
+                return warnings;
+            }
 
 #if UNITY_EDITOR
             // 에디트 모드 적용은 되돌리기(Ctrl+Z)가 가능하게 대상을 Undo에 기록한다.
@@ -173,16 +246,16 @@ namespace Fbx2Vmd.CharacterLibrary
 
             if (pipeline != null)
             {
-                ApplyFields(pipeline, string.Empty, preset.sections.retarget, warnings);
+                ApplyFields(pipeline, string.Empty, sections.retarget, warnings);
             }
 
-            ApplyPlacement(preset.sections.placement, characterRoot, guard, warnings);
-            ApplyPhysics(preset.sections.physics, characterRoot, warnings);
+            ApplyPlacement(sections.placement, characterRoot, guard, warnings);
+            ApplyPhysics(sections.physics, characterRoot, warnings);
 
             // placement가 루트 변환을 바꿨으면 유휴 가드의 베이스라인을 재캡처한다.
             // 그렇지 않으면 Play 중 다음 프레임에 가드가 캐릭터를 이전 자세로 되돌린다.
-            if (pipeline != null && preset.sections.placement != null &&
-                preset.sections.placement.Count > 0)
+            if (pipeline != null && sections.placement != null &&
+                sections.placement.Count > 0)
             {
                 pipeline.RebindIdlePoseGuard();
             }

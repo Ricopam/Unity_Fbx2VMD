@@ -13,6 +13,22 @@ namespace Fbx2Vmd.CharacterLibrary
         public string characterId = string.Empty;
         public string updatedAtUtc = string.Empty;
         public List<CharacterPreset> presets = new List<CharacterPreset>();
+        public List<CharacterFbxOverride> fbxOverrides = new List<CharacterFbxOverride>();
+    }
+
+    /// <summary>
+    /// 캐릭터×FBX 예외 1개. 특정 (캐릭터, FBX) 조합에만 적용되는 덮어쓰기 스냅샷이다.
+    /// fbxKey는 Import_FBX에 임포트된 FBX 파일명(예: "motion.fbx")이다.
+    /// 파일명 기준 키라 같은 이름으로 다시 임포트해도 예외가 유지된다.
+    /// 적용 순서는 기본 프리셋 → 예외라서 예외에 없는 값은 기본값을 따른다.
+    /// </summary>
+    [Serializable]
+    public sealed class CharacterFbxOverride
+    {
+        public string fbxKey = string.Empty;
+        public string name = string.Empty;
+        public string updatedAtUtc = string.Empty;
+        public CharacterPresetSections sections = new CharacterPresetSections();
     }
 
     /// <summary>

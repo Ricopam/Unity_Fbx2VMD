@@ -10,7 +10,7 @@ using UnityEngine;
 namespace Fbx2Vmd.CharacterLibrary
 {
     /// <summary>
-    /// 캐릭터 라이브러리 창. VRM 등록·선택 로드·제거를 제공한다.
+    /// 캐릭터 라이브러리 창. 캐릭터(VRM/FBX/PMX) 등록·선택 로드·제거를 제공한다.
     /// 로드와 잠금은 씬의 CharacterLibraryManager에 위임해 단일 경로로 통일한다.
     /// </summary>
     public sealed class CharacterLibraryWindow : EditorWindow
@@ -71,8 +71,8 @@ namespace Fbx2Vmd.CharacterLibrary
             if (Registry.Entries.Count == 0)
             {
                 EditorGUILayout.HelpBox(
-                    "등록된 캐릭터가 없습니다. [VRM 파일 추가]로 모델을 등록하세요.\n" +
-                    "VRM 0.x 파일만 지원합니다.",
+                    "등록된 캐릭터가 없습니다. [캐릭터 파일 추가]로 모델을 등록하세요.\n" +
+                    "VRM 0.x·사람형 FBX·MMD(PMX) 파일을 지원합니다.",
                     MessageType.Info);
             }
             else
@@ -88,7 +88,7 @@ namespace Fbx2Vmd.CharacterLibrary
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            if (GUILayout.Button("VRM 파일 추가…", EditorStyles.toolbarButton, GUILayout.Width(110f)))
+            if (GUILayout.Button("캐릭터 파일 추가…", EditorStyles.toolbarButton, GUILayout.Width(110f)))
             {
                 RegisterFromDialog();
             }
@@ -497,7 +497,7 @@ namespace Fbx2Vmd.CharacterLibrary
         private void RegisterFromDialog()
         {
             string path = EditorUtility.OpenFilePanel(
-                "VRM 캐릭터 선택", string.Empty, "vrm");
+                "캐릭터 선택", string.Empty, "vrm,fbx,pmx");
             if (string.IsNullOrEmpty(path))
             {
                 return;
@@ -520,7 +520,7 @@ namespace Fbx2Vmd.CharacterLibrary
         private void RelinkFromDialog(CharacterLibraryEntry entry)
         {
             string path = EditorUtility.OpenFilePanel(
-                $"다시 연결할 파일 선택: {entry.displayName}", string.Empty, "vrm");
+                $"다시 연결할 파일 선택: {entry.displayName}", string.Empty, "vrm,fbx,pmx");
             if (string.IsNullOrEmpty(path))
             {
                 return;
@@ -544,7 +544,7 @@ namespace Fbx2Vmd.CharacterLibrary
             if (!EditorUtility.DisplayDialog(
                     "캐릭터 제거",
                     $"라이브러리에서 '{entry.displayName}'을(를) 제거하시겠습니까?\n" +
-                    "원본 VRM 파일은 삭제되지 않습니다.",
+                    "원본 캐릭터 파일은 삭제되지 않습니다.",
                     "제거", "취소"))
             {
                 return;

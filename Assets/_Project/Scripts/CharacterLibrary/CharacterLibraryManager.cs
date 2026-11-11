@@ -202,7 +202,7 @@ namespace Fbx2Vmd.CharacterLibrary
                     // 편집 모드 헬퍼는 Awake가 돌지 않으므로 지연 생성한다.
                     _loader = new CharacterLoader();
                 }
-                result = await _loader.LoadAsync(entry.sourcePath, cts.Token);
+                result = await _loader.LoadAsync(entry.sourcePath, cts.Token, entry.id);
             }
             finally
             {
@@ -218,14 +218,14 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 if (result != null)
                 {
-                    CharacterLoader.DestroyInstance(result.instance);
+                    CharacterLoader.DestroyResult(result);
                 }
                 return false;
             }
 
             if (!EnsurePipeline())
             {
-                CharacterLoader.DestroyInstance(result != null ? result.instance : null);
+                CharacterLoader.DestroyResult(result);
                 _lastError = "로드 중 FBXVmdPipeline이 사라졌습니다.";
                 SetState(LoadState.Failed);
                 return false;
@@ -258,12 +258,13 @@ namespace Fbx2Vmd.CharacterLibrary
             SetState(LoadState.Activating);
             try
             {
-                CharacterLibrarySceneBinding.Commit(_pipeline, entry.id, result.instance);
+                CharacterLibrarySceneBinding.Commit(
+                    _pipeline, entry.id, result.Root, result.instance);
             }
             catch (System.Exception error)
             {
                 // 커밋 중 오류가 나도 로드된 루트가 남지 않게 정리한다.
-                CharacterLoader.DestroyInstance(result.instance);
+                CharacterLoader.DestroyResult(result);
                 _lastError = $"캐릭터 적용 실패: {error.Message}";
                 SetState(LoadState.Failed);
                 return false;
@@ -281,7 +282,7 @@ namespace Fbx2Vmd.CharacterLibrary
             // 기본 프리셋이 지정돼 있으면 커밋된 캐릭터에 자동 적용한다(실패해도 로드는 유지).
             if (committedEntry != null && !string.IsNullOrEmpty(committedEntry.defaultPresetId))
             {
-                TryApplyDefaultPreset(committedEntry, result.instance.Root);
+                TryApplyDefaultPreset(committedEntry, result.Root);
             }
             // 저장 실패가 로드 성공 상태를 덮지 않게 격리한다.
             try

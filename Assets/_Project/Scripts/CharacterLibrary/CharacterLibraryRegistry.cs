@@ -25,7 +25,7 @@ namespace Fbx2Vmd.CharacterLibrary
             Func<string, VrmCharacterMetaResult> metaReader = null)
         {
             _store = new CharacterLibraryStore(libraryFilePath);
-            _metaReader = metaReader ?? VrmCharacterMetaReader.Read;
+            _metaReader = metaReader ?? CharacterFileMetaReader.Read;
         }
 
         public string LibraryFilePath => _store.LibraryFilePath;
@@ -103,7 +103,7 @@ namespace Fbx2Vmd.CharacterLibrary
         }
 
         /// <summary>
-        /// VRM 파일을 라이브러리에 등록한다.
+        /// 캐릭터 파일(VRM/FBX/PMX)을 라이브러리에 등록한다.
         /// 성공 시 엔트리, 실패 시 entry=null과 한국어 오류 메시지를 돌려준다.
         /// </summary>
         public RegisterResult Register(string sourcePath)
@@ -128,9 +128,12 @@ namespace Fbx2Vmd.CharacterLibrary
                 return result;
             }
 
-            if (!string.Equals(Path.GetExtension(normalizedPath), ".vrm", StringComparison.OrdinalIgnoreCase))
+            string extension = Path.GetExtension(normalizedPath);
+            if (!string.Equals(extension, ".vrm", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(extension, ".fbx", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(extension, ".pmx", StringComparison.OrdinalIgnoreCase))
             {
-                result.error = "VRM 파일(.vrm)만 등록할 수 있습니다.";
+                result.error = "캐릭터 파일(.vrm/.fbx/.pmx)만 등록할 수 있습니다.";
                 return result;
             }
 
@@ -165,7 +168,7 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 result.error = meta != null && !string.IsNullOrEmpty(meta.error)
                     ? meta.error
-                    : "VRM 메타데이터를 읽을 수 없습니다.";
+                    : "캐릭터 메타데이터를 읽을 수 없습니다.";
                 return result;
             }
 
@@ -282,6 +285,17 @@ namespace Fbx2Vmd.CharacterLibrary
                 return false;
             }
 
+            // 재연결은 같은 파일의 위치만 바꾸므로 확장자가 달라지면
+            // 로더 분기(spec)가 어긋난다. 형식 변경은 새 등록으로 처리한다.
+            string newExtension = Path.GetExtension(normalizedPath);
+            if (!string.Equals(
+                    newExtension, Path.GetExtension(entry.sourcePath),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                error = "파일 형식이 달라 재연결할 수 없습니다. 같은 형식의 파일을 선택하세요.";
+                return false;
+            }
+
             if (!CharacterFileHasher.TryCaptureFileStat(
                     normalizedPath, out long fileSize, out string lastWriteTimeUtc, out string contentHash))
             {
@@ -320,6 +334,8 @@ namespace Fbx2Vmd.CharacterLibrary
             }
             Save();
             DeleteThumbnailFile(entry.thumbnailFileName);
+            // FBX 임포트 사본 폴더도 함께 정리한다(에디터 외 환경에서는 no-op).
+            FbxCharacterLoader.TryDeleteImportedCopy(entry.id);
             // 캐릭터 귀속 프리셋 파일도 함께 정리한다(실패해도 제거는 유지).
             _presetStores.Remove(entry.id);
             string presetFile = ResolvePresetFilePath(entry.id);
@@ -449,6 +465,115 @@ namespace Fbx2Vmd.CharacterLibrary
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// FBX 예외 키로 정규화한다. 파일명만 쓴다(Import_FBX 임포트 슬롯 기준).
+        /// 경로가 들어와도 파일명으로 환원하므로 같은 파일명은 같은 예외를 공유한다.
+        /// </summary>
+        public static string NormalizeFbxKey(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return string.Empty;
+            }
+            string fileName = Path.GetFileName(path.Trim());
+            return fileName ?? string.Empty;
+        }
+
+        /// <summary>
+        /// fbxKey로 예외 하나를 찾는다. 없으면 null.
+        /// </summary>
+        public CharacterFbxOverride FindFbxOverride(string entryId, string fbxKey)
+        {
+            string key = NormalizeFbxKey(fbxKey);
+            if (string.IsNullOrEmpty(entryId) || key.Length == 0)
+            {
+                return null;
+            }
+
+            CharacterPresetDocument document = LoadPresets(entryId);
+            for (int i = 0; i < document.fbxOverrides.Count; i++)
+            {
+                if (string.Equals(document.fbxOverrides[i].fbxKey, key,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return document.fbxOverrides[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 예외를 fbxKey 기준으로 추가 또는 갱신하고 프리셋 파일에 저장한다.
+        /// </summary>
+        public void UpsertFbxOverride(string entryId, CharacterFbxOverride fbxOverride)
+        {
+            if (fbxOverride == null)
+            {
+                throw new ArgumentNullException(nameof(fbxOverride));
+            }
+            string key = NormalizeFbxKey(fbxOverride.fbxKey);
+            if (string.IsNullOrEmpty(entryId) || key.Length == 0)
+            {
+                throw new ArgumentException("엔트리 id와 fbxKey가 필요합니다.", nameof(fbxOverride));
+            }
+
+            CharacterPresetDocument document = LoadPresets(entryId);
+            fbxOverride.fbxKey = key;
+            fbxOverride.updatedAtUtc = DateTime.UtcNow.ToString("O");
+            for (int i = 0; i < document.fbxOverrides.Count; i++)
+            {
+                if (string.Equals(document.fbxOverrides[i].fbxKey, key,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    document.fbxOverrides[i] = fbxOverride;
+                    CharacterPresetStore presetStore = OpenPresetStore(entryId);
+                    if (presetStore == null)
+                    {
+                        throw new InvalidOperationException("프리셋 저장 경로를 찾을 수 없습니다.");
+                    }
+                    presetStore.Save(document);
+                    return;
+                }
+            }
+            document.fbxOverrides.Add(fbxOverride);
+            CharacterPresetStore store = OpenPresetStore(entryId);
+            if (store == null)
+            {
+                throw new InvalidOperationException("프리셋 저장 경로를 찾을 수 없습니다.");
+            }
+            store.Save(document);
+        }
+
+        /// <summary>
+        /// 예외를 삭제한다. 대상이 없으면 false.
+        /// </summary>
+        public bool RemoveFbxOverride(string entryId, string fbxKey)
+        {
+            string key = NormalizeFbxKey(fbxKey);
+            if (string.IsNullOrEmpty(entryId) || key.Length == 0)
+            {
+                return false;
+            }
+
+            CharacterPresetDocument document = LoadPresets(entryId);
+            for (int i = 0; i < document.fbxOverrides.Count; i++)
+            {
+                if (string.Equals(document.fbxOverrides[i].fbxKey, key,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    document.fbxOverrides.RemoveAt(i);
+                    CharacterPresetStore store = OpenPresetStore(entryId);
+                    if (store == null)
+                    {
+                        throw new InvalidOperationException("프리셋 저장 경로를 찾을 수 없습니다.");
+                    }
+                    store.Save(document);
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>

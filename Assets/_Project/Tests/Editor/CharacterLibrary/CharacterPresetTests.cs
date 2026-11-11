@@ -368,6 +368,174 @@ namespace Tests.Editor.CharacterLibrary
             }
         }
 
+        [Test]
+        public void Given_FbxOverride_When_UpsertFindRemove_Then_RoundTripsAndNormalizesKey()
+        {
+            string folder = CreateTempFolder();
+            var registry = new CharacterLibraryRegistry(Path.Combine(folder, "characters.json"));
+
+            registry.UpsertFbxOverride("entry-fbx", new CharacterFbxOverride
+            {
+                fbxKey = Path.Combine(folder, "Import_FBX", "motion.fbx"),
+                name = "모션 예외",
+                sections = new CharacterPresetSections
+                {
+                    retarget =
+                    {
+                        new PresetFieldValue
+                        {
+                            key = "_GroundedFootLockWeight",
+                            type = PresetFieldType.Float,
+                            value = "0.9",
+                        },
+                    },
+                },
+            });
+
+            // 경로가 달라도 파일명이 같으면 같은 예외 키다.
+            CharacterFbxOverride found = registry.FindFbxOverride(
+                "entry-fbx", Path.Combine("D:\\", "other", "motion.fbx"));
+            Assert.That(found, Is.Not.Null);
+            Assert.That(found.fbxKey, Is.EqualTo("motion.fbx"));
+            Assert.That(found.name, Is.EqualTo("모션 예외"));
+            Assert.That(found.sections.retarget.Count, Is.EqualTo(1));
+
+            // 다른 엔트리·다른 키에는 영향이 없다.
+            Assert.That(registry.FindFbxOverride("entry-fbx", "walk.fbx"), Is.Null);
+            Assert.That(registry.FindFbxOverride("entry-other", "motion.fbx"), Is.Null);
+
+            Assert.That(registry.RemoveFbxOverride("entry-fbx", "motion.fbx"), Is.True);
+            Assert.That(registry.FindFbxOverride("entry-fbx", "motion.fbx"), Is.Null);
+            Assert.That(registry.RemoveFbxOverride("entry-fbx", "motion.fbx"), Is.False);
+        }
+
+        [Test]
+        public void Given_DuplicateFbxKeys_When_Normalized_Then_FirstKept()
+        {
+            var document = new CharacterPresetDocument
+            {
+                fbxOverrides =
+                {
+                    new CharacterFbxOverride { fbxKey = "motion.fbx", name = "첫 번째" },
+                    null,
+                    new CharacterFbxOverride { fbxKey = "MOTION.FBX", name = "중복" },
+                    new CharacterFbxOverride { fbxKey = "  ", name = "빈키" },
+                },
+            };
+
+            CharacterPresetDocument normalized =
+                CharacterPresetDocumentNormalizer.Normalize(document);
+
+            Assert.That(normalized.fbxOverrides.Count, Is.EqualTo(1));
+            Assert.That(normalized.fbxOverrides[0].name, Is.EqualTo("첫 번째"));
+        }
+
+        [Test]
+        public void Given_BasePresetAndOverride_When_AppliedSequentially_Then_OverrideWinsAndInherits()
+        {
+            var host = new GameObject("pipeline");
+            try
+            {
+                var pipeline = host.AddComponent<FBXVmdPipeline>();
+                FieldInfo weightField = typeof(FBXVmdPipeline).GetField(
+                    "_GroundedFootLockWeight",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                FieldInfo stepField = typeof(FBXVmdPipeline).GetField(
+                    "_MaxGroundedFootLockStep",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(weightField, Is.Not.Null, "프리셋 대상 필드가 없습니다");
+                Assert.That(stepField, Is.Not.Null, "프리셋 대상 필드가 없습니다");
+
+                // 기본값과 다른 값부터 세팅해 적용 효과를 관찰한다.
+                weightField.SetValue(pipeline, 0.7f);
+                stepField.SetValue(pipeline, 0.7f);
+
+                var basePreset = CharacterPresetSnapshot.CreateEmpty("기본");
+                basePreset.sections.retarget.Add(new PresetFieldValue
+                {
+                    key = "_GroundedFootLockWeight",
+                    type = PresetFieldType.Float,
+                    value = "0.1",
+                });
+                basePreset.sections.retarget.Add(new PresetFieldValue
+                {
+                    key = "_MaxGroundedFootLockStep",
+                    type = PresetFieldType.Float,
+                    value = "0.05",
+                });
+                // 예외는 덮어쓸 값만 담는다 — 없는 키는 기본 프리셋 값이 유지돼야 한다.
+                var overrideSections = new CharacterPresetSections();
+                overrideSections.retarget.Add(new PresetFieldValue
+                {
+                    key = "_GroundedFootLockWeight",
+                    type = PresetFieldType.Float,
+                    value = "0.9",
+                });
+
+                CharacterPresetSnapshot.Apply(basePreset, pipeline, null, null);
+                CharacterPresetSnapshot.ApplySections(overrideSections, pipeline, null, null);
+
+                Assert.That((float)weightField.GetValue(pipeline),
+                    Is.EqualTo(0.9f).Within(0.0001f), "예외 값이 기본값을 덮어써야 합니다");
+                Assert.That((float)stepField.GetValue(pipeline),
+                    Is.EqualTo(0.05f).Within(0.0001f), "예외에 없는 값은 기본 프리셋을 상속해야 합니다");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void Given_MergeSections_When_OverlayApplied_Then_KeysOverrideAndPositionKept()
+        {
+            var baseSections = new CharacterPresetSections
+            {
+                retarget =
+                {
+                    new PresetFieldValue { key = "a", type = PresetFieldType.Float, value = "1" },
+                    new PresetFieldValue { key = "b", type = PresetFieldType.Float, value = "2" },
+                    new PresetFieldValue { key = "a", type = PresetFieldType.Float, value = "3" },
+                },
+                placement =
+                {
+                    new PresetFieldValue { key = "position", type = PresetFieldType.Vector3, value = "1,2,3" },
+                },
+            };
+            var overlaySections = new CharacterPresetSections
+            {
+                retarget =
+                {
+                    new PresetFieldValue { key = "b", type = PresetFieldType.Float, value = "9" },
+                    new PresetFieldValue { key = "c", type = PresetFieldType.Float, value = "7" },
+                },
+            };
+
+            CharacterPresetSections merged =
+                CharacterPresetSnapshot.MergeSections(baseSections, overlaySections);
+
+            // 오버레이 키는 덮어쓰고, 기본 전용 키는 위치 그대로 유지한다.
+            // 리스트 내 중복 키는 마지막 값이 이긴다(적용 경로와 동일 규칙).
+            Assert.That(merged.retarget.Count, Is.EqualTo(3));
+            Assert.That(merged.retarget[0].key, Is.EqualTo("a"));
+            Assert.That(merged.retarget[0].value, Is.EqualTo("3"));
+            Assert.That(merged.retarget[1].key, Is.EqualTo("b"));
+            Assert.That(merged.retarget[1].value, Is.EqualTo("9"));
+            Assert.That(merged.retarget[2].key, Is.EqualTo("c"));
+            Assert.That(merged.placement.Count, Is.EqualTo(1));
+
+            // 입력은 변경되지 않는다.
+            Assert.That(baseSections.retarget[1].value, Is.EqualTo("2"));
+
+            // null 조합: 오버레이만 있으면 오버레이만, 둘 다 null이면 빈 섹션.
+            CharacterPresetSections overlayOnly =
+                CharacterPresetSnapshot.MergeSections(null, overlaySections);
+            Assert.That(overlayOnly.retarget.Count, Is.EqualTo(2));
+            CharacterPresetSections empty =
+                CharacterPresetSnapshot.MergeSections(null, null);
+            Assert.That(empty.retarget, Is.Empty);
+        }
+
         private static string CreateTempFolder()
         {
             string folder = Path.Combine(

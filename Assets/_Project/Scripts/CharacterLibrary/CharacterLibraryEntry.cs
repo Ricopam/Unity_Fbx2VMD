@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Fbx2Vmd.CharacterLibrary
 {
     /// <summary>
-    /// 캐릭터 라이브러리에 등록된 VRM 캐릭터 1개의 영속 데이터.
+    /// 캐릭터 라이브러리에 등록된 캐릭터(VRM/FBX/PMX) 1개의 영속 데이터.
     /// id는 경로와 무관한 안정 식별자이고 sourcePath는 갱신 가능한 힌트다.
     /// </summary>
     [Serializable]

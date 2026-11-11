@@ -17,15 +17,17 @@ namespace Fbx2Vmd.CharacterLibrary
         /// <summary>
         /// 검증이 끝난 인스턴스를 활성 캐릭터로 커밋한다.
         /// 기존 라이브러리 캐릭터는 파괴하고, 씬 소유 캐릭터는 비활성화로 보존한다.
+        /// gltfInstance가 있으면 glTF 지연 표시 메시를 먼저 드러낸다(FBX 경로는 null).
         /// </summary>
-        public static void Commit(FBXVmdPipeline pipeline, string entryId, RuntimeGltfInstance instance)
+        public static void Commit(
+            FBXVmdPipeline pipeline, string entryId, GameObject newRoot,
+            RuntimeGltfInstance gltfInstance = null)
         {
-            if (pipeline == null || instance == null || instance.Root == null)
+            if (pipeline == null || newRoot == null)
             {
                 return;
             }
 
-            GameObject newRoot = instance.Root;
             GameObject previousTarget = pipeline.targetCharacter;
             CharacterLibraryInstance previousLibrary =
                 FindMarkerOn(previousTarget);
@@ -37,6 +39,7 @@ namespace Fbx2Vmd.CharacterLibrary
             }
             marker.entryId = entryId ?? string.Empty;
 
+            bool previousDeactivated = false;
             if (previousLibrary != null)
             {
                 // 다른 라이브러리 캐릭터를 교체하는 경우 원본 씬 캐릭터를 계승한다.
@@ -46,22 +49,39 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 // 씬 소유 캐릭터는 파괴하지 않고 비활성화로 보존한다.
                 previousTarget.SetActive(false);
+                previousDeactivated = true;
                 marker.previousSceneTarget = previousTarget;
             }
 
-            newRoot.name = "Library Character";
-            newRoot.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-            instance.ShowMeshes();
+            try
+            {
+                newRoot.name = "Library Character";
+                newRoot.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                gltfInstance?.ShowMeshes();
 
-            // VRM은 MToon 머티리얼로 로드되므로 다른 캐릭터 경로와 같은 툰 룩을 입힌다.
-            // 프리셋이 없으면 0을 돌려 원본 머티리얼이 유지된다.
-            ToonMaterialConverter.ApplyTo(newRoot);
+                // VRM은 MToon 머티리얼로 로드되므로 다른 캐릭터 경로와 같은 툰 룩을 입힌다.
+                // 프리셋이 없으면 0을 돌려 원본 머티리얼이 유지된다.
+                ToonMaterialConverter.ApplyTo(newRoot);
 
-            newRoot.SetActive(true);
+                newRoot.SetActive(true);
 
-            // 검증·배치가 모두 끝난 뒤에 타겟을 한 번만 교체한다.
-            pipeline.targetCharacter = newRoot;
-            pipeline.RebindIdlePoseGuard();
+                // 검증·배치가 모두 끝난 뒤에 타겟을 한 번만 교체한다.
+                pipeline.targetCharacter = newRoot;
+                pipeline.RebindIdlePoseGuard();
+            }
+            catch
+            {
+                // 커밋 도중 실패하면 이전 캐릭터를 원래 상태로 되돌린다.
+                if (pipeline.targetCharacter == newRoot)
+                {
+                    pipeline.targetCharacter = previousTarget;
+                }
+                if (previousDeactivated && previousTarget != null)
+                {
+                    previousTarget.SetActive(true);
+                }
+                throw;
+            }
 
             // 같은 씬의 이전 라이브러리 캐릭터가 남아 있으면 정리한다.
             // 다른 열린 씬/프리팹 편집 단계의 마커는 건드리지 않는다.

@@ -56,20 +56,68 @@ namespace Fbx2Vmd.CharacterLibrary
                 preset.name = NormalizeString(preset.name);
                 preset.createdAtUtc = NormalizeString(preset.createdAtUtc);
                 preset.updatedAtUtc = NormalizeString(preset.updatedAtUtc);
-                if (preset.sections == null)
+                NormalizeSections(preset);
+            }
+
+            if (document.fbxOverrides == null)
+            {
+                document.fbxOverrides = new List<CharacterFbxOverride>();
+            }
+            var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = document.fbxOverrides.Count - 1; i >= 0; i--)
+            {
+                CharacterFbxOverride fbxOverride = document.fbxOverrides[i];
+                if (fbxOverride == null)
                 {
-                    preset.sections = new CharacterPresetSections();
+                    document.fbxOverrides.RemoveAt(i);
                 }
-                NormalizeSection(preset.sections.retarget);
-                preset.sections.retarget = preset.sections.retarget ?? new List<PresetFieldValue>();
-                NormalizeSection(preset.sections.physics);
-                preset.sections.physics = preset.sections.physics ?? new List<PresetFieldValue>();
-                NormalizeSection(preset.sections.appearance);
-                preset.sections.appearance = preset.sections.appearance ?? new List<PresetFieldValue>();
-                NormalizeSection(preset.sections.placement);
-                preset.sections.placement = preset.sections.placement ?? new List<PresetFieldValue>();
+            }
+            for (int i = 0; i < document.fbxOverrides.Count; i++)
+            {
+                CharacterFbxOverride fbxOverride = document.fbxOverrides[i];
+                fbxOverride.fbxKey =
+                    CharacterLibraryRegistry.NormalizeFbxKey(fbxOverride.fbxKey);
+                if (fbxOverride.fbxKey.Length == 0 || !seenKeys.Add(fbxOverride.fbxKey))
+                {
+                    document.fbxOverrides.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+                fbxOverride.name = NormalizeString(fbxOverride.name);
+                fbxOverride.updatedAtUtc = NormalizeString(fbxOverride.updatedAtUtc);
+                NormalizeSections(fbxOverride);
             }
             return document;
+        }
+
+        private static void NormalizeSections(CharacterPreset preset)
+        {
+            if (preset.sections == null)
+            {
+                preset.sections = new CharacterPresetSections();
+            }
+            NormalizeSections(preset.sections);
+        }
+
+        private static void NormalizeSections(CharacterFbxOverride fbxOverride)
+        {
+            if (fbxOverride.sections == null)
+            {
+                fbxOverride.sections = new CharacterPresetSections();
+            }
+            NormalizeSections(fbxOverride.sections);
+        }
+
+        private static void NormalizeSections(CharacterPresetSections sections)
+        {
+            NormalizeSection(sections.retarget);
+            sections.retarget = sections.retarget ?? new List<PresetFieldValue>();
+            NormalizeSection(sections.physics);
+            sections.physics = sections.physics ?? new List<PresetFieldValue>();
+            NormalizeSection(sections.appearance);
+            sections.appearance = sections.appearance ?? new List<PresetFieldValue>();
+            NormalizeSection(sections.placement);
+            sections.placement = sections.placement ?? new List<PresetFieldValue>();
         }
 
         private static void NormalizeSection(List<PresetFieldValue> values)

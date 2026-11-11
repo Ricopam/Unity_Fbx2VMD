@@ -1,0 +1,14 @@
+{
+    "name": "Fbx2Vmd.CharacterLibrary",
+    "rootNamespace": "Fbx2Vmd.CharacterLibrary",
+    "references": ["Fbx2Vmd.FBXImporter", "UniGLTF", "VRM"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

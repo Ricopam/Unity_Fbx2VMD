@@ -48,14 +48,78 @@ namespace Tests.Editor.CharacterLibrary
         public void Given_NonVrmFile_When_Registering_Then_RejectsExtension()
         {
             string folder = CreateTempFolder();
-            string path = Path.Combine(folder, "model.fbx");
+            string path = Path.Combine(folder, "model.pmd");
             File.WriteAllBytes(path, new byte[] { 1 });
             var registry = CreateRegistry(folder);
 
             CharacterLibraryRegistry.RegisterResult result = registry.Register(path);
 
             Assert.That(result.success, Is.False);
-            Assert.That(result.error, Does.Contain(".vrm"));
+            Assert.That(result.error, Does.Contain(".vrm/.fbx/.pmx"));
+        }
+
+        [Test]
+        public void Given_PmxPath_When_Registering_Then_CreatesEntryWithPmxKind()
+        {
+            string folder = CreateTempFolder();
+            string pmxPath = Path.Combine(folder, "miku.pmx");
+            File.WriteAllBytes(pmxPath, new byte[] { 1, 2, 3, 4 });
+            var registry = CreateRegistry(folder);
+
+            CharacterLibraryRegistry.RegisterResult result = registry.Register(pmxPath);
+
+            Assert.That(result.success, Is.True, result.error);
+            Assert.That(result.entry.id, Is.Not.Empty);
+            Assert.That(result.entry.contentHash, Does.StartWith("sha256:"));
+            Assert.That(result.entry.status, Is.EqualTo(CharacterLibraryEntryStatus.Ready));
+            Assert.That(registry.Entries.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Given_PmxPath_When_ReadingMeta_Then_UsesFileNameAsTitle()
+        {
+            string folder = CreateTempFolder();
+            string pmxPath = Path.Combine(folder, "MyMmdModel.pmx");
+            File.WriteAllBytes(pmxPath, new byte[] { 1 });
+
+            VrmCharacterMetaResult meta = CharacterFileMetaReader.Read(pmxPath);
+
+            Assert.That(meta.success, Is.True);
+            Assert.That(meta.specVersion, Is.EqualTo("pmx"));
+            Assert.That(meta.meta.title, Is.EqualTo("MyMmdModel"));
+            Assert.That(meta.thumbnailPng, Is.Null);
+        }
+
+        [Test]
+        public void Given_FbxPath_When_Registering_Then_CreatesEntryWithFbxKind()
+        {
+            string folder = CreateTempFolder();
+            string fbxPath = Path.Combine(folder, "miku.fbx");
+            File.WriteAllBytes(fbxPath, new byte[] { 1, 2, 3, 4 });
+            var registry = CreateRegistry(folder);
+
+            CharacterLibraryRegistry.RegisterResult result = registry.Register(fbxPath);
+
+            Assert.That(result.success, Is.True, result.error);
+            Assert.That(result.entry.id, Is.Not.Empty);
+            Assert.That(result.entry.contentHash, Does.StartWith("sha256:"));
+            Assert.That(result.entry.status, Is.EqualTo(CharacterLibraryEntryStatus.Ready));
+            Assert.That(registry.Entries.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Given_FbxPath_When_ReadingMeta_Then_UsesFileNameAsTitle()
+        {
+            string folder = CreateTempFolder();
+            string fbxPath = Path.Combine(folder, "MyHumanoid.fbx");
+            File.WriteAllBytes(fbxPath, new byte[] { 1 });
+
+            VrmCharacterMetaResult meta = CharacterFileMetaReader.Read(fbxPath);
+
+            Assert.That(meta.success, Is.True);
+            Assert.That(meta.specVersion, Is.EqualTo("fbx"));
+            Assert.That(meta.meta.title, Is.EqualTo("MyHumanoid"));
+            Assert.That(meta.thumbnailPng, Is.Null);
         }
 
         [Test]
@@ -147,6 +211,26 @@ namespace Tests.Editor.CharacterLibrary
 
             Assert.That(relinked, Is.False);
             Assert.That(error, Does.Contain("다릅니다"));
+        }
+
+        [Test]
+        public void Given_RegisteredPmxEntry_When_RelinkToDifferentExtension_Then_Rejected()
+        {
+            string folder = CreateTempFolder();
+            string pmxPath = Path.Combine(folder, "miku.pmx");
+            File.WriteAllBytes(pmxPath, new byte[] { 1, 2, 3 });
+            var registry = CreateRegistry(folder);
+            CharacterLibraryEntry entry = registry.Register(pmxPath).entry;
+
+            // 같은 내용이라도 확장자가 달라지면 로더 분기가 어긋나므로 거부한다.
+            string renamed = Path.Combine(folder, "miku.fbx");
+            File.WriteAllBytes(renamed, new byte[] { 1, 2, 3 });
+
+            bool relinked = registry.TryRelink(entry, renamed, out string error);
+
+            Assert.That(relinked, Is.False);
+            Assert.That(error, Does.Contain("형식"));
+            Assert.That(entry.sourcePath, Is.EqualTo(Path.GetFullPath(pmxPath)));
         }
 
         [Test]
