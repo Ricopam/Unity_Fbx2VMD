@@ -5817,6 +5817,7 @@ namespace Fbx2Vmd.FBXImporter
                 BodyPosition = IsFinite(pose.bodyPosition) ? pose.bodyPosition : BuildNaNVector3(),
                 BodyRotation = IsFinite(pose.bodyRotation) ? pose.bodyRotation : BuildNaNQuaternion(),
                 GhostEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(ghostAnimator),
+                CurrentEndpointPositions = _setHumanPoseDiagnostics.PreSolveBasis.CurrentEndpointPositions,
                 TargetEndpointPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator)
             });
 #endif
