@@ -17,7 +17,7 @@ namespace Tests.Editor.FBXImporter
                 throwOnError: false);
             Assert.That(dataType, Is.Not.Null, "YYB 캡처 결과의 공통 데이터 계약이 필요합니다.");
 
-            Type runnerType = runtimeAssembly.GetType(
+            Type runnerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner",
                 throwOnError: true);
             Type persistedResultType = runnerType.GetNestedType(

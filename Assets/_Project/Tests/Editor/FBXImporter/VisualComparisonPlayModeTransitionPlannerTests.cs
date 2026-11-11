@@ -23,11 +23,10 @@ namespace Tests.Editor.FBXImporter
             bool isAdvanceAfterPlayStopPending,
             string expectedAction)
         {
-            Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-            Type phaseType = runtimeAssembly.GetType(
+            Type phaseType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonPlayModePhase",
                 throwOnError: false);
-            Type plannerType = runtimeAssembly.GetType(
+            Type plannerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonPlayModeTransitionPlanner",
                 throwOnError: false);
 

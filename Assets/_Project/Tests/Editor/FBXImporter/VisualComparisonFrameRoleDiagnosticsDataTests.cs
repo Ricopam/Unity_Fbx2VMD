@@ -18,7 +18,7 @@ namespace Tests.Editor.FBXImporter
                 throwOnError: false);
             Assert.That(dataType, Is.Not.Null, "모델 중립 프레임 역할 진단 데이터 경계가 필요합니다.");
 
-            Type runnerType = runtimeAssembly.GetType(
+            Type runnerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner",
                 throwOnError: true);
             Type runnerOwnedDiagnosticsType = runnerType.GetNestedType(

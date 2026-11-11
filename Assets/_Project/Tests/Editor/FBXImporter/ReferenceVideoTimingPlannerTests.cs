@@ -67,8 +67,7 @@ namespace Tests.Editor.FBXImporter
             bool enabled,
             float knownReferenceDurationSeconds)
         {
-            Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-            Type plannerType = runtimeAssembly.GetType(
+            Type plannerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.ReferenceVideoTimingPlanner",
                 throwOnError: false);
             Assert.That(plannerType, Is.Not.Null, "모델 중립 참조 영상 시간 계획 경계가 필요합니다.");
@@ -77,7 +76,7 @@ namespace Tests.Editor.FBXImporter
                 BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.That(build, Is.Not.Null);
 
-            Type segmentPlannerType = runtimeAssembly.GetType(
+            Type segmentPlannerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonCaptureSegmentPlanner",
                 throwOnError: true);
             MethodInfo resolveSegment = segmentPlannerType.GetMethod(

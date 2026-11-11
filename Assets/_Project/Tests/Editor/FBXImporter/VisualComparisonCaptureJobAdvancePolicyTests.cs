@@ -22,7 +22,7 @@ namespace Tests.Editor.FBXImporter
             bool activeJobFinished)
         {
             Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-            Type policyType = runtimeAssembly.GetType(
+            Type policyType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonCaptureJobAdvancePolicy",
                 throwOnError: false);
             Assert.That(policyType, Is.Not.Null, "범용 시각 비교 캡처 작업 진행 정책이 필요합니다.");

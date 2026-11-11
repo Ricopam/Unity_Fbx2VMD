@@ -124,10 +124,10 @@ namespace Tests.Editor.FBXImporter
             var paths = (string[])field.GetValue(null);
             Assert.That(
                 paths,
-                Does.Contain("Assets/_Project/Scripts/FBXImporter/YybVisualComparisonBatchRunner.cs"));
+                Does.Contain("Assets/_Project/Scripts/Editor/FBXImporter/VisualComparison/YybVisualComparisonBatchRunner.cs"));
             Assert.That(
                 paths,
-                Does.Contain("Assets/_Project/Scripts/FBXImporter/YybVisualComparisonRequestWatcher.cs"));
+                Does.Contain("Assets/_Project/Scripts/Editor/FBXImporter/VisualComparison/YybVisualComparisonRequestWatcher.cs"));
             Assert.That(
                 paths.Any(path => path.Contains("/Editor/YybVisualComparison")),
                 Is.False,

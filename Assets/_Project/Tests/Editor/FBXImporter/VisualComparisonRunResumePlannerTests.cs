@@ -25,7 +25,7 @@ namespace Tests.Editor.FBXImporter
             string expectedAction)
         {
             Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-            Type plannerType = runtimeAssembly.GetType(
+            Type plannerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonRunResumePlanner",
                 throwOnError: false);
 

@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 namespace Fbx2Vmd.FBXImporter
 {
     internal static class YybVisualComparisonRuntimeOverrideCoordinator
@@ -363,4 +362,3 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 }
-#endif

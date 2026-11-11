@@ -16,7 +16,7 @@ namespace Tests.Editor.FBXImporter
 
             try
             {
-                Type controllerType = typeof(FBXVmdPipeline).Assembly.GetType(
+                Type controllerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                     "Fbx2Vmd.FBXImporter.VisualComparisonEnterPlayModeOptionsController",
                     throwOnError: false);
                 Assert.That(controllerType, Is.Not.Null, "모델 중립 PlayMode 설정 수명주기 경계가 필요합니다.");

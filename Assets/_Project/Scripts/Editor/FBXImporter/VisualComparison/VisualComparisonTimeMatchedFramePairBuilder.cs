@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using static Fbx2Vmd.FBXImporter.VisualComparisonFrameGeometryCalculator;
@@ -114,4 +113,3 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 }
-#endif

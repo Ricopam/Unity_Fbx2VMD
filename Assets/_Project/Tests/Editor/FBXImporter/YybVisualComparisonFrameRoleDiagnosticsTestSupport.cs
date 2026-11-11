@@ -95,8 +95,7 @@ namespace Tests.Editor.FBXImporter
             string referenceVideoProjectRoot = null,
             string candidateFrameProjectRoot = null)
         {
-            Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-            Type requestType = runtimeAssembly.GetType(
+            Type requestType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonFrameRoleDiagnosticsBuildRequest",
                 throwOnError: true);
             object request = Activator.CreateInstance(requestType, nonPublic: true);
@@ -126,7 +125,7 @@ namespace Tests.Editor.FBXImporter
             SetProperty(request, "ReferenceVideoCanonicalContext", "Ref MP4 is a manually postprocessed MMD render from Sub_Manual testPrefab + satisfaction_2.");
             SetProperty(request, "ReferenceVideoAnalysisMetricBasis", "MP4 analysis supplies visual bbox/framing context.");
 
-            Type builderType = runtimeAssembly.GetType(
+            Type builderType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonFrameRoleDiagnosticsBuilder",
                 throwOnError: true);
             MethodInfo buildMethod = builderType.GetMethod(

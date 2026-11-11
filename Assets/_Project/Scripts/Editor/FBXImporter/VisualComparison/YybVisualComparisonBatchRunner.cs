@@ -1,5 +1,4 @@
 
-#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -74,8 +73,8 @@ namespace Fbx2Vmd.FBXImporter
             "Assets/_Project/Scripts/FBXImporter/HumanoidArmDeformationGuard.cs",
             "Assets/_Project/Scripts/FBXImporter/HumanoidArmDirectionRetargetGuard.cs",
             "Assets/_Project/Scripts/FBXImporter/PoseSpaceRetargeter.cs",
-            "Assets/_Project/Scripts/FBXImporter/YybVisualComparisonBatchRunner.cs",
-            "Assets/_Project/Scripts/FBXImporter/YybVisualComparisonRequestWatcher.cs"
+            "Assets/_Project/Scripts/Editor/FBXImporter/VisualComparison/YybVisualComparisonBatchRunner.cs",
+            "Assets/_Project/Scripts/Editor/FBXImporter/VisualComparison/YybVisualComparisonRequestWatcher.cs"
         };
         private const float DefaultFrameRate = 30f;
         private const float DefaultStartDelaySeconds = 0.2f;
@@ -2493,5 +2492,4 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 }
-#endif
 

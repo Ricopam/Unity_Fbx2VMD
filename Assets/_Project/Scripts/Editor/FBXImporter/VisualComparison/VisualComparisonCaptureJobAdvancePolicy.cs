@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 namespace Fbx2Vmd.FBXImporter
 {
     internal static class VisualComparisonCaptureJobAdvancePolicy
@@ -12,4 +11,3 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 }
-#endif

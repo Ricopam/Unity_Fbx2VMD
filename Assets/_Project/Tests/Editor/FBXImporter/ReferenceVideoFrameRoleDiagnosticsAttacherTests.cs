@@ -58,7 +58,9 @@ namespace Tests.Editor.FBXImporter
                 "Assets",
                 "_Project",
                 "Scripts",
+                "Editor",
                 "FBXImporter",
+                "VisualComparison",
                 "YybVisualComparisonFrameRoleDiagnosticsBuilder.cs");
             string source = File.ReadAllText(builderPath);
 

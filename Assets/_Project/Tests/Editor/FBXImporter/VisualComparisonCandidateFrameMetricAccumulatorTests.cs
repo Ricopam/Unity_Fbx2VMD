@@ -181,7 +181,7 @@ namespace Tests.Editor.FBXImporter
 
         private static Type GetRuntimeType(string typeName)
         {
-            return typeof(FBXVmdPipeline).Assembly.GetType(typeName, throwOnError: false);
+            return typeof(YybVisualComparisonBatchRunner).Assembly.GetType(typeName, throwOnError: false);
         }
     }
 }

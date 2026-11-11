@@ -23,7 +23,7 @@ namespace Tests.Editor.FBXImporter
             Type resultDataType = runtimeAssembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonCaptureResultData",
                 throwOnError: true);
-            Type runnerType = runtimeAssembly.GetType(
+            Type runnerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner",
                 throwOnError: true);
             Type persistedStateType = runnerType.GetNestedType(

@@ -15,12 +15,12 @@ namespace Tests.Editor.FBXImporter
         public void Given_FrameRoleDiagnostics_When_CheckingOwnership_Then_BuilderOwnsComposition()
         {
             Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-            Type builderType = runtimeAssembly.GetType(
+            Type builderType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonFrameRoleDiagnosticsBuilder",
                 throwOnError: false);
             Assert.That(builderType, Is.Not.Null, "프레임 역할 진단 조립 전용 타입이 필요합니다.");
 
-            Type runnerType = runtimeAssembly.GetType(
+            Type runnerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner",
                 throwOnError: true);
             int runnerOwnedBuildMethodCount = runnerType

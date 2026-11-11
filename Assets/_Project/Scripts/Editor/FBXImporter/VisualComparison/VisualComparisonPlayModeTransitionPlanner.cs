@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 namespace Fbx2Vmd.FBXImporter
 {
     internal enum VisualComparisonPlayModePhase
@@ -57,4 +56,3 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 }
-#endif

@@ -61,7 +61,7 @@ namespace Tests.Editor.FBXImporter
         [Test]
         public void Given_ExtractedCalculator_When_CheckingAnalyzer_Then_PixelMetricImplementationsAreRemoved()
         {
-            Type analyzerType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type analyzerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybScreenshotDiagnosticAnalyzer",
                 throwOnError: true);
             string[] legacyMethods =
@@ -81,7 +81,9 @@ namespace Tests.Editor.FBXImporter
                 "Assets",
                 "_Project",
                 "Scripts",
+                "Editor",
                 "FBXImporter",
+                "VisualComparison",
                 "YybScreenshotDiagnosticAnalyzer.cs");
             string source = File.ReadAllText(analyzerPath);
 
@@ -153,7 +155,7 @@ namespace Tests.Editor.FBXImporter
 
         private static Type GetCalculatorType()
         {
-            Type calculatorType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type calculatorType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonSilhouetteMetricCalculator",
                 throwOnError: false);
             Assert.That(calculatorType, Is.Not.Null, "모델 중립 silhouette metric 계산 타입이 필요합니다.");

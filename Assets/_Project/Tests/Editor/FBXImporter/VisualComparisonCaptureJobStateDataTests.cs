@@ -17,7 +17,7 @@ namespace Tests.Editor.FBXImporter
                 throwOnError: false);
             Assert.That(dataType, Is.Not.Null, "모델 중립 캡처 작업 상태 계약이 필요합니다.");
 
-            Type runnerType = runtimeAssembly.GetType(
+            Type runnerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner",
                 throwOnError: true);
             Type persistedJobType = runnerType.GetNestedType(

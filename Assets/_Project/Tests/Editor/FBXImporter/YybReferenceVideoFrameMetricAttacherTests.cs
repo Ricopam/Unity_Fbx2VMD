@@ -60,7 +60,9 @@ namespace Tests.Editor.FBXImporter
                 "Assets",
                 "_Project",
                 "Scripts",
+                "Editor",
                 "FBXImporter",
+                "VisualComparison",
                 "YybVisualComparisonFrameRoleDiagnosticsBuilder.cs");
             string source = File.ReadAllText(builderPath);
 
@@ -72,7 +74,7 @@ namespace Tests.Editor.FBXImporter
 
         private static void Attach(object diagnostics, object coverage, string projectRoot)
         {
-            Type attacherType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type attacherType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybReferenceVideoFrameMetricAttacher",
                 throwOnError: false);
             Assert.That(attacherType, Is.Not.Null, "YYB 참조 영상 frame metric attacher 타입이 필요합니다.");

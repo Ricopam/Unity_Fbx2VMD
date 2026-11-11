@@ -83,7 +83,7 @@ namespace Tests.Editor.FBXImporter
 
         private static Type FindPlannerType()
         {
-            Type plannerType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type plannerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonCaptureSegmentPlanner",
                 throwOnError: false);
             Assert.That(plannerType, Is.Not.Null, "모델 중립 캡처 구간 계획 경계가 필요합니다.");

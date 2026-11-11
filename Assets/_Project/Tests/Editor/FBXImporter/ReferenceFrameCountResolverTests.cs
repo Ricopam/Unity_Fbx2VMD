@@ -90,7 +90,7 @@ namespace Tests.Editor.FBXImporter
         public void Given_SummaryTargetPolicy_When_InspectingRunner_Then_PureCalculationOverloadIsAbsent()
         {
             Type runnerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Fbx2Vmd.FBXImporter");
+                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Assembly-CSharp-Editor");
             Assert.That(runnerType, Is.Not.Null, "시각 비교 배치 실행기 타입이 필요합니다.");
 
             MethodInfo staleOverload = runnerType.GetMethod(
@@ -110,7 +110,7 @@ namespace Tests.Editor.FBXImporter
         public void Given_ReferenceFrameCountResolver_When_InspectingRunner_Then_ReferenceCalculationWrapperIsAbsent()
         {
             Type runnerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Fbx2Vmd.FBXImporter");
+                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Assembly-CSharp-Editor");
             Assert.That(runnerType, Is.Not.Null, "시각 비교 배치 실행기 타입이 필요합니다.");
 
             MethodInfo staleWrapper = runnerType.GetMethod(

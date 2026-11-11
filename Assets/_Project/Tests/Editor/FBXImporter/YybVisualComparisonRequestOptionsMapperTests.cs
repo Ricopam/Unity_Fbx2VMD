@@ -74,7 +74,7 @@ namespace Tests.Editor.FBXImporter
             Assert.That(projectRoot, Is.Not.Null);
             string sourcePath = Path.Combine(
                 projectRoot,
-                "Assets/_Project/Scripts/FBXImporter/YybVisualComparisonRequestWatcher.cs");
+                "Assets/_Project/Scripts/Editor/FBXImporter/VisualComparison/YybVisualComparisonRequestWatcher.cs");
             string source = File.ReadAllText(sourcePath).Replace("\r\n", "\n");
 
             Assert.That(source, Does.Contain("YybVisualComparisonRequestOptionsMapper.Map(request)"));
@@ -86,7 +86,7 @@ namespace Tests.Editor.FBXImporter
 
         private static Type FindMapperType()
         {
-            Type mapperType = typeof(FBXVmdPipeline).Assembly.GetType(MapperTypeName, throwOnError: false);
+            Type mapperType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(MapperTypeName, throwOnError: false);
             Assert.That(mapperType, Is.Not.Null, "요청 값을 실행 옵션으로 변환하는 pure mapper가 필요합니다.");
             return mapperType;
         }

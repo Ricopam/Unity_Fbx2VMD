@@ -17,7 +17,7 @@ namespace Tests.Editor.FBXImporter
                 throwOnError: false);
             Assert.That(dataType, Is.Not.Null, "모델 중립 샘플 순서 진단 데이터 경계가 필요합니다.");
 
-            Type runnerType = runtimeAssembly.GetType(
+            Type runnerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner",
                 throwOnError: true);
             Type diagnosticType = runnerType.GetNestedType(

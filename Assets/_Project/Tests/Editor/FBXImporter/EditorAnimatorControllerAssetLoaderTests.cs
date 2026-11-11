@@ -41,7 +41,9 @@ namespace Tests.Editor.FBXImporter
                 "Assets",
                 "_Project",
                 "Scripts",
+                "Editor",
                 "FBXImporter",
+                "VisualComparison",
                 "YybVisualComparisonBatchRunner.cs");
             string source = File.ReadAllText(runnerPath);
 

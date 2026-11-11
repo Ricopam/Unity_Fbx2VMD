@@ -47,7 +47,7 @@ namespace Tests.Editor.FBXImporter
         private static HumanoidSampleCode SelectAndActivate(string targetNameToken)
         {
             Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-            Type selectorType = runtimeAssembly.GetType(
+            Type selectorType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonManualRecorderSelector",
                 throwOnError: false);
             Assert.That(selectorType, Is.Not.Null, "범용 수동 recorder 선택기가 필요합니다.");

@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 namespace Fbx2Vmd.FBXImporter
 {
     internal enum VisualComparisonRunResumeAction
@@ -53,4 +52,3 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 }
-#endif

@@ -172,7 +172,7 @@ namespace Tests.Editor.FBXImporter
         [Test]
         public void Given_ExtractedCalculator_When_CheckingAnalyzer_Then_KeypointDeltaImplementationIsRemoved()
         {
-            Type analyzerType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type analyzerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.YybScreenshotDiagnosticAnalyzer",
                 throwOnError: true);
             MethodInfo legacyMethod = analyzerType.GetMethod(
@@ -192,7 +192,9 @@ namespace Tests.Editor.FBXImporter
                 "Assets",
                 "_Project",
                 "Scripts",
+                "Editor",
                 "FBXImporter",
+                "VisualComparison",
                 "YybScreenshotDiagnosticAnalyzer.cs");
             string source = File.ReadAllText(analyzerPath);
 
@@ -213,7 +215,7 @@ namespace Tests.Editor.FBXImporter
 
         private static bool TryCalculate(float[] candidate, float[] reference, out object delta)
         {
-            Type calculatorType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type calculatorType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonKeypointDeltaCalculator",
                 throwOnError: false);
             Assert.That(calculatorType, Is.Not.Null, "모델 중립 keypoint delta 계산 타입이 필요합니다.");
@@ -242,7 +244,7 @@ namespace Tests.Editor.FBXImporter
             float referenceBBoxHeight,
             out object delta)
         {
-            Type calculatorType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type calculatorType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonKeypointDeltaCalculator",
                 throwOnError: true);
             MethodInfo method = calculatorType.GetMethod(
@@ -285,7 +287,7 @@ namespace Tests.Editor.FBXImporter
             float endpointPixelTolerance,
             out object delta)
         {
-            Type calculatorType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type calculatorType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonKeypointDeltaCalculator",
                 throwOnError: true);
             MethodInfo method = calculatorType.GetMethod(

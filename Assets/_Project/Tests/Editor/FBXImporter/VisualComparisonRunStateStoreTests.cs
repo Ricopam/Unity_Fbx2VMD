@@ -10,7 +10,7 @@ namespace Tests.Editor.FBXImporter
         [Test]
         public void Given_RunStateJson_When_SavingAndClearing_Then_RoundTripsByKey()
         {
-            Type storeType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type storeType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonRunStateStore",
                 throwOnError: false);
             Assert.That(storeType, Is.Not.Null, "모델 중립 비교 실행 상태 저장 경계가 필요합니다.");

@@ -30,8 +30,7 @@ namespace Tests.Editor.FBXImporter
                     candidate_vmd_path = vmdPath,
                     candidate_metrics_csv = metricsPath
                 };
-                Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-                Type selectorType = runtimeAssembly.GetType(
+                Type selectorType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                     "Fbx2Vmd.FBXImporter.VisualComparisonCandidateArtifactSelector",
                     throwOnError: false);
                 Assert.That(selectorType, Is.Not.Null, "모델 중립 후보 산출물 선택 경계가 필요합니다.");
@@ -72,7 +71,7 @@ namespace Tests.Editor.FBXImporter
         [Test]
         public void Given_CandidateArtifactSelectorOwner_When_InspectingResponsibilities_Then_RunnerHasNoSelectionWrapper()
         {
-            Type selectorType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type selectorType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonCandidateArtifactSelector",
                 throwOnError: true);
             Assert.That(
@@ -82,7 +81,7 @@ namespace Tests.Editor.FBXImporter
                 Is.Not.Null);
 
             Type runnerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Fbx2Vmd.FBXImporter");
+                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Assembly-CSharp-Editor");
             Assert.That(runnerType, Is.Not.Null);
             Assert.That(
                 runnerType.GetMethod(
@@ -513,7 +512,7 @@ namespace Tests.Editor.FBXImporter
         private static object BuildCandidateArtifactSelection(
             params MotionComparisonFrameQualitySummary[] summaries)
         {
-            Type selectorType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type selectorType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonCandidateArtifactSelector",
                 throwOnError: true);
             MethodInfo method = selectorType.GetMethod(

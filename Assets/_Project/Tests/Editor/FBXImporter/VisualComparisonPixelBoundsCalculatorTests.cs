@@ -72,14 +72,18 @@ namespace Tests.Editor.FBXImporter
                 "Assets",
                 "_Project",
                 "Scripts",
+                "Editor",
                 "FBXImporter",
+                "VisualComparison",
                 "YybScreenshotDiagnosticAnalyzer.cs");
             string calculatorPath = Path.Combine(
                 Directory.GetCurrentDirectory(),
                 "Assets",
                 "_Project",
                 "Scripts",
+                "Editor",
                 "FBXImporter",
+                "VisualComparison",
                 "VisualComparisonSilhouetteMetricCalculator.cs");
             string analyzerSource = File.ReadAllText(analyzerPath);
             string calculatorSource = File.ReadAllText(calculatorPath);
@@ -100,7 +104,7 @@ namespace Tests.Editor.FBXImporter
             Func<Color32, bool> predicate,
             out object bounds)
         {
-            Type calculatorType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type calculatorType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonPixelBoundsCalculator",
                 throwOnError: false);
             Assert.That(calculatorType, Is.Not.Null, "모델 중립 픽셀 경계 계산 타입이 필요합니다.");

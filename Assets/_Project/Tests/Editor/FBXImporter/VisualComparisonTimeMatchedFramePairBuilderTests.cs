@@ -86,7 +86,9 @@ namespace Tests.Editor.FBXImporter
                 "Assets",
                 "_Project",
                 "Scripts",
+                "Editor",
                 "FBXImporter",
+                "VisualComparison",
                 "YybScreenshotDiagnosticAnalyzer.cs");
             string source = File.ReadAllText(analyzerPath);
 
@@ -155,9 +157,12 @@ namespace Tests.Editor.FBXImporter
 
         private static Type FindType(string typeName)
         {
-            Type type = typeof(FBXVmdPipeline).Assembly.GetType(
-                ProductionNamespace + typeName,
-                throwOnError: false);
+            Type type = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
+                    ProductionNamespace + typeName,
+                    throwOnError: false)
+                ?? typeof(FBXVmdPipeline).Assembly.GetType(
+                    ProductionNamespace + typeName,
+                    throwOnError: false);
             Assert.That(type, Is.Not.Null, $"{typeName} 타입이 필요합니다.");
             return type;
         }

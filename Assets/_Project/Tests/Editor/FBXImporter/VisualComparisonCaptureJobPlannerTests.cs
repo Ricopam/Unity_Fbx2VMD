@@ -106,7 +106,7 @@ namespace Tests.Editor.FBXImporter
         private static string[] BuildCaptureJobModes(bool enableVmdPlaybackProbeRuntimeOverride)
         {
             Type runnerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Fbx2Vmd.FBXImporter");
+                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Assembly-CSharp-Editor");
             Assert.That(runnerType, Is.Not.Null, "YYB visual comparison runner type must be available in editor tests.");
 
             MethodInfo method = runnerType.GetMethod(
@@ -130,11 +130,10 @@ namespace Tests.Editor.FBXImporter
             string manualReferenceTargetNameToken,
             string manualTargetNameToken)
         {
-            Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-            Type sceneType = runtimeAssembly.GetType(
+            Type sceneType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonScene",
                 throwOnError: false);
-            Type profileType = runtimeAssembly.GetType(
+            Type profileType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonCaptureProfile",
                 throwOnError: false);
 
@@ -167,8 +166,7 @@ namespace Tests.Editor.FBXImporter
 
         private static object[] BuildJobs(object profile, bool includePlaybackProbe)
         {
-            Assembly runtimeAssembly = typeof(FBXVmdPipeline).Assembly;
-            Type plannerType = runtimeAssembly.GetType(
+            Type plannerType = typeof(YybVisualComparisonBatchRunner).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.VisualComparisonCaptureJobPlanner",
                 throwOnError: false);
 
