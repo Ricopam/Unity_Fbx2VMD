@@ -16,13 +16,6 @@ namespace Fbx2Vmd.FBXImporter
         private const float RecordingStartHipsBaselineFlipWarningThreshold = 0.02f;
         internal const float HipsLocalPositionTargetGapGuardMaxIncreaseMeters = 0.0005f;
         private const string RecordingStartHipsReferenceStagePrewarmComplete = "prewarm-complete";
-        private static readonly string[] RightSleeveSilhouetteLocalOffsetTransformSuffixes =
-        {
-            "joint_RightArmM",
-            "!joint_RightShoulderC"
-        };
-        private readonly Dictionary<Transform, Vector3> _rightSleeveSilhouetteLocalOffsetBaseLocalPositions =
-            new Dictionary<Transform, Vector3>();
         [Header("--- CORE COMPONENTS ---")]
         [FormerlySerializedAs("ghostAnimator")]
         [SerializeField] private Animator _ghostAnimator;  // (Container 내부의 모델)
@@ -1444,7 +1437,7 @@ namespace Fbx2Vmd.FBXImporter
         private float _maxGroundingVerticalStepAfterInitial;
         private float _lastGroundingTargetY = float.NaN;
         private float _lastGroundingLowestFootBottomY = float.NaN;
-        private float _lastEditorFootHeightGroundingReferenceLift = float.NaN;
+        internal float _lastEditorFootHeightGroundingReferenceLift = float.NaN;
         private float _recordingStartRootY = float.NaN;
         private float _recordingStartBodyPositionY = float.NaN;
         private float _recordingStartHipsLocalY = float.NaN;
@@ -1537,6 +1530,7 @@ namespace Fbx2Vmd.FBXImporter
 #if UNITY_EDITOR
         internal object _editorPoseReferenceSession;
         internal object _editorFootReferenceSession;
+        internal object _editorSleeveReferenceSession;
         internal readonly Dictionary<int, AnimationCurve> _editorHumanoidMuscleCurves = new Dictionary<int, AnimationCurve>();
         internal bool _useEditorHumanoidMuscleReference;
         internal bool _useCompleteEditorHumanoidMuscleReference;
@@ -2559,15 +2553,6 @@ namespace Fbx2Vmd.FBXImporter
             RetargetingEditorReferenceHooks.PoseReference?.ApplyBodyRotationReference(this, ref pose);
         }
 
-        private bool UpdateEditorManualReferenceAnimator()
-        {
-            return RetargetingEditorReferenceHooks.PoseReference?.UpdateManualReferenceAnimator(this) ?? false;
-        }
-
-
-
-
-
         internal void CaptureTargetFootPositions(out Vector3 leftFootPosition, out Vector3 rightFootPosition)
         {
             leftFootPosition = ReadTargetBoneWorldPosition(HumanBodyBones.LeftFoot);
@@ -2729,9 +2714,7 @@ namespace Fbx2Vmd.FBXImporter
 
         private bool ShouldApplyRightSleeveSilhouetteLocalOffsetFrameGate()
         {
-            return ShouldApplySingleFrameFallbackReferenceFrameGate(
-                yybRightSleeveSilhouetteLocalOffsetFrameGateStart,
-                yybRightSleeveSilhouetteLocalOffsetFrameGateEnd);
+            return RetargetingEditorReferenceHooks.SleeveReference?.ShouldApplyRightSleeveSilhouetteLocalOffsetFrameGate(this) ?? false;
         }
 
         internal bool ShouldApplySingleFrameFallbackReferenceFrameGate(float startFrame, float endFrame)
@@ -2751,67 +2734,17 @@ namespace Fbx2Vmd.FBXImporter
 
         private void ApplyRightSleeveSilhouetteLocalOffsetReference()
         {
-            RestoreRightSleeveSilhouetteLocalOffsetReference();
-            if (!useYybRightSleeveSilhouetteLocalOffsetReference ||
-                !ShouldApplyRightSleeveSilhouetteLocalOffsetFrameGate())
-            {
-                return;
-            }
-
-            float offsetX = Mathf.Clamp(yybRightSleeveSilhouetteLocalOffsetX, -0.2f, 0.2f);
-            if (Mathf.Abs(offsetX) <= 0.00001f)
-            {
-                return;
-            }
-
-            Vector3 offset = new Vector3(offsetX, 0f, 0f);
-            ApplyRightSleeveSilhouetteLocalOffsetToTransform(
-                targetAnimator != null ? targetAnimator.GetBoneTransform(HumanBodyBones.RightUpperArm) : null,
-                offset);
-            ApplyRightSleeveSilhouetteLocalOffsetToTransform(
-                targetAnimator != null ? targetAnimator.GetBoneTransform(HumanBodyBones.RightLowerArm) : null,
-                offset);
-            ApplyRightSleeveSilhouetteLocalOffsetToTransform(
-                targetAnimator != null ? targetAnimator.GetBoneTransform(HumanBodyBones.RightHand) : null,
-                offset);
-            for (int i = 0; i < RightSleeveSilhouetteLocalOffsetTransformSuffixes.Length; i++)
-            {
-                Transform target = FindTargetTransformByNameSuffix(
-                    RightSleeveSilhouetteLocalOffsetTransformSuffixes[i]);
-                ApplyRightSleeveSilhouetteLocalOffsetToTransform(target, offset);
-            }
+            RetargetingEditorReferenceHooks.SleeveReference?.ApplyRightSleeveSilhouetteLocalOffsetReference(this);
         }
 
         private void ApplyRightSleeveSilhouetteLocalOffsetToTransform(Transform target, Vector3 offset)
         {
-            if (target == null ||
-                !IsFinite(target.localPosition) ||
-                !IsFinite(offset) ||
-                _rightSleeveSilhouetteLocalOffsetBaseLocalPositions.ContainsKey(target))
-            {
-                return;
-            }
-
-            _rightSleeveSilhouetteLocalOffsetBaseLocalPositions[target] = target.localPosition;
-            target.localPosition += offset;
+            RetargetingEditorReferenceHooks.SleeveReference?.ApplyRightSleeveSilhouetteLocalOffsetToTransform(this, target, offset);
         }
 
         private void RestoreRightSleeveSilhouetteLocalOffsetReference()
         {
-            if (_rightSleeveSilhouetteLocalOffsetBaseLocalPositions.Count == 0)
-            {
-                return;
-            }
-
-            foreach (KeyValuePair<Transform, Vector3> entry in _rightSleeveSilhouetteLocalOffsetBaseLocalPositions)
-            {
-                if (entry.Key != null && IsFinite(entry.Value))
-                {
-                    entry.Key.localPosition = entry.Value;
-                }
-            }
-
-            _rightSleeveSilhouetteLocalOffsetBaseLocalPositions.Clear();
+            RetargetingEditorReferenceHooks.SleeveReference?.RestoreRightSleeveSilhouetteLocalOffsetReference(this);
         }
 
 #endif
@@ -4743,42 +4676,7 @@ namespace Fbx2Vmd.FBXImporter
         private float ResolveEditorFootHeightGroundingReferenceTarget(float baseTargetHeight)
         {
 #if UNITY_EDITOR
-            _lastEditorFootHeightGroundingReferenceLift = 0f;
-            if (!ShouldUseManualAnimatorFootHeightGroundingReference ||
-                !_allowEditorFootHeightGroundingReference ||
-                manualAnimatorFootHeightGroundingReferenceWeight <= 0f ||
-                _editorFingerReferenceAnimator == null)
-            {
-                return baseTargetHeight;
-            }
-
-            if (!UpdateEditorManualReferenceAnimator() ||
-                !TryGetAnimatorLowestFootY(_editorFingerReferenceAnimator, out float referenceCurrentLowestFootY))
-            {
-                return baseTargetHeight;
-            }
-
-            if (!_hasEditorReferenceLowestFootRestY)
-            {
-                _editorReferenceLowestFootRestY = referenceCurrentLowestFootY;
-                _hasEditorReferenceLowestFootRestY = true;
-                return baseTargetHeight;
-            }
-
-            if (GroundingStabilizer.TryCalculateFootHeightReferenceTarget(
-                    baseTargetHeight,
-                    referenceCurrentLowestFootY,
-                    _editorReferenceLowestFootRestY,
-                    manualAnimatorFootHeightGroundingReferenceWeight,
-                    manualAnimatorFootHeightGroundingReferenceMaxLift,
-                    out float targetHeight))
-            {
-                _lastEditorFootHeightGroundingReferenceLift = targetHeight - baseTargetHeight;
-                return targetHeight;
-            }
-
-            _lastEditorFootHeightGroundingReferenceLift = float.NaN;
-            return baseTargetHeight;
+            return RetargetingEditorReferenceHooks.FootHeightReference?.ResolveFootHeightGroundingReferenceTarget(this, baseTargetHeight) ?? baseTargetHeight;
 #else
             return baseTargetHeight;
 #endif
@@ -4908,33 +4806,6 @@ namespace Fbx2Vmd.FBXImporter
 #endif
                 }
             }
-        }
-
-        private static bool TryGetAnimatorLowestFootY(Animator animator, out float lowestFootY)
-        {
-            lowestFootY = 0f;
-            if (animator == null || !animator.isHuman)
-            {
-                return false;
-            }
-
-            Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
-            Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot);
-            if (leftFoot == null || rightFoot == null)
-            {
-                return false;
-            }
-
-            Vector3 leftLocal = animator.transform.InverseTransformPoint(leftFoot.position);
-            Vector3 rightLocal = animator.transform.InverseTransformPoint(rightFoot.position);
-            lowestFootY = Mathf.Min(leftLocal.y, rightLocal.y);
-            if (!IsFinite(lowestFootY))
-            {
-                lowestFootY = 0f;
-                return false;
-            }
-
-            return true;
         }
 
         private bool TryGetLowestFootBottomY(out float lowestFootBottomY)

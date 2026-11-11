@@ -55,6 +55,33 @@ namespace Fbx2Vmd.FBXImporter
             return IsFinite(rotation) ? rotation : BuildNaNQuaternion();
         }
 
+        internal static bool TryGetAnimatorLowestFootY(Animator animator, out float lowestFootY)
+        {
+            lowestFootY = 0f;
+            if (animator == null || !animator.isHuman)
+            {
+                return false;
+            }
+
+            Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+            Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot);
+            if (leftFoot == null || rightFoot == null)
+            {
+                return false;
+            }
+
+            Vector3 leftLocal = animator.transform.InverseTransformPoint(leftFoot.position);
+            Vector3 rightLocal = animator.transform.InverseTransformPoint(rightFoot.position);
+            lowestFootY = Mathf.Min(leftLocal.y, rightLocal.y);
+            if (!IsFinite(lowestFootY))
+            {
+                lowestFootY = 0f;
+                return false;
+            }
+
+            return true;
+        }
+
         private static Vector3 BuildNaNVector3()
         {
             return new Vector3(float.NaN, float.NaN, float.NaN);

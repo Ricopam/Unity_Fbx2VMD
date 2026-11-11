@@ -76,5 +76,7 @@ namespace Fbx2Vmd.FBXImporter
         internal static IEditorLowerBodyDirectionDriver LowerBodyDirection;
         internal static IEditorFootReferenceDriver FootReference;
         internal static IEditorThumbReferenceDriver ThumbReference;
+        internal static IEditorRightSleeveSilhouetteDriver SleeveReference;
+        internal static IEditorFootHeightReferenceDriver FootHeightReference;
     }
 }
