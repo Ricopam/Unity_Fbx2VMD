@@ -5,7 +5,6 @@ using System.IO;
 using System.Collections;
 using System.Linq;
 using Fbx2Vmd.FileSystem;
-using Fbx2Vmd.Settings;
 using Fbx2Vmd.Recording;
 using Fbx2Vmd.Character;
 using Fbx2Vmd.Profiling;
@@ -14,6 +13,12 @@ namespace Fbx2Vmd.FBXImporter
 {
     public class FBXVmdPipeline : MonoBehaviour
     {
+        // 재생 컨트롤 표시 요청은 상위(UI) 도메인이 구독해 처리한다 — 파이프라인이 뷰 타입을 알지 못하게 한다.
+        public static event Action<FBXVmdPipeline> PlaybackControlsEnsureRequested;
+
+        // 에디터 녹화기 구현은 에디터 도메인이 등록한다 — 파이프라인이 에디터 타입을 알지 못하게 한다.
+        public static Func<IMotionVideoRecorder> EditorMotionVideoRecorderFactory;
+
         internal const string IMPORT_FBX_FOLDER = "Import_FBX";
         internal const string FBX_EXTENSION = "fbx";
         private const float THUMB_PROXIMAL_SAFE_MAX_LOCAL_ANGLE = 30f;
@@ -1839,7 +1844,7 @@ namespace Fbx2Vmd.FBXImporter
             EnsureServicesInitialized();
             DisableIndependentRecorderAutoStart();
             EnsureIdlePoseGuardInitialized();
-            HumanoidMotionPlaybackControlsView.Ensure(this);
+            PlaybackControlsEnsureRequested?.Invoke(this);
         }
 
         private void EnsureIdlePoseGuardInitialized()
@@ -2560,7 +2565,7 @@ namespace Fbx2Vmd.FBXImporter
             _humanoidMotionRecordingController?.Dispose();
             _humanoidMotionRecordingController = new HumanoidMotionRecordingController(
                 _humanoidMotionPlaybackController,
-                new EditorMotionVideoRecorder(),
+                EditorMotionVideoRecorderFactory?.Invoke() ?? new NoOpMotionVideoRecorder(),
                 CollectAlphaHiddenRenderers());
             _preparedMotionName = motionName;
             _isProcessing = false;
@@ -2575,7 +2580,7 @@ namespace Fbx2Vmd.FBXImporter
                     FBXSessionState.Failed,
                     _nativeSkinningCorrectionSetupError,
                     0f);
-                HumanoidMotionPlaybackControlsView.Ensure(this);
+                PlaybackControlsEnsureRequested?.Invoke(this);
                 return;
             }
             _nativeSkinningCorrectionPlaybackDriver?.ConfigureCacheIdentity(
@@ -2586,7 +2591,7 @@ namespace Fbx2Vmd.FBXImporter
                 FBXSessionState.Ready,
                 $"FBX 임포트 완료 · 재생 대기: {motionName}",
                 1f);
-            HumanoidMotionPlaybackControlsView.Ensure(this);
+            PlaybackControlsEnsureRequested?.Invoke(this);
         }
 #endif
 
@@ -2648,7 +2653,7 @@ namespace Fbx2Vmd.FBXImporter
                     FBXSessionState.Failed,
                     _nativeSkinningCorrectionSetupError,
                     0f);
-                HumanoidMotionPlaybackControlsView.Ensure(this);
+                PlaybackControlsEnsureRequested?.Invoke(this);
                 return;
             }
             // 빌드는 에셋 식별자가 없어 소스 FBX 경로+내용 해시로 캐시 키를 잡는다.
@@ -2659,7 +2664,7 @@ namespace Fbx2Vmd.FBXImporter
                 FBXSessionState.Ready,
                 $"FBX 임포트 완료 · 재생 대기: {motionName}",
                 1f);
-            HumanoidMotionPlaybackControlsView.Ensure(this);
+            PlaybackControlsEnsureRequested?.Invoke(this);
         }
 
         internal void PrepareGhostModel(GameObject importedModel)

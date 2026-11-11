@@ -10,7 +10,7 @@ using RootMotion.FinalIK;
 
 namespace Fbx2Vmd.FBXImporter
 {
-    [DefaultExecutionOrder(20000)]
+    [DefaultExecutionOrder(CorrectionPassOrder.PoseSpaceRetarget)]
     public class PoseSpaceRetargeter : MonoBehaviour
     {
         private const float RecordingStartHipsBaselineFlipWarningThreshold = 0.02f;

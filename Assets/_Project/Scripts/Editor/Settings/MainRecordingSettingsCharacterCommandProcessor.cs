@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Fbx2Vmd.CharacterLibrary;
 using Fbx2Vmd.FBXImporter;
 using Newtonsoft.Json.Linq;
@@ -32,6 +33,9 @@ namespace Fbx2Vmd.Settings.EditorTools
                 case MainRecordingSettingsCommandEnvelope.CancelLoadAction:
                 case MainRecordingSettingsCommandEnvelope.CopyPresetAction:
                 case MainRecordingSettingsCommandEnvelope.UpdatePresetAction:
+                case MainRecordingSettingsCommandEnvelope.SaveFbxOverrideAction:
+                case MainRecordingSettingsCommandEnvelope.ApplyFbxOverrideAction:
+                case MainRecordingSettingsCommandEnvelope.DeleteFbxOverrideAction:
                     return true;
                 default:
                     return false;
@@ -75,6 +79,12 @@ namespace Fbx2Vmd.Settings.EditorTools
                     return CopyPreset(registry, command);
                 case MainRecordingSettingsCommandEnvelope.UpdatePresetAction:
                     return UpdatePreset(registry, command);
+                case MainRecordingSettingsCommandEnvelope.SaveFbxOverrideAction:
+                    return SaveFbxOverride(manager, command);
+                case MainRecordingSettingsCommandEnvelope.ApplyFbxOverrideAction:
+                    return ApplyFbxOverride(manager, command);
+                case MainRecordingSettingsCommandEnvelope.DeleteFbxOverrideAction:
+                    return DeleteFbxOverride(manager, command);
                 default:
                     throw new InvalidOperationException($"알 수 없는 캐릭터 명령: {command.action}");
             }
@@ -108,21 +118,8 @@ namespace Fbx2Vmd.Settings.EditorTools
                 throw new InvalidOperationException($"프리셋을 찾을 수 없습니다: {presetId}");
             }
 
-            FBXVmdPipeline pipeline = manager.BoundPipeline;
-            GameObject root = CharacterLibrarySceneBinding.FindActiveLibraryRoot(pipeline);
-            string activeId = root != null
-                ? root.GetComponent<CharacterLibraryInstance>()?.entryId
-                : null;
-            if (pipeline == null || root == null)
-            {
-                throw new InvalidOperationException("캐릭터를 먼저 불러오세요.");
-            }
-
             // 프리셋은 캐릭터 귀속이다 — 다른 캐릭터에 인덱스 기반 값을 쓰면 안 된다.
-            if (activeId != entry.id)
-            {
-                throw new InvalidOperationException("이 프리셋은 해당 캐릭터를 불러온 뒤에만 적용할 수 있습니다.");
-            }
+            FBXVmdPipeline pipeline = RequireLoadedCharacter(manager, entry.id, out GameObject root);
 
             TargetIdlePoseGuard guard = pipeline.GetComponent<TargetIdlePoseGuard>();
             var warnings = CharacterPresetSnapshot.Apply(preset, pipeline, root, guard);
@@ -142,20 +139,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         {
             string entryId = RequireText(command.characterId, "characterId가 필요합니다.");
             CharacterLibraryEntry entry = RequireEntry(manager.Registry, entryId);
-            FBXVmdPipeline pipeline = manager.BoundPipeline;
-            if (pipeline == null)
-            {
-                throw new InvalidOperationException("씬에 FBXVmdPipeline이 없습니다.");
-            }
-
-            GameObject root = CharacterLibrarySceneBinding.FindActiveLibraryRoot(pipeline);
-            string activeId = root != null
-                ? root.GetComponent<CharacterLibraryInstance>()?.entryId
-                : null;
-            if (root == null || activeId != entry.id)
-            {
-                throw new InvalidOperationException("이 캐릭터를 먼저 불러온 뒤 저장하세요.");
-            }
+            FBXVmdPipeline pipeline = RequireLoadedCharacter(manager, entry.id, out GameObject root);
 
             string presetName = ReadParams(command)?["presetName"]?.ToString();
             CharacterPresetDocument doc = manager.Registry.LoadPresets(entry.id);
@@ -195,15 +179,15 @@ namespace Fbx2Vmd.Settings.EditorTools
             CharacterLibraryRegistry registry,
             MainRecordingSettingsCommandEnvelope command)
         {
-            string path = RequireText(command.path, "VRM 경로가 필요합니다.");
+            string path = RequireText(command.path, "캐릭터 파일 경로가 필요합니다.");
             CharacterLibraryRegistry.RegisterResult result = registry.Register(path);
             if (!result.success)
             {
                 throw new InvalidOperationException(
-                    string.IsNullOrEmpty(result.error) ? "VRM 등록에 실패했습니다." : result.error);
+                    string.IsNullOrEmpty(result.error) ? "캐릭터 등록에 실패했습니다." : result.error);
             }
 
-            return $"VRM 등록 완료: {result.entry.displayName}";
+            return $"캐릭터 등록 완료: {result.entry.displayName}";
         }
 
         private static string RemoveCharacter(
@@ -383,6 +367,180 @@ namespace Fbx2Vmd.Settings.EditorTools
             preset.updatedAtUtc = DateTime.UtcNow.ToString("O");
             registry.OpenPresetStore(entry.id).Save(doc);
             return $"프리셋 저장: {preset.name} ({updated}개 값 갱신)";
+        }
+
+        private static string SaveFbxOverride(
+            CharacterLibraryManager manager,
+            MainRecordingSettingsCommandEnvelope command)
+        {
+            CharacterLibraryEntry entry = RequireEntry(
+                manager.Registry, RequireText(command.characterId, "characterId가 필요합니다."));
+            FBXVmdPipeline pipeline = RequireLoadedCharacter(manager, entry.id, out GameObject root);
+            string fbxKey = ResolveFbxKey(command);
+            if (fbxKey.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    "예외를 저장할 FBX가 없습니다. FBX를 임포트하거나 path를 지정하세요.");
+            }
+
+            // 현재 라이브 상태를 통째로 캡처해 이 조합의 예외 스냅샷으로 저장한다.
+            CharacterPreset capture = CharacterPresetSnapshot.CreateEmpty(fbxKey);
+            TargetIdlePoseGuard guard = pipeline.GetComponent<TargetIdlePoseGuard>();
+            CharacterPresetSnapshot.CaptureRetarget(capture, pipeline);
+            CharacterPresetSnapshot.CapturePlacement(capture, root, guard);
+            CharacterPresetSnapshot.CapturePhysics(capture, root);
+
+            string overrideName = ReadParams(command)?["presetName"]?.ToString();
+            var fbxOverride = new CharacterFbxOverride
+            {
+                fbxKey = fbxKey,
+                name = string.IsNullOrWhiteSpace(overrideName) ? fbxKey : overrideName.Trim(),
+                sections = capture.sections,
+            };
+            manager.Registry.UpsertFbxOverride(entry.id, fbxOverride);
+            return $"FBX 예외 저장: {fbxOverride.name} ({entry.displayName})";
+        }
+
+        private static string ApplyFbxOverride(
+            CharacterLibraryManager manager,
+            MainRecordingSettingsCommandEnvelope command)
+        {
+            CharacterLibraryEntry entry = RequireEntry(
+                manager.Registry, RequireText(command.characterId, "characterId가 필요합니다."));
+            FBXVmdPipeline pipeline = RequireLoadedCharacter(manager, entry.id, out GameObject root);
+            string fbxKey = ResolveFbxKey(command);
+            CharacterFbxOverride fbxOverride = manager.Registry.FindFbxOverride(entry.id, fbxKey);
+            if (fbxOverride == null)
+            {
+                throw new InvalidOperationException(
+                    $"이 FBX의 예외가 없습니다: {(fbxKey.Length > 0 ? fbxKey : "(현재 FBX 없음)")}");
+            }
+
+            // 기본 프리셋을 상속 기반으로 삼아 예외 값만 키 단위로 덮어쓴 병합본을 한 번에 적용한다.
+            CharacterPreset basePreset = string.IsNullOrEmpty(entry.defaultPresetId)
+                ? null
+                : manager.Registry.FindPreset(entry.id, entry.defaultPresetId);
+            CharacterPresetSections merged = CharacterPresetSnapshot.MergeSections(
+                basePreset?.sections, fbxOverride.sections);
+            TargetIdlePoseGuard guard = pipeline.GetComponent<TargetIdlePoseGuard>();
+            var warnings = CharacterPresetSnapshot.ApplySections(
+                merged, pipeline, root, guard);
+            if (!Application.isPlaying)
+            {
+                EditorSceneManager.MarkSceneDirty(pipeline.gameObject.scene);
+            }
+
+            return warnings.Count == 0
+                ? $"FBX 예외 적용: {fbxOverride.name}"
+                : $"FBX 예외 적용(일부 {warnings.Count}건 미적용): {fbxOverride.name}";
+        }
+
+        private static string DeleteFbxOverride(
+            CharacterLibraryManager manager,
+            MainRecordingSettingsCommandEnvelope command)
+        {
+            CharacterLibraryEntry entry = RequireEntry(
+                manager.Registry, RequireText(command.characterId, "characterId가 필요합니다."));
+            FBXVmdPipeline pipeline = RequireLoadedCharacter(manager, entry.id, out GameObject root);
+            string fbxKey = ResolveFbxKey(command);
+            if (!manager.Registry.RemoveFbxOverride(entry.id, fbxKey))
+            {
+                throw new InvalidOperationException(
+                    $"이 FBX의 예외가 없습니다: {(fbxKey.Length > 0 ? fbxKey : "(현재 FBX 없음)")}");
+            }
+
+            // 해제 후 덮어쓴 값이 남지 않게 기본 프리셋으로 복귀한다.
+            bool restored = false;
+            if (!string.IsNullOrEmpty(entry.defaultPresetId))
+            {
+                CharacterPreset basePreset = manager.Registry.FindPreset(
+                    entry.id, entry.defaultPresetId);
+                if (basePreset != null)
+                {
+                    TargetIdlePoseGuard guard = pipeline.GetComponent<TargetIdlePoseGuard>();
+                    CharacterPresetSnapshot.Apply(basePreset, pipeline, root, guard);
+                    restored = true;
+                }
+            }
+            if (!Application.isPlaying)
+            {
+                EditorSceneManager.MarkSceneDirty(pipeline.gameObject.scene);
+            }
+            return restored
+                ? $"FBX 예외 해제(기본 프리셋 복귀): {fbxKey}"
+                : $"FBX 예외 해제: {fbxKey}";
+        }
+
+        /// <summary>
+        /// 활성 라이브러리 캐릭터가 entry와 일치하는지 확인하고 파이프라인을 돌려준다.
+        /// </summary>
+        private static FBXVmdPipeline RequireLoadedCharacter(
+            CharacterLibraryManager manager, string entryId, out GameObject root)
+        {
+            FBXVmdPipeline pipeline = manager.BoundPipeline;
+            root = CharacterLibrarySceneBinding.FindActiveLibraryRoot(pipeline);
+            string activeId = root != null
+                ? root.GetComponent<CharacterLibraryInstance>()?.entryId
+                : null;
+            if (pipeline == null || root == null || activeId != entryId)
+            {
+                throw new InvalidOperationException("이 캐릭터를 먼저 불러온 뒤 사용하세요.");
+            }
+            return pipeline;
+        }
+
+        /// <summary>
+        /// 예외 키를 결정한다. 우선순위: command.path 파일명 → 설정 문서의
+        /// 마지막 임포트 fbxPath 파일명 → Import_FBX에서 생성시각이 가장
+        /// 최근인 .fbx(임포트는 File.Copy라 mtime이 원본을 따르므로 생성시각 사용).
+        /// </summary>
+        private static string ResolveFbxKey(MainRecordingSettingsCommandEnvelope command)
+        {
+            string key = CharacterLibraryRegistry.NormalizeFbxKey(command.path);
+            if (key.Length > 0)
+            {
+                return key;
+            }
+
+            try
+            {
+                MainRecordingSettingsDocument document =
+                    new MainRecordingSettingsStore().LoadOrCreateDefault();
+                key = CharacterLibraryRegistry.NormalizeFbxKey(document?.fbxPath);
+                if (key.Length > 0 && string.Equals(
+                        Path.GetExtension(key), ".fbx", StringComparison.OrdinalIgnoreCase))
+                {
+                    return key;
+                }
+            }
+            catch (Exception)
+            {
+                // 설정 문서를 읽지 못해도 폴더 스캔으로 계속 진행한다.
+            }
+
+            string dir = Path.Combine(Application.dataPath, "Resources",
+                FBXVmdPipeline.IMPORT_FBX_FOLDER);
+            if (!Directory.Exists(dir))
+            {
+                return string.Empty;
+            }
+            string newest = null;
+            DateTime stamp = DateTime.MinValue;
+            foreach (string file in Directory.GetFiles(dir))
+            {
+                if (!string.Equals(Path.GetExtension(file), ".fbx",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                DateTime created = File.GetCreationTimeUtc(file);
+                if (created > stamp)
+                {
+                    stamp = created;
+                    newest = file;
+                }
+            }
+            return CharacterLibraryRegistry.NormalizeFbxKey(newest);
         }
 
         private static int MergeSection(List<PresetFieldValue> target, JToken fields)

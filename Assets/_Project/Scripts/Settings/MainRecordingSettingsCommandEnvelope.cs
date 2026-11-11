@@ -25,6 +25,9 @@ namespace Fbx2Vmd.Settings
         public const string CancelLoadAction = "CancelLoad";
         public const string CopyPresetAction = "CopyPreset";
         public const string UpdatePresetAction = "UpdatePreset";
+        public const string SaveFbxOverrideAction = "SaveFbxOverride";
+        public const string ApplyFbxOverrideAction = "ApplyFbxOverride";
+        public const string DeleteFbxOverrideAction = "DeleteFbxOverride";
 
         public string commandId = string.Empty;
         public string action = string.Empty;

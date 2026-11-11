@@ -106,8 +106,13 @@ public sealed class RecordingSetting : MonoBehaviour
         PullDiagnosticsFromFBXVmdPipeline();
     }
 
+    private static void HandlePlaybackControlsEnsureRequested(FBXVmdPipeline pipeline)
+        => HumanoidMotionPlaybackControlsView.Ensure(pipeline);
+
     private void Awake()
     {
+        FBXVmdPipeline.PlaybackControlsEnsureRequested += HandlePlaybackControlsEnsureRequested;
+
         if (Application.isPlaying)
         {
             WriteRuntimePlayModeStateQuietly(MainRecordingSettingsState.Playing);
@@ -126,6 +131,8 @@ public sealed class RecordingSetting : MonoBehaviour
 
     private void OnDestroy()
     {
+        FBXVmdPipeline.PlaybackControlsEnsureRequested -= HandlePlaybackControlsEnsureRequested;
+
         if (Application.isPlaying)
         {
             WriteRuntimePlayModeStateQuietly(MainRecordingSettingsState.Stopped);

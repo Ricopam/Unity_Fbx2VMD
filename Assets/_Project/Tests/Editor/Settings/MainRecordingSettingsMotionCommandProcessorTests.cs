@@ -14,7 +14,7 @@ namespace Tests.Editor.Settings
         [SetUp]
         public void SetUp()
         {
-            Type type = Type.GetType("Fbx2Vmd.Settings.MainRecordingSettingsMotionCommandProcessor, Assembly-CSharp");
+            Type type = Type.GetType("Fbx2Vmd.Settings.MainRecordingSettingsMotionCommandProcessor, Fbx2Vmd.Settings");
             Assert.That(type, Is.Not.Null);
             processor = Activator.CreateInstance(type, true);
             process = type.GetMethod("TryProcess", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -88,7 +88,7 @@ namespace Tests.Editor.Settings
             {
                 var store = new MainRecordingSettingsStore(path);
                 store.Save(CreateDocument("PlayImportedMotion"));
-                Type sessionType = Type.GetType("Fbx2Vmd.Settings.RecordingSharedSettingsFileSession, Assembly-CSharp");
+                Type sessionType = Type.GetType("Fbx2Vmd.Settings.RecordingSharedSettingsFileSession, Fbx2Vmd.Settings");
                 object session = Activator.CreateInstance(sessionType, BindingFlags.Instance | BindingFlags.NonPublic,
                     null, new object[] { path }, null);
                 const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -125,7 +125,7 @@ namespace Tests.Editor.Settings
                 var store = new MainRecordingSettingsStore(path);
                 store.Save(CreateDocument("PlayImportedMotion"));
                 string original = File.ReadAllText(path);
-                Type sessionType = Type.GetType("Fbx2Vmd.Settings.RecordingSharedSettingsFileSession, Assembly-CSharp");
+                Type sessionType = Type.GetType("Fbx2Vmd.Settings.RecordingSharedSettingsFileSession, Fbx2Vmd.Settings");
                 const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
                 object session = Activator.CreateInstance(sessionType, flags, null, new object[] { path }, null);
                 var state = MainRecordingSettingsState.Create("playing", DateTime.UtcNow);

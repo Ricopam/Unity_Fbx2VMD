@@ -12,7 +12,7 @@ namespace Tests.Editor.FBXImporter
     public class EditorMotionVideoRecorderFormatTests
     {
         private static readonly Type RecorderType =
-            typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly.GetType(
+            typeof(EditorMotionVideoRecorderFormatTests).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.EditorMotionVideoRecorder",
                 throwOnError: true);
 
@@ -28,12 +28,18 @@ namespace Tests.Editor.FBXImporter
         [Test]
         public void Given_FileFormat_When_MappingCodec_Then_MatchesRecorderEncoder()
         {
+            object encoder = InvokeStatic("CreateEncoderSettings", MotionVideoFileFormat.Mp4);
             Assert.That(
-                InvokeStatic("ToCodec", MotionVideoFileFormat.Mp4)?.ToString(),
+                encoder.GetType().GetProperty("Codec")?.GetValue(encoder)?.ToString(),
                 Is.EqualTo("MP4"));
+        }
+
+        [Test]
+        public void Given_WebM_When_CreatingEncoder_Then_UsesVp9()
+        {
             Assert.That(
-                InvokeStatic("ToCodec", MotionVideoFileFormat.WebM)?.ToString(),
-                Is.EqualTo("WEBM"));
+                InvokeStatic("CreateEncoderSettings", MotionVideoFileFormat.WebM)?.GetType().Name,
+                Is.EqualTo("MotionVideoVp9EncoderSettings"));
         }
 
         [Test]
@@ -59,6 +65,8 @@ namespace Tests.Editor.FBXImporter
             Assert.That(
                 encoder?.GetType().Name,
                 Is.EqualTo("ProResEncoderSettings"));
+            Assert.That(encoder.GetType().GetProperty("Format")?.GetValue(encoder)?.ToString(),
+                Is.EqualTo("ProRes4444"));
         }
 
         [Test]

@@ -391,7 +391,7 @@ namespace Tests.Editor.FBXImporter
         private static void ClearYybVisualComparisonRunnerState(string reason)
         {
             Type runnerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Fbx2Vmd.FBXImporter");
             Assert.That(runnerType, Is.Not.Null, "YYB visual comparison runner type must be available in editor tests.");
 
             MethodInfo method = runnerType.GetMethod(
@@ -408,7 +408,7 @@ namespace Tests.Editor.FBXImporter
         private static bool ApplyMainSceneRuntimeOverrides(FBXVmdPipeline manager)
         {
             Type runnerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Fbx2Vmd.FBXImporter");
             Assert.That(runnerType, Is.Not.Null, "YYB visual comparison runner type must be available in editor tests.");
 
             MethodInfo method = runnerType.GetMethod(
@@ -425,7 +425,7 @@ namespace Tests.Editor.FBXImporter
         private static void SetYybVisualComparisonRunOption<T>(string optionName, T value)
         {
             Type runnerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Fbx2Vmd.FBXImporter");
             Assert.That(runnerType, Is.Not.Null, "YYB visual comparison runner type must be available in editor tests.");
 
             FieldInfo optionsField = runnerType.GetField(

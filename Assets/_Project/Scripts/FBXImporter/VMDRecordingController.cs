@@ -4,7 +4,6 @@ using System.Collections;
 using System.IO;
 using static Fbx2Vmd.FBXImporter.FBXVmdPipeline;
 using Fbx2Vmd.Recording;
-using Fbx2Vmd.Settings;
 
 namespace Fbx2Vmd.FBXImporter
 {

@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using Fbx2Vmd.Recording;
+using UnityEditor;
 using UnityEditor.Recorder;
 using UnityEditor.Recorder.Encoder;
 using UnityEditor.Recorder.Input;
@@ -19,6 +20,7 @@ namespace Fbx2Vmd.FBXImporter
         private RecorderController _recorderController;
         private RecorderControllerSettings _controllerSettings;
         private MovieRecorderSettings _movieSettings;
+        private MotionVideoVp9EncoderSettings _vp9Settings;
 
         public bool IsRecording =>
             _recorderController != null && _recorderController.IsRecording();
@@ -49,6 +51,9 @@ namespace Fbx2Vmd.FBXImporter
                 _movieSettings.name = "FBX Motion Video Recorder";
                 _movieSettings.Enabled = true;
                 _movieSettings.EncoderSettings = CreateEncoderSettings(settings.Format);
+                _vp9Settings = _movieSettings.EncoderSettings as MotionVideoVp9EncoderSettings;
+                if (_vp9Settings != null)
+                    _vp9Settings.FailureHandler = ScheduleFailedRecordingStop;
                 _movieSettings.CaptureAudio = settings.CaptureAudio;
                 _movieSettings.ImageInputSettings = new CameraInputSettings
                 {
@@ -61,12 +66,12 @@ namespace Fbx2Vmd.FBXImporter
                 _movieSettings.CaptureAlpha = settings.Format.SupportsAlpha();
                 _movieSettings.OutputFile = outputFileWithoutExtension;
 
-                // ProRes 4444는 분당 수십 GB 수준의 무압축급 산출물이라 재생 버벅임을 유발함.
+                // 편집용 원본은 큰 파일을 생성하므로 용도에 맞게 선택하도록 안내함.
                 if (settings.Format == MotionVideoFileFormat.MovProRes)
                 {
                     Debug.LogWarning(
                         "[FBXImport] ProRes 4444(MOV)는 파일이 매우 커져 일반 플레이어 재생이 " +
-                        "버벅일 수 있습니다. 투명 배경이 필요하면 WebM(VP8)이 훨씬 작고 알파를 지원합니다.");
+                        "버벅일 수 있습니다. 작은 파일이 필요하면 WebM(VP9)을 선택할 수 있으며 편집 프로그램의 지원 여부를 확인해 주세요.");
                 }
 
                 _controllerSettings.AddRecorderSettings(_movieSettings);
@@ -128,6 +133,17 @@ namespace Fbx2Vmd.FBXImporter
             {
                 Debug.LogWarning($"[FBXImport] 영상 녹화 종료 중 문제가 발생했습니다: {exception.Message}");
             }
+            finally
+            {
+                if (!string.IsNullOrEmpty(_vp9Settings?.FailureMessage))
+                    OutputFilePath = string.Empty;
+            }
+        }
+
+        private void ScheduleFailedRecordingStop()
+        {
+            // Recorder 프레임 콜백 중 종료를 재진입하지 않도록 다음 에디터 갱신으로 미룸.
+            EditorApplication.delayCall += Stop;
         }
 
         public void Dispose()
@@ -152,6 +168,13 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            if (settings.Format == MotionVideoFileFormat.WebM &&
+                !MotionVideoVp9EncoderSettings.TryFindExecutable(out _))
+            {
+                errorMessage = "VP9 녹화에는 FFmpeg가 필요합니다. FFmpeg를 설치하고 PATH를 확인해 주세요.";
+                return false;
+            }
+
             if (float.IsNaN(settings.FrameRate) ||
                 float.IsInfinity(settings.FrameRate) ||
                 settings.FrameRate <= 0f)
@@ -164,23 +187,19 @@ namespace Fbx2Vmd.FBXImporter
             return true;
         }
 
-        private static CoreEncoderSettings.OutputCodec ToCodec(
-            MotionVideoFileFormat format) =>
-            format == MotionVideoFileFormat.WebM
-                ? CoreEncoderSettings.OutputCodec.WEBM
-                : CoreEncoderSettings.OutputCodec.MP4;
-
-        // MOV는 알파를 담을 수 있는 ProRes 4444를 사용하고, 그 외는 Unity 미디어 인코더를 사용함
+        // 기존 저장값은 유지하고 WebM의 인코더만 VP9로 교체함.
         private static IEncoderSettings CreateEncoderSettings(MotionVideoFileFormat format) =>
             format == MotionVideoFileFormat.MovProRes
                 ? (IEncoderSettings)new ProResEncoderSettings
                 {
                     Format = ProResEncoderSettings.OutputFormat.ProRes4444
                 }
+                : format == MotionVideoFileFormat.WebM
+                ? (IEncoderSettings)new MotionVideoVp9EncoderSettings()
                 : new CoreEncoderSettings
                 {
                     EncodingQuality = CoreEncoderSettings.VideoEncodingQuality.High,
-                    Codec = ToCodec(format)
+                    Codec = CoreEncoderSettings.OutputCodec.MP4
                 };
 
         private static string GetExtension(MotionVideoFileFormat format) =>
@@ -216,6 +235,10 @@ namespace Fbx2Vmd.FBXImporter
 
         private void DisposeRecorderObjects()
         {
+            EditorApplication.delayCall -= Stop;
+            if (_vp9Settings != null)
+                _vp9Settings.FailureHandler = null;
+            _vp9Settings = null;
             _recorderController = null;
             DestroyImmediate(_movieSettings);
             DestroyImmediate(_controllerSettings);

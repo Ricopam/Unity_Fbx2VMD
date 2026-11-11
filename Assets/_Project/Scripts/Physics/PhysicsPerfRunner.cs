@@ -23,6 +23,9 @@ namespace Fbx2Vmd.ClothPhysics
     /// </summary>
     public class PhysicsPerfRunner : MonoBehaviour
     {
+        // 에디터 전용 베이크는 에디터 어셈블리가 등록한다 — 런타임 코드가 에디터 구현을 알지 못하게 한다.
+        public static Func<PhysicsPerfRunner, int> EditorBakeMissingPreBuildDataHook;
+
         public const string AutoRunCommandLineArg = "-fbx2vmd-physperf";
 
         [Tooltip("비워두면 같은 오브젝트의 CharacterPhysicsSetup 사용")]
@@ -292,7 +295,7 @@ namespace Fbx2Vmd.ClothPhysics
                         // 런타임 생성 클로스는 베이크 데이터가 없으므로 에디터에서 즉시 베이크.
                         // 같은 프레임에 주입해야 Start()의 자동 빌드가 프리빌드 경로를 탄다.
                         PipelineRunProfiler.NoteStage($"Physics.PreBuildBake.{tag}", "에디터 베이크", false);
-                        int baked = BakeMissingPreBuildData();
+                        int baked = EditorBakeMissingPreBuildDataHook?.Invoke(this) ?? 0;
                         summary.AppendLine($"{tag}: 프리빌드 데이터 {baked}개 에디터 베이크");
                     }
 #else
@@ -377,45 +380,6 @@ namespace Fbx2Vmd.ClothPhysics
                 DisposeRecorder(ref meshRecorder);
             }
         }
-
-#if UNITY_EDITOR
-        /// <summary>
-        /// 에디터 전용 — 프리빌드 데이터가 없는 클로스에 ScriptableObject를 만들어 베이크한다.
-        /// MC2 공식 에디터 경로(PreBuildDataCreation)와 동일한 데이터를 생성하며 저장 대화상자는 띄우지 않는다.
-        /// </summary>
-        int BakeMissingPreBuildData()
-        {
-            const string dir = "Assets/_Project/Physics/PreBuild";
-            if (!UnityEditor.AssetDatabase.IsValidFolder("Assets/_Project/Physics"))
-                UnityEditor.AssetDatabase.CreateFolder("Assets/_Project", "Physics");
-            if (!UnityEditor.AssetDatabase.IsValidFolder(dir))
-                UnityEditor.AssetDatabase.CreateFolder("Assets/_Project/Physics", "PreBuild");
-
-            int baked = 0;
-            foreach (var cloth in setup.generatedCloths)
-            {
-                if (cloth == null)
-                    continue;
-                var pb = cloth.GetSerializeData2().preBuildData;
-                pb.enabled = true;
-                if (pb.preBuildScriptableObject == null)
-                {
-                    var so = ScriptableObject.CreateInstance<PreBuildScriptableObject>();
-                    string path = UnityEditor.AssetDatabase.GenerateUniqueAssetPath(
-                        $"{dir}/MagicaPreBuild_{label}_{cloth.name}.asset");
-                    UnityEditor.AssetDatabase.CreateAsset(so, path);
-                    pb.preBuildScriptableObject = so;
-                }
-                var res = PreBuildDataCreation.CreatePreBuildData(cloth, false);
-                if (res.IsSuccess())
-                    baked++;
-                else
-                    Debug.LogWarning(
-                        $"[PhysicsPerfRunner] 프리빌드 베이크 실패({cloth.name}): {res.GetResultString()}", cloth);
-            }
-            return baked;
-        }
-#endif
 
         static ProfilerRecorder StartRecorder(string markerName)
         {

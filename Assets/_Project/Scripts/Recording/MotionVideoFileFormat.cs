@@ -8,8 +8,8 @@ namespace Fbx2Vmd.Recording
     public enum MotionVideoFileFormat
     {
         [InspectorName("MP4 (H.264, 배경 불투명)")] Mp4 = 0,
-        [InspectorName("WebM (VP8, 배경 투명)")] WebM = 1,
-        [InspectorName("MOV (ProRes 4444, 배경 투명·대용량)")] MovProRes = 2,
+        [InspectorName("WebM (VP9, 배경 투명·작은 용량)")] WebM = 1,
+        [InspectorName("MOV (ProRes 4444, 편집용·배경 투명)")] MovProRes = 2,
     }
 
     public static class MotionVideoFileFormatExtensions

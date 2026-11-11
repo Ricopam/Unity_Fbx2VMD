@@ -1,0 +1,14 @@
+{
+    "name": "Fbx2Vmd.FileSystem",
+    "rootNamespace": "Fbx2Vmd.FileSystem",
+    "references": ["StandaloneFileBrowser"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

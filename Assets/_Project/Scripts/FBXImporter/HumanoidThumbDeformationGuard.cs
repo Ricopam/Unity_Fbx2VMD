@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 namespace Fbx2Vmd.FBXImporter
 {
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(29900)]
+    [DefaultExecutionOrder(CorrectionPassOrder.ThumbDeformation)]
     public class HumanoidThumbDeformationGuard : MonoBehaviour
     {
         [SerializeField] private Animator targetAnimator;

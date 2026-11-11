@@ -97,7 +97,7 @@ namespace Fbx2Vmd.Tests.Editor.Profiling
             }
 
             Type importerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.AssimpFBXImporter, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.AssimpFBXImporter, Fbx2Vmd.FBXImporter");
             Assert.IsNotNull(importerType, "AssimpFBXImporter 타입을 찾지 못했습니다.");
             MethodInfo inspectMethod = importerType.GetMethod(
                 "InspectAnimationFile",
@@ -128,7 +128,7 @@ namespace Fbx2Vmd.Tests.Editor.Profiling
         public void BoneMapping_Load_Regression()
         {
             Type controllerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.FBXImportController, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.FBXImportController, Fbx2Vmd.FBXImporter");
             Assert.IsNotNull(controllerType, "FBXImportController 타입을 찾지 못했습니다.");
             MethodInfo loadMethod = controllerType.GetMethod(
                 "LoadBoneMappingRuntime",

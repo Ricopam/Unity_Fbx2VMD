@@ -5,7 +5,7 @@ using UnityEngine.Serialization;
 namespace Fbx2Vmd.FBXImporter
 {
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(22500)]
+    [DefaultExecutionOrder(CorrectionPassOrder.ArmDirectionRetarget)]
     public class HumanoidArmDirectionRetargetGuard : MonoBehaviour
     {
         [Header("Humanoid Arm Direction Retarget Guard")]

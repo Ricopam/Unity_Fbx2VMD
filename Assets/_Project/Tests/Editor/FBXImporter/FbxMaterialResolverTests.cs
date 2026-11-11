@@ -123,7 +123,7 @@ namespace Tests.Editor.FBXImporter
         private static string InvokeResolve(string fbxPath, string textureReference)
         {
             Type resolverType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.FbxMaterialResolver, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.FbxMaterialResolver, Fbx2Vmd.FBXImporter");
             Assert.That(resolverType, Is.Not.Null, "FbxMaterialResolver must expose a testable pure texture candidate resolver.");
 
             MethodInfo method = resolverType.GetMethod(
@@ -137,7 +137,7 @@ namespace Tests.Editor.FBXImporter
         private static string InvokeResolveForMaterial(string fbxDirectory, string materialName)
         {
             Type resolverType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.FbxMaterialResolver, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.FbxMaterialResolver, Fbx2Vmd.FBXImporter");
             Assert.That(resolverType, Is.Not.Null);
 
             MethodInfo method = resolverType.GetMethod(

@@ -1,0 +1,14 @@
+{
+    "name": "Fbx2Vmd.FBXImporter",
+    "rootNamespace": "Fbx2Vmd.FBXImporter",
+    "references": ["Fbx2Vmd.Character", "Fbx2Vmd.FileSystem", "Fbx2Vmd.Profiling", "Fbx2Vmd.Recording", "Fbx2Vmd.Retargeting", "FinalIK", "VMDRecorderSample", "Unity.TextMeshPro", "Newtonsoft.Json", "Unity.Burst", "Unity.Collections", "Unity.Jobs", "Unity.Mathematics", "Unity.Animation.Rigging"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -82,7 +82,7 @@ namespace Tests.Editor.FBXImporter
                 Is.Not.Null);
 
             Type runnerType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.YybVisualComparisonBatchRunner, Fbx2Vmd.FBXImporter");
             Assert.That(runnerType, Is.Not.Null);
             Assert.That(
                 runnerType.GetMethod(

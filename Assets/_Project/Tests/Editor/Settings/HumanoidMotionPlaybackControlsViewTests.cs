@@ -33,7 +33,7 @@ namespace Tests.Editor.Settings
                 template.onClick.AddListener(() => importInvocationCount++);
                 FBXVmdPipeline pipeline = pipelineObject.AddComponent<FBXVmdPipeline>();
 
-                Type viewType = typeof(FBXVmdPipeline).Assembly.GetType(
+                Type viewType = typeof(RecordingSetting).Assembly.GetType(
                     "Fbx2Vmd.Settings.HumanoidMotionPlaybackControlsView",
                     throwOnError: false);
                 Assert.That(viewType, Is.Not.Null,
@@ -95,7 +95,7 @@ namespace Tests.Editor.Settings
                 Button template = CreateButtonTemplate(canvasObject.transform);
                 FBXVmdPipeline pipeline = pipelineObject.AddComponent<FBXVmdPipeline>();
                 pipeline.targetCharacter = target;
-                Type viewType = typeof(FBXVmdPipeline).Assembly.GetType(
+                Type viewType = typeof(RecordingSetting).Assembly.GetType(
                     "Fbx2Vmd.Settings.HumanoidMotionPlaybackControlsView",
                     throwOnError: true);
                 MethodInfo ensureMethod = viewType.GetMethod(
@@ -287,7 +287,7 @@ namespace Tests.Editor.Settings
         private static void AssertReadableKoreanLabel(TextMeshProUGUI label)
         {
             Assert.That(label, Is.Not.Null, "한글 표시를 검증할 TMP 라벨이 필요합니다.");
-            Type fallbackType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type fallbackType = typeof(RecordingSetting).Assembly.GetType(
                 "Fbx2Vmd.Settings.KoreanUiTextFallback",
                 throwOnError: true);
             MethodInfo isReadableMethod = fallbackType.GetMethod(

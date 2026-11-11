@@ -10,7 +10,7 @@ namespace Fbx2Vmd.FBXImporter
     /// <summary>
     /// Native 보정의 준비와 최종 프레임 표시를 늦은 Unity 수명주기에서 실행함.
     /// </summary>
-    [DefaultExecutionOrder(32000)]
+    [DefaultExecutionOrder(CorrectionPassOrder.PlaybackDriver)]
     [DisallowMultipleComponent]
     internal sealed class NativeSkinningCorrectionPlaybackDriver : MonoBehaviour
     {

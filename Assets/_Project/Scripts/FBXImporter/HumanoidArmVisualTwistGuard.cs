@@ -5,7 +5,7 @@ using UnityEngine.Serialization;
 namespace Fbx2Vmd.FBXImporter
 {
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(26000)]
+    [DefaultExecutionOrder(CorrectionPassOrder.ArmVisualTwist)]
     public class HumanoidArmVisualTwistGuard : MonoBehaviour
     {
         [Header("YYB Arm Visual Twist Guard")]

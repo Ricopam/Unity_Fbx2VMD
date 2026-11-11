@@ -13,7 +13,7 @@ namespace Tests.Editor.Settings
     internal static class MainRecordingSettingsPopupTestInspector
     {
         private const string KoreanUiTextFallbackTypeName =
-            "Fbx2Vmd.Settings.KoreanUiTextFallback, Assembly-CSharp";
+            "Fbx2Vmd.Settings.KoreanUiTextFallback, Fbx2Vmd.Settings";
 
         internal static int CountCardButtons(MainRecordingSettingsPopup popup)
         {

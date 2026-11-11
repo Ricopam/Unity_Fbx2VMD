@@ -8,17 +8,17 @@ namespace Tests.Editor.Settings
     public class RecordingCaptureResolutionTests
     {
         private const string ResolutionTypeName =
-            "Fbx2Vmd.Settings.RecordingCaptureResolution, Assembly-CSharp";
+            "Fbx2Vmd.FBXImporter.RecordingCaptureResolution, Fbx2Vmd.FBXImporter";
         private const string PresetTypeName =
-            "Fbx2Vmd.Settings.RecordingCaptureQualityPreset, Assembly-CSharp";
+            "Fbx2Vmd.FBXImporter.RecordingCaptureQualityPreset, Fbx2Vmd.FBXImporter";
         private const string FBXVmdPipelineTypeName =
-            "Fbx2Vmd.FBXImporter.FBXVmdPipeline, Assembly-CSharp";
+            "Fbx2Vmd.FBXImporter.FBXVmdPipeline, Fbx2Vmd.FBXImporter";
         private const string RecodingSettingTypeName =
-            "RecordingSetting, Assembly-CSharp";
+            "RecordingSetting, Fbx2Vmd.Settings";
         private const string MotionComparisonProbeTypeName =
-            "MotionComparisonProbe, Assembly-CSharp-firstpass";
+            "MotionComparisonProbe, VMDRecorderSample";
         private const string HumanoidSampleCodeTypeName =
-            "HumanoidSampleCode, Assembly-CSharp-firstpass";
+            "HumanoidSampleCode, VMDRecorderSample";
         private const BindingFlags StaticMethods = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
         private const BindingFlags InstanceMembers = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 

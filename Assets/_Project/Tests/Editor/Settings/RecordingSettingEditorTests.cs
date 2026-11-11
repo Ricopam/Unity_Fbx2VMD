@@ -23,17 +23,17 @@ namespace Tests.Editor.Settings
         private const string SettingsLauncherTypeName =
             "Fbx2Vmd.Settings.EditorTools.MainRecordingSettingsCompanionLauncher, Assembly-CSharp-Editor";
         private const string LayoutSpecTypeName =
-            "Fbx2Vmd.Settings.MainRecordingSettingsLayoutSpec, Assembly-CSharp";
+            "Fbx2Vmd.Settings.MainRecordingSettingsLayoutSpec, Fbx2Vmd.Settings";
         private const string RuntimePopupTypeName =
-            "Fbx2Vmd.Settings.MainRecordingSettingsPopup, Assembly-CSharp";
+            "Fbx2Vmd.Settings.MainRecordingSettingsPopup, Fbx2Vmd.Settings";
         private const string KoreanUiTextFallbackTypeName =
-            "Fbx2Vmd.Settings.KoreanUiTextFallback, Assembly-CSharp";
+            "Fbx2Vmd.Settings.KoreanUiTextFallback, Fbx2Vmd.Settings";
         private const string KoreanUiFontResolverTypeName =
-            "Fbx2Vmd.Settings.KoreanUiFontResolver, Assembly-CSharp";
+            "Fbx2Vmd.Settings.KoreanUiFontResolver, Fbx2Vmd.Settings";
         private const string CompanionControllerTypeName =
-            "Fbx2Vmd.Settings.MainRecordingSettingsCompanionController, Assembly-CSharp";
+            "Fbx2Vmd.Settings.MainRecordingSettingsCompanionController, Fbx2Vmd.Settings";
         private const string CompanionDocumentSessionTypeName =
-            "Fbx2Vmd.Settings.MainRecordingSettingsCompanionDocumentSession, Assembly-CSharp";
+            "Fbx2Vmd.Settings.MainRecordingSettingsCompanionDocumentSession, Fbx2Vmd.Settings";
         private const string EditorPlayModeGuardTypeName =
             "Fbx2Vmd.Settings.EditorTools.MainRecordingEditorPlayModeGuard, Assembly-CSharp-Editor";
         private const string EditorBurstCompilationSessionTypeName =
@@ -41,13 +41,13 @@ namespace Tests.Editor.Settings
         private const string EditorPlayModeTintControllerTypeName =
             "Fbx2Vmd.Settings.EditorTools.MainRecordingEditorPlayModeTintController, Assembly-CSharp-Editor";
         private const string RuntimeLauncherTypeName =
-            "Fbx2Vmd.Settings.MainRecordingSettingsLauncher, Assembly-CSharp";
+            "Fbx2Vmd.Settings.MainRecordingSettingsLauncher, Fbx2Vmd.Settings";
         private const string PlayerProcessSessionTypeName =
-            "Fbx2Vmd.Settings.MainRecordingSettingsPlayerProcessSession, Assembly-CSharp";
+            "Fbx2Vmd.Settings.MainRecordingSettingsPlayerProcessSession, Fbx2Vmd.Settings";
         private const string RuntimeBootstrapTypeName =
-            "Fbx2Vmd.Settings.MainRecordingSettingsBootstrap, Assembly-CSharp";
+            "Fbx2Vmd.Settings.MainRecordingSettingsBootstrap, Fbx2Vmd.Settings";
         private const string SharedSettingsFileSessionTypeName =
-            "Fbx2Vmd.Settings.RecordingSharedSettingsFileSession, Assembly-CSharp";
+            "Fbx2Vmd.Settings.RecordingSharedSettingsFileSession, Fbx2Vmd.Settings";
 
         [Test]
         public void Given_RecordingSetting_When_InspectingSharedSettingsFileState_Then_DelegatesToFileSession()
@@ -83,13 +83,13 @@ namespace Tests.Editor.Settings
         public void Given_RecordingSetting_When_InspectingDiagnosticsMapping_Then_UsesDiagnosticsSettingsValue()
         {
             const string diagnosticsSettingsSourcePath =
-                "Assets/_Project/Scripts/Settings/RecordingDiagnosticsSettings.cs";
+                "Assets/_Project/Scripts/FBXImporter/RecordingDiagnosticsSettings.cs";
             const string recordingSettingSourcePath =
                 "Assets/_Project/Scripts/Settings/RecordingSetting.cs";
             const string pipelineSourcePath =
                 "Assets/_Project/Scripts/FBXImporter/FBXVmdPipeline.cs";
             const string diagnosticsSettingsTypeName =
-                "Fbx2Vmd.Settings.RecordingDiagnosticsSettings, Assembly-CSharp";
+                "Fbx2Vmd.FBXImporter.RecordingDiagnosticsSettings, Fbx2Vmd.FBXImporter";
 
             Assert.That(File.Exists(diagnosticsSettingsSourcePath), Is.True, diagnosticsSettingsSourcePath);
             Assert.That(Type.GetType(diagnosticsSettingsTypeName), Is.Not.Null, diagnosticsSettingsTypeName);

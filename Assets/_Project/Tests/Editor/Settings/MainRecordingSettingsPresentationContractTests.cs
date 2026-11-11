@@ -135,7 +135,7 @@ namespace Tests.Editor.Settings
             const string viewBuilderSourcePath =
                 "Assets/_Project/Scripts/Settings/MainRecordingSettingsPopupViewBuilder.cs";
             const string viewBuilderTypeName =
-                "Fbx2Vmd.Settings.MainRecordingSettingsPopupViewBuilder, Assembly-CSharp";
+                "Fbx2Vmd.Settings.MainRecordingSettingsPopupViewBuilder, Fbx2Vmd.Settings";
 
             Assert.That(File.Exists(viewBuilderSourcePath), Is.True, viewBuilderSourcePath);
             Assert.That(System.Type.GetType(viewBuilderTypeName), Is.Not.Null, viewBuilderTypeName);

@@ -9,7 +9,7 @@ namespace Tests.Editor.Settings
     public sealed class MainRecordingSettingsFbxImportCommandProcessorTests
     {
         private const string ProcessorTypeName =
-            "Fbx2Vmd.Settings.MainRecordingSettingsFbxImportCommandProcessor, Assembly-CSharp";
+            "Fbx2Vmd.Settings.MainRecordingSettingsFbxImportCommandProcessor, Fbx2Vmd.Settings";
         private const string ProcessorSourcePath =
             "Assets/_Project/Scripts/Settings/MainRecordingSettingsFbxImportCommandProcessor.cs";
         private const string RecordingSettingSourcePath =

@@ -5,7 +5,7 @@ using UnityEngine.Serialization;
 namespace Fbx2Vmd.FBXImporter
 {
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(25500)]
+    [DefaultExecutionOrder(CorrectionPassOrder.ArmSleeveAnchor)]
     public class HumanoidArmSleeveAnchorGuard : MonoBehaviour
     {
         [Header("YYB Arm Sleeve Anchor Guard")]

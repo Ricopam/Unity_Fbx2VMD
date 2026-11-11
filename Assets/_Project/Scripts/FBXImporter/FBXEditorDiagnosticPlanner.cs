@@ -2,7 +2,6 @@
 using System;
 using System.IO;
 using Fbx2Vmd.Recording;
-using Fbx2Vmd.Settings;
 using UnityEngine;
 
 namespace Fbx2Vmd.FBXImporter

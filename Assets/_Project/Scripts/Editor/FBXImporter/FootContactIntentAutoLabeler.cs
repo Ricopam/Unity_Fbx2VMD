@@ -1592,7 +1592,7 @@ namespace Fbx2Vmd.EditorTools.FBXImporter
         private static IDisposable CreateController()
         {
             Type type = Type.GetType(
-                "Fbx2Vmd.FBXImporter.HumanoidMotionPlaybackController, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.HumanoidMotionPlaybackController, Fbx2Vmd.FBXImporter");
             return type == null ? null : (IDisposable)Activator.CreateInstance(type);
         }
 

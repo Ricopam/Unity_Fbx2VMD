@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Fbx2Vmd.FileSystem;
-using Fbx2Vmd.Settings;
 using Newtonsoft.Json;
 using TMPro;
 using UnityEditor;

@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 namespace Fbx2Vmd.FBXImporter
 {
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(23000)]
+    [DefaultExecutionOrder(CorrectionPassOrder.ArmSwingLimit)]
     public class HumanoidArmSwingLimitGuard : MonoBehaviour
     {
         [Header("휴머노이드 팔 스윙 제한")]

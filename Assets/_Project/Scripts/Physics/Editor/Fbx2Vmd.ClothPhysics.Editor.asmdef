@@ -1,0 +1,14 @@
+{
+    "name": "Fbx2Vmd.ClothPhysics.Editor",
+    "rootNamespace": "Fbx2Vmd.ClothPhysics",
+    "references": ["Fbx2Vmd.ClothPhysics", "MagicaClothV2", "MagicaClothV2.Editor"],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

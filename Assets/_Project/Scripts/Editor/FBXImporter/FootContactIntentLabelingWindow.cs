@@ -261,7 +261,7 @@ namespace Fbx2Vmd.FBXImporter
         {
             _stored.Clear(); // 재조회 시 기존 목록과 중복되지 않게 항상 초기화
             Type storeType = Type.GetType(
-                "Fbx2Vmd.FBXImporter.HumanoidFootContactIntentLabelStore, Assembly-CSharp");
+                "Fbx2Vmd.FBXImporter.HumanoidFootContactIntentLabelStore, Fbx2Vmd.FBXImporter");
             object set = storeType
                 ?.GetMethod("Load", BindingFlags.Static | BindingFlags.NonPublic)
                 ?.Invoke(null, new object[] { input });

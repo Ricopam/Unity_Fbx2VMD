@@ -6,7 +6,7 @@ using UnityEngine.Animations.Rigging;
 namespace Fbx2Vmd.FBXImporter
 {
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(24000)]
+    [DefaultExecutionOrder(CorrectionPassOrder.ArmTwistRigging)]
     public class HumanoidArmTwistRiggingGuard : MonoBehaviour
     {
         private const string RigRootName = "__AutoArmTwistRig";

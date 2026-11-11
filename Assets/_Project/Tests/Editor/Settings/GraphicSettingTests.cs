@@ -14,18 +14,18 @@ namespace Tests.Editor.Settings
 {
     public class GraphicSettingTests
     {
-        private const string GraphicSettingTypeName = "Fbx2Vmd.Settings.GraphicSetting, Assembly-CSharp";
-        private const string BackgroundColorSettingTypeName = "BackgroundColorSetting, Assembly-CSharp";
-        private const string RecodingSettingTypeName = "RecordingSetting, Assembly-CSharp";
-        private const string FBXVmdPipelineTypeName = "Fbx2Vmd.FBXImporter.FBXVmdPipeline, Assembly-CSharp";
-        private const string TextureProfileTypeName = "Fbx2Vmd.Settings.GraphicTextureImportProfile, Assembly-CSharp";
+        private const string GraphicSettingTypeName = "Fbx2Vmd.Settings.GraphicSetting, Fbx2Vmd.Settings";
+        private const string BackgroundColorSettingTypeName = "BackgroundColorSetting, Fbx2Vmd.Settings";
+        private const string RecodingSettingTypeName = "RecordingSetting, Fbx2Vmd.Settings";
+        private const string FBXVmdPipelineTypeName = "Fbx2Vmd.FBXImporter.FBXVmdPipeline, Fbx2Vmd.FBXImporter";
+        private const string TextureProfileTypeName = "Fbx2Vmd.Settings.GraphicTextureImportProfile, Fbx2Vmd.Settings";
         private const string TexturePlanResolverTypeName =
-            "Fbx2Vmd.Settings.GraphicTextureImportPlanResolver, Assembly-CSharp";
-        private const string MaterialShaderProfileTypeName = "Fbx2Vmd.Settings.GraphicMaterialShaderProfile, Assembly-CSharp";
+            "Fbx2Vmd.Settings.GraphicTextureImportPlanResolver, Fbx2Vmd.Settings";
+        private const string MaterialShaderProfileTypeName = "Fbx2Vmd.Settings.GraphicMaterialShaderProfile, Fbx2Vmd.Settings";
         private const string MaterialShaderPlanResolverTypeName =
-            "Fbx2Vmd.Settings.GraphicMaterialShaderPlanResolver, Assembly-CSharp";
+            "Fbx2Vmd.Settings.GraphicMaterialShaderPlanResolver, Fbx2Vmd.Settings";
         private const string MaterialShaderTargetCollectorTypeName =
-            "Fbx2Vmd.Settings.GraphicMaterialShaderTargetCollector, Assembly-CSharp";
+            "Fbx2Vmd.Settings.GraphicMaterialShaderTargetCollector, Fbx2Vmd.Settings";
         private const string InspectorAutoApplyControllerTypeName =
             "Fbx2Vmd.Settings.EditorTools.GraphicSettingInspectorAutoApplyController, Assembly-CSharp-Editor";
         private const string RecordingSettingSceneConfiguratorTypeName =
@@ -33,16 +33,16 @@ namespace Tests.Editor.Settings
         private const string GraphicSettingSceneConfiguratorTypeName =
             "Fbx2Vmd.Settings.EditorTools.GraphicSettingSceneConfigurator, Assembly-CSharp-Editor";
         private const string RenderScalePresetResolverTypeName =
-            "Fbx2Vmd.Settings.GraphicRenderScalePresetResolver, Assembly-CSharp";
+            "Fbx2Vmd.Settings.GraphicRenderScalePresetResolver, Fbx2Vmd.Settings";
         private const string AntiAliasingPlanTypeName =
-            "Fbx2Vmd.Settings.GraphicAntiAliasingPlan, Assembly-CSharp";
+            "Fbx2Vmd.Settings.GraphicAntiAliasingPlan, Fbx2Vmd.Settings";
         private const string AntiAliasingPresetResolverTypeName =
-            "Fbx2Vmd.Settings.GraphicAntiAliasingPresetResolver, Assembly-CSharp";
+            "Fbx2Vmd.Settings.GraphicAntiAliasingPresetResolver, Fbx2Vmd.Settings";
         private const string CameraSettingsApplierTypeName =
-            "Fbx2Vmd.Settings.GraphicCameraSettingsApplier, Assembly-CSharp";
+            "Fbx2Vmd.Settings.GraphicCameraSettingsApplier, Fbx2Vmd.Settings";
         private const string RenderPipelineSettingsApplierTypeName =
-            "Fbx2Vmd.Settings.GraphicRenderPipelineSettingsApplier, Assembly-CSharp";
-        private const string MaterialShaderUtilityTypeName = "Fbx2Vmd.Settings.GraphicMaterialShaderController, Assembly-CSharp";
+            "Fbx2Vmd.Settings.GraphicRenderPipelineSettingsApplier, Fbx2Vmd.Settings";
+        private const string MaterialShaderUtilityTypeName = "Fbx2Vmd.Settings.GraphicMaterialShaderController, Fbx2Vmd.Settings";
         private const string InspectorSchemaTypeName = "Fbx2Vmd.Settings.EditorTools.GraphicSettingInspectorSchema, Assembly-CSharp-Editor";
         private const string SceneInstallerTypeName = "Fbx2Vmd.Settings.EditorTools.GraphicSettingSceneInstaller, Assembly-CSharp-Editor";
         private const string CameraFramingApplierTypeName =
@@ -205,7 +205,7 @@ namespace Tests.Editor.Settings
         {
             Type resolverType = RequireType(TexturePlanResolverTypeName);
             Type presetType = RequireType(
-                "Fbx2Vmd.Settings.GraphicSettingQualityPreset, Assembly-CSharp");
+                "Fbx2Vmd.Settings.GraphicSettingQualityPreset, Fbx2Vmd.Settings");
             object preset = Enum.Parse(presetType, presetName);
 
             object plan = InvokeStatic(resolverType, "Resolve", preset, null);
@@ -291,7 +291,7 @@ namespace Tests.Editor.Settings
         {
             Type resolverType = RequireType(RenderScalePresetResolverTypeName);
             Type presetType = RequireType(
-                "Fbx2Vmd.Settings.GraphicSettingQualityPreset, Assembly-CSharp");
+                "Fbx2Vmd.Settings.GraphicSettingQualityPreset, Fbx2Vmd.Settings");
             object preset = Enum.Parse(presetType, presetName);
 
             float renderScale = (float)InvokeStatic(
@@ -348,9 +348,9 @@ namespace Tests.Editor.Settings
             Type planType = RequireType(AntiAliasingPlanTypeName);
             Type resolverType = RequireType(AntiAliasingPresetResolverTypeName);
             Type presetType = RequireType(
-                "Fbx2Vmd.Settings.GraphicSettingQualityPreset, Assembly-CSharp");
+                "Fbx2Vmd.Settings.GraphicSettingQualityPreset, Fbx2Vmd.Settings");
             Type modeType = RequireType(
-                "Fbx2Vmd.Settings.GraphicAntiAliasingMode, Assembly-CSharp");
+                "Fbx2Vmd.Settings.GraphicAntiAliasingMode, Fbx2Vmd.Settings");
             object preset = Enum.Parse(presetType, presetName);
             object customMode = Enum.Parse(modeType, "TAA");
             object customPlan = Activator.CreateInstance(
@@ -404,7 +404,7 @@ namespace Tests.Editor.Settings
             Type applierType = RequireType(CameraSettingsApplierTypeName);
             Type planType = RequireType(AntiAliasingPlanTypeName);
             Type modeType = RequireType(
-                "Fbx2Vmd.Settings.GraphicAntiAliasingMode, Assembly-CSharp");
+                "Fbx2Vmd.Settings.GraphicAntiAliasingMode, Fbx2Vmd.Settings");
             var cameraObject = new GameObject("Graphic Camera Applier URP Test");
 
             try
@@ -440,7 +440,7 @@ namespace Tests.Editor.Settings
             Type applierType = RequireType(CameraSettingsApplierTypeName);
             Type planType = RequireType(AntiAliasingPlanTypeName);
             Type modeType = RequireType(
-                "Fbx2Vmd.Settings.GraphicAntiAliasingMode, Assembly-CSharp");
+                "Fbx2Vmd.Settings.GraphicAntiAliasingMode, Fbx2Vmd.Settings");
             Type postProcessLayerType = RequireType(
                 "UnityEngine.Rendering.PostProcessing.PostProcessLayer, Unity.Postprocessing.Runtime");
             PostProcessResources resources = AssetDatabase.LoadAssetAtPath<PostProcessResources>(
@@ -814,7 +814,7 @@ namespace Tests.Editor.Settings
         {
             Type resolverType = RequireType(MaterialShaderPlanResolverTypeName);
             Type presetType = RequireType(
-                "Fbx2Vmd.Settings.GraphicSettingQualityPreset, Assembly-CSharp");
+                "Fbx2Vmd.Settings.GraphicSettingQualityPreset, Fbx2Vmd.Settings");
             object preset = Enum.Parse(presetType, presetName);
 
             object plan = InvokeStatic(resolverType, "Resolve", preset, null);
@@ -1070,7 +1070,7 @@ namespace Tests.Editor.Settings
                 string sourcePath = Path.Combine(settingsDirectory, $"{typeName}.cs");
                 Assert.That(File.Exists(sourcePath), Is.True, $"{typeName} must be stored in {sourcePath}.");
                 Assert.That(
-                    Type.GetType($"Fbx2Vmd.Settings.{typeName}, Assembly-CSharp"),
+                    Type.GetType($"Fbx2Vmd.Settings.{typeName}, Fbx2Vmd.Settings"),
                     Is.Not.Null,
                     $"{typeName} must keep the runtime Settings namespace contract.");
             }

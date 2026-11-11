@@ -218,7 +218,7 @@ namespace Tests.Editor.FBXImporter
 
         private static Type FindRuntimeType(string typeName)
         {
-            Type type = typeof(FbxPlaybackSmokeRunner).Assembly.GetType(
+            Type type = typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly.GetType(
                 $"Fbx2Vmd.FBXImporter.{typeName}",
                 throwOnError: false);
             Assert.That(type, Is.Not.Null, typeName);

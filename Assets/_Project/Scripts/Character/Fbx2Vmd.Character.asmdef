@@ -1,0 +1,14 @@
+{
+    "name": "Fbx2Vmd.Character",
+    "rootNamespace": "Fbx2Vmd.Character",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -15,7 +15,9 @@ namespace Tests.Editor.Upgrade
         private static readonly string[] RequiredAssemblies =
         {
             "MagicaClothV2", "MagicaClothV2.Editor",
-            "Assembly-CSharp-firstpass",              // Final IK, StandaloneFileBrowser
+            "FinalIK", "FinalIK.Editor",
+            "StandaloneFileBrowser",
+            "VMDRecorderSample",
             "uLipSync.Runtime", "uLipSync.Editor",
             "MMD4Mecanim", "MMD4MecanimEditor",
             "AssimpNet",
@@ -31,14 +33,14 @@ namespace Tests.Editor.Upgrade
         {
             ("MagicaClothV2", "MagicaCloth2.MagicaManager"),
             ("MagicaClothV2", "MagicaCloth2.MagicaCloth"),
-            ("Assembly-CSharp-firstpass", "RootMotion.FinalIK.BipedIK"),
-            ("Assembly-CSharp-firstpass", "RootMotion.FinalIK.GrounderBipedIK"),
-            ("Assembly-CSharp-firstpass", "RootMotion.FinalIK.LimbIK"),
-            ("Assembly-CSharp-firstpass", "RootMotion.FinalIK.IKSolverTrigonometric"),
+            ("FinalIK", "RootMotion.FinalIK.BipedIK"),
+            ("FinalIK", "RootMotion.FinalIK.GrounderBipedIK"),
+            ("FinalIK", "RootMotion.FinalIK.LimbIK"),
+            ("FinalIK", "RootMotion.FinalIK.IKSolverTrigonometric"),
             ("uLipSync.Runtime", "uLipSync.uLipSync"),
             ("uLipSync.Runtime", "uLipSync.Profile"),
             ("uLipSync.Runtime", "uLipSync.uLipSyncBlendShape"),
-            ("Assembly-CSharp-firstpass", "SFB.StandaloneFileBrowser"),
+            ("StandaloneFileBrowser", "SFB.StandaloneFileBrowser"),
             ("MMD4Mecanim", "MMD4MecanimData"),
             ("MMD4Mecanim", "MMD4MecanimAnim"),
             ("MMD4MecanimEditor", "MMD4MecanimAssetPostprocessor"),

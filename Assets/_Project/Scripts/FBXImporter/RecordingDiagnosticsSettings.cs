@@ -1,4 +1,4 @@
-namespace Fbx2Vmd.Settings
+namespace Fbx2Vmd.FBXImporter
 {
     public readonly struct RecordingDiagnosticsSettings
     {

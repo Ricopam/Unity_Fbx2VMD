@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Fbx2Vmd.Settings
+namespace Fbx2Vmd.FBXImporter
 {
     public enum RecordingCaptureQualityPreset
     {

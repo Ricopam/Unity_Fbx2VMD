@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Fbx2Vmd.FBXImporter
 {
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(29950)]
+    [DefaultExecutionOrder(CorrectionPassOrder.LateVisualGrounding)]
     public class PoseSpaceLateVisualGroundingCorrection : MonoBehaviour
     {
         [SerializeField] private PoseSpaceRetargeter retargeter;

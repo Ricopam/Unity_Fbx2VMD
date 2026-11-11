@@ -1,0 +1,14 @@
+{
+    "name": "Fbx2Vmd.Retargeting",
+    "rootNamespace": "Fbx2Vmd.Retargeting",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

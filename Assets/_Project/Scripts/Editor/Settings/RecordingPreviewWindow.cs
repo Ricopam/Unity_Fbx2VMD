@@ -1,4 +1,5 @@
 using System;
+using Fbx2Vmd.FBXImporter;
 using Fbx2Vmd.Settings;
 using UnityEditor;
 using UnityEngine;

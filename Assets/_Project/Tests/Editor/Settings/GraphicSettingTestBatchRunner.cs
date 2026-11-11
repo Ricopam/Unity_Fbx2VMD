@@ -13,8 +13,8 @@ namespace Tests.Editor.Settings
     public static class GraphicSettingTestBatchRunner
     {
         private const string MainRecordingScenePath = "Assets/_Project/Scene/Main_Recoding.unity";
-        private const string GraphicSettingTypeName = "Fbx2Vmd.Settings.GraphicSetting, Assembly-CSharp";
-        private const string BackgroundColorSettingTypeName = "BackgroundColorSetting, Assembly-CSharp";
+        private const string GraphicSettingTypeName = "Fbx2Vmd.Settings.GraphicSetting, Fbx2Vmd.Settings";
+        private const string BackgroundColorSettingTypeName = "BackgroundColorSetting, Fbx2Vmd.Settings";
         private const string YybRootName = "YYB Hatsune Miku_default_1.0ver";
         private const float ComparisonCameraViewportHeight = 0.56f;
         private const float ComparisonCameraViewportWidth = 0.82f;

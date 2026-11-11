@@ -44,7 +44,7 @@ namespace Fbx2Vmd.FBXImporter
     }
 
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(25000)]
+    [DefaultExecutionOrder(CorrectionPassOrder.ArmDeformation)]
     public class HumanoidArmDeformationGuard : MonoBehaviour
     {
         [Header("팔 변형 방지")]

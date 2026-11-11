@@ -14,7 +14,7 @@ namespace Tests.Editor.FBXImporter
     {
         private const string MainRecordingScenePath = "Assets/_Project/Scene/Main_Recoding.unity";
         private const string CaptureScenePath = "Assets/_Project/Scene/FbxImport_Capture.unity";
-        private const string RecodingSettingTypeName = "RecordingSetting, Assembly-CSharp";
+        private const string RecodingSettingTypeName = "RecordingSetting, Fbx2Vmd.Settings";
         private const string ManualRecordButtonName = "MMD_Record_Button";
         private const string LegacyFBXVmdPipelineManualRecordMethodName = "OnClickManualRecordButton";
         private const string SettingManualRecordMethodName = "StartManualRecording";
