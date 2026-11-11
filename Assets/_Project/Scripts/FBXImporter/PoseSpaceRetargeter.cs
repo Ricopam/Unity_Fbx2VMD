@@ -3329,8 +3329,6 @@ namespace Fbx2Vmd.FBXImporter
             return Vector2.Distance(beforeXz, afterXz);
         }
 
-
-
         private void RecordEditorLowerBodySegmentDirectionEndpointDiagnostics()
         {
             _lastEditorLowerBodySegmentDirectionLeftLowerLegWorldPosition = ReadTargetBoneWorldPosition(HumanBodyBones.LeftLowerLeg);
