@@ -131,6 +131,8 @@ Assets/_Project/FBX/
 Assets/_Project/FBX.meta
 Assets/Resources/Import_FBX/
 Assets/Resources/Import_FBX.meta
+Assets/ImportedCharacters/
+Assets/ImportedCharacters.meta
 
 # CI 성능 테스트용 소형 FBX 픽스처만 예외로 추적한다.
 !Assets/_Project/Tests/PerfFixtures/
@@ -414,5 +416,89 @@ __pycache__/
 # UnderPressure 외부 평가 저장소 클론 (평가 라이선스·대용량 가중치 — 로컬 전용)
 /Tools/Boogle/external/
 
+# === 글로벌 테스트·미디어 기본 차단 해제 — 실제 에셋은 추적 ===
+# ~/.gitignore_global이 이미지·영상·md를 기본 차단한다.
+# Assets/Packages 아래는 Unity 에셋이므로 추적 대상으로 되돌린다.
+!Assets/**/*.png
+!Assets/**/*.png.meta
+!Assets/**/*.jpg
+!Assets/**/*.jpg.meta
+!Assets/**/*.jpeg
+!Assets/**/*.jpeg.meta
+!Assets/**/*.gif
+!Assets/**/*.gif.meta
+!Assets/**/*.bmp
+!Assets/**/*.bmp.meta
+!Assets/**/*.tga
+!Assets/**/*.tga.meta
+!Assets/**/*.tif
+!Assets/**/*.tif.meta
+!Assets/**/*.tiff
+!Assets/**/*.tiff.meta
+!Assets/**/*.webp
+!Assets/**/*.webp.meta
+!Assets/**/*.mp4
+!Assets/**/*.mp4.meta
+!Assets/**/*.webm
+!Assets/**/*.webm.meta
+!Assets/**/*.mov
+!Assets/**/*.mov.meta
+!Assets/**/*.avi
+!Assets/**/*.avi.meta
+!Assets/**/*.mkv
+!Assets/**/*.mkv.meta
+!Packages/**/*.png
+!Packages/**/*.png.meta
+!Packages/**/*.jpg
+!Packages/**/*.jpg.meta
+!Packages/**/*.jpeg
+!Packages/**/*.jpeg.meta
+!Packages/**/*.gif
+!Packages/**/*.gif.meta
+!Packages/**/*.bmp
+!Packages/**/*.bmp.meta
+!Packages/**/*.tga
+!Packages/**/*.tga.meta
+!Packages/**/*.tif
+!Packages/**/*.tif.meta
+!Packages/**/*.tiff
+!Packages/**/*.tiff.meta
+!Packages/**/*.webp
+!Packages/**/*.webp.meta
+!Packages/**/*.mp4
+!Packages/**/*.mp4.meta
+!Packages/**/*.webm
+!Packages/**/*.webm.meta
+!Packages/**/*.mov
+!Packages/**/*.mov.meta
+!Packages/**/*.avi
+!Packages/**/*.avi.meta
+!Packages/**/*.mkv
+!Packages/**/*.mkv.meta
+
 # e2e 실행 산출물 — 결과·스크린샷·봉인 스테이징 전부 로컬 전용
 /Assets/_Project/Tools/MainRecordingSettings/.e2e-*/
+
+# === 셰이더 개발 자료 비공개 (다듬어진 뒤 개별 공개 — 필요 시 git add -f 또는 이 블록 제거) ===
+/Assets/_Project/Shaders/
+/Assets/_Project/Scripts/Toon/
+/Assets/_Project/Scripts/Editor/Toon/
+/Assets/_Project/Materials/ToonPreset/
+/Assets/_Project/Scene/ToonShaderTest.unity
+/Assets/_Project/Scene/ToonShaderTest.unity.meta
+/Assets/_Project/Model/YYB Hatsune Miku_default/toon/
+/Assets/_Project/Model/YYB Hatsune Miku_default/Materials/Toon/
+
+# === 로컬 산출물·복구·캐시 — Git 업로드 대상 아님 ===
+/node_modules/
+/*TEMP/
+/toon-p12-captures/
+/Assets/_Recovery/
+/Assets/_Recovery.meta
+# Unity 생성 라이팅 산출물 — 커밋 선례 없음, 재생성됨
+/Assets/_Project/Scene/FbxImport_Capture/
+/Assets/_Project/Scene/FbxImport_Capture.meta
+/Assets/_Project/Scene/Main_Recoding/
+/Assets/_Project/Scene/Main_Recoding.meta
+/Assets/_Project/Scene/Sub_Manual/
+/Assets/_Project/Scene/Sub_Manual.meta
