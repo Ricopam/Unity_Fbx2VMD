@@ -16,7 +16,6 @@ namespace Fbx2Vmd.FBXImporter
         private const float RecordingStartHipsBaselineFlipWarningThreshold = 0.02f;
         private const float HipsLocalPositionTargetGapGuardMaxIncreaseMeters = 0.0005f;
         private const string RecordingStartHipsReferenceStagePrewarmComplete = "prewarm-complete";
-        private const int UnresolvedHumanMuscleIndex = -2;
         private static readonly string[] RightSleeveSilhouetteLocalOffsetTransformSuffixes =
         {
             "joint_RightArmM",
@@ -1558,6 +1557,7 @@ namespace Fbx2Vmd.FBXImporter
         private readonly RetargetingStageMuscleDiagnostics _stageMuscleDiagnostics = new RetargetingStageMuscleDiagnostics();
         private readonly RetargetingSetHumanPoseDiagnostics _setHumanPoseDiagnostics = new RetargetingSetHumanPoseDiagnostics();
         private readonly RetargetingPostSetEndpointDiagnostics _postSetEndpointDiagnostics = new RetargetingPostSetEndpointDiagnostics();
+        private readonly RetargetingMuscleIndexMap _muscleIndexMap = new RetargetingMuscleIndexMap();
 
 
         private static Vector3 BuildNaNVector3()
@@ -1570,36 +1570,6 @@ namespace Fbx2Vmd.FBXImporter
             return new Quaternion(float.NaN, float.NaN, float.NaN, float.NaN);
         }
 
-        private int _setHumanPoseLeftShoulderFrontBackMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftArmTwistMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftForearmStretchMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightForearmStretchMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightArmTwistMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftUpperLegFrontBackMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightUpperLegFrontBackMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftLowerLegStretchMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightLowerLegStretchMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftFootUpDownMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightFootUpDownMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseSpineFrontBackMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseSpineLeftRightMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseSpineTwistLeftRightMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseChestFrontBackMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseChestLeftRightMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseChestTwistLeftRightMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseUpperChestFrontBackMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseUpperChestLeftRightMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseUpperChestTwistLeftRightMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftUpperLegInOutMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightUpperLegInOutMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftUpperLegTwistInOutMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightUpperLegTwistInOutMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftLowerLegTwistInOutMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightLowerLegTwistInOutMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftFootTwistInOutMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightFootTwistInOutMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseLeftToesUpDownMuscleIndex = UnresolvedHumanMuscleIndex;
-        private int _setHumanPoseRightToesUpDownMuscleIndex = UnresolvedHumanMuscleIndex;
         private bool _hasEstimatedFootRadius;
         private float _estimatedFootRadius = DefaultFootRadius;
         private const float DefaultFootRadius = 0.04f;
@@ -2279,9 +2249,9 @@ namespace Fbx2Vmd.FBXImporter
                     _legacyAnimationDriver.CurrentTime);
             }
 #endif
-            _stageMuscleDiagnostics.PoseInput = ReadStageMuscles(_humanPose);
+            _stageMuscleDiagnostics.PoseInput = _muscleIndexMap.ReadStageSnapshot(_humanPose);
             ApplyEditorHumanoidMuscleReference(ref _humanPose);
-            _stageMuscleDiagnostics.AfterEditorMuscleReference = ReadStageMuscles(_humanPose);
+            _stageMuscleDiagnostics.AfterEditorMuscleReference = _muscleIndexMap.ReadStageSnapshot(_humanPose);
             ApplyEditorHumanoidFingerPoseReference(ref _humanPose);
             ApplyEditorHumanoidBodyRotationReference(ref _humanPose);
             if (ShouldApplyRetargetSafetyGuards())
@@ -2289,11 +2259,11 @@ namespace Fbx2Vmd.FBXImporter
                 ApplyThumbAnatomicalGuard(ref _humanPose, ShouldApplyThumbStretchOffset());
             }
             ClampPoseMuscles(ref _humanPose);
-            _stageMuscleDiagnostics.AfterClampPoseMuscles = ReadStageMuscles(_humanPose);
+            _stageMuscleDiagnostics.AfterClampPoseMuscles = _muscleIndexMap.ReadStageSnapshot(_humanPose);
             ApplyAnatomicalArmGuard(ref _humanPose);
-            _stageMuscleDiagnostics.AfterAnatomicalArmGuard = ReadStageMuscles(_humanPose);
+            _stageMuscleDiagnostics.AfterAnatomicalArmGuard = _muscleIndexMap.ReadStageSnapshot(_humanPose);
             SmoothPoseOnVisualSpike(ref _humanPose);
-            _stageMuscleDiagnostics.AfterVisualSpikeSmoothing = ReadStageMuscles(_humanPose);
+            _stageMuscleDiagnostics.AfterVisualSpikeSmoothing = _muscleIndexMap.ReadStageSnapshot(_humanPose);
             Quaternion poseRootRotation = _humanPose.bodyRotation;
             if (ShouldPreserveFbxRootRotation && !_hasPoseRootRotationCorrection && IsFinite(poseRootRotation) && _legacyAnimationDriver.IsPlaying)
             {
@@ -5761,36 +5731,36 @@ namespace Fbx2Vmd.FBXImporter
         {
             return new RetargetingSetHumanPoseInputSnapshot
             {
-                LeftShoulderFrontBack = ReadLeftShoulderFrontBackMuscle(pose),
-                LeftArmTwist = ReadLeftArmTwistMuscle(pose),
-                LeftForearmStretch = ReadLeftForearmStretchMuscle(pose),
-                RightForearmStretch = ReadRightForearmStretchMuscle(pose),
-                RightArmTwist = ReadRightArmTwistMuscle(pose),
-                LeftUpperLegFrontBack = ReadLeftUpperLegFrontBackMuscle(pose),
-                RightUpperLegFrontBack = ReadRightUpperLegFrontBackMuscle(pose),
-                LeftLowerLegStretch = ReadLeftLowerLegStretchMuscle(pose),
-                RightLowerLegStretch = ReadRightLowerLegStretchMuscle(pose),
-                LeftFootUpDown = ReadLeftFootUpDownMuscle(pose),
-                RightFootUpDown = ReadRightFootUpDownMuscle(pose),
-                SpineFrontBack = ReadSpineFrontBackMuscle(pose),
-                SpineLeftRight = ReadSpineLeftRightMuscle(pose),
-                SpineTwistLeftRight = ReadSpineTwistLeftRightMuscle(pose),
-                ChestFrontBack = ReadChestFrontBackMuscle(pose),
-                ChestLeftRight = ReadChestLeftRightMuscle(pose),
-                ChestTwistLeftRight = ReadChestTwistLeftRightMuscle(pose),
-                UpperChestFrontBack = ReadUpperChestFrontBackMuscle(pose),
-                UpperChestLeftRight = ReadUpperChestLeftRightMuscle(pose),
-                UpperChestTwistLeftRight = ReadUpperChestTwistLeftRightMuscle(pose),
-                LeftUpperLegInOut = ReadLeftUpperLegInOutMuscle(pose),
-                RightUpperLegInOut = ReadRightUpperLegInOutMuscle(pose),
-                LeftUpperLegTwistInOut = ReadLeftUpperLegTwistInOutMuscle(pose),
-                RightUpperLegTwistInOut = ReadRightUpperLegTwistInOutMuscle(pose),
-                LeftLowerLegTwistInOut = ReadLeftLowerLegTwistInOutMuscle(pose),
-                RightLowerLegTwistInOut = ReadRightLowerLegTwistInOutMuscle(pose),
-                LeftFootTwistInOut = ReadLeftFootTwistInOutMuscle(pose),
-                RightFootTwistInOut = ReadRightFootTwistInOutMuscle(pose),
-                LeftToesUpDown = ReadLeftToesUpDownMuscle(pose),
-                RightToesUpDown = ReadRightToesUpDownMuscle(pose),
+                LeftShoulderFrontBack = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftShoulderFrontBack),
+                LeftArmTwist = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftArmTwist),
+                LeftForearmStretch = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftForearmStretch),
+                RightForearmStretch = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightForearmStretch),
+                RightArmTwist = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightArmTwist),
+                LeftUpperLegFrontBack = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftUpperLegFrontBack),
+                RightUpperLegFrontBack = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightUpperLegFrontBack),
+                LeftLowerLegStretch = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftLowerLegStretch),
+                RightLowerLegStretch = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightLowerLegStretch),
+                LeftFootUpDown = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftFootUpDown),
+                RightFootUpDown = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightFootUpDown),
+                SpineFrontBack = _muscleIndexMap.Read(pose, HumanMuscleSlot.SpineFrontBack),
+                SpineLeftRight = _muscleIndexMap.Read(pose, HumanMuscleSlot.SpineLeftRight),
+                SpineTwistLeftRight = _muscleIndexMap.Read(pose, HumanMuscleSlot.SpineTwistLeftRight),
+                ChestFrontBack = _muscleIndexMap.Read(pose, HumanMuscleSlot.ChestFrontBack),
+                ChestLeftRight = _muscleIndexMap.Read(pose, HumanMuscleSlot.ChestLeftRight),
+                ChestTwistLeftRight = _muscleIndexMap.Read(pose, HumanMuscleSlot.ChestTwistLeftRight),
+                UpperChestFrontBack = _muscleIndexMap.Read(pose, HumanMuscleSlot.UpperChestFrontBack),
+                UpperChestLeftRight = _muscleIndexMap.Read(pose, HumanMuscleSlot.UpperChestLeftRight),
+                UpperChestTwistLeftRight = _muscleIndexMap.Read(pose, HumanMuscleSlot.UpperChestTwistLeftRight),
+                LeftUpperLegInOut = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftUpperLegInOut),
+                RightUpperLegInOut = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightUpperLegInOut),
+                LeftUpperLegTwistInOut = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftUpperLegTwistInOut),
+                RightUpperLegTwistInOut = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightUpperLegTwistInOut),
+                LeftLowerLegTwistInOut = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftLowerLegTwistInOut),
+                RightLowerLegTwistInOut = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightLowerLegTwistInOut),
+                LeftFootTwistInOut = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftFootTwistInOut),
+                RightFootTwistInOut = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightFootTwistInOut),
+                LeftToesUpDown = _muscleIndexMap.Read(pose, HumanMuscleSlot.LeftToesUpDown),
+                RightToesUpDown = _muscleIndexMap.Read(pose, HumanMuscleSlot.RightToesUpDown),
                 BodyPosition = IsFinite(pose.bodyPosition) ? pose.bodyPosition : BuildNaNVector3(),
                 BodyRotation = IsFinite(pose.bodyRotation) ? pose.bodyRotation : BuildNaNQuaternion()
             };
@@ -5805,22 +5775,22 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             _targetHandler.GetHumanPose(ref _appliedTargetPose);
-            output.LeftShoulderFrontBack = ReadLeftShoulderFrontBackMuscle(_appliedTargetPose);
-            output.LeftArmTwist = ReadLeftArmTwistMuscle(_appliedTargetPose);
-            output.LeftForearmStretch = ReadLeftForearmStretchMuscle(_appliedTargetPose);
-            output.RightForearmStretch = ReadRightForearmStretchMuscle(_appliedTargetPose);
-            output.RightArmTwist = ReadRightArmTwistMuscle(_appliedTargetPose);
-            output.LeftUpperLegFrontBack = ReadLeftUpperLegFrontBackMuscle(_appliedTargetPose);
-            output.RightUpperLegFrontBack = ReadRightUpperLegFrontBackMuscle(_appliedTargetPose);
-            output.LeftLowerLegStretch = ReadLeftLowerLegStretchMuscle(_appliedTargetPose);
-            output.RightLowerLegStretch = ReadRightLowerLegStretchMuscle(_appliedTargetPose);
-            output.LeftFootUpDown = ReadLeftFootUpDownMuscle(_appliedTargetPose);
-            output.RightFootUpDown = ReadRightFootUpDownMuscle(_appliedTargetPose);
-            output.RightUpperLegInOut = ReadRightUpperLegInOutMuscle(_appliedTargetPose);
-            output.RightUpperLegTwistInOut = ReadRightUpperLegTwistInOutMuscle(_appliedTargetPose);
-            output.RightLowerLegTwistInOut = ReadRightLowerLegTwistInOutMuscle(_appliedTargetPose);
-            output.RightFootTwistInOut = ReadRightFootTwistInOutMuscle(_appliedTargetPose);
-            output.RightToesUpDown = ReadRightToesUpDownMuscle(_appliedTargetPose);
+            output.LeftShoulderFrontBack = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.LeftShoulderFrontBack);
+            output.LeftArmTwist = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.LeftArmTwist);
+            output.LeftForearmStretch = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.LeftForearmStretch);
+            output.RightForearmStretch = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightForearmStretch);
+            output.RightArmTwist = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightArmTwist);
+            output.LeftUpperLegFrontBack = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.LeftUpperLegFrontBack);
+            output.RightUpperLegFrontBack = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightUpperLegFrontBack);
+            output.LeftLowerLegStretch = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.LeftLowerLegStretch);
+            output.RightLowerLegStretch = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightLowerLegStretch);
+            output.LeftFootUpDown = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.LeftFootUpDown);
+            output.RightFootUpDown = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightFootUpDown);
+            output.RightUpperLegInOut = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightUpperLegInOut);
+            output.RightUpperLegTwistInOut = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightUpperLegTwistInOut);
+            output.RightLowerLegTwistInOut = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightLowerLegTwistInOut);
+            output.RightFootTwistInOut = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightFootTwistInOut);
+            output.RightToesUpDown = _muscleIndexMap.Read(_appliedTargetPose, HumanMuscleSlot.RightToesUpDown);
             output.BodyPosition = IsFinite(_appliedTargetPose.bodyPosition)
                 ? _appliedTargetPose.bodyPosition
                 : BuildNaNVector3();
@@ -5830,508 +5800,67 @@ namespace Fbx2Vmd.FBXImporter
             return output;
         }
 
-        private RetargetingStageMuscleSnapshot ReadStageMuscles(HumanPose pose)
-        {
-            return new RetargetingStageMuscleSnapshot
-            {
-                LeftShoulderFrontBack = ReadLeftShoulderFrontBackMuscle(pose),
-                LeftArmTwist = ReadLeftArmTwistMuscle(pose),
-                LeftForearmStretch = ReadLeftForearmStretchMuscle(pose),
-                RightForearmStretch = ReadRightForearmStretchMuscle(pose),
-                RightArmTwist = ReadRightArmTwistMuscle(pose)
-            };
-        }
-
-        private float ReadLeftShoulderFrontBackMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftShoulderFrontBackMuscleIndex());
-        }
-
-        private float ReadRightForearmStretchMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightForearmStretchMuscleIndex());
-        }
-
-        private float ReadLeftForearmStretchMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftForearmStretchMuscleIndex());
-        }
-
-        private float ReadLeftArmTwistMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftArmTwistMuscleIndex());
-        }
-
-        private float ReadRightArmTwistMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightArmTwistMuscleIndex());
-        }
-
-        private float ReadLeftUpperLegFrontBackMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftUpperLegFrontBackMuscleIndex());
-        }
-
-        private float ReadRightUpperLegFrontBackMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightUpperLegFrontBackMuscleIndex());
-        }
-
-        private float ReadLeftLowerLegStretchMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftLowerLegStretchMuscleIndex());
-        }
-
-        private float ReadRightLowerLegStretchMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightLowerLegStretchMuscleIndex());
-        }
-
-        private float ReadLeftFootUpDownMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftFootUpDownMuscleIndex());
-        }
-
-        private float ReadRightFootUpDownMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightFootUpDownMuscleIndex());
-        }
-
-        private float ReadSpineFrontBackMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseSpineFrontBackMuscleIndex());
-        }
-
-        private float ReadSpineLeftRightMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseSpineLeftRightMuscleIndex());
-        }
-
-        private float ReadSpineTwistLeftRightMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseSpineTwistLeftRightMuscleIndex());
-        }
-
-        private float ReadChestFrontBackMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseChestFrontBackMuscleIndex());
-        }
-
-        private float ReadChestLeftRightMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseChestLeftRightMuscleIndex());
-        }
-
-        private float ReadChestTwistLeftRightMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseChestTwistLeftRightMuscleIndex());
-        }
-
-        private float ReadUpperChestFrontBackMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseUpperChestFrontBackMuscleIndex());
-        }
-
-        private float ReadUpperChestLeftRightMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseUpperChestLeftRightMuscleIndex());
-        }
-
-        private float ReadUpperChestTwistLeftRightMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseUpperChestTwistLeftRightMuscleIndex());
-        }
-
-        private float ReadLeftUpperLegInOutMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftUpperLegInOutMuscleIndex());
-        }
-
-        private float ReadRightUpperLegInOutMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightUpperLegInOutMuscleIndex());
-        }
-
-        private float ReadLeftUpperLegTwistInOutMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftUpperLegTwistInOutMuscleIndex());
-        }
-
-        private float ReadRightUpperLegTwistInOutMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightUpperLegTwistInOutMuscleIndex());
-        }
-
-        private float ReadLeftLowerLegTwistInOutMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftLowerLegTwistInOutMuscleIndex());
-        }
-
-        private float ReadRightLowerLegTwistInOutMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightLowerLegTwistInOutMuscleIndex());
-        }
-
-        private float ReadLeftFootTwistInOutMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftFootTwistInOutMuscleIndex());
-        }
-
-        private float ReadRightFootTwistInOutMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightFootTwistInOutMuscleIndex());
-        }
-
-        private float ReadLeftToesUpDownMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseLeftToesUpDownMuscleIndex());
-        }
-
-        private float ReadRightToesUpDownMuscle(HumanPose pose)
-        {
-            return ReadHumanMuscleValue(pose, GetSetHumanPoseRightToesUpDownMuscleIndex());
-        }
-
-        private int GetSetHumanPoseLeftShoulderFrontBackMuscleIndex()
-        {
-            if (_setHumanPoseLeftShoulderFrontBackMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftShoulderFrontBackMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "shoulder", "frontback");
-            }
-
-            return _setHumanPoseLeftShoulderFrontBackMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftArmTwistMuscleIndex()
-        {
-            if (_setHumanPoseLeftArmTwistMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftArmTwistMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "arm", "twist");
-            }
-
-            return _setHumanPoseLeftArmTwistMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightForearmStretchMuscleIndex()
-        {
-            if (_setHumanPoseRightForearmStretchMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightForearmStretchMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "forearm", "stretch");
-            }
-
-            return _setHumanPoseRightForearmStretchMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftForearmStretchMuscleIndex()
-        {
-            if (_setHumanPoseLeftForearmStretchMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftForearmStretchMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "forearm", "stretch");
-            }
-
-            return _setHumanPoseLeftForearmStretchMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightArmTwistMuscleIndex()
-        {
-            if (_setHumanPoseRightArmTwistMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightArmTwistMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "arm", "twist");
-            }
-
-            return _setHumanPoseRightArmTwistMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftUpperLegFrontBackMuscleIndex()
-        {
-            if (_setHumanPoseLeftUpperLegFrontBackMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftUpperLegFrontBackMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "upperleg", "frontback");
-            }
-
-            return _setHumanPoseLeftUpperLegFrontBackMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightUpperLegFrontBackMuscleIndex()
-        {
-            if (_setHumanPoseRightUpperLegFrontBackMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightUpperLegFrontBackMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "upperleg", "frontback");
-            }
-
-            return _setHumanPoseRightUpperLegFrontBackMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftLowerLegStretchMuscleIndex()
-        {
-            if (_setHumanPoseLeftLowerLegStretchMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftLowerLegStretchMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "lowerleg", "stretch");
-            }
-
-            return _setHumanPoseLeftLowerLegStretchMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightLowerLegStretchMuscleIndex()
-        {
-            if (_setHumanPoseRightLowerLegStretchMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightLowerLegStretchMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "lowerleg", "stretch");
-            }
-
-            return _setHumanPoseRightLowerLegStretchMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftFootUpDownMuscleIndex()
-        {
-            if (_setHumanPoseLeftFootUpDownMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftFootUpDownMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "foot", "updown");
-            }
-
-            return _setHumanPoseLeftFootUpDownMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightFootUpDownMuscleIndex()
-        {
-            if (_setHumanPoseRightFootUpDownMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightFootUpDownMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "foot", "updown");
-            }
-
-            return _setHumanPoseRightFootUpDownMuscleIndex;
-        }
-
-        private int GetSetHumanPoseSpineFrontBackMuscleIndex()
-        {
-            if (_setHumanPoseSpineFrontBackMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseSpineFrontBackMuscleIndex =
-                    FindHumanMuscleIndexByTokens("spine", "frontback");
-            }
-
-            return _setHumanPoseSpineFrontBackMuscleIndex;
-        }
-
-        private int GetSetHumanPoseSpineLeftRightMuscleIndex()
-        {
-            if (_setHumanPoseSpineLeftRightMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseSpineLeftRightMuscleIndex =
-                    FindHumanMuscleIndexByTokens("spine", "leftright");
-            }
-
-            return _setHumanPoseSpineLeftRightMuscleIndex;
-        }
-
-        private int GetSetHumanPoseSpineTwistLeftRightMuscleIndex()
-        {
-            if (_setHumanPoseSpineTwistLeftRightMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseSpineTwistLeftRightMuscleIndex =
-                    FindHumanMuscleIndexByTokens("spine", "twist");
-            }
-
-            return _setHumanPoseSpineTwistLeftRightMuscleIndex;
-        }
-
-        private int GetSetHumanPoseChestFrontBackMuscleIndex()
-        {
-            if (_setHumanPoseChestFrontBackMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseChestFrontBackMuscleIndex =
-                    FindHumanMuscleIndexByTokens("chest", "frontback");
-            }
-
-            return _setHumanPoseChestFrontBackMuscleIndex;
-        }
-
-        private int GetSetHumanPoseChestLeftRightMuscleIndex()
-        {
-            if (_setHumanPoseChestLeftRightMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseChestLeftRightMuscleIndex =
-                    FindHumanMuscleIndexByTokens("chest", "leftright");
-            }
-
-            return _setHumanPoseChestLeftRightMuscleIndex;
-        }
-
-        private int GetSetHumanPoseChestTwistLeftRightMuscleIndex()
-        {
-            if (_setHumanPoseChestTwistLeftRightMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseChestTwistLeftRightMuscleIndex =
-                    FindHumanMuscleIndexByTokens("chest", "twist");
-            }
-
-            return _setHumanPoseChestTwistLeftRightMuscleIndex;
-        }
-
-        private int GetSetHumanPoseUpperChestFrontBackMuscleIndex()
-        {
-            if (_setHumanPoseUpperChestFrontBackMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseUpperChestFrontBackMuscleIndex =
-                    FindHumanMuscleIndexByTokens("upperchest", "frontback");
-            }
-
-            return _setHumanPoseUpperChestFrontBackMuscleIndex;
-        }
-
-        private int GetSetHumanPoseUpperChestLeftRightMuscleIndex()
-        {
-            if (_setHumanPoseUpperChestLeftRightMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseUpperChestLeftRightMuscleIndex =
-                    FindHumanMuscleIndexByTokens("upperchest", "leftright");
-            }
-
-            return _setHumanPoseUpperChestLeftRightMuscleIndex;
-        }
-
-        private int GetSetHumanPoseUpperChestTwistLeftRightMuscleIndex()
-        {
-            if (_setHumanPoseUpperChestTwistLeftRightMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseUpperChestTwistLeftRightMuscleIndex =
-                    FindHumanMuscleIndexByTokens("upperchest", "twist");
-            }
-
-            return _setHumanPoseUpperChestTwistLeftRightMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftUpperLegInOutMuscleIndex()
-        {
-            if (_setHumanPoseLeftUpperLegInOutMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftUpperLegInOutMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "upperleg", "inout");
-            }
-
-            return _setHumanPoseLeftUpperLegInOutMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightUpperLegInOutMuscleIndex()
-        {
-            if (_setHumanPoseRightUpperLegInOutMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightUpperLegInOutMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "upperleg", "inout");
-            }
-
-            return _setHumanPoseRightUpperLegInOutMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftUpperLegTwistInOutMuscleIndex()
-        {
-            if (_setHumanPoseLeftUpperLegTwistInOutMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftUpperLegTwistInOutMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "upperleg", "twist");
-            }
-
-            return _setHumanPoseLeftUpperLegTwistInOutMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightUpperLegTwistInOutMuscleIndex()
-        {
-            if (_setHumanPoseRightUpperLegTwistInOutMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightUpperLegTwistInOutMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "upperleg", "twist");
-            }
-
-            return _setHumanPoseRightUpperLegTwistInOutMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftLowerLegTwistInOutMuscleIndex()
-        {
-            if (_setHumanPoseLeftLowerLegTwistInOutMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftLowerLegTwistInOutMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "lowerleg", "twist");
-            }
-
-            return _setHumanPoseLeftLowerLegTwistInOutMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightLowerLegTwistInOutMuscleIndex()
-        {
-            if (_setHumanPoseRightLowerLegTwistInOutMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightLowerLegTwistInOutMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "lowerleg", "twist");
-            }
-
-            return _setHumanPoseRightLowerLegTwistInOutMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftFootTwistInOutMuscleIndex()
-        {
-            if (_setHumanPoseLeftFootTwistInOutMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftFootTwistInOutMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "foot", "twist");
-            }
-
-            return _setHumanPoseLeftFootTwistInOutMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightFootTwistInOutMuscleIndex()
-        {
-            if (_setHumanPoseRightFootTwistInOutMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightFootTwistInOutMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "foot", "twist");
-            }
-
-            return _setHumanPoseRightFootTwistInOutMuscleIndex;
-        }
-
-        private int GetSetHumanPoseLeftToesUpDownMuscleIndex()
-        {
-            if (_setHumanPoseLeftToesUpDownMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseLeftToesUpDownMuscleIndex =
-                    FindHumanMuscleIndexByTokens("left", "toes", "updown");
-            }
-
-            return _setHumanPoseLeftToesUpDownMuscleIndex;
-        }
-
-        private int GetSetHumanPoseRightToesUpDownMuscleIndex()
-        {
-            if (_setHumanPoseRightToesUpDownMuscleIndex == UnresolvedHumanMuscleIndex)
-            {
-                _setHumanPoseRightToesUpDownMuscleIndex =
-                    FindHumanMuscleIndexByTokens("right", "toes", "updown");
-            }
-
-            return _setHumanPoseRightToesUpDownMuscleIndex;
-        }
-
-        private static float ReadHumanMuscleValue(HumanPose pose, int muscleIndex)
-        {
-            if (pose.muscles == null || muscleIndex < 0 || muscleIndex >= pose.muscles.Length)
-            {
-                return float.NaN;
-            }
-
-            float value = pose.muscles[muscleIndex];
-            return IsFinite(value) ? value : float.NaN;
-        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         private static float CalculateFiniteAbsDelta(float a, float b)
         {
@@ -6360,45 +5889,7 @@ namespace Fbx2Vmd.FBXImporter
             return IsFinite(rotation) ? rotation.eulerAngles.y : float.NaN;
         }
 
-        private static int FindHumanMuscleIndexByTokens(params string[] tokens)
-        {
-            if (tokens == null || tokens.Length == 0)
-            {
-                return -1;
-            }
 
-            for (int i = 0; i < HumanTrait.MuscleCount; i++)
-            {
-                string normalized = NormalizeHumanMuscleNameForDiagnostics(HumanTrait.MuscleName[i]);
-                bool matched = true;
-                foreach (string token in tokens)
-                {
-                    if (!normalized.Contains(NormalizeHumanMuscleNameForDiagnostics(token)))
-                    {
-                        matched = false;
-                        break;
-                    }
-                }
-
-                if (matched)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        private static string NormalizeHumanMuscleNameForDiagnostics(string value)
-        {
-            return string.IsNullOrEmpty(value)
-                ? string.Empty
-                : value.Replace(" ", string.Empty)
-                    .Replace(".", string.Empty)
-                    .Replace("-", string.Empty)
-                    .Replace("_", string.Empty)
-                    .ToLowerInvariant();
-        }
 
         private void ClampPoseMuscles(ref HumanPose pose)
         {
@@ -6444,13 +5935,13 @@ namespace Fbx2Vmd.FBXImporter
             bool changed = ManualPoseReferenceApplier.TryApplyBoundedMuscleOutputReference(
                 ref _appliedTargetPose,
                 inputPose,
-                GetSetHumanPoseRightUpperLegTwistInOutMuscleIndex(),
+                _muscleIndexMap.Get(HumanMuscleSlot.RightUpperLegTwistInOut),
                 weight,
                 maxDelta);
             changed |= ManualPoseReferenceApplier.TryApplyBoundedMuscleOutputReference(
                 ref _appliedTargetPose,
                 inputPose,
-                GetSetHumanPoseRightLowerLegTwistInOutMuscleIndex(),
+                _muscleIndexMap.Get(HumanMuscleSlot.RightLowerLegTwistInOut),
                 weight,
                 maxDelta);
 
