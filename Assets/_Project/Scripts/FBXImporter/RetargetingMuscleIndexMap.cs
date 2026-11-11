@@ -41,7 +41,6 @@ namespace Fbx2Vmd.FBXImporter
     internal sealed class RetargetingMuscleIndexMap
     {
         private const int UnresolvedHumanMuscleIndex = -2;
-        private const int SlotCount = 30;
 
         // HumanMuscleSlot 순서와 1:1 대응하는 탐색 토큰표
         private static readonly string[][] SlotTokens =
@@ -110,7 +109,7 @@ namespace Fbx2Vmd.FBXImporter
 
         private static int[] CreateUnresolvedIndexArray()
         {
-            int[] indices = new int[SlotCount];
+            int[] indices = new int[SlotTokens.Length];
             for (int i = 0; i < indices.Length; i++)
             {
                 indices[i] = UnresolvedHumanMuscleIndex;

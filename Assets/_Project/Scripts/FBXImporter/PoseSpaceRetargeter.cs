@@ -1559,7 +1559,6 @@ namespace Fbx2Vmd.FBXImporter
         private readonly RetargetingPostSetEndpointDiagnostics _postSetEndpointDiagnostics = new RetargetingPostSetEndpointDiagnostics();
         private readonly RetargetingMuscleIndexMap _muscleIndexMap = new RetargetingMuscleIndexMap();
 
-
         private static Vector3 BuildNaNVector3()
         {
             return new Vector3(float.NaN, float.NaN, float.NaN);
@@ -3265,7 +3264,6 @@ namespace Fbx2Vmd.FBXImporter
             Quaternion rotation = animator.transform.rotation;
             return IsFinite(rotation) ? rotation : BuildNaNQuaternion();
         }
-
 
         private void RecordEditorFootLocalRotationReferenceDiagnostics(Vector3 leftFootBefore, Vector3 rightFootBefore)
         {
@@ -5800,68 +5798,6 @@ namespace Fbx2Vmd.FBXImporter
             return output;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         private static float CalculateFiniteAbsDelta(float a, float b)
         {
             return IsFinite(a) && IsFinite(b) ? Mathf.Abs(a - b) : float.NaN;
@@ -5888,8 +5824,6 @@ namespace Fbx2Vmd.FBXImporter
         {
             return IsFinite(rotation) ? rotation.eulerAngles.y : float.NaN;
         }
-
-
 
         private void ClampPoseMuscles(ref HumanPose pose)
         {
