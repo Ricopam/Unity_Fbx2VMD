@@ -920,7 +920,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 721950035}
-        m_TargetAssemblyTypeName: FBXVmdPipeline, Assembly-CSharp
+        m_TargetAssemblyTypeName: FBXVmdPipeline, Fbx2Vmd.FBXImporter
         m_MethodName: OnClickImportButton
         m_Mode: 1
         m_Arguments:
