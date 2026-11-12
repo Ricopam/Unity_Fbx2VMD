@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using System;
 using System.IO;
-using System.Collections;
 using System.Linq;
 using Fbx2Vmd.FileSystem;
 using Fbx2Vmd.Recording;
@@ -820,7 +819,7 @@ namespace Fbx2Vmd.FBXImporter
         [Tooltip("Ghost 모델 보이기 (디버깅용)")]
         [FormerlySerializedAs("showGhostModel")]
         [SerializeField] private bool _showGhostModel= false;
-        public bool showGhostModel { get => _showGhostModel; private set => _showGhostModel = value; }
+        public bool showGhostModel { get => _showGhostModel; internal set => _showGhostModel = value; }
 
         [Tooltip("When the imported Ghost has no renderers, draw a simple skeleton fallback so the debug display is still visible.")]
         [FormerlySerializedAs("showGhostSkeletonWhenNoRenderers")]
@@ -1412,7 +1411,7 @@ namespace Fbx2Vmd.FBXImporter
         private TargetIdlePoseGuard _idlePoseGuard;
 #if UNITY_EDITOR
         private FBXEditorDiagnosticSession _editorDiagnosticSession;
-        private Coroutine _editorDiagnosticBatchAdvanceCoroutine;
+        internal Coroutine _editorDiagnosticBatchAdvanceCoroutine;
 #endif
         #endregion
 
@@ -1638,145 +1637,7 @@ namespace Fbx2Vmd.FBXImporter
         }
 
 #if UNITY_EDITOR
-        public bool StartEditorDiagnosticSmoke(
-            string fbxFileName,
-            float durationSeconds,
-            int targetFrameCount,
-            bool enableDiagnostics,
-            bool enableFingerCloseups,
-            bool useDeterministicCaptureFramerate,
-            float diagnosticStartDelay,
-            EditorDiagnosticSmokeSegment segment = EditorDiagnosticSmokeSegment.Head,
-            float[] sampleTimesOverride = null,
-            int captureWidthOverride = 0,
-            int captureHeightOverride = 0,
-            float diagnosticScreenshotPaddingOverride = float.NaN,
-            float diagnosticScreenshotVerticalViewportCenterOverride = float.NaN,
-            float recordingStartTimeOverrideSeconds = float.NaN,
-            float recordingPlaybackSpeedOverride = float.NaN,
-            bool useInputBaseName = false)
-        {
-            // 녹화 중 시작하면 변환 가드에 막혀 진단 세션과 덮어쓴 설정이 복원되지 않고 남음.
-            if (IsImportedMotionRecording)
-            {
-                Debug.LogWarning("[FBXImport] 영상 녹화 중이라 smoke 진단을 시작하지 않았습니다.");
-                return false;
-            }
-
-            if (_isProcessing)
-            {
-                Debug.LogWarning("[FBXImport] 다른 FBX 처리가 진행 중이라 smoke 진단을 시작하지 않았습니다.");
-                return false;
-            }
-
-            if (!ShouldRecordVmdAfterImport)
-            {
-                Debug.LogWarning(
-                    "[FBXImport] VMD 자동 변환이 꺼져 있어 VMD 산출물이 필요한 smoke 진단을 시작하지 않았습니다. " +
-                    "FBXVmdPipeline 인스펙터의 VMD 녹화에서 자동 변환을 켜세요.");
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(fbxFileName))
-            {
-                Debug.LogError("[FBXImport] smoke 진단 FBX 파일명이 비어 있습니다.");
-                return false;
-            }
-
-            string sourcePath = FBXEditorDiagnosticPlanner.ResolveFbxPath(
-                fbxFileName,
-                FBXImportController.GetControlledImportDirectory(),
-                Application.dataPath,
-                File.Exists);
-            if (!File.Exists(sourcePath))
-            {
-                Debug.LogError($"[FBXImport] smoke 진단 FBX를 찾을 수 없습니다: {sourcePath}");
-                return false;
-            }
-
-            if (!TargetRendererIsolationValidator.TryValidateLoadedObjects(
-                    targetCharacter,
-                    out string rendererIsolationFailure))
-            {
-                Debug.LogError($"[FBXImport] {rendererIsolationFailure}");
-                return false;
-            }
-
-            float safeDuration = Mathf.Max(0.1f, durationSeconds);
-            int safeTargetFrameCount = targetFrameCount > 0
-                ? targetFrameCount
-                : Mathf.CeilToInt(safeDuration * EDITOR_DIAGNOSTIC_SMOKE_FRAME_RATE);
-
-            CaptureEditorSmokeSettings();
-            enableRecordingDiagnostics = enableDiagnostics;
-            enableDiagnosticFingerCloseups = enableFingerCloseups;
-            useDeterministicCaptureFramerateForDiagnostics = useDeterministicCaptureFramerate;
-            startDelay = Mathf.Clamp(diagnosticStartDelay, 0f, 10f);
-            showGhostModel = false;
-
-            float[] clonedSampleTimes =
-                FBXEditorDiagnosticPlanner.CloneSampleTimes(sampleTimesOverride);
-            bool hasCaptureResolutionOverride =
-                FBXEditorDiagnosticPlanner.TryBuildCaptureResolutionOverride(
-                captureWidthOverride,
-                captureHeightOverride,
-                out int captureWidth,
-                out int captureHeight);
-            float screenshotPaddingOverride =
-                FBXEditorDiagnosticPlanner.NormalizeScreenshotPaddingOverride(
-                    diagnosticScreenshotPaddingOverride);
-            float screenshotVerticalViewportCenterOverride =
-                FBXEditorDiagnosticPlanner.NormalizeScreenshotVerticalViewportCenterOverride(
-                    diagnosticScreenshotVerticalViewportCenterOverride);
-            bool useKnownReferenceTiming =
-                FBXEditorDiagnosticPlanner.ShouldUseKnownReferenceTiming(
-                Path.GetFileNameWithoutExtension(sourcePath),
-                safeDuration,
-                safeTargetFrameCount,
-                EDITOR_DIAGNOSTIC_SMOKE_FRAME_RATE,
-                useKnownMmdReferenceTiming);
-            float startTimeOverride =
-                FBXEditorDiagnosticPlanner.NormalizeStartTimeOverride(
-                    recordingStartTimeOverrideSeconds);
-            float playbackSpeedOverride =
-                FBXEditorDiagnosticPlanner.NormalizePlaybackSpeedOverride(
-                    recordingPlaybackSpeedOverride);
-            EditorDiagnosticSession.Begin(new FBXEditorDiagnosticSession.Plan
-            {
-                DurationSeconds = safeDuration,
-                TargetFrameCount = safeTargetFrameCount,
-                SampleTimesOverride = clonedSampleTimes,
-                Segment = segment,
-                CurrentFbxFileName = Path.GetFileName(sourcePath),
-                HasCaptureResolutionOverride = hasCaptureResolutionOverride,
-                CaptureWidth = captureWidth,
-                CaptureHeight = captureHeight,
-                DiagnosticScreenshotPaddingOverride = screenshotPaddingOverride,
-                DiagnosticScreenshotVerticalViewportCenterOverride =
-                    screenshotVerticalViewportCenterOverride,
-                UseKnownReferenceTiming = useKnownReferenceTiming,
-                UseInputBaseName = useInputBaseName,
-                RecordingStartTimeOverrideSeconds = startTimeOverride,
-                RecordingPlaybackSpeedOverride = playbackSpeedOverride
-            });
-
-            Debug.Log(
-                $"[FBXImport] Editor smoke 진단 시작: FBX={Path.GetFileName(sourcePath)}, " +
-                $"duration={safeDuration:F2}s, targetFrameCount={safeTargetFrameCount}, " +
-                $"segment={FBXEditorDiagnosticPlanner.GetSegmentLabel(segment)}, diagnostics={enableDiagnostics}");
-            LogEditorSmokeThumbState("smoke-start-before-process");
-            if (EditorDiagnosticSession.HasCaptureResolutionOverride)
-            {
-                Debug.Log(
-                    $"[FBXImport] Editor smoke capture override: " +
-                    $"{EditorDiagnosticSession.CaptureWidth}x{EditorDiagnosticSession.CaptureHeight}");
-            }
-
-            ProcessFBXAsync(sourcePath);
-            return true;
-        }
-
-        private void CaptureEditorSmokeSettings()
+        internal void CaptureEditorSmokeSettings()
         {
             EditorDiagnosticSession.CaptureSettings(
                 new FBXEditorDiagnosticSession.SettingsSnapshot(
@@ -1799,38 +1660,6 @@ namespace Fbx2Vmd.FBXImporter
                 startDelay = settingsSnapshot.StartDelay;
                 showGhostModel = settingsSnapshot.ShowGhostModel;
             }
-        }
-
-        public void ScheduleEditorDiagnosticBatchAdvance(Action continuation)
-        {
-            if (_editorDiagnosticBatchAdvanceCoroutine != null)
-            {
-                StopCoroutine(_editorDiagnosticBatchAdvanceCoroutine);
-                _editorDiagnosticBatchAdvanceCoroutine = null;
-            }
-
-            if (!Application.isPlaying || !isActiveAndEnabled)
-            {
-                ResetTargetStateAfterSession(recaptureGuardBaselines: false);
-                continuation?.Invoke();
-                return;
-            }
-
-            _editorDiagnosticBatchAdvanceCoroutine = StartCoroutine(EditorDiagnosticBatchAdvanceRoutine(continuation));
-        }
-
-        private IEnumerator EditorDiagnosticBatchAdvanceRoutine(Action continuation)
-        {
-            Debug.Log("[FBXImport] Editor smoke batch advance reset: target idle 상태를 다음 FBX 시작 전 다시 고정합니다.");
-            LogEditorSmokeThumbState("batch-advance-before-reset");
-            ResetTargetStateAfterSession(recaptureGuardBaselines: false);
-            yield return null;
-            ResetTargetStateAfterSession(recaptureGuardBaselines: false);
-            yield return null;
-            ResetTargetStateAfterSession(recaptureGuardBaselines: false);
-            LogEditorSmokeThumbState("batch-advance-after-reset");
-            _editorDiagnosticBatchAdvanceCoroutine = null;
-            continuation?.Invoke();
         }
 
         internal void NotifyEditorSmokeFinished(VmdSaveResult result)
@@ -2956,7 +2785,7 @@ namespace Fbx2Vmd.FBXImporter
         }
 
 #if UNITY_EDITOR
-        private void LogEditorSmokeThumbState(string stage)
+        internal void LogEditorSmokeThumbState(string stage)
         {
             if (!EditorDiagnosticSession.IsRecordingOverrideActive || targetCharacter == null)
             {

@@ -1168,7 +1168,8 @@ namespace Fbx2Vmd.FBXImporter
                 _activeFBXVmdPipeline.ShouldRecordVmdAfterImport = true;
                 Debug.Log("[YybVisualComparisonBatchRunner] 진단 세션 동안 VMD 자동 변환을 임시로 켭니다(씬 기본값 유지).");
             }
-            bool started = _activeFBXVmdPipeline.StartEditorDiagnosticSmoke(
+            bool started = EditorDiagnosticSmokeDriver.StartEditorDiagnosticSmoke(
+                _activeFBXVmdPipeline,
                 _currentRunOptions.fbxFileName,
                 _currentRunOptions.durationSeconds,
                 _currentRunOptions.targetFrameCount,
@@ -1191,7 +1192,7 @@ namespace Fbx2Vmd.FBXImporter
 
             if (!started)
             {
-                throw new InvalidOperationException("FBXVmdPipeline.StartEditorDiagnosticSmoke가 false를 반환했습니다.");
+                throw new InvalidOperationException("EditorDiagnosticSmokeDriver.StartEditorDiagnosticSmoke가 false를 반환했습니다.");
             }
 
             Debug.Log($"[YybVisualComparisonBatchRunner] 시작됨: {_activeJob.DisplayName}");

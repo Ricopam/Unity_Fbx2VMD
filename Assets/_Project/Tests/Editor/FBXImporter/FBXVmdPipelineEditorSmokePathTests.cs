@@ -410,7 +410,8 @@ namespace Tests.Editor.FBXImporter
                     "[FBXImport] VMD 자동 변환이 꺼져 있어 VMD 산출물이 필요한 smoke 진단을 시작하지 않았습니다. " +
                     "FBXVmdPipeline 인스펙터의 VMD 녹화에서 자동 변환을 켜세요.");
 
-                bool started = fileManager.StartEditorDiagnosticSmoke(
+                bool started = EditorDiagnosticSmokeDriver.StartEditorDiagnosticSmoke(
+                    fileManager,
                     "unused.fbx",
                     durationSeconds: 1f,
                     targetFrameCount: 30,

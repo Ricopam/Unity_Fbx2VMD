@@ -3142,7 +3142,8 @@ namespace Fbx2Vmd.FBXImporter
                 fileManager.ShouldRecordVmdAfterImport = true;
                 Debug.Log("[FbxPlaybackSmokeRunner] smoke 진단 동안 VMD 자동 변환을 임시로 켭니다(씬 기본값 유지).");
             }
-            bool started = fileManager.StartEditorDiagnosticSmoke(
+            bool started = EditorDiagnosticSmokeDriver.StartEditorDiagnosticSmoke(
+                fileManager,
                 fbxFileName,
                 safeDuration,
                 targetFrameCount,
@@ -3330,7 +3331,8 @@ namespace Fbx2Vmd.FBXImporter
             _activeBatchFbxFileName = null;
             if (_batchFBXVmdPipeline != null)
             {
-                _batchFBXVmdPipeline.ScheduleEditorDiagnosticBatchAdvance(StartNextBatchSmoke);
+                EditorDiagnosticSmokeDriver.ScheduleEditorDiagnosticBatchAdvance(
+                    _batchFBXVmdPipeline, StartNextBatchSmoke);
             }
             else
             {
