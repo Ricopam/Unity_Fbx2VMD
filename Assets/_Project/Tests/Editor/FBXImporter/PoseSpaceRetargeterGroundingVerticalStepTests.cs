@@ -419,22 +419,38 @@ namespace Tests.Editor.FBXImporter
 
         private static void SetField<T>(PoseSpaceRetargeter retargeter, string fieldName, T value)
         {
-            FieldInfo field = typeof(PoseSpaceRetargeter).GetField(
-                fieldName,
-                BindingFlags.Instance | BindingFlags.NonPublic);
-
-            Assert.That(field, Is.Not.Null, $"Expected field '{fieldName}' to exist.");
-            field.SetValue(retargeter, value);
+            object owner = ResolveFieldOwner(retargeter, fieldName, out FieldInfo field);
+            field.SetValue(owner, value);
         }
 
         private static T GetField<T>(PoseSpaceRetargeter retargeter, string fieldName)
         {
-            FieldInfo field = typeof(PoseSpaceRetargeter).GetField(
+            object owner = ResolveFieldOwner(retargeter, fieldName, out FieldInfo field);
+            return (T)field.GetValue(owner);
+        }
+
+        // 그라운딩 상태는 RetargetingGroundingProcessor로 이관됨 — 리타게터 필드 폴백 후 프로세서 검색함.
+        private static object ResolveFieldOwner(
+            PoseSpaceRetargeter retargeter, string fieldName, out FieldInfo field)
+        {
+            field = typeof(PoseSpaceRetargeter).GetField(
                 fieldName,
                 BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field != null)
+            {
+                return retargeter;
+            }
 
+            FieldInfo groundingField = typeof(PoseSpaceRetargeter).GetField(
+                "_grounding",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(groundingField, Is.Not.Null, "Expected field '_grounding' to exist.");
+            object grounding = groundingField.GetValue(retargeter);
+            field = grounding.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null, $"Expected field '{fieldName}' to exist.");
-            return (T)field.GetValue(retargeter);
+            return grounding;
         }
     }
 }
