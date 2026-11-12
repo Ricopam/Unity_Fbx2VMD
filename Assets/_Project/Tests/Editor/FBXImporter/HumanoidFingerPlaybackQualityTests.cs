@@ -420,7 +420,7 @@ namespace Tests.Editor.FBXImporter
 
         private static void EnsureHumanoidClipImport()
         {
-            Type configuratorType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type configuratorType = typeof(FbxEditorFeatureWiring).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator",
                 throwOnError: false);
             MethodInfo method = configuratorType?.GetMethod(

@@ -305,10 +305,7 @@ namespace Fbx2Vmd.FBXImporter
 
         private static void EnsureHumanoidClipImport(string clipPath)
         {
-            Type configurator = typeof(FBXVmdPipeline).Assembly.GetType(
-                "Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator", throwOnError: false);
-            MethodInfo method = configurator?.GetMethod("EnsureHumanoid", Flags);
-            method?.Invoke(null, new object[] { clipPath });
+            EditorHumanoidClipImportConfigurator.EnsureHumanoid(clipPath);
         }
 
         private static AnimationClip LoadHumanoidClip(string clipPath)

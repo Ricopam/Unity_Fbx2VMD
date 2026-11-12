@@ -21,7 +21,7 @@ namespace Tests.Editor.FBXImporter
         [OneTimeSetUp]
         public void EnsureHumanoidClipImport()
         {
-            Type configuratorType = typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly.GetType(
+            Type configuratorType = typeof(Fbx2Vmd.FBXImporter.FbxEditorFeatureWiring).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator",
                 throwOnError: true);
             MethodInfo method = configuratorType.GetMethod(

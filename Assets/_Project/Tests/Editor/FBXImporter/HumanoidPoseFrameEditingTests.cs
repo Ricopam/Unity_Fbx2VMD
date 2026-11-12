@@ -728,8 +728,11 @@ namespace Tests.Editor.FBXImporter
         private static Type RequireType(string fullName)
         {
             Type type = typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly.GetType(
-                fullName,
-                throwOnError: false);
+                    fullName,
+                    throwOnError: false) ??
+                typeof(Fbx2Vmd.FBXImporter.FbxEditorFeatureWiring).Assembly.GetType(
+                    fullName,
+                    throwOnError: false);
             Assert.That(type, Is.Not.Null, $"{fullName} 타입이 필요합니다.");
             return type;
         }

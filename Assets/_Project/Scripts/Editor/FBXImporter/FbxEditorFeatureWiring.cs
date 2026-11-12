@@ -20,6 +20,8 @@ namespace Fbx2Vmd.FBXImporter
             MotionVideoEditorHooks.TryFindMotionStartTime = HumanoidMotionLeadingStillLocator.TryFindMotionStartTime;
             HumanoidReferenceEditorHooks.Apply = EditorHumanoidReferenceApplier.Apply;
             HumanoidReferenceEditorHooks.ApplyManualPoseReference = EditorHumanoidReferenceApplier.ApplyManualPoseReference;
+            CharacterLibrary.CharacterLibraryEditorHooks.EnsureHumanoidAvatar =
+                CharacterLibrary.EditorHumanoidAvatarConfigurator.EnsureHumanoidAvatar;
         }
     }
 }

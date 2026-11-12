@@ -120,7 +120,7 @@ namespace Tests.Editor.FBXImporter
                 if (scenario == "normalizedTemplateDuplicate") template.Add("Left Shoulder", left.name);
                 if (scenario == "emptyTemplateValue") template["Chest"] = "";
                 HumanBone[] original = (HumanBone[])source.Clone();
-                Type type = typeof(FBXImportController).Assembly.GetType("Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator");
+                Type type = typeof(FbxEditorFeatureWiring).Assembly.GetType("Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator");
                 MethodInfo method = type.GetMethod("TryCompleteTemplateChestMapping", BindingFlags.Static | BindingFlags.NonPublic);
                 Assert.That(method, Is.Not.Null);
                 object[] args = { root, source, template, null };
@@ -298,7 +298,7 @@ namespace Tests.Editor.FBXImporter
 
         private static bool BuildFallback(GameObject root, HumanDescription current, out HumanDescription result)
         {
-            Type type = typeof(FBXImportController).Assembly.GetType("Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator");
+            Type type = typeof(FbxEditorFeatureWiring).Assembly.GetType("Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator");
             MethodInfo method = type.GetMethod("TryBuildFallbackHumanDescription", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null);
             object[] args = { root, current, null };
@@ -309,7 +309,7 @@ namespace Tests.Editor.FBXImporter
 
         private static bool EnsureHumanoid(string path)
         {
-            Type type = typeof(FBXImportController).Assembly.GetType("Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator");
+            Type type = typeof(FbxEditorFeatureWiring).Assembly.GetType("Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator");
             MethodInfo method = type.GetMethod("EnsureHumanoid", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null);
             return (bool)method.Invoke(null, new object[] { path });
@@ -317,7 +317,7 @@ namespace Tests.Editor.FBXImporter
 
         private static bool Resolve(GameObject root, HumanBone[] source, out HumanBone[] result)
         {
-            Type type = typeof(FBXImportController).Assembly.GetType("Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator");
+            Type type = typeof(FbxEditorFeatureWiring).Assembly.GetType("Fbx2Vmd.FBXImporter.EditorHumanoidClipImportConfigurator");
             MethodInfo method = type.GetMethod("TryResolveHumanBoneNames", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null);
             object[] args = { root, source, null };

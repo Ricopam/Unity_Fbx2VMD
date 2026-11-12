@@ -1537,8 +1537,11 @@ namespace Tests.Editor.FBXImporter
         private static Type RequireProductType(string typeName)
         {
             Type type = typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly.GetType(
-                $"Fbx2Vmd.FBXImporter.{typeName}",
-                throwOnError: false);
+                    $"Fbx2Vmd.FBXImporter.{typeName}",
+                    throwOnError: false) ??
+                typeof(FbxEditorFeatureWiring).Assembly.GetType(
+                    $"Fbx2Vmd.FBXImporter.{typeName}",
+                    throwOnError: false);
             Assert.That(type, Is.Not.Null, $"제품 타입 {typeName}이 필요합니다.");
             return type;
         }
