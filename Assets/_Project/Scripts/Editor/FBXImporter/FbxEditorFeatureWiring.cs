@@ -15,6 +15,7 @@ namespace Fbx2Vmd.FBXImporter
             RetargetingEditorReferenceHooks.ThumbReference = new Editor.EditorThumbReferenceDriver();
             RetargetingEditorReferenceHooks.SleeveReference = new Editor.EditorRightSleeveSilhouetteDriver();
             RetargetingEditorReferenceHooks.FootHeightReference = new Editor.EditorFootHeightReferenceDriver();
+            HumanoidPlaybackEditorHooks.CreateRootTranslationSampler = () => new EditorHumanoidRootTranslationSampler();
         }
     }
 }

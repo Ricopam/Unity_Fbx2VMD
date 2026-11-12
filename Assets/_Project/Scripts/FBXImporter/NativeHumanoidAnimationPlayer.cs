@@ -18,13 +18,11 @@ namespace Fbx2Vmd.FBXImporter
         private bool _originalApplyRootMotion;
         private AnimatorCullingMode _originalCullingMode;
         private RuntimeAnimatorController _originalAnimatorController;
-#if UNITY_EDITOR
-        private readonly EditorHumanoidRootTranslationSampler _rootTranslationSampler =
-            new EditorHumanoidRootTranslationSampler();
+        private readonly IEditorRootTranslationSampler _rootTranslationSampler =
+            HumanoidPlaybackEditorHooks.CreateRootTranslationSampler?.Invoke();
         private Vector3 _rootPositionAnchor;
         private Quaternion _rootRotationAnchor;
         private bool _hasRootTranslationAnchor;
-#endif
 
         internal bool IsInitialized => _graph.IsValid();
 
@@ -45,12 +43,10 @@ namespace Fbx2Vmd.FBXImporter
             _originalApplyRootMotion = targetAnimator.applyRootMotion;
             _originalCullingMode = targetAnimator.cullingMode;
             _originalAnimatorController = targetAnimator.runtimeAnimatorController;
-#if UNITY_EDITOR
             _rootPositionAnchor = targetAnimator.transform.position;
             _rootRotationAnchor = targetAnimator.transform.rotation;
-            _hasRootTranslationAnchor = true;
-            _rootTranslationSampler.Initialize(clip);
-#endif
+            _hasRootTranslationAnchor = _rootTranslationSampler != null;
+            _rootTranslationSampler?.Initialize(clip);
 
             try
             {
@@ -96,9 +92,7 @@ namespace Fbx2Vmd.FBXImporter
             double evaluationTime = Mathf.Clamp(timeSeconds, 0f, clip.length);
             _clipPlayable.SetTime(evaluationTime);
             _graph.Evaluate(0f);
-#if UNITY_EDITOR
             ApplyEditorRootTranslation((float)evaluationTime);
-#endif
         }
 
         public void Dispose()
@@ -110,9 +104,7 @@ namespace Fbx2Vmd.FBXImporter
 
             if (_targetAnimator != null)
             {
-#if UNITY_EDITOR
                 RestoreEditorRootTranslationAnchor();
-#endif
                 _targetAnimator.applyRootMotion = _originalApplyRootMotion;
                 _targetAnimator.cullingMode = _originalCullingMode;
                 _targetAnimator.runtimeAnimatorController = _originalAnimatorController;
@@ -121,19 +113,17 @@ namespace Fbx2Vmd.FBXImporter
             _clipPlayable = default;
             _targetAnimator = null;
             _originalAnimatorController = null;
-#if UNITY_EDITOR
-            _rootTranslationSampler.Clear();
+            _rootTranslationSampler?.Clear();
             _rootPositionAnchor = Vector3.zero;
             _rootRotationAnchor = Quaternion.identity;
             _hasRootTranslationAnchor = false;
-#endif
         }
 
-#if UNITY_EDITOR
         private void ApplyEditorRootTranslation(float timeSeconds)
         {
             if (!_hasRootTranslationAnchor ||
                 _targetAnimator == null ||
+                _rootTranslationSampler == null ||
                 !_rootTranslationSampler.TryEvaluateClipSpaceOffset(
                     timeSeconds,
                     out Vector3 clipSpaceOffset))
@@ -163,7 +153,6 @@ namespace Fbx2Vmd.FBXImporter
                 currentPosition.y,
                 _rootPositionAnchor.z);
         }
-#endif
 
         private static void ValidateTarget(Animator targetAnimator)
         {

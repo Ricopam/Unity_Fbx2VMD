@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 
@@ -7,7 +6,7 @@ namespace Fbx2Vmd.FBXImporter
     /// <summary>
     /// 에디터 Humanoid 클립의 RootT XZ 궤적을 절대 시간 기준으로 샘플링함.
     /// </summary>
-    internal sealed class EditorHumanoidRootTranslationSampler
+    internal sealed class EditorHumanoidRootTranslationSampler : IEditorRootTranslationSampler
     {
         private const string RootTranslationXProperty = "RootT.x";
         private const string RootTranslationZProperty = "RootT.z";
@@ -18,11 +17,11 @@ namespace Fbx2Vmd.FBXImporter
         private float _clipLengthSeconds;
         private float _sourceHumanScale = 1f;
 
-        internal bool IsAvailable =>
+        public bool IsAvailable =>
             _rootTranslationX != null &&
             _rootTranslationZ != null;
 
-        internal void Initialize(AnimationClip clip)
+        public void Initialize(AnimationClip clip)
         {
             Clear();
             if (clip == null || !clip.humanMotion)
@@ -59,7 +58,7 @@ namespace Fbx2Vmd.FBXImporter
             _sourceHumanScale = ResolveSourceHumanScale(clip);
         }
 
-        internal bool TryEvaluateClipSpaceOffset(
+        public bool TryEvaluateClipSpaceOffset(
             float timeSeconds,
             out Vector3 clipSpaceOffset)
         {
@@ -76,7 +75,7 @@ namespace Fbx2Vmd.FBXImporter
             return IsFinite(clipSpaceOffset);
         }
 
-        internal void Clear()
+        public void Clear()
         {
             _rootTranslationX = null;
             _rootTranslationZ = null;
@@ -132,4 +131,3 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 }
-#endif
