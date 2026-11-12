@@ -2397,9 +2397,9 @@ namespace Fbx2Vmd.FBXImporter
             if (!_motionVideoRangeEnabled)
             {
                 if (_motionVideoSkipLeadingStill &&
-                    HumanoidMotionLeadingStillLocator.TryFindMotionStartTime(
+                    (MotionVideoEditorHooks.TryFindMotionStartTime?.Invoke(
                         playback.PreparedClip,
-                        out float stillEndSeconds))
+                        out float stillEndSeconds) ?? false))
                 {
                     Debug.Log(
                         $"[FBXImport] 클립 선두 정지 구간을 건너뛰어 " +

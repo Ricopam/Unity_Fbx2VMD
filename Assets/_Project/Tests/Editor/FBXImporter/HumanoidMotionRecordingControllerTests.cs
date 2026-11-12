@@ -674,7 +674,7 @@ namespace Tests.Editor.FBXImporter
 
         private static bool TryLocateMotionStart(AnimationClip clip, out float motionStart)
         {
-            Type locatorType = typeof(Fbx2Vmd.FBXImporter.FBXVmdPipeline).Assembly.GetType(
+            Type locatorType = typeof(Fbx2Vmd.FBXImporter.FbxEditorFeatureWiring).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.HumanoidMotionLeadingStillLocator",
                 throwOnError: true);
             MethodInfo method = locatorType.GetMethod(
