@@ -594,7 +594,7 @@ namespace Fbx2Vmd.FBXImporter.Editor
             if (!owner._initialThumbBaseHelperSourceDistances.ContainsKey(leftHand) ||
                 !owner._initialThumbBaseHelperSourceRelativeRotations.ContainsKey(leftHand))
             {
-                owner.CaptureThumbBaseHelperRelationshipBaseline(leftHand, helperTransform, sourceTransform);
+                ThumbBaseHelperResolver.CaptureRelationshipBaseline(owner, leftHand, helperTransform, sourceTransform);
             }
         }
 
@@ -606,7 +606,7 @@ namespace Fbx2Vmd.FBXImporter.Editor
                 return helperTransform;
             }
 
-            if (owner.TryFindThumbBaseHelperCandidate(leftHand, out helperTransform))
+            if (ThumbBaseHelperResolver.TryFindHelperCandidate(owner, leftHand, out helperTransform))
             {
                 owner._cachedThumbBaseHelpers[leftHand] = helperTransform;
                 return helperTransform;
@@ -623,7 +623,7 @@ namespace Fbx2Vmd.FBXImporter.Editor
                 return sourceTransform;
             }
 
-            if (owner.TryFindExplicitThumbBaseSource(leftHand, out sourceTransform))
+            if (ThumbBaseHelperResolver.TryFindExplicitSource(owner, leftHand, out sourceTransform))
             {
                 owner._cachedThumbBaseExplicitSources[leftHand] = sourceTransform;
                 return sourceTransform;

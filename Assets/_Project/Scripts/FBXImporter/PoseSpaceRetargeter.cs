@@ -2781,7 +2781,7 @@ namespace Fbx2Vmd.FBXImporter
             _poseWarningLogged = true;
         }
 
-        private static bool IsFinite(float value)
+        internal static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
@@ -2791,7 +2791,7 @@ namespace Fbx2Vmd.FBXImporter
             return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
         }
 
-        private static bool IsFinite(Quaternion value)
+        internal static bool IsFinite(Quaternion value)
         {
             return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z) && IsFinite(value.w);
         }
@@ -3881,50 +3881,8 @@ namespace Fbx2Vmd.FBXImporter
                 _targetInitialThumbLocalRotations[thumbTransform] = thumbTransform.localRotation;
             }
 
-            CaptureThumbBaseHelperState(true);
-            CaptureThumbBaseHelperState(false);
-        }
-
-        private void CaptureThumbBaseHelperState(bool leftHand)
-        {
-            if (!TryFindThumbBaseHelperCandidate(leftHand, out Transform helperTransform))
-            {
-                return;
-            }
-
-            _cachedThumbBaseHelpers[leftHand] = helperTransform;
-            if (!_targetInitialThumbBaseHelperLocalPositions.ContainsKey(helperTransform))
-            {
-                _targetInitialThumbBaseHelperLocalPositions[helperTransform] = helperTransform.localPosition;
-            }
-
-            if (!TryFindExplicitThumbBaseSource(leftHand, out Transform sourceTransform))
-            {
-                return;
-            }
-
-            _cachedThumbBaseExplicitSources[leftHand] = sourceTransform;
-            CaptureThumbBaseHelperRelationshipBaseline(leftHand, helperTransform, sourceTransform);
-        }
-
-        internal void CaptureThumbBaseHelperRelationshipBaseline(bool leftHand, Transform helperTransform, Transform sourceTransform)
-        {
-            if (helperTransform == null || sourceTransform == null)
-            {
-                return;
-            }
-
-            float initialDistance = Vector3.Distance(helperTransform.position, sourceTransform.position);
-            if (IsFinite(initialDistance))
-            {
-                _initialThumbBaseHelperSourceDistances[leftHand] = initialDistance;
-            }
-
-            Quaternion initialRelativeRotation = Quaternion.Inverse(sourceTransform.rotation) * helperTransform.rotation;
-            if (IsFinite(initialRelativeRotation))
-            {
-                _initialThumbBaseHelperSourceRelativeRotations[leftHand] = initialRelativeRotation;
-            }
+            ThumbBaseHelperResolver.CaptureState(this, true);
+            ThumbBaseHelperResolver.CaptureState(this, false);
         }
 
         internal static string FormatDebugFloat(float value)
@@ -3968,7 +3926,7 @@ namespace Fbx2Vmd.FBXImporter
             return null;
         }
 
-        private Transform FindTargetTransform(Func<Transform, bool> predicate)
+        internal Transform FindTargetTransform(Func<Transform, bool> predicate)
         {
             if (targetAnimator == null || targetAnimator.gameObject == null || predicate == null)
             {
@@ -3986,54 +3944,8 @@ namespace Fbx2Vmd.FBXImporter
             return null;
         }
 
-        internal bool TryFindThumbBaseHelperCandidate(bool leftHand, out Transform helper)
-        {
-            helper = FindThumbBaseHelperByName(leftHand);
-            if (helper != null)
-            {
-                return true;
-            }
 
-            Transform hand = targetAnimator != null
-                ? targetAnimator.GetBoneTransform(leftHand ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand)
-                : null;
-            if (hand == null)
-            {
-                return false;
-            }
-
-            Transform thumbProximal = targetAnimator.GetBoneTransform(leftHand ? HumanBodyBones.LeftThumbProximal : HumanBodyBones.RightThumbProximal);
-            Transform thumbIntermediate = targetAnimator.GetBoneTransform(leftHand ? HumanBodyBones.LeftThumbIntermediate : HumanBodyBones.RightThumbIntermediate);
-            Transform thumbDistal = targetAnimator.GetBoneTransform(leftHand ? HumanBodyBones.LeftThumbDistal : HumanBodyBones.RightThumbDistal);
-            Transform explicitSource = null;
-            TryFindExplicitThumbBaseSource(leftHand, out explicitSource);
-
-            float bestDistance = float.PositiveInfinity;
-            foreach (Transform candidate in hand.GetComponentsInChildren<Transform>(true))
-            {
-                if (!IsAmbiguousThumbExtraTransformCandidate(candidate, hand, thumbProximal, thumbIntermediate, thumbDistal))
-                {
-                    continue;
-                }
-
-                float distance = explicitSource != null
-                    ? (candidate.position - explicitSource.position).sqrMagnitude
-                    : thumbProximal != null
-                        ? (candidate.position - thumbProximal.position).sqrMagnitude
-                        : (candidate.position - hand.position).sqrMagnitude;
-                if (distance >= bestDistance)
-                {
-                    continue;
-                }
-
-                bestDistance = distance;
-                helper = candidate;
-            }
-
-            return helper != null;
-        }
-
-        private Transform FindThumbBaseHelperByName(bool leftHand)
+        internal Transform FindThumbBaseHelperByName(bool leftHand)
         {
             string sideToken = leftHand ? "left" : "right";
             return FindTargetTransform(candidate =>
@@ -4044,106 +3956,7 @@ namespace Fbx2Vmd.FBXImporter
             });
         }
 
-        internal bool TryFindExplicitThumbBaseSource(bool leftHand, out Transform source)
-        {
-            string sideToken = leftHand ? "left" : "right";
-            source = FindTargetTransform(candidate =>
-            {
-                string normalizedName = NormalizeTransformName(candidate.name);
-                return normalizedName.Contains(sideToken) &&
-                    ThumbTransformNamePolicy.IsActiveBaseSource(normalizedName);
-            });
-            if (source != null)
-            {
-                return true;
-            }
-
-            Transform hand = targetAnimator != null
-                ? targetAnimator.GetBoneTransform(leftHand ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand)
-                : null;
-            Transform thumbProximal = targetAnimator != null
-                ? targetAnimator.GetBoneTransform(leftHand ? HumanBodyBones.LeftThumbProximal : HumanBodyBones.RightThumbProximal)
-                : null;
-            if (hand == null)
-            {
-                return false;
-            }
-
-            float bestDistance = float.PositiveInfinity;
-            foreach (Transform candidate in targetAnimator.gameObject.GetComponentsInChildren<Transform>(true))
-            {
-                if (candidate == null)
-                {
-                    continue;
-                }
-
-                string normalizedName = NormalizeTransformName(candidate.name);
-                if (!ThumbTransformNamePolicy.IsActiveBaseSource(normalizedName))
-                {
-                    continue;
-                }
-
-                float distance = thumbProximal != null
-                    ? (candidate.position - thumbProximal.position).sqrMagnitude
-                    : (candidate.position - hand.position).sqrMagnitude;
-                if (distance >= bestDistance)
-                {
-                    continue;
-                }
-
-                bestDistance = distance;
-                source = candidate;
-            }
-
-            return source != null;
-        }
-
-        private static bool IsAmbiguousThumbExtraTransformCandidate(
-            Transform candidate,
-            Transform hand,
-            Transform thumbProximal,
-            Transform thumbIntermediate,
-            Transform thumbDistal)
-        {
-            if (candidate == null || candidate == hand || candidate == thumbProximal || candidate == thumbIntermediate || candidate == thumbDistal)
-            {
-                return false;
-            }
-
-            string normalizedName = NormalizeTransformName(candidate.name);
-            if (string.IsNullOrEmpty(normalizedName) ||
-                !normalizedName.Contains("thumb") ||
-                normalizedName.Contains("ghost") ||
-                ThumbTransformNamePolicy.IsActiveBaseSource(normalizedName))
-            {
-                return false;
-            }
-
-            if (normalizedName.Contains("thumb1") ||
-                normalizedName.Contains("thumb2") ||
-                normalizedName.Contains("thumb3") ||
-                normalizedName.Contains("proximal") ||
-                normalizedName.Contains("intermediate") ||
-                normalizedName.Contains("distal") ||
-                normalizedName.Contains("thumbtip"))
-            {
-                return false;
-            }
-
-            if (IsAncestorWithinHand(candidate, thumbProximal, hand) ||
-                IsAncestorWithinHand(candidate, thumbIntermediate, hand) ||
-                IsAncestorWithinHand(candidate, thumbDistal, hand) ||
-                IsAncestorWithinHand(thumbProximal, candidate, hand) ||
-                IsAncestorWithinHand(thumbIntermediate, candidate, hand) ||
-                IsAncestorWithinHand(thumbDistal, candidate, hand))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private static bool IsAncestorWithinHand(Transform ancestor, Transform descendant, Transform hand)
+        internal static bool IsAncestorWithinHand(Transform ancestor, Transform descendant, Transform hand)
         {
             if (ancestor == null || descendant == null || hand == null || ancestor == descendant)
             {
@@ -4169,7 +3982,7 @@ namespace Fbx2Vmd.FBXImporter
             return false;
         }
 
-        private static string NormalizeTransformName(string value)
+        internal static string NormalizeTransformName(string value)
         {
             return string.IsNullOrEmpty(value) ? "" : value.ToLowerInvariant();
         }

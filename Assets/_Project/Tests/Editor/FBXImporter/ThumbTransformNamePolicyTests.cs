@@ -18,19 +18,20 @@ namespace Tests.Editor.FBXImporter
             Type policyType = typeof(HumanoidThumbDeformationGuard).Assembly.GetType(PolicyTypeName);
             string guardSource = ReadRuntimeSource("HumanoidThumbDeformationGuard.cs");
             string retargeterSource = ReadRuntimeSource("PoseSpaceRetargeter.cs");
+            string resolverSource = ReadRuntimeSource("ThumbBaseHelperResolver.cs");
 
             Assert.That(policyType, Is.Not.Null);
             Assert.That(guardSource, Does.Contain("ThumbTransformNamePolicy.IsBaseHelper("));
             Assert.That(guardSource, Does.Contain("ThumbTransformNamePolicy.IsActiveBaseSource("));
             Assert.That(guardSource, Does.Contain("ThumbTransformNamePolicy.TryResolveSide("));
-            Assert.That(retargeterSource, Does.Contain("ThumbTransformNamePolicy.IsActiveBaseSource("));
+            Assert.That(resolverSource, Does.Contain("ThumbTransformNamePolicy.IsActiveBaseSource("));
             Assert.That(retargeterSource, Does.Contain("ThumbTransformNamePolicy.IsDetachedBaseHelper("));
             Assert.That(guardSource, Does.Not.Contain("private static bool IsThumbBaseHelperName("));
             Assert.That(guardSource, Does.Not.Contain("private static bool IsActiveThumbBaseSourceName("));
             Assert.That(guardSource, Does.Not.Contain("private static bool TryResolveThumbSideFromName("));
-            Assert.That(retargeterSource, Does.Not.Contain("private static bool IsActiveThumbBaseSourceName("));
-            Assert.That(retargeterSource, Does.Not.Contain("private static bool IsDetachedThumbBaseHelperName("));
-            Assert.That(retargeterSource, Does.Not.Contain("private static bool IsThumbBaseName("));
+            Assert.That(resolverSource, Does.Not.Contain("private static bool IsActiveThumbBaseSourceName("));
+            Assert.That(resolverSource, Does.Not.Contain("private static bool IsDetachedThumbBaseHelperName("));
+            Assert.That(resolverSource, Does.Not.Contain("private static bool IsThumbBaseName("));
         }
 
         [TestCase(null, false)]
