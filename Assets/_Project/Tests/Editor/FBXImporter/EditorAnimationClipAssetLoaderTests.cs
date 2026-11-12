@@ -39,7 +39,7 @@ namespace Tests.Editor.FBXImporter
 
         private static AnimationClip LoadFirst(string assetPath)
         {
-            Type loaderType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type loaderType = typeof(FbxEditorFeatureWiring).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.EditorAnimationClipAssetLoader",
                 throwOnError: false);
             Assert.That(loaderType, Is.Not.Null, "모델 중립 AnimationClip asset loader 타입이 필요합니다.");
