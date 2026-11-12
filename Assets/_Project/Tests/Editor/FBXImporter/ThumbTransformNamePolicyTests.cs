@@ -17,7 +17,7 @@ namespace Tests.Editor.FBXImporter
         {
             Type policyType = typeof(HumanoidThumbDeformationGuard).Assembly.GetType(PolicyTypeName);
             string guardSource = ReadRuntimeSource("HumanoidThumbDeformationGuard.cs");
-            string retargeterSource = ReadRuntimeSource("PoseSpaceRetargeter.cs");
+            string retargeterSource = ReadRuntimeSource("PoseSpaceRetargeter.TargetTransforms.cs");
             string resolverSource = ReadRuntimeSource("ThumbBaseHelperResolver.cs");
 
             Assert.That(policyType, Is.Not.Null);
