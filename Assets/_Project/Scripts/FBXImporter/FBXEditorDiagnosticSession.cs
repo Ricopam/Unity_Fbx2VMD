@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using System;
 
 namespace Fbx2Vmd.FBXImporter
@@ -137,4 +136,3 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 }
-#endif

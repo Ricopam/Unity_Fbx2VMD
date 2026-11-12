@@ -1415,7 +1415,6 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         #endregion
 
-#if UNITY_EDITOR
         public enum EditorDiagnosticSmokeSegment
         {
             Head,
@@ -1423,6 +1422,7 @@ namespace Fbx2Vmd.FBXImporter
             Tail
         }
 
+#if UNITY_EDITOR
         public event Action<string, VmdSaveResult> EditorDiagnosticSmokeFinished
         {
             add => EditorDiagnosticSession.Finished += value;
