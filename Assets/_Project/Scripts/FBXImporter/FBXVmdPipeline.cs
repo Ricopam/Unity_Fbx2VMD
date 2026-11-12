@@ -1567,6 +1567,7 @@ namespace Fbx2Vmd.FBXImporter
         internal bool ShouldUseEditorHumanoidPlaybackSession =>
             Application.isPlaying && !EditorDiagnosticSession.IsRecordingOverrideActive;
 #else
+        internal bool ShouldUseEditorHumanoidPlaybackSession => false;
         // 빌드에서는 자동 녹화가 꺼진 임포트를 대화형 재생 세션으로 연다.
         internal bool ShouldUseRuntimeHumanoidPlaybackSession =>
             !ShouldRecordVmdAfterImport;

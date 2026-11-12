@@ -689,39 +689,16 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-#if UNITY_EDITOR
         private FBXConversionResult RunEditorHumanoidPlaybackSession(
             FBXConversionRequest request,
             FBXImportController importController)
         {
-            var editorImportController = new EditorHumanoidMotionImportController(
+            return ConversionEditorHooks.HumanoidPlaybackSession?.RunSession(
                 _pipeline,
-                importController);
-            EditorHumanoidMotionImportResult importResult =
-                editorImportController.Prepare(request.SourcePath);
-            if (!importResult.IsSuccess)
-            {
-                _pipeline.FailSession(importResult.ErrorMessage);
-                return FBXConversionResult.Fail(importResult.ErrorMessage);
-            }
-
-            if (!TryResolveTargetAnimator(
-                    _pipeline.targetCharacter,
-                    out Animator targetAnimator,
-                    out string targetErrorMessage))
-            {
-                _pipeline.FailSession(targetErrorMessage);
-                return FBXConversionResult.Fail(targetErrorMessage);
-            }
-
-            _pipeline.PrepareEditorHumanoidPlayback(
-                targetAnimator,
-                importResult.Clip,
-                importResult.OutputBaseName,
-                importResult.SourceModelAsset);
-            return FBXConversionResult.Succeed(importResult.OutputBaseName);
+                request,
+                importController)
+                ?? FBXConversionResult.Fail("에디터 재생 세션 드라이버가 연결되지 않았습니다.");
         }
-#endif
 
         /// <summary>
         /// import부터 녹화 시작까지의 변환 use case 순서를 조정함.
@@ -740,12 +717,10 @@ namespace Fbx2Vmd.FBXImporter
 
             try
             {
-#if UNITY_EDITOR
                 if (_pipeline.ShouldUseEditorHumanoidPlaybackSession)
                 {
                     return RunEditorHumanoidPlaybackSession(request, importController);
                 }
-#endif
 
                 FBXModelImportResult importResult = await importController.ImportRuntimeModelAsync(
                     request.SourcePath,

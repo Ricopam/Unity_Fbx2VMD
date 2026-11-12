@@ -849,23 +849,21 @@ namespace Tests.Editor.FBXImporter
             Assert.That(editorEntrySource,
                 Does.Contain("RunEditorHumanoidPlaybackSession("));
 
-            int editorMethodStart = coordinatorSource.IndexOf(
-                "private FBXConversionResult RunEditorHumanoidPlaybackSession(",
-                System.StringComparison.Ordinal);
-            int editorMethodEnd = coordinatorSource.IndexOf(
-                "public async Task<FBXConversionResult> RunSessionAsync",
-                editorMethodStart,
-                System.StringComparison.Ordinal);
-            string editorMethodSource = coordinatorSource.Substring(
-                editorMethodStart,
-                editorMethodEnd - editorMethodStart);
+            string driverSource = File.ReadAllText(Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "Assets",
+                "_Project",
+                "Scripts",
+                "Editor",
+                "FBXImporter",
+                "EditorHumanoidPlaybackSessionDriver.cs"));
 
-            Assert.That(editorMethodSource,
+            Assert.That(driverSource,
                 Does.Contain("EditorHumanoidMotionImportController"));
-            Assert.That(editorMethodSource,
-                Does.Contain("_pipeline.PrepareEditorHumanoidPlayback("));
-            Assert.That(editorMethodSource, Does.Not.Contain("PrepareGhostModel("));
-            Assert.That(editorMethodSource, Does.Not.Contain("DispatchRecording("));
+            Assert.That(driverSource,
+                Does.Contain("pipeline.PrepareEditorHumanoidPlayback("));
+            Assert.That(driverSource, Does.Not.Contain("PrepareGhostModel("));
+            Assert.That(driverSource, Does.Not.Contain("DispatchRecording("));
         }
 
         [Test]
