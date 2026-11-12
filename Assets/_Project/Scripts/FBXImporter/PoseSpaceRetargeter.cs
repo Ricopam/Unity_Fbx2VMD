@@ -868,42 +868,42 @@ namespace Fbx2Vmd.FBXImporter
         public int PoseVisualMuscleDeltaOnlySkippedCount => _poseVisualMuscleDeltaOnlySkippedCount;
         public float LastPoseVisualMaxMuscleDelta => _lastPoseVisualMaxMuscleDelta;
         public float MaxPoseVisualMaxMuscleDelta => _maxPoseVisualMaxMuscleDelta;
-        public int LastLeftThumbLocalRotationGuardClampCount => _lastLeftThumbLocalRotationGuardClampCount;
-        public int LastRightThumbLocalRotationGuardClampCount => _lastRightThumbLocalRotationGuardClampCount;
-        public int LastLeftThumbLocalRotationGuardPreserveCount => _lastLeftThumbLocalRotationGuardPreserveCount;
-        public int LastRightThumbLocalRotationGuardPreserveCount => _lastRightThumbLocalRotationGuardPreserveCount;
-        public float LastLeftThumbLocalRotationGuardCurrentRisk => _lastLeftThumbLocalRotationGuardCurrentRisk;
-        public float LastRightThumbLocalRotationGuardCurrentRisk => _lastRightThumbLocalRotationGuardCurrentRisk;
-        public float LastLeftThumbLocalRotationGuardLimitedRisk => _lastLeftThumbLocalRotationGuardLimitedRisk;
-        public float LastRightThumbLocalRotationGuardLimitedRisk => _lastRightThumbLocalRotationGuardLimitedRisk;
-        public bool LastLeftThumbWorldRotationSuppressCompetingOverride => _lastLeftThumbWorldRotationSuppressCompetingOverride;
-        public bool LastRightThumbWorldRotationSuppressCompetingOverride => _lastRightThumbWorldRotationSuppressCompetingOverride;
-        public bool LastLeftThumbWorldRotationKeepDetachedHelperOverride => _lastLeftThumbWorldRotationKeepDetachedHelperOverride;
-        public bool LastRightThumbWorldRotationKeepDetachedHelperOverride => _lastRightThumbWorldRotationKeepDetachedHelperOverride;
-        public float LastLeftThumbWorldRotationCurrentReferenceFrameDeviation => _lastLeftThumbWorldRotationCurrentReferenceFrameDeviation;
-        public float LastRightThumbWorldRotationCurrentReferenceFrameDeviation => _lastRightThumbWorldRotationCurrentReferenceFrameDeviation;
-        public float LastLeftThumbWorldRotationCandidateReferenceFrameDeviation => _lastLeftThumbWorldRotationCandidateReferenceFrameDeviation;
-        public float LastRightThumbWorldRotationCandidateReferenceFrameDeviation => _lastRightThumbWorldRotationCandidateReferenceFrameDeviation;
-        public int LastLeftThumbProximalWorldRotationPreserveReason => (int)_lastLeftThumbProximalWorldRotationPreserveReason;
-        public int LastRightThumbProximalWorldRotationPreserveReason => (int)_lastRightThumbProximalWorldRotationPreserveReason;
-        public int LastLeftThumbIntermediateWorldRotationPreserveReason => (int)_lastLeftThumbIntermediateWorldRotationPreserveReason;
-        public int LastRightThumbIntermediateWorldRotationPreserveReason => (int)_lastRightThumbIntermediateWorldRotationPreserveReason;
-        public float LastLeftThumbProximalWorldRotationCurrentReferenceAngle => _lastLeftThumbProximalWorldRotationCurrentReferenceAngle;
-        public float LastRightThumbProximalWorldRotationCurrentReferenceAngle => _lastRightThumbProximalWorldRotationCurrentReferenceAngle;
-        public float LastLeftThumbIntermediateWorldRotationCurrentReferenceAngle => _lastLeftThumbIntermediateWorldRotationCurrentReferenceAngle;
-        public float LastRightThumbIntermediateWorldRotationCurrentReferenceAngle => _lastRightThumbIntermediateWorldRotationCurrentReferenceAngle;
-        public float LastLeftThumbProximalWorldRotationCandidateReferenceAngle => _lastLeftThumbProximalWorldRotationCandidateReferenceAngle;
-        public float LastRightThumbProximalWorldRotationCandidateReferenceAngle => _lastRightThumbProximalWorldRotationCandidateReferenceAngle;
-        public float LastLeftThumbIntermediateWorldRotationCandidateReferenceAngle => _lastLeftThumbIntermediateWorldRotationCandidateReferenceAngle;
-        public float LastRightThumbIntermediateWorldRotationCandidateReferenceAngle => _lastRightThumbIntermediateWorldRotationCandidateReferenceAngle;
-        public float LastLeftThumbProximalWorldRotationPreserveCurrentRisk => _lastLeftThumbProximalWorldRotationPreserveCurrentRisk;
-        public float LastRightThumbProximalWorldRotationPreserveCurrentRisk => _lastRightThumbProximalWorldRotationPreserveCurrentRisk;
-        public float LastLeftThumbIntermediateWorldRotationPreserveCurrentRisk => _lastLeftThumbIntermediateWorldRotationPreserveCurrentRisk;
-        public float LastRightThumbIntermediateWorldRotationPreserveCurrentRisk => _lastRightThumbIntermediateWorldRotationPreserveCurrentRisk;
-        public float LastLeftThumbProximalWorldRotationPreserveLimitedRisk => _lastLeftThumbProximalWorldRotationPreserveLimitedRisk;
-        public float LastRightThumbProximalWorldRotationPreserveLimitedRisk => _lastRightThumbProximalWorldRotationPreserveLimitedRisk;
-        public float LastLeftThumbIntermediateWorldRotationPreserveLimitedRisk => _lastLeftThumbIntermediateWorldRotationPreserveLimitedRisk;
-        public float LastRightThumbIntermediateWorldRotationPreserveLimitedRisk => _lastRightThumbIntermediateWorldRotationPreserveLimitedRisk;
+        public int LastLeftThumbLocalRotationGuardClampCount => _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardClampCount;
+        public int LastRightThumbLocalRotationGuardClampCount => _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardClampCount;
+        public int LastLeftThumbLocalRotationGuardPreserveCount => _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardPreserveCount;
+        public int LastRightThumbLocalRotationGuardPreserveCount => _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardPreserveCount;
+        public float LastLeftThumbLocalRotationGuardCurrentRisk => _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardCurrentRisk;
+        public float LastRightThumbLocalRotationGuardCurrentRisk => _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardCurrentRisk;
+        public float LastLeftThumbLocalRotationGuardLimitedRisk => _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardLimitedRisk;
+        public float LastRightThumbLocalRotationGuardLimitedRisk => _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardLimitedRisk;
+        public bool LastLeftThumbWorldRotationSuppressCompetingOverride => _thumbGuardDiagnostics.LastLeftThumbWorldRotationSuppressCompetingOverride;
+        public bool LastRightThumbWorldRotationSuppressCompetingOverride => _thumbGuardDiagnostics.LastRightThumbWorldRotationSuppressCompetingOverride;
+        public bool LastLeftThumbWorldRotationKeepDetachedHelperOverride => _thumbGuardDiagnostics.LastLeftThumbWorldRotationKeepDetachedHelperOverride;
+        public bool LastRightThumbWorldRotationKeepDetachedHelperOverride => _thumbGuardDiagnostics.LastRightThumbWorldRotationKeepDetachedHelperOverride;
+        public float LastLeftThumbWorldRotationCurrentReferenceFrameDeviation => _thumbGuardDiagnostics.LastLeftThumbWorldRotationCurrentReferenceFrameDeviation;
+        public float LastRightThumbWorldRotationCurrentReferenceFrameDeviation => _thumbGuardDiagnostics.LastRightThumbWorldRotationCurrentReferenceFrameDeviation;
+        public float LastLeftThumbWorldRotationCandidateReferenceFrameDeviation => _thumbGuardDiagnostics.LastLeftThumbWorldRotationCandidateReferenceFrameDeviation;
+        public float LastRightThumbWorldRotationCandidateReferenceFrameDeviation => _thumbGuardDiagnostics.LastRightThumbWorldRotationCandidateReferenceFrameDeviation;
+        public int LastLeftThumbProximalWorldRotationPreserveReason => (int)_thumbGuardDiagnostics.LastLeftThumbProximalWorldRotationPreserveReason;
+        public int LastRightThumbProximalWorldRotationPreserveReason => (int)_thumbGuardDiagnostics.LastRightThumbProximalWorldRotationPreserveReason;
+        public int LastLeftThumbIntermediateWorldRotationPreserveReason => (int)_thumbGuardDiagnostics.LastLeftThumbIntermediateWorldRotationPreserveReason;
+        public int LastRightThumbIntermediateWorldRotationPreserveReason => (int)_thumbGuardDiagnostics.LastRightThumbIntermediateWorldRotationPreserveReason;
+        public float LastLeftThumbProximalWorldRotationCurrentReferenceAngle => _thumbGuardDiagnostics.LastLeftThumbProximalWorldRotationCurrentReferenceAngle;
+        public float LastRightThumbProximalWorldRotationCurrentReferenceAngle => _thumbGuardDiagnostics.LastRightThumbProximalWorldRotationCurrentReferenceAngle;
+        public float LastLeftThumbIntermediateWorldRotationCurrentReferenceAngle => _thumbGuardDiagnostics.LastLeftThumbIntermediateWorldRotationCurrentReferenceAngle;
+        public float LastRightThumbIntermediateWorldRotationCurrentReferenceAngle => _thumbGuardDiagnostics.LastRightThumbIntermediateWorldRotationCurrentReferenceAngle;
+        public float LastLeftThumbProximalWorldRotationCandidateReferenceAngle => _thumbGuardDiagnostics.LastLeftThumbProximalWorldRotationCandidateReferenceAngle;
+        public float LastRightThumbProximalWorldRotationCandidateReferenceAngle => _thumbGuardDiagnostics.LastRightThumbProximalWorldRotationCandidateReferenceAngle;
+        public float LastLeftThumbIntermediateWorldRotationCandidateReferenceAngle => _thumbGuardDiagnostics.LastLeftThumbIntermediateWorldRotationCandidateReferenceAngle;
+        public float LastRightThumbIntermediateWorldRotationCandidateReferenceAngle => _thumbGuardDiagnostics.LastRightThumbIntermediateWorldRotationCandidateReferenceAngle;
+        public float LastLeftThumbProximalWorldRotationPreserveCurrentRisk => _thumbGuardDiagnostics.LastLeftThumbProximalWorldRotationPreserveCurrentRisk;
+        public float LastRightThumbProximalWorldRotationPreserveCurrentRisk => _thumbGuardDiagnostics.LastRightThumbProximalWorldRotationPreserveCurrentRisk;
+        public float LastLeftThumbIntermediateWorldRotationPreserveCurrentRisk => _thumbGuardDiagnostics.LastLeftThumbIntermediateWorldRotationPreserveCurrentRisk;
+        public float LastRightThumbIntermediateWorldRotationPreserveCurrentRisk => _thumbGuardDiagnostics.LastRightThumbIntermediateWorldRotationPreserveCurrentRisk;
+        public float LastLeftThumbProximalWorldRotationPreserveLimitedRisk => _thumbGuardDiagnostics.LastLeftThumbProximalWorldRotationPreserveLimitedRisk;
+        public float LastRightThumbProximalWorldRotationPreserveLimitedRisk => _thumbGuardDiagnostics.LastRightThumbProximalWorldRotationPreserveLimitedRisk;
+        public float LastLeftThumbIntermediateWorldRotationPreserveLimitedRisk => _thumbGuardDiagnostics.LastLeftThumbIntermediateWorldRotationPreserveLimitedRisk;
+        public float LastRightThumbIntermediateWorldRotationPreserveLimitedRisk => _thumbGuardDiagnostics.LastRightThumbIntermediateWorldRotationPreserveLimitedRisk;
         public float LastPoseInputLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.PoseInput.LeftShoulderFrontBack;
         public float LastAfterEditorMuscleReferenceLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.AfterEditorMuscleReference.LeftShoulderFrontBack;
         public float LastAfterClampPoseMusclesLeftShoulderFrontBackMuscle => _stageMuscleDiagnostics.AfterClampPoseMuscles.LeftShoulderFrontBack;
@@ -1368,16 +1368,6 @@ namespace Fbx2Vmd.FBXImporter
         internal const float ManualThumbOverrideSuppressRiskThreshold = 0.2f;
         internal const float ManualThumbOverrideRiskIncreaseTolerance = 0.05f;
 
-        private enum ThumbWorldRotationPreserveReason
-        {
-            None = 0,
-            DetachedHelperReferenceAngle = 1,
-            DetachedHelperReferenceFrameDeviation = 2,
-            LocalRotationReference = 3,
-            SuppressedManualReferenceAngle = 4,
-            LocalRotationReferenceFallbackNoManualReference = 5,
-            LocalRotationReferenceAfterSuppressedReference = 6
-        }
 
         private Quaternion _facingCorrection = LegacyFacingCorrection;
         private Quaternion _poseRootRotationCorrection = Quaternion.identity;
@@ -1460,46 +1450,11 @@ namespace Fbx2Vmd.FBXImporter
         private int _poseVisualMuscleDeltaOnlySkippedCount;
         private float _lastPoseVisualMaxMuscleDelta = float.NaN;
         private float _maxPoseVisualMaxMuscleDelta;
-        private int _lastLeftThumbLocalRotationGuardClampCount;
-        private int _lastRightThumbLocalRotationGuardClampCount;
-        private int _lastLeftThumbLocalRotationGuardPreserveCount;
-        private int _lastRightThumbLocalRotationGuardPreserveCount;
-        private float _lastLeftThumbLocalRotationGuardCurrentRisk = float.NaN;
-        private float _lastRightThumbLocalRotationGuardCurrentRisk = float.NaN;
-        private float _lastLeftThumbLocalRotationGuardLimitedRisk = float.NaN;
-        private float _lastRightThumbLocalRotationGuardLimitedRisk = float.NaN;
-        private bool _lastLeftThumbWorldRotationSuppressCompetingOverride;
-        private bool _lastRightThumbWorldRotationSuppressCompetingOverride;
-        private bool _lastLeftThumbWorldRotationKeepDetachedHelperOverride;
-        private bool _lastRightThumbWorldRotationKeepDetachedHelperOverride;
-        private float _lastLeftThumbWorldRotationCurrentReferenceFrameDeviation = float.NaN;
-        private float _lastRightThumbWorldRotationCurrentReferenceFrameDeviation = float.NaN;
-        private float _lastLeftThumbWorldRotationCandidateReferenceFrameDeviation = float.NaN;
-        private float _lastRightThumbWorldRotationCandidateReferenceFrameDeviation = float.NaN;
-        private ThumbWorldRotationPreserveReason _lastLeftThumbProximalWorldRotationPreserveReason;
-        private ThumbWorldRotationPreserveReason _lastRightThumbProximalWorldRotationPreserveReason;
-        private ThumbWorldRotationPreserveReason _lastLeftThumbIntermediateWorldRotationPreserveReason;
-        private ThumbWorldRotationPreserveReason _lastRightThumbIntermediateWorldRotationPreserveReason;
-        private float _lastLeftThumbProximalWorldRotationCurrentReferenceAngle = float.NaN;
-        private float _lastRightThumbProximalWorldRotationCurrentReferenceAngle = float.NaN;
-        private float _lastLeftThumbIntermediateWorldRotationCurrentReferenceAngle = float.NaN;
-        private float _lastRightThumbIntermediateWorldRotationCurrentReferenceAngle = float.NaN;
-        private float _lastLeftThumbProximalWorldRotationCandidateReferenceAngle = float.NaN;
-        private float _lastRightThumbProximalWorldRotationCandidateReferenceAngle = float.NaN;
-        private float _lastLeftThumbIntermediateWorldRotationCandidateReferenceAngle = float.NaN;
-        private float _lastRightThumbIntermediateWorldRotationCandidateReferenceAngle = float.NaN;
-        private float _lastLeftThumbProximalWorldRotationPreserveCurrentRisk = float.NaN;
-        private float _lastRightThumbProximalWorldRotationPreserveCurrentRisk = float.NaN;
-        private float _lastLeftThumbIntermediateWorldRotationPreserveCurrentRisk = float.NaN;
-        private float _lastRightThumbIntermediateWorldRotationPreserveCurrentRisk = float.NaN;
-        private float _lastLeftThumbProximalWorldRotationPreserveLimitedRisk = float.NaN;
-        private float _lastRightThumbProximalWorldRotationPreserveLimitedRisk = float.NaN;
-        private float _lastLeftThumbIntermediateWorldRotationPreserveLimitedRisk = float.NaN;
-        private float _lastRightThumbIntermediateWorldRotationPreserveLimitedRisk = float.NaN;
         internal readonly RetargetingLowerBodySegmentDiagnostics _lowerBodySegmentDiagnostics = new RetargetingLowerBodySegmentDiagnostics();
         internal readonly RetargetingFootReferenceDiagnostics _footReferenceDiagnostics = new RetargetingFootReferenceDiagnostics();
         private readonly RetargetingEndpointStageDiagnostics _endpointStageDiagnostics = new RetargetingEndpointStageDiagnostics();
         private readonly RetargetingStageMuscleDiagnostics _stageMuscleDiagnostics = new RetargetingStageMuscleDiagnostics();
+        private readonly RetargetingThumbGuardDiagnostics _thumbGuardDiagnostics = new RetargetingThumbGuardDiagnostics();
         internal readonly RetargetingSetHumanPoseDiagnostics _setHumanPoseDiagnostics = new RetargetingSetHumanPoseDiagnostics();
         internal readonly RetargetingPostSetEndpointDiagnostics _postSetEndpointDiagnostics = new RetargetingPostSetEndpointDiagnostics();
         private readonly RetargetingMuscleIndexMap _muscleIndexMap = new RetargetingMuscleIndexMap();
@@ -2570,9 +2525,6 @@ namespace Fbx2Vmd.FBXImporter
             return targetBone != null ? targetBone.position : BuildNaNVector3();
         }
 
-
-
-
         internal float CalculateTargetFootXzDelta(Vector3 beforePosition, HumanBodyBones footBone)
         {
             Vector3 afterPosition = ReadTargetBoneWorldPosition(footBone);
@@ -2598,11 +2550,6 @@ namespace Fbx2Vmd.FBXImporter
             Transform targetBone = targetAnimator != null ? targetAnimator.GetBoneTransform(bone) : null;
             return targetBone != null && IsFinite(targetBone.up) ? targetBone.up : BuildNaNVector3();
         }
-
-
-
-
-
 
         internal bool ShouldApplyPostSetHumanPoseRightEndpointPositionFrameGate()
         {
@@ -2646,53 +2593,6 @@ namespace Fbx2Vmd.FBXImporter
                 Mathf.Max(0f, manualAnimatorBodyPositionXzReferenceFrameGateBlendFrames));
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         internal static bool TryNormalize(Vector3 value, out Vector3 normalized)
         {
             normalized = Vector3.zero;
@@ -2709,8 +2609,6 @@ namespace Fbx2Vmd.FBXImporter
         {
             RetargetingEditorReferenceHooks.PoseReference?.DisposeFingerPoseReference(this);
         }
-
-
 
         private bool ShouldApplyRightSleeveSilhouetteLocalOffsetFrameGate()
         {
@@ -3389,7 +3287,7 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
-            ResetThumbLocalRotationGuardDiagnostics();
+            _thumbGuardDiagnostics.ResetLocalRotationGuard();
             int changed = 0;
             foreach (HumanBodyBones thumbBone in ThumbRotationBones)
             {
@@ -3431,7 +3329,9 @@ namespace Fbx2Vmd.FBXImporter
                 }
 
                 thumbTransform.localRotation = limitedRotation;
-                RecordThumbLocalRotationGuardClamp(thumbBone);
+                RetargetingThumbGuardDiagnosticsRecorder.RecordLocalRotationGuardClamp(
+                _thumbGuardDiagnostics,
+                thumbBone);
                 changed++;
             }
 
@@ -3453,52 +3353,12 @@ namespace Fbx2Vmd.FBXImporter
             return guard != null && guard.enabled && guard.isActiveAndEnabled;
         }
 
-        private void ResetThumbLocalRotationGuardDiagnostics()
-        {
-            _lastLeftThumbLocalRotationGuardClampCount = 0;
-            _lastRightThumbLocalRotationGuardClampCount = 0;
-            _lastLeftThumbLocalRotationGuardPreserveCount = 0;
-            _lastRightThumbLocalRotationGuardPreserveCount = 0;
-            _lastLeftThumbLocalRotationGuardCurrentRisk = float.NaN;
-            _lastRightThumbLocalRotationGuardCurrentRisk = float.NaN;
-            _lastLeftThumbLocalRotationGuardLimitedRisk = float.NaN;
-            _lastRightThumbLocalRotationGuardLimitedRisk = float.NaN;
-        }
 
         public void ResetThumbWorldRotationPreserveDiagnostics()
         {
-            _lastLeftThumbWorldRotationSuppressCompetingOverride = false;
-            _lastRightThumbWorldRotationSuppressCompetingOverride = false;
-            _lastLeftThumbWorldRotationKeepDetachedHelperOverride = false;
-            _lastRightThumbWorldRotationKeepDetachedHelperOverride = false;
-            _lastLeftThumbWorldRotationCurrentReferenceFrameDeviation = float.NaN;
-            _lastRightThumbWorldRotationCurrentReferenceFrameDeviation = float.NaN;
-            _lastLeftThumbWorldRotationCandidateReferenceFrameDeviation = float.NaN;
-            _lastRightThumbWorldRotationCandidateReferenceFrameDeviation = float.NaN;
-
-            ResetThumbWorldRotationPreserveBoneDiagnostics(true, true);
-            ResetThumbWorldRotationPreserveBoneDiagnostics(true, false);
-            ResetThumbWorldRotationPreserveBoneDiagnostics(false, true);
-            ResetThumbWorldRotationPreserveBoneDiagnostics(false, false);
+            _thumbGuardDiagnostics.ResetWorldRotationPreserve();
         }
 
-        private void ResetThumbWorldRotationPreserveBoneDiagnostics(bool leftHand, bool proximalBone)
-        {
-            RecordThumbWorldRotationReferenceAngles(
-                leftHand,
-                proximalBone,
-                float.NaN,
-                float.NaN);
-            RecordThumbWorldRotationPreserveLocalRisk(
-                leftHand,
-                proximalBone,
-                float.NaN,
-                float.NaN);
-            RecordThumbWorldRotationPreserveReason(
-                leftHand,
-                proximalBone,
-                ThumbWorldRotationPreserveReason.None);
-        }
 
         private static bool IsThumbProximalBone(HumanBodyBones thumbBone)
         {
@@ -3530,165 +3390,6 @@ namespace Fbx2Vmd.FBXImporter
             return false;
         }
 
-        private void RecordThumbWorldRotationOverrideContext(
-            bool leftHand,
-            bool suppressCompetingManualOverride,
-            bool keepDetachedHelperOverride,
-            float currentReferenceFrameDeviation,
-            float candidateReferenceFrameDeviation)
-        {
-            if (leftHand)
-            {
-                _lastLeftThumbWorldRotationSuppressCompetingOverride = suppressCompetingManualOverride;
-                _lastLeftThumbWorldRotationKeepDetachedHelperOverride = keepDetachedHelperOverride;
-                _lastLeftThumbWorldRotationCurrentReferenceFrameDeviation = currentReferenceFrameDeviation;
-                _lastLeftThumbWorldRotationCandidateReferenceFrameDeviation = candidateReferenceFrameDeviation;
-            }
-            else
-            {
-                _lastRightThumbWorldRotationSuppressCompetingOverride = suppressCompetingManualOverride;
-                _lastRightThumbWorldRotationKeepDetachedHelperOverride = keepDetachedHelperOverride;
-                _lastRightThumbWorldRotationCurrentReferenceFrameDeviation = currentReferenceFrameDeviation;
-                _lastRightThumbWorldRotationCandidateReferenceFrameDeviation = candidateReferenceFrameDeviation;
-            }
-        }
-
-        private void RecordThumbWorldRotationReferenceAngles(
-            bool leftHand,
-            bool proximalBone,
-            float currentReferenceAngle,
-            float candidateReferenceAngle)
-        {
-            if (leftHand)
-            {
-                if (proximalBone)
-                {
-                    _lastLeftThumbProximalWorldRotationCurrentReferenceAngle = currentReferenceAngle;
-                    _lastLeftThumbProximalWorldRotationCandidateReferenceAngle = candidateReferenceAngle;
-                }
-                else
-                {
-                    _lastLeftThumbIntermediateWorldRotationCurrentReferenceAngle = currentReferenceAngle;
-                    _lastLeftThumbIntermediateWorldRotationCandidateReferenceAngle = candidateReferenceAngle;
-                }
-            }
-            else
-            {
-                if (proximalBone)
-                {
-                    _lastRightThumbProximalWorldRotationCurrentReferenceAngle = currentReferenceAngle;
-                    _lastRightThumbProximalWorldRotationCandidateReferenceAngle = candidateReferenceAngle;
-                }
-                else
-                {
-                    _lastRightThumbIntermediateWorldRotationCurrentReferenceAngle = currentReferenceAngle;
-                    _lastRightThumbIntermediateWorldRotationCandidateReferenceAngle = candidateReferenceAngle;
-                }
-            }
-        }
-
-        private void RecordThumbWorldRotationPreserveLocalRisk(
-            bool leftHand,
-            bool proximalBone,
-            float currentRisk,
-            float limitedRisk)
-        {
-            if (leftHand)
-            {
-                if (proximalBone)
-                {
-                    _lastLeftThumbProximalWorldRotationPreserveCurrentRisk = currentRisk;
-                    _lastLeftThumbProximalWorldRotationPreserveLimitedRisk = limitedRisk;
-                }
-                else
-                {
-                    _lastLeftThumbIntermediateWorldRotationPreserveCurrentRisk = currentRisk;
-                    _lastLeftThumbIntermediateWorldRotationPreserveLimitedRisk = limitedRisk;
-                }
-            }
-            else
-            {
-                if (proximalBone)
-                {
-                    _lastRightThumbProximalWorldRotationPreserveCurrentRisk = currentRisk;
-                    _lastRightThumbProximalWorldRotationPreserveLimitedRisk = limitedRisk;
-                }
-                else
-                {
-                    _lastRightThumbIntermediateWorldRotationPreserveCurrentRisk = currentRisk;
-                    _lastRightThumbIntermediateWorldRotationPreserveLimitedRisk = limitedRisk;
-                }
-            }
-        }
-
-        private void RecordThumbWorldRotationPreserveReason(
-            bool leftHand,
-            bool proximalBone,
-            ThumbWorldRotationPreserveReason reason)
-        {
-            if (leftHand)
-            {
-                if (proximalBone)
-                {
-                    _lastLeftThumbProximalWorldRotationPreserveReason = reason;
-                }
-                else
-                {
-                    _lastLeftThumbIntermediateWorldRotationPreserveReason = reason;
-                }
-            }
-            else
-            {
-                if (proximalBone)
-                {
-                    _lastRightThumbProximalWorldRotationPreserveReason = reason;
-                }
-                else
-                {
-                    _lastRightThumbIntermediateWorldRotationPreserveReason = reason;
-                }
-            }
-        }
-
-        private void RecordThumbLocalRotationGuardClamp(HumanBodyBones thumbBone)
-        {
-            if (!TryGetThumbBoneSide(thumbBone, out bool leftHand))
-            {
-                return;
-            }
-
-            if (leftHand)
-            {
-                _lastLeftThumbLocalRotationGuardClampCount++;
-            }
-            else
-            {
-                _lastRightThumbLocalRotationGuardClampCount++;
-            }
-        }
-
-        private void RecordThumbLocalRotationGuardRisk(bool leftHand, float currentRisk, float limitedRisk, bool preserved)
-        {
-            if (leftHand)
-            {
-                _lastLeftThumbLocalRotationGuardCurrentRisk = currentRisk;
-                _lastLeftThumbLocalRotationGuardLimitedRisk = limitedRisk;
-                if (preserved)
-                {
-                    _lastLeftThumbLocalRotationGuardPreserveCount++;
-                }
-            }
-            else
-            {
-                _lastRightThumbLocalRotationGuardCurrentRisk = currentRisk;
-                _lastRightThumbLocalRotationGuardLimitedRisk = limitedRisk;
-                if (preserved)
-                {
-                    _lastRightThumbLocalRotationGuardPreserveCount++;
-                }
-            }
-        }
-
         private bool ShouldPreserveManualThumbLocalRotationReference(
             HumanBodyBones thumbBone,
             Transform targetThumb,
@@ -3715,7 +3416,7 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            RecordThumbLocalRotationGuardRisk(leftHand, currentRisk, limitedRisk, false);
+            RetargetingThumbGuardDiagnosticsRecorder.RecordLocalRotationGuardRisk(_thumbGuardDiagnostics,leftHand, currentRisk, limitedRisk, false);
 
             if (Mathf.Max(currentRisk, limitedRisk) < ManualThumbOverrideSuppressRiskThreshold)
             {
@@ -3725,7 +3426,7 @@ namespace Fbx2Vmd.FBXImporter
             bool preserved = limitedRisk > currentRisk + ManualThumbOverrideRiskIncreaseTolerance;
             if (preserved)
             {
-                RecordThumbLocalRotationGuardRisk(leftHand, currentRisk, limitedRisk, true);
+                RetargetingThumbGuardDiagnosticsRecorder.RecordLocalRotationGuardRisk(_thumbGuardDiagnostics,leftHand, currentRisk, limitedRisk, true);
             }
 
             return preserved;
@@ -3768,7 +3469,7 @@ namespace Fbx2Vmd.FBXImporter
                     candidateLocalRotation);
             }
 
-            ResetThumbWorldRotationPreserveBoneDiagnostics(leftHand, proximalBone);
+            _thumbGuardDiagnostics.ResetWorldRotationPreserveBone(leftHand, proximalBone);
 
             bool suppressCompetingManualOverride = ShouldSuppressCompetingManualThumbOverride(leftHand);
             bool keepDetachedHelperOverride = ShouldKeepDetachedHelperManualThumbOverrides(leftHand);
@@ -3784,7 +3485,7 @@ namespace Fbx2Vmd.FBXImporter
                 candidateReferenceAngle = Quaternion.Angle(referenceLocalRotation, candidateLocalRotation);
             }
 
-            RecordThumbWorldRotationReferenceAngles(
+            RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationReferenceAngles(_thumbGuardDiagnostics,
                 leftHand,
                 proximalBone,
                 currentReferenceAngle,
@@ -3800,7 +3501,7 @@ namespace Fbx2Vmd.FBXImporter
                     candidateWorldRotation,
                     out currentReferenceFrameDeviation,
                     out candidateReferenceFrameDeviation);
-            RecordThumbWorldRotationOverrideContext(
+            RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationOverrideContext(_thumbGuardDiagnostics,
                 leftHand,
                 suppressCompetingManualOverride,
                 keepDetachedHelperOverride,
@@ -3814,7 +3515,7 @@ namespace Fbx2Vmd.FBXImporter
                 if (currentReferenceAngle <= ManualThumbDetachedHelperPreserveCurrentReferenceAngleMax &&
                     candidateReferenceAngle > currentReferenceAngle + ManualThumbWorldRotationReferenceToleranceDegrees)
                 {
-                    RecordThumbWorldRotationPreserveReason(
+                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
                         leftHand,
                         proximalBone,
                         ThumbWorldRotationPreserveReason.DetachedHelperReferenceAngle);
@@ -3826,7 +3527,7 @@ namespace Fbx2Vmd.FBXImporter
                 hasReferenceFrameDeviation &&
                 candidateReferenceFrameDeviation > currentReferenceFrameDeviation + 0.001f)
             {
-                RecordThumbWorldRotationPreserveReason(
+                RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
                     leftHand,
                     proximalBone,
                     ThumbWorldRotationPreserveReason.DetachedHelperReferenceFrameDeviation);
@@ -3842,12 +3543,12 @@ namespace Fbx2Vmd.FBXImporter
                     candidateLocalRotation);
                 if (preserved)
                 {
-                    RecordThumbWorldRotationPreserveLocalRisk(
+                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveLocalRisk(_thumbGuardDiagnostics,
                         leftHand,
                         proximalBone,
-                        leftHand ? _lastLeftThumbLocalRotationGuardCurrentRisk : _lastRightThumbLocalRotationGuardCurrentRisk,
-                        leftHand ? _lastLeftThumbLocalRotationGuardLimitedRisk : _lastRightThumbLocalRotationGuardLimitedRisk);
-                    RecordThumbWorldRotationPreserveReason(
+                        leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardCurrentRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardCurrentRisk,
+                        leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardLimitedRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardLimitedRisk);
+                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
                         leftHand,
                         proximalBone,
                         ThumbWorldRotationPreserveReason.LocalRotationReference);
@@ -3865,12 +3566,12 @@ namespace Fbx2Vmd.FBXImporter
                     candidateLocalRotation);
                 if (preserved)
                 {
-                    RecordThumbWorldRotationPreserveLocalRisk(
+                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveLocalRisk(_thumbGuardDiagnostics,
                         leftHand,
                         proximalBone,
-                        leftHand ? _lastLeftThumbLocalRotationGuardCurrentRisk : _lastRightThumbLocalRotationGuardCurrentRisk,
-                        leftHand ? _lastLeftThumbLocalRotationGuardLimitedRisk : _lastRightThumbLocalRotationGuardLimitedRisk);
-                    RecordThumbWorldRotationPreserveReason(
+                        leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardCurrentRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardCurrentRisk,
+                        leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardLimitedRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardLimitedRisk);
+                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
                         leftHand,
                         proximalBone,
                         ThumbWorldRotationPreserveReason.LocalRotationReferenceFallbackNoManualReference);
@@ -3882,7 +3583,7 @@ namespace Fbx2Vmd.FBXImporter
             if (allowManualReferenceWorldPreserve &&
                 candidateReferenceAngle > currentReferenceAngle + ManualThumbWorldRotationReferenceToleranceDegrees)
             {
-                RecordThumbWorldRotationPreserveReason(
+                RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
                     leftHand,
                     proximalBone,
                     ThumbWorldRotationPreserveReason.SuppressedManualReferenceAngle);
@@ -3896,12 +3597,12 @@ namespace Fbx2Vmd.FBXImporter
                 candidateLocalRotation);
             if (preservedAfterSuppressedReference)
             {
-                RecordThumbWorldRotationPreserveLocalRisk(
+                RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveLocalRisk(_thumbGuardDiagnostics,
                     leftHand,
                     proximalBone,
-                    leftHand ? _lastLeftThumbLocalRotationGuardCurrentRisk : _lastRightThumbLocalRotationGuardCurrentRisk,
-                    leftHand ? _lastLeftThumbLocalRotationGuardLimitedRisk : _lastRightThumbLocalRotationGuardLimitedRisk);
-                RecordThumbWorldRotationPreserveReason(
+                    leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardCurrentRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardCurrentRisk,
+                    leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardLimitedRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardLimitedRisk);
+                RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
                     leftHand,
                     proximalBone,
                     ThumbWorldRotationPreserveReason.LocalRotationReferenceAfterSuppressedReference);
@@ -3942,7 +3643,7 @@ namespace Fbx2Vmd.FBXImporter
                 GetCachedExplicitThumbBaseSource(leftHand) != null;
         }
 
-        private static bool TryGetThumbBoneSide(HumanBodyBones thumbBone, out bool leftHand)
+        internal static bool TryGetThumbBoneSide(HumanBodyBones thumbBone, out bool leftHand)
         {
             switch (thumbBone)
             {
