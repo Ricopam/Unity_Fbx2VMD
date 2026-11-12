@@ -246,7 +246,7 @@ namespace Tests.Editor.FBXImporter
         [Test]
         public void Given_EditorHumanoidReference_When_CheckingOwnership_Then_UsesDedicatedApplier()
         {
-            Type applierType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type applierType = typeof(FbxEditorFeatureWiring).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.EditorHumanoidReferenceApplier",
                 throwOnError: false);
             Type optionsType = typeof(FBXVmdPipeline).Assembly.GetType(
@@ -1362,7 +1362,7 @@ namespace Tests.Editor.FBXImporter
             string sourceFileName,
             params string[] humanoidClipPaths)
         {
-            Type applierType = typeof(FBXVmdPipeline).Assembly.GetType(
+            Type applierType = typeof(FbxEditorFeatureWiring).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.EditorHumanoidReferenceApplier",
                 throwOnError: false);
             Assert.That(applierType, Is.Not.Null,

@@ -18,6 +18,8 @@ namespace Fbx2Vmd.FBXImporter
             HumanoidPlaybackEditorHooks.CreateRootTranslationSampler = () => new EditorHumanoidRootTranslationSampler();
             ConversionEditorHooks.HumanoidPlaybackSession = new Editor.EditorHumanoidPlaybackSessionDriver();
             MotionVideoEditorHooks.TryFindMotionStartTime = HumanoidMotionLeadingStillLocator.TryFindMotionStartTime;
+            HumanoidReferenceEditorHooks.Apply = EditorHumanoidReferenceApplier.Apply;
+            HumanoidReferenceEditorHooks.ApplyManualPoseReference = EditorHumanoidReferenceApplier.ApplyManualPoseReference;
         }
     }
 }

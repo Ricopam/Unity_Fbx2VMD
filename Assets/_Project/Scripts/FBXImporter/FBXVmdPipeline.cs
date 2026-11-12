@@ -2709,18 +2709,17 @@ namespace Fbx2Vmd.FBXImporter
             {
                 LogEditorSmokeThumbState("thumb-guard-bound");
             }
-
-            AnimationClip editorHumanoidReferenceClip = EditorHumanoidReferenceApplier.Apply(
+#endif
+            AnimationClip editorHumanoidReferenceClip = HumanoidReferenceEditorHooks.Apply?.Invoke(
                 retargeter,
                 importedFilePath,
                 sourceFilePath,
                 _shouldUseEditorHumanoidClipMuscleReference,
                 _shouldUseEditorHumanoidRootTranslationReference);
-            EditorHumanoidReferenceApplier.ApplyManualPoseReference(
+            HumanoidReferenceEditorHooks.ApplyManualPoseReference?.Invoke(
                 retargeter,
                 editorHumanoidReferenceClip,
                 CreateEditorManualPoseReferenceOptions());
-#endif
             SetSessionState(FBXSessionState.GhostReady, "Ghost Retarget 준비 완료", 0.6f);
         }
 
@@ -3312,7 +3311,6 @@ namespace Fbx2Vmd.FBXImporter
 
         #endregion
 
-#if UNITY_EDITOR
         private EditorManualPoseReferenceOptions CreateEditorManualPoseReferenceOptions()
         {
             return new EditorManualPoseReferenceOptions
@@ -3347,8 +3345,6 @@ namespace Fbx2Vmd.FBXImporter
                 ShouldUseBipedIkFootPositionReference = useManualAnimatorBipedIkFootPositionReference
             };
         }
-
-#endif
 
     }
 }

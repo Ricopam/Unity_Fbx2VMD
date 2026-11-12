@@ -802,14 +802,14 @@ namespace Tests.Editor.FBXImporter
                 retargeterBridgeSource.IndexOf("HumanoidThumbDeformationGuardApplier.Apply(", System.StringComparison.Ordinal),
                 Is.GreaterThan(retargeterBridgeSource.IndexOf("_activeRetargeter = retargeter;", System.StringComparison.Ordinal)));
             Assert.That(
-                retargeterBridgeSource.IndexOf("EditorHumanoidReferenceApplier.Apply(", System.StringComparison.Ordinal),
+                retargeterBridgeSource.IndexOf("HumanoidReferenceEditorHooks.Apply?.Invoke(", System.StringComparison.Ordinal),
                 Is.GreaterThan(retargeterBridgeSource.IndexOf("HumanoidThumbDeformationGuardApplier.Apply(", System.StringComparison.Ordinal)));
             Assert.That(
-                retargeterBridgeSource.IndexOf("EditorHumanoidReferenceApplier.ApplyManualPoseReference(", System.StringComparison.Ordinal),
-                Is.GreaterThan(retargeterBridgeSource.IndexOf("EditorHumanoidReferenceApplier.Apply(", System.StringComparison.Ordinal)));
+                retargeterBridgeSource.IndexOf("HumanoidReferenceEditorHooks.ApplyManualPoseReference?.Invoke(", System.StringComparison.Ordinal),
+                Is.GreaterThan(retargeterBridgeSource.IndexOf("HumanoidReferenceEditorHooks.Apply?.Invoke(", System.StringComparison.Ordinal)));
             Assert.That(
                 retargeterBridgeSource.IndexOf("SetSessionState(FBXSessionState.GhostReady", System.StringComparison.Ordinal),
-                Is.GreaterThan(retargeterBridgeSource.IndexOf("EditorHumanoidReferenceApplier.ApplyManualPoseReference(", System.StringComparison.Ordinal)));
+                Is.GreaterThan(retargeterBridgeSource.IndexOf("HumanoidReferenceEditorHooks.ApplyManualPoseReference?.Invoke(", System.StringComparison.Ordinal)));
 
             int dispatchEnd = pipelineSource.IndexOf(
                 "internal static bool PrepareRetargeterRecordingStartPose(",
