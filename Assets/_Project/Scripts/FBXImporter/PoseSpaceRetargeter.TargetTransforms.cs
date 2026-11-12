@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fbx2Vmd.FBXImporter
@@ -124,6 +125,171 @@ namespace Fbx2Vmd.FBXImporter
         internal static string NormalizeTransformName(string value)
         {
             return string.IsNullOrEmpty(value) ? "" : value.ToLowerInvariant();
+        }
+
+        private void CaptureTargetInitialTransforms(GameObject targetRoot)
+        {
+            ResetTargetCaptureState();
+
+            foreach (Transform targetBone in targetRoot.GetComponentsInChildren<Transform>(true))
+            {
+                _targetInitialScales[targetBone] = targetBone.localScale;
+            }
+
+            if (targetAnimator == null || !targetAnimator.isHuman)
+            {
+                return;
+            }
+
+            CaptureTargetHumanoidLocalPositions();
+            CaptureTargetThumbLocalRotations();
+            ThumbBaseHelperResolver.CaptureState(this, true);
+            ThumbBaseHelperResolver.CaptureState(this, false);
+        }
+
+        private void ResetTargetCaptureState()
+        {
+            _targetInitialScales.Clear();
+            _targetInitialHumanoidLocalPositions.Clear();
+            _targetInitialThumbBaseHelperLocalPositions.Clear();
+            _targetInitialThumbLocalRotations.Clear();
+            _cachedThumbBaseHelpers.Clear();
+            _cachedThumbBaseExplicitSources.Clear();
+            _initialThumbBaseHelperSourceDistances.Clear();
+            _initialThumbBaseHelperSourceRelativeRotations.Clear();
+            _scaleWarningLogged = false;
+            _positionWarningLogged = false;
+            _muscleClampWarningLogged = false;
+            _anatomyGuardWarningLogged = false;
+            _thumbGuardWarningLogged = false;
+            _thumbLocalRotationGuardWarningLogged = false;
+            _rootDeltaSpikeWarningLogged = false;
+            _hasPreviousBodyRootMotionPosition = false;
+            _spikeClamp.ResetHipsSpikeState();
+            _lastRootDeltaMagnitude = float.NaN;
+            _maxRootDeltaMagnitude = 0f;
+            _rootDeltaSpikeSkippedCount = 0;
+            _spikeClamp.ResetRootPositionMetrics();
+            _legacyAnimationDriver.ResetStabilityMetrics();
+            _visualPoseSmoother.ResetSession();
+            _grounding.ResetSession();
+            _lastEditorFootHeightGroundingReferenceLift = float.NaN;
+            _appliedPoseClampWarningLogged = false;
+            _targetHipsRestLocalPosition = Vector3.zero;
+            _hasTargetHipsRestLocalPosition = false;
+        }
+
+        private void CaptureTargetHumanoidLocalPositions()
+        {
+            for (int i = (int)HumanBodyBones.Hips; i < (int)HumanBodyBones.LastBone; i++)
+            {
+                HumanBodyBones bone = (HumanBodyBones)i;
+                Transform targetBone = targetAnimator.GetBoneTransform(bone);
+                if (bone == HumanBodyBones.Hips)
+                {
+                    if (targetBone != null && IsFinite(targetBone.localPosition))
+                    {
+                        _targetHipsRestLocalPosition = targetBone.localPosition;
+                        _hasTargetHipsRestLocalPosition = true;
+                    }
+
+                    continue;
+                }
+
+                if (targetBone == null || _targetInitialHumanoidLocalPositions.ContainsKey(targetBone))
+                {
+                    continue;
+                }
+
+                _targetInitialHumanoidLocalPositions[targetBone] = targetBone.localPosition;
+            }
+        }
+
+        private void CaptureTargetThumbLocalRotations()
+        {
+            foreach (HumanBodyBones thumbBone in ThumbRotationBones)
+            {
+                Transform thumbTransform = targetAnimator.GetBoneTransform(thumbBone);
+                if (thumbTransform == null || _targetInitialThumbLocalRotations.ContainsKey(thumbTransform))
+                {
+                    continue;
+                }
+
+                _targetInitialThumbLocalRotations[thumbTransform] = thumbTransform.localRotation;
+            }
+        }
+
+        internal static string GetHierarchyPath(Transform transform)
+        {
+            if (transform == null)
+            {
+                return "<none>";
+            }
+
+            System.Text.StringBuilder builder = new System.Text.StringBuilder(transform.name);
+            Transform current = transform.parent;
+            while (current != null)
+            {
+                builder.Insert(0, current.name + "/");
+                current = current.parent;
+            }
+
+            return builder.ToString();
+        }
+
+        private void RestoreTargetHumanoidLocalPositions()
+        {
+            if (!ShouldLockTargetHumanoidBonePositions)
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<Transform, Vector3> positionSnapshot in _targetInitialHumanoidLocalPositions)
+            {
+                Transform targetBone = positionSnapshot.Key;
+                if (targetBone == null)
+                {
+                    continue;
+                }
+
+                if ((targetBone.localPosition - positionSnapshot.Value).sqrMagnitude <= 0.000001f)
+                {
+                    continue;
+                }
+
+                if (!_positionWarningLogged)
+                {
+                    Debug.LogWarning($"[PoseSpaceRetargeter] Target humanoid bone localPosition changed during retargeting. Restoring original bone length. First bone: {targetBone.name}");
+                    _positionWarningLogged = true;
+                }
+
+                targetBone.localPosition = positionSnapshot.Value;
+            }
+        }
+
+        private void RestoreTargetLocalScales()
+        {
+            foreach (KeyValuePair<Transform, Vector3> scaleSnapshot in _targetInitialScales)
+            {
+                Transform targetBone = scaleSnapshot.Key;
+                if (targetBone == null)
+                {
+                    continue;
+                }
+
+                if ((targetBone.localScale - scaleSnapshot.Value).sqrMagnitude <= 0.000001f)
+                {
+                    continue;
+                }
+
+                if (!_scaleWarningLogged)
+                {
+                    Debug.LogWarning($"[PoseSpaceRetargeter] Target bone scale changed during retargeting. Restoring original localScale. First bone: {targetBone.name}");
+                    _scaleWarningLogged = true;
+                }
+
+                targetBone.localScale = scaleSnapshot.Value;
+            }
         }
     }
 }

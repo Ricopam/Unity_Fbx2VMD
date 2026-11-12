@@ -176,5 +176,10 @@ namespace Fbx2Vmd.FBXImporter
         {
             return IsFinite(rotation) ? rotation.eulerAngles.y : float.NaN;
         }
+
+        internal static string FormatDebugFloat(float value)
+        {
+            return IsFinite(value) ? value.ToString("F4") : "NaN";
+        }
     }
 }
