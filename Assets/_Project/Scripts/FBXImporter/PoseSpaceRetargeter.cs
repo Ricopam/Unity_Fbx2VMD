@@ -822,12 +822,12 @@ namespace Fbx2Vmd.FBXImporter
         public float LastRootDeltaMagnitude => _lastRootDeltaMagnitude;
         public float MaxRootDeltaMagnitude => _maxRootDeltaMagnitude;
         public int RootDeltaSpikeSkippedCount => _rootDeltaSpikeSkippedCount;
-        public float LastRootPositionPoseDeltaMagnitude => _lastRootPositionPoseDeltaMagnitude;
-        public float MaxRootPositionPoseDeltaMagnitude => _maxRootPositionPoseDeltaMagnitude;
-        public int RootPositionSpikeClampedCount => _rootPositionSpikeClampedCount;
-        public float LastTargetHipsLocalPositionDelta => _lastTargetHipsLocalPositionDelta;
-        public float MaxTargetHipsLocalPositionDelta => _maxTargetHipsLocalPositionDelta;
-        public int TargetHipsLocalPositionSpikeClampedCount => _targetHipsLocalPositionSpikeClampedCount;
+        public float LastRootPositionPoseDeltaMagnitude => _spikeClamp._lastRootPositionPoseDeltaMagnitude;
+        public float MaxRootPositionPoseDeltaMagnitude => _spikeClamp._maxRootPositionPoseDeltaMagnitude;
+        public int RootPositionSpikeClampedCount => _spikeClamp._rootPositionSpikeClampedCount;
+        public float LastTargetHipsLocalPositionDelta => _spikeClamp._lastTargetHipsLocalPositionDelta;
+        public float MaxTargetHipsLocalPositionDelta => _spikeClamp._maxTargetHipsLocalPositionDelta;
+        public int TargetHipsLocalPositionSpikeClampedCount => _spikeClamp._targetHipsLocalPositionSpikeClampedCount;
         public float LastGroundingAdjustment => _grounding._lastGroundingAdjustment;
         public float MaxGroundingAdjustment => _grounding._maxGroundingAdjustment;
         public int GroundingStepClampedCount => _grounding._groundingStepClampedCount;
@@ -1280,7 +1280,7 @@ namespace Fbx2Vmd.FBXImporter
         {
             _legacyAnimationDriver.ResetStabilityMetrics();
             ResetEditorHumanoidRootTranslationReferenceState();
-            ResetTargetHipsLocalPositionSpikeState();
+            _spikeClamp.ResetHipsSpikeState();
             _visualPoseSmoother.ResetVisualPoseHistory();
             _visualPoseSmoother.ResetMetrics();
             _grounding.ResetMetrics();
@@ -1391,20 +1391,13 @@ namespace Fbx2Vmd.FBXImporter
         private bool _anatomyGuardWarningLogged;
         internal bool _thumbGuardWarningLogged;
         internal bool _thumbLocalRotationGuardWarningLogged;
-        private bool _rootDeltaSpikeWarningLogged;
+        internal bool _rootDeltaSpikeWarningLogged;
         private bool _appliedPoseClampWarningLogged;
         private bool _hasPoseRootRotationCorrection;
         private float _lastRootDeltaMagnitude = float.NaN;
         private float _maxRootDeltaMagnitude;
         private int _rootDeltaSpikeSkippedCount;
-        private float _lastRootPositionPoseDeltaMagnitude = float.NaN;
-        private float _maxRootPositionPoseDeltaMagnitude;
-        private int _rootPositionSpikeClampedCount;
-        private Vector3 _previousTargetHipsLocalPosition;
-        private bool _hasPreviousTargetHipsLocalPosition;
-        private float _lastTargetHipsLocalPositionDelta = float.NaN;
-        private float _maxTargetHipsLocalPositionDelta;
-        private int _targetHipsLocalPositionSpikeClampedCount;
+        private readonly RetargetingSpikeClampProcessor _spikeClamp = new RetargetingSpikeClampProcessor();
         private readonly RetargetingGroundingProcessor _grounding = new RetargetingGroundingProcessor();
         internal float _lastEditorFootHeightGroundingReferenceLift = float.NaN;
         private float _recordingStartRootY = float.NaN;
@@ -2007,7 +2000,7 @@ namespace Fbx2Vmd.FBXImporter
 #if UNITY_EDITOR
             _endpointStageDiagnostics.AfterManualReferencesPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
 #endif
-            ClampTargetHipsLocalPositionSpike();
+            _spikeClamp.ClampHipsLocalPositionSpike(this);
             ThumbGuardPolicy.ClampTargetLocalRotations(this);
 #if UNITY_EDITOR
             RetargetingEditorReferenceHooks.ThumbReference?.ApplyThumbLocalRotationReference(this);
@@ -2017,7 +2010,7 @@ namespace Fbx2Vmd.FBXImporter
             RetargetingEditorReferenceHooks.ThumbReference?.ApplyThumbHandDirectionReference(this);
             ApplyRightSleeveSilhouetteLocalOffsetReference();
 #endif
-            ClampTargetRootPositionSpike(targetPositionBeforePose, "SetHumanPose");
+            _spikeClamp.ClampRootPositionSpike(this, targetPositionBeforePose, "SetHumanPose");
             Vector3 implicitRootGuardReference = RootMotionGuard.SelectImplicitRootGuardReference(
                 _hasTargetRootPoseGuardAnchorPosition ? _targetRootPoseGuardAnchorPosition : targetPositionBeforePose,
                 targetPositionBeforePose,
@@ -3045,108 +3038,6 @@ namespace Fbx2Vmd.FBXImporter
         }
 
 
-        private void ClampTargetRootPositionSpike(Vector3 positionBeforePose, string source)
-        {
-            if (!clampRootDeltaSpikes || targetAnimator == null)
-            {
-                return;
-            }
-
-            Vector3 currentPosition = targetAnimator.transform.position;
-            bool shouldClamp = RetargetingPoseSmoothing.TryCalculateRootPositionSpikeClamp(
-                positionBeforePose,
-                currentPosition,
-                maxRootDeltaPerFrame,
-                out Vector3 clampedPosition,
-                out float poseDeltaMagnitude);
-
-            _lastRootPositionPoseDeltaMagnitude = poseDeltaMagnitude;
-            if (!IsFinite(poseDeltaMagnitude))
-            {
-                return;
-            }
-
-            _maxRootPositionPoseDeltaMagnitude = Mathf.Max(_maxRootPositionPoseDeltaMagnitude, _lastRootPositionPoseDeltaMagnitude);
-            if (!shouldClamp)
-            {
-                return;
-            }
-
-            _rootPositionSpikeClampedCount++;
-            if (logRootDeltaSpikes && !_rootDeltaSpikeWarningLogged)
-            {
-                Debug.LogWarning($"[PoseSpaceRetargeter] {source} root position spike {_lastRootPositionPoseDeltaMagnitude:F3}m clamped. limit={maxRootDeltaPerFrame:F3}m");
-                _rootDeltaSpikeWarningLogged = true;
-            }
-
-            targetAnimator.transform.position = clampedPosition;
-        }
-
-        private void ClampTargetHipsLocalPositionSpike()
-        {
-            if (!clampTargetHipsLocalPositionSpikes || targetAnimator == null || !targetAnimator.isHuman)
-            {
-                ResetTargetHipsLocalPositionSpikeState();
-                return;
-            }
-
-            Transform targetHips = targetAnimator.GetBoneTransform(HumanBodyBones.Hips);
-            if (targetHips == null)
-            {
-                ResetTargetHipsLocalPositionSpikeState();
-                return;
-            }
-
-            Vector3 currentLocalPosition = targetHips.localPosition;
-            if (!_hasPreviousTargetHipsLocalPosition)
-            {
-                RememberTargetHipsLocalPosition(currentLocalPosition);
-                return;
-            }
-
-            bool shouldClamp = RetargetingPoseSmoothing.TryCalculateHipsLocalPositionSpikeClamp(
-                _previousTargetHipsLocalPosition,
-                currentLocalPosition,
-                maxTargetHipsLocalPositionDeltaPerFrame,
-                out Vector3 clampedLocalPosition,
-                out float deltaMagnitude);
-
-            _lastTargetHipsLocalPositionDelta = deltaMagnitude;
-            if (!IsFinite(deltaMagnitude))
-            {
-                return;
-            }
-
-            _maxTargetHipsLocalPositionDelta = Mathf.Max(_maxTargetHipsLocalPositionDelta, deltaMagnitude);
-            if (shouldClamp)
-            {
-                targetHips.localPosition = clampedLocalPosition;
-                _targetHipsLocalPositionSpikeClampedCount++;
-            }
-
-            RememberTargetHipsLocalPosition(targetHips.localPosition);
-        }
-
-        private void RememberTargetHipsLocalPosition(Vector3 localPosition)
-        {
-            if (!IsFinite(localPosition))
-            {
-                return;
-            }
-
-            _previousTargetHipsLocalPosition = localPosition;
-            _hasPreviousTargetHipsLocalPosition = true;
-        }
-
-        private void ResetTargetHipsLocalPositionSpikeState()
-        {
-            _previousTargetHipsLocalPosition = Vector3.zero;
-            _hasPreviousTargetHipsLocalPosition = false;
-            _lastTargetHipsLocalPositionDelta = float.NaN;
-            _maxTargetHipsLocalPositionDelta = 0f;
-            _targetHipsLocalPositionSpikeClampedCount = 0;
-        }
-
         private void CaptureTargetInitialTransforms(GameObject targetRoot)
         {
             _targetInitialScales.Clear();
@@ -3165,13 +3056,11 @@ namespace Fbx2Vmd.FBXImporter
             _thumbLocalRotationGuardWarningLogged = false;
             _rootDeltaSpikeWarningLogged = false;
             _hasPreviousBodyRootMotionPosition = false;
-            ResetTargetHipsLocalPositionSpikeState();
+            _spikeClamp.ResetHipsSpikeState();
             _lastRootDeltaMagnitude = float.NaN;
             _maxRootDeltaMagnitude = 0f;
             _rootDeltaSpikeSkippedCount = 0;
-            _lastRootPositionPoseDeltaMagnitude = float.NaN;
-            _maxRootPositionPoseDeltaMagnitude = 0f;
-            _rootPositionSpikeClampedCount = 0;
+            _spikeClamp.ResetRootPositionMetrics();
             _legacyAnimationDriver.ResetStabilityMetrics();
             _visualPoseSmoother.ResetSession();
             _grounding.ResetSession();
