@@ -1388,7 +1388,7 @@ namespace Fbx2Vmd.FBXImporter
         private readonly Dictionary<Transform, Vector3> _targetInitialScales = new Dictionary<Transform, Vector3>();
         internal readonly Dictionary<Transform, Vector3> _targetInitialHumanoidLocalPositions = new Dictionary<Transform, Vector3>();
         internal readonly Dictionary<Transform, Vector3> _targetInitialThumbBaseHelperLocalPositions = new Dictionary<Transform, Vector3>();
-        private readonly Dictionary<Transform, Quaternion> _targetInitialThumbLocalRotations = new Dictionary<Transform, Quaternion>();
+        internal readonly Dictionary<Transform, Quaternion> _targetInitialThumbLocalRotations = new Dictionary<Transform, Quaternion>();
         internal Vector3 _targetHipsRestLocalPosition;
         internal bool _hasTargetHipsRestLocalPosition;
         internal readonly Dictionary<bool, Transform> _cachedThumbBaseHelpers = new Dictionary<bool, Transform>();
@@ -1401,7 +1401,7 @@ namespace Fbx2Vmd.FBXImporter
         private bool _muscleClampWarningLogged;
         private bool _anatomyGuardWarningLogged;
         private bool _thumbGuardWarningLogged;
-        private bool _thumbLocalRotationGuardWarningLogged;
+        internal bool _thumbLocalRotationGuardWarningLogged;
         private bool _rootDeltaSpikeWarningLogged;
         private bool _appliedPoseClampWarningLogged;
         private bool _hasPoseRootRotationCorrection;
@@ -1454,7 +1454,7 @@ namespace Fbx2Vmd.FBXImporter
         internal readonly RetargetingFootReferenceDiagnostics _footReferenceDiagnostics = new RetargetingFootReferenceDiagnostics();
         private readonly RetargetingEndpointStageDiagnostics _endpointStageDiagnostics = new RetargetingEndpointStageDiagnostics();
         private readonly RetargetingStageMuscleDiagnostics _stageMuscleDiagnostics = new RetargetingStageMuscleDiagnostics();
-        private readonly RetargetingThumbGuardDiagnostics _thumbGuardDiagnostics = new RetargetingThumbGuardDiagnostics();
+        internal readonly RetargetingThumbGuardDiagnostics _thumbGuardDiagnostics = new RetargetingThumbGuardDiagnostics();
         internal readonly RetargetingSetHumanPoseDiagnostics _setHumanPoseDiagnostics = new RetargetingSetHumanPoseDiagnostics();
         internal readonly RetargetingPostSetEndpointDiagnostics _postSetEndpointDiagnostics = new RetargetingPostSetEndpointDiagnostics();
         private readonly RetargetingMuscleIndexMap _muscleIndexMap = new RetargetingMuscleIndexMap();
@@ -1517,8 +1517,8 @@ namespace Fbx2Vmd.FBXImporter
         internal bool _editorThumbBasePositionReferenceLogged;
         internal bool _editorBodyPositionXzReferenceLogged;
 #else
-        private Animator _editorFingerReferenceAnimator;
-        private bool _useEditorFingerPoseReference;
+        internal Animator _editorFingerReferenceAnimator;
+        internal bool _useEditorFingerPoseReference;
         private bool _hasEditorReferenceBodyPosition;
         private Vector3 _editorReferenceBodyPosition;
         private bool _hasEditorReferenceLowestFootRestY;
@@ -2045,7 +2045,7 @@ namespace Fbx2Vmd.FBXImporter
             _endpointStageDiagnostics.AfterManualReferencesPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
 #endif
             ClampTargetHipsLocalPositionSpike();
-            ClampTargetThumbLocalRotations();
+            ThumbGuardPolicy.ClampTargetLocalRotations(this);
 #if UNITY_EDITOR
             RetargetingEditorReferenceHooks.ThumbReference?.ApplyThumbLocalRotationReference(this);
             RetargetingEditorReferenceHooks.ThumbReference?.ApplyHandPalmFrameReference(this);
@@ -2391,7 +2391,7 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         }
 
-        private bool ShouldKeepDetachedHelperManualThumbOverrides(bool leftHand)
+        internal bool ShouldKeepDetachedHelperManualThumbOverrides(bool leftHand)
         {
 #if UNITY_EDITOR
             return RetargetingEditorReferenceHooks.ThumbReference?.ShouldKeepDetachedHelperManualThumbOverrides(this, leftHand) ?? false;
@@ -2453,7 +2453,7 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         }
 
-        private bool TryEvaluateThumbManualReferenceFrameDeviation(
+        internal bool TryEvaluateThumbManualReferenceFrameDeviation(
             bool leftHand,
             Transform targetThumb,
             Quaternion candidateWorldRotation,
@@ -2477,7 +2477,7 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         }
 
-        private bool TryEvaluateThumbLocalRotationOverrideRisk(
+        internal bool TryEvaluateThumbLocalRotationOverrideRisk(
             bool leftHand,
             Transform targetThumb,
             Quaternion candidateRotation,
@@ -3275,84 +3275,6 @@ namespace Fbx2Vmd.FBXImporter
             return changed;
         }
 
-        private void ClampTargetThumbLocalRotations()
-        {
-            if (!enableThumbLocalRotationGuard || targetAnimator == null || _targetInitialThumbLocalRotations.Count == 0)
-            {
-                return;
-            }
-
-            if (HasFinalThumbLocalRotationGuard())
-            {
-                return;
-            }
-
-            _thumbGuardDiagnostics.ResetLocalRotationGuard();
-            int changed = 0;
-            foreach (HumanBodyBones thumbBone in ThumbRotationBones)
-            {
-                Transform thumbTransform = targetAnimator.GetBoneTransform(thumbBone);
-                if (thumbTransform == null || !_targetInitialThumbLocalRotations.TryGetValue(thumbTransform, out Quaternion initialRotation))
-                {
-                    continue;
-                }
-
-                float limit = GetThumbLocalRotationLimit(thumbBone);
-                if (limit <= 0f)
-                {
-                    thumbTransform.localRotation = initialRotation;
-                    changed++;
-                    continue;
-                }
-
-                Quaternion currentRotation = thumbTransform.localRotation;
-                if (!IsFinite(currentRotation))
-                {
-                    thumbTransform.localRotation = initialRotation;
-                    changed++;
-                    continue;
-                }
-
-                float angle = Quaternion.Angle(initialRotation, currentRotation);
-                if (angle <= limit)
-                {
-                    continue;
-                }
-
-                Quaternion limitedRotation = ThumbLocalRotationCalculator.LimitLocalRotation(
-                    initialRotation,
-                    currentRotation,
-                    limit);
-                if (ShouldPreserveManualThumbLocalRotationReference(thumbBone, thumbTransform, currentRotation, limitedRotation))
-                {
-                    continue;
-                }
-
-                thumbTransform.localRotation = limitedRotation;
-                RetargetingThumbGuardDiagnosticsRecorder.RecordLocalRotationGuardClamp(
-                _thumbGuardDiagnostics,
-                thumbBone);
-                changed++;
-            }
-
-            if (changed > 0 && logThumbLocalRotationGuardCorrections && !_thumbLocalRotationGuardWarningLogged)
-            {
-                Debug.LogWarning($"[PoseSpaceRetargeter] 엄지 본 localRotation {changed}개를 기준 자세 허용각 안으로 제한했습니다.");
-                _thumbLocalRotationGuardWarningLogged = true;
-            }
-        }
-
-        private bool HasFinalThumbLocalRotationGuard()
-        {
-            if (targetAnimator == null)
-            {
-                return false;
-            }
-
-            HumanoidThumbDeformationGuard guard = targetAnimator.GetComponent<HumanoidThumbDeformationGuard>();
-            return guard != null && guard.enabled && guard.isActiveAndEnabled;
-        }
-
 
         public void ResetThumbWorldRotationPreserveDiagnostics()
         {
@@ -3360,276 +3282,15 @@ namespace Fbx2Vmd.FBXImporter
         }
 
 
-        private static bool IsThumbProximalBone(HumanBodyBones thumbBone)
-        {
-            return thumbBone == HumanBodyBones.LeftThumbProximal ||
-                thumbBone == HumanBodyBones.RightThumbProximal;
-        }
-
-        private static bool IsThumbIntermediateBone(HumanBodyBones thumbBone)
-        {
-            return thumbBone == HumanBodyBones.LeftThumbIntermediate ||
-                thumbBone == HumanBodyBones.RightThumbIntermediate;
-        }
-
-        private static bool TryGetThumbWorldRotationDiagnosticBone(HumanBodyBones thumbBone, out bool proximalBone)
-        {
-            if (IsThumbProximalBone(thumbBone))
-            {
-                proximalBone = true;
-                return true;
-            }
-
-            if (IsThumbIntermediateBone(thumbBone))
-            {
-                proximalBone = false;
-                return true;
-            }
-
-            proximalBone = false;
-            return false;
-        }
-
-        private bool ShouldPreserveManualThumbLocalRotationReference(
-            HumanBodyBones thumbBone,
-            Transform targetThumb,
-            Quaternion currentRotation,
-            Quaternion limitedRotation)
-        {
-            if (!_useEditorFingerPoseReference ||
-                !useManualAnimatorThumbLocalRotationReference ||
-                _editorFingerReferenceAnimator == null ||
-                targetThumb == null ||
-                !TryGetThumbBoneSide(thumbBone, out bool leftHand))
-            {
-                return false;
-            }
-
-            if (!TryEvaluateThumbLocalRotationOverrideRisk(leftHand, targetThumb, currentRotation, out float currentRisk) ||
-                !TryEvaluateThumbLocalRotationOverrideRisk(leftHand, targetThumb, limitedRotation, out float limitedRisk))
-            {
-                return false;
-            }
-
-            if (!IsFinite(currentRisk) || !IsFinite(limitedRisk))
-            {
-                return false;
-            }
-
-            RetargetingThumbGuardDiagnosticsRecorder.RecordLocalRotationGuardRisk(_thumbGuardDiagnostics,leftHand, currentRisk, limitedRisk, false);
-
-            if (Mathf.Max(currentRisk, limitedRisk) < ManualThumbOverrideSuppressRiskThreshold)
-            {
-                return false;
-            }
-
-            bool preserved = limitedRisk > currentRisk + ManualThumbOverrideRiskIncreaseTolerance;
-            if (preserved)
-            {
-                RetargetingThumbGuardDiagnosticsRecorder.RecordLocalRotationGuardRisk(_thumbGuardDiagnostics,leftHand, currentRisk, limitedRisk, true);
-            }
-
-            return preserved;
-        }
 
         public bool ShouldPreserveManualThumbWorldRotationCorrection(
             HumanBodyBones thumbBone,
             Transform targetThumb,
             Quaternion candidateWorldRotation)
         {
-            if (targetThumb == null || !IsFinite(candidateWorldRotation))
-            {
-                return false;
-            }
-
-            Quaternion candidateLocalRotation = targetThumb.parent != null
-                ? Quaternion.Inverse(targetThumb.parent.rotation) * candidateWorldRotation
-                : candidateWorldRotation;
-
-            if (!IsFinite(candidateLocalRotation))
-            {
-                return false;
-            }
-
-            if (!TryGetThumbBoneSide(thumbBone, out bool leftHand))
-            {
-                return ShouldPreserveManualThumbLocalRotationReference(
-                    thumbBone,
-                    targetThumb,
-                    targetThumb.localRotation,
-                    candidateLocalRotation);
-            }
-
-            if (!TryGetThumbWorldRotationDiagnosticBone(thumbBone, out bool proximalBone))
-            {
-                return ShouldPreserveManualThumbLocalRotationReference(
-                    thumbBone,
-                    targetThumb,
-                    targetThumb.localRotation,
-                    candidateLocalRotation);
-            }
-
-            _thumbGuardDiagnostics.ResetWorldRotationPreserveBone(leftHand, proximalBone);
-
-            bool suppressCompetingManualOverride = ShouldSuppressCompetingManualThumbOverride(leftHand);
-            bool keepDetachedHelperOverride = ShouldKeepDetachedHelperManualThumbOverrides(leftHand);
-            bool allowManualReferenceWorldPreserve = !suppressCompetingManualOverride || keepDetachedHelperOverride;
-            bool allowDetachedHelperShortcutPreserve = allowManualReferenceWorldPreserve && !keepDetachedHelperOverride;
-            bool hasDetachedHelperRelationship = HasDetachedThumbBaseHelperRelationship(thumbBone, leftHand);
-            bool hasReferenceLocalRotation = TryGetManualReferenceThumbLocalRotation(thumbBone, out Quaternion referenceLocalRotation);
-            float currentReferenceAngle = float.NaN;
-            float candidateReferenceAngle = float.NaN;
-            if (hasReferenceLocalRotation)
-            {
-                currentReferenceAngle = Quaternion.Angle(referenceLocalRotation, targetThumb.localRotation);
-                candidateReferenceAngle = Quaternion.Angle(referenceLocalRotation, candidateLocalRotation);
-            }
-
-            RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationReferenceAngles(_thumbGuardDiagnostics,
-                leftHand,
-                proximalBone,
-                currentReferenceAngle,
-                candidateReferenceAngle);
-
-            float currentReferenceFrameDeviation = float.NaN;
-            float candidateReferenceFrameDeviation = float.NaN;
-            bool hasReferenceFrameDeviation =
-                hasDetachedHelperRelationship &&
-                TryEvaluateThumbManualReferenceFrameDeviation(
-                    leftHand,
-                    targetThumb,
-                    candidateWorldRotation,
-                    out currentReferenceFrameDeviation,
-                    out candidateReferenceFrameDeviation);
-            RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationOverrideContext(_thumbGuardDiagnostics,
-                leftHand,
-                suppressCompetingManualOverride,
-                keepDetachedHelperOverride,
-                currentReferenceFrameDeviation,
-                candidateReferenceFrameDeviation);
-
-            if (allowDetachedHelperShortcutPreserve &&
-                hasDetachedHelperRelationship &&
-                hasReferenceLocalRotation)
-            {
-                if (currentReferenceAngle <= ManualThumbDetachedHelperPreserveCurrentReferenceAngleMax &&
-                    candidateReferenceAngle > currentReferenceAngle + ManualThumbWorldRotationReferenceToleranceDegrees)
-                {
-                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
-                        leftHand,
-                        proximalBone,
-                        ThumbWorldRotationPreserveReason.DetachedHelperReferenceAngle);
-                    return true;
-                }
-            }
-
-            if (allowDetachedHelperShortcutPreserve &&
-                hasReferenceFrameDeviation &&
-                candidateReferenceFrameDeviation > currentReferenceFrameDeviation + 0.001f)
-            {
-                RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
-                    leftHand,
-                    proximalBone,
-                    ThumbWorldRotationPreserveReason.DetachedHelperReferenceFrameDeviation);
-                return true;
-            }
-
-            if (!suppressCompetingManualOverride)
-            {
-                bool preserved = ShouldPreserveManualThumbLocalRotationReference(
-                    thumbBone,
-                    targetThumb,
-                    targetThumb.localRotation,
-                    candidateLocalRotation);
-                if (preserved)
-                {
-                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveLocalRisk(_thumbGuardDiagnostics,
-                        leftHand,
-                        proximalBone,
-                        leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardCurrentRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardCurrentRisk,
-                        leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardLimitedRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardLimitedRisk);
-                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
-                        leftHand,
-                        proximalBone,
-                        ThumbWorldRotationPreserveReason.LocalRotationReference);
-                }
-
-                return preserved;
-            }
-
-            if (!hasReferenceLocalRotation)
-            {
-                bool preserved = ShouldPreserveManualThumbLocalRotationReference(
-                    thumbBone,
-                    targetThumb,
-                    targetThumb.localRotation,
-                    candidateLocalRotation);
-                if (preserved)
-                {
-                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveLocalRisk(_thumbGuardDiagnostics,
-                        leftHand,
-                        proximalBone,
-                        leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardCurrentRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardCurrentRisk,
-                        leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardLimitedRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardLimitedRisk);
-                    RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
-                        leftHand,
-                        proximalBone,
-                        ThumbWorldRotationPreserveReason.LocalRotationReferenceFallbackNoManualReference);
-                }
-
-                return preserved;
-            }
-
-            if (allowManualReferenceWorldPreserve &&
-                candidateReferenceAngle > currentReferenceAngle + ManualThumbWorldRotationReferenceToleranceDegrees)
-            {
-                RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
-                    leftHand,
-                    proximalBone,
-                    ThumbWorldRotationPreserveReason.SuppressedManualReferenceAngle);
-                return true;
-            }
-
-            bool preservedAfterSuppressedReference = ShouldPreserveManualThumbLocalRotationReference(
-                thumbBone,
-                targetThumb,
-                targetThumb.localRotation,
-                candidateLocalRotation);
-            if (preservedAfterSuppressedReference)
-            {
-                RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveLocalRisk(_thumbGuardDiagnostics,
-                    leftHand,
-                    proximalBone,
-                    leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardCurrentRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardCurrentRisk,
-                    leftHand ? _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardLimitedRisk : _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardLimitedRisk);
-                RetargetingThumbGuardDiagnosticsRecorder.RecordWorldRotationPreserveReason(_thumbGuardDiagnostics,
-                    leftHand,
-                    proximalBone,
-                    ThumbWorldRotationPreserveReason.LocalRotationReferenceAfterSuppressedReference);
-            }
-
-            return preservedAfterSuppressedReference;
+            return ThumbWorldRotationPreservePolicy.ShouldPreserveManualWorldRotationCorrection(this, thumbBone, targetThumb, candidateWorldRotation);
         }
 
-        private bool TryGetManualReferenceThumbLocalRotation(HumanBodyBones thumbBone, out Quaternion localRotation)
-        {
-            localRotation = Quaternion.identity;
-            if (!_useEditorFingerPoseReference ||
-                !useManualAnimatorThumbLocalRotationReference ||
-                _editorFingerReferenceAnimator == null)
-            {
-                return false;
-            }
-
-            Transform referenceThumb = _editorFingerReferenceAnimator.GetBoneTransform(thumbBone);
-            if (referenceThumb == null || !IsFinite(referenceThumb.localRotation))
-            {
-                return false;
-            }
-
-            localRotation = referenceThumb.localRotation;
-            return true;
-        }
 
         internal bool HasDetachedThumbBaseHelperRelationship(HumanBodyBones thumbBone, bool leftHand)
         {
@@ -3663,23 +3324,6 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        private float GetThumbLocalRotationLimit(HumanBodyBones thumbBone)
-        {
-            switch (thumbBone)
-            {
-                case HumanBodyBones.LeftThumbProximal:
-                case HumanBodyBones.RightThumbProximal:
-                    return Mathf.Clamp(thumbProximalMaxLocalAngle, 0f, 90f);
-                case HumanBodyBones.LeftThumbIntermediate:
-                case HumanBodyBones.RightThumbIntermediate:
-                    return Mathf.Clamp(thumbIntermediateMaxLocalAngle, 0f, 120f);
-                case HumanBodyBones.LeftThumbDistal:
-                case HumanBodyBones.RightThumbDistal:
-                    return Mathf.Clamp(thumbDistalMaxLocalAngle, 0f, 120f);
-                default:
-                    return 0f;
-            }
-        }
 
         private void ClampTargetRootPositionSpike(Vector3 positionBeforePose, string source)
         {
