@@ -864,10 +864,10 @@ namespace Fbx2Vmd.FBXImporter
                     _editorHumanoidPoseReferencePlayer.IsInitialized;
             }
         }
-        public int PoseVisualSmoothingCount => _poseVisualSmoothingCount;
-        public int PoseVisualMuscleDeltaOnlySkippedCount => _poseVisualMuscleDeltaOnlySkippedCount;
-        public float LastPoseVisualMaxMuscleDelta => _lastPoseVisualMaxMuscleDelta;
-        public float MaxPoseVisualMaxMuscleDelta => _maxPoseVisualMaxMuscleDelta;
+        public int PoseVisualSmoothingCount => _visualPoseSmoother._poseVisualSmoothingCount;
+        public int PoseVisualMuscleDeltaOnlySkippedCount => _visualPoseSmoother._poseVisualMuscleDeltaOnlySkippedCount;
+        public float LastPoseVisualMaxMuscleDelta => _visualPoseSmoother._lastPoseVisualMaxMuscleDelta;
+        public float MaxPoseVisualMaxMuscleDelta => _visualPoseSmoother._maxPoseVisualMaxMuscleDelta;
         public int LastLeftThumbLocalRotationGuardClampCount => _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardClampCount;
         public int LastRightThumbLocalRotationGuardClampCount => _thumbGuardDiagnostics.LastRightThumbLocalRotationGuardClampCount;
         public int LastLeftThumbLocalRotationGuardPreserveCount => _thumbGuardDiagnostics.LastLeftThumbLocalRotationGuardPreserveCount;
@@ -1281,11 +1281,8 @@ namespace Fbx2Vmd.FBXImporter
             _legacyAnimationDriver.ResetStabilityMetrics();
             ResetEditorHumanoidRootTranslationReferenceState();
             ResetTargetHipsLocalPositionSpikeState();
-            ResetVisualPoseHistory();
-            _poseVisualSmoothingCount = 0;
-            _poseVisualMuscleDeltaOnlySkippedCount = 0;
-            _lastPoseVisualMaxMuscleDelta = float.NaN;
-            _maxPoseVisualMaxMuscleDelta = 0f;
+            _visualPoseSmoother.ResetVisualPoseHistory();
+            _visualPoseSmoother.ResetMetrics();
             _grounding.ResetMetrics();
             _lastEditorFootHeightGroundingReferenceLift = float.NaN;
             _hasEditorReferenceLowestFootRestY = false;
@@ -1300,7 +1297,7 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            ResetVisualPoseHistory();
+            _visualPoseSmoother.ResetVisualPoseHistory();
             return true;
         }
 
@@ -1419,14 +1416,7 @@ namespace Fbx2Vmd.FBXImporter
         private float _recordingStartHipsReferenceDeltaY = float.NaN;
         private bool _recordingStartHipsReferenceFlipDetected;
         private string _recordingStartHipsReferenceStage = string.Empty;
-        private bool _hasPreviousVisualPose;
-        private float[] _previousVisualPoseMuscles;
-        private Vector3 _previousVisualPoseBodyPosition;
-        private Quaternion _previousVisualPoseBodyRotation = Quaternion.identity;
-        private int _poseVisualSmoothingCount;
-        private int _poseVisualMuscleDeltaOnlySkippedCount;
-        private float _lastPoseVisualMaxMuscleDelta = float.NaN;
-        private float _maxPoseVisualMaxMuscleDelta;
+        private readonly RetargetingVisualPoseSmoother _visualPoseSmoother = new RetargetingVisualPoseSmoother();
         internal readonly RetargetingLowerBodySegmentDiagnostics _lowerBodySegmentDiagnostics = new RetargetingLowerBodySegmentDiagnostics();
         internal readonly RetargetingFootReferenceDiagnostics _footReferenceDiagnostics = new RetargetingFootReferenceDiagnostics();
         internal readonly RetargetingEndpointStageDiagnostics _endpointStageDiagnostics = new RetargetingEndpointStageDiagnostics();
@@ -1499,8 +1489,8 @@ namespace Fbx2Vmd.FBXImporter
         // 빌드에서는 muscle curve 추출이 불가해 HumanPoseHandler 샘플링 결과만 참조로 사용함.
         private HumanoidPoseReferencePlayer _editorHumanoidPoseReferencePlayer;
         private HumanPose _editorHumanoidPoseReference;
-        private bool _useCompleteEditorHumanoidMuscleReference;
-        private bool _hasEditorHumanoidPoseReferenceForFrame;
+        internal bool _useCompleteEditorHumanoidMuscleReference;
+        internal bool _hasEditorHumanoidPoseReferenceForFrame;
 #endif
 
         // --- 초기화 ---
@@ -1854,7 +1844,7 @@ namespace Fbx2Vmd.FBXImporter
                 clampLegacyAnimationVisualStep,
                 legacyAnimationVisualFrameRate))
             {
-                ResetVisualPoseHistory();
+                _visualPoseSmoother.ResetVisualPoseHistory();
             }
 
             // 스케일 비율 계산 (매 프레임 체크하여 안정성 확보)
@@ -1902,7 +1892,7 @@ namespace Fbx2Vmd.FBXImporter
             _stageMuscleDiagnostics.AfterClampPoseMuscles = _muscleIndexMap.ReadStageSnapshot(_humanPose);
             ApplyAnatomicalArmGuard(ref _humanPose);
             _stageMuscleDiagnostics.AfterAnatomicalArmGuard = _muscleIndexMap.ReadStageSnapshot(_humanPose);
-            SmoothPoseOnVisualSpike(ref _humanPose);
+            _visualPoseSmoother.SmoothPoseOnVisualSpike(this, ref _humanPose);
             _stageMuscleDiagnostics.AfterVisualSpikeSmoothing = _muscleIndexMap.ReadStageSnapshot(_humanPose);
             Quaternion poseRootRotation = _humanPose.bodyRotation;
             if (ShouldPreserveFbxRootRotation && !_hasPoseRootRotationCorrection && IsFinite(poseRootRotation) && _legacyAnimationDriver.IsPlaying)
@@ -2128,133 +2118,6 @@ namespace Fbx2Vmd.FBXImporter
             _endpointStageDiagnostics.AfterBipedIKPositions = RetargetingEndpointStageDiagnostics.CapturePositions(targetAnimator);
             _endpointStageDiagnostics.CaptureAttribution();
 #endif
-        }
-
-        private void SmoothPoseOnVisualSpike(ref HumanPose pose)
-        {
-            if (!smoothPoseOnLegacyAnimationStepSpike || pose.muscles == null || pose.muscles.Length == 0)
-            {
-                RememberVisualPose(pose);
-                return;
-            }
-
-            if (!_hasPreviousVisualPose ||
-                _previousVisualPoseMuscles == null ||
-                _previousVisualPoseMuscles.Length != pose.muscles.Length)
-            {
-                RememberVisualPose(pose);
-                return;
-            }
-
-            float maxMuscleDelta = 0f;
-            for (int i = 0; i < pose.muscles.Length; i++)
-            {
-                float delta = Mathf.Abs(pose.muscles[i] - _previousVisualPoseMuscles[i]);
-                if (delta > maxMuscleDelta)
-                {
-                    maxMuscleDelta = delta;
-                }
-            }
-
-            _lastPoseVisualMaxMuscleDelta = maxMuscleDelta;
-            _maxPoseVisualMaxMuscleDelta = Mathf.Max(_maxPoseVisualMaxMuscleDelta, maxMuscleDelta);
-
-            float bodyPositionDelta = Vector3.Distance(_previousVisualPoseBodyPosition, pose.bodyPosition);
-            float bodyRotationDelta = Quaternion.Angle(_previousVisualPoseBodyRotation, pose.bodyRotation);
-            bool shouldSmooth = RetargetingPoseSmoothing.ShouldSmoothVisualPoseSpike(
-                maxMuscleDelta,
-                bodyPositionDelta,
-                bodyRotationDelta,
-                poseVisualMuscleDeltaThreshold,
-                _legacyAnimationDriver.StepSpikeThisFrame,
-                out bool muscleDeltaOnlySpike);
-
-            if (shouldSmooth)
-            {
-                float currentWeight = RetargetingPoseSmoothing.CalculateVisualPoseSpikeCurrentWeight(
-                    poseVisualSpikeCurrentWeight,
-                    bodyPositionDelta,
-                    bodyRotationDelta,
-                    _legacyAnimationDriver.StepSpikeThisFrame);
-                bool useEditorHumanoidMuscleReference = false;
-                bool useCompleteEditorHumanoidMuscleReference = false;
-                bool hasEditorHumanoidBodyRotationReference = false;
-#if UNITY_EDITOR
-                useEditorHumanoidMuscleReference = _useEditorHumanoidMuscleReference;
-                useCompleteEditorHumanoidMuscleReference = _useCompleteEditorHumanoidMuscleReference;
-                hasEditorHumanoidBodyRotationReference =
-                    _hasEditorHumanoidPoseReferenceForFrame;
-#else
-                useCompleteEditorHumanoidMuscleReference = _useCompleteEditorHumanoidMuscleReference;
-                hasEditorHumanoidBodyRotationReference =
-                    _hasEditorHumanoidPoseReferenceForFrame;
-#endif
-                for (int i = 0; i < pose.muscles.Length; i++)
-                {
-                    bool hasEditorHumanoidMuscleReferenceCurve = false;
-#if UNITY_EDITOR
-                    hasEditorHumanoidMuscleReferenceCurve = _editorHumanoidMuscleCurves.ContainsKey(i);
-#endif
-                    bool shouldPreserveCurrentValue = RetargetingMuscleReferencePolicy.ShouldPreserveHumanoidMuscleDuringVisualSmoothing(
-                        i,
-                        useEditorHumanoidMuscleReference,
-                        hasEditorHumanoidMuscleReferenceCurve,
-                        useCompleteEditorHumanoidMuscleReference);
-                    bool isForearmStretchMuscle = !shouldPreserveCurrentValue &&
-                        poseVisualSpikeForearmStretchClampMaxOffset > 0f &&
-                        RetargetingMuscleReferencePolicy.IsForearmStretchMuscle(i);
-                    pose.muscles[i] = RetargetingPoseSmoothing.BlendVisualPoseSpikeMuscle(
-                        _previousVisualPoseMuscles[i],
-                        pose.muscles[i],
-                        currentWeight,
-                        shouldPreserveCurrentValue,
-                        isForearmStretchMuscle,
-                        poseVisualSpikeForearmStretchClampMaxOffset);
-                }
-
-                pose.bodyPosition = Vector3.Lerp(_previousVisualPoseBodyPosition, pose.bodyPosition, currentWeight);
-                if (!RetargetingMuscleReferencePolicy.ShouldPreserveBodyRotationDuringVisualSmoothing(
-                    hasEditorHumanoidBodyRotationReference))
-                {
-                    pose.bodyRotation = Quaternion.Slerp(
-                        _previousVisualPoseBodyRotation,
-                        pose.bodyRotation,
-                        currentWeight);
-                }
-                _poseVisualSmoothingCount++;
-            }
-            else if (muscleDeltaOnlySpike)
-            {
-                // 빠른 손/팔 동작 자체를 smoothing하면 의도한 동작이 멈칫하고 몸통이 늦게 따라오는 것처럼 보인다.
-                _poseVisualMuscleDeltaOnlySkippedCount++;
-            }
-
-            RememberVisualPose(pose);
-        }
-
-        private void RememberVisualPose(HumanPose pose)
-        {
-            if (pose.muscles == null || pose.muscles.Length == 0 || !IsFinite(pose))
-            {
-                return;
-            }
-
-            if (_previousVisualPoseMuscles == null || _previousVisualPoseMuscles.Length != pose.muscles.Length)
-            {
-                _previousVisualPoseMuscles = new float[pose.muscles.Length];
-            }
-
-            Array.Copy(pose.muscles, _previousVisualPoseMuscles, pose.muscles.Length);
-            _previousVisualPoseBodyPosition = pose.bodyPosition;
-            _previousVisualPoseBodyRotation = pose.bodyRotation;
-            _hasPreviousVisualPose = true;
-        }
-
-        private void ResetVisualPoseHistory()
-        {
-            _hasPreviousVisualPose = false;
-            _previousVisualPoseBodyPosition = Vector3.zero;
-            _previousVisualPoseBodyRotation = Quaternion.identity;
         }
 
         private void ApplyEditorHumanoidMuscleReference(ref HumanPose pose)
@@ -2769,7 +2632,7 @@ namespace Fbx2Vmd.FBXImporter
             return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z) && IsFinite(value.w);
         }
 
-        private static bool IsFinite(HumanPose pose)
+        internal static bool IsFinite(HumanPose pose)
         {
             if (!IsFinite(pose.bodyPosition) || !IsFinite(pose.bodyRotation))
             {
@@ -3310,11 +3173,7 @@ namespace Fbx2Vmd.FBXImporter
             _maxRootPositionPoseDeltaMagnitude = 0f;
             _rootPositionSpikeClampedCount = 0;
             _legacyAnimationDriver.ResetStabilityMetrics();
-            _hasPreviousVisualPose = false;
-            _poseVisualSmoothingCount = 0;
-            _poseVisualMuscleDeltaOnlySkippedCount = 0;
-            _lastPoseVisualMaxMuscleDelta = float.NaN;
-            _maxPoseVisualMaxMuscleDelta = 0f;
+            _visualPoseSmoother.ResetSession();
             _grounding.ResetSession();
             _lastEditorFootHeightGroundingReferenceLift = float.NaN;
             _appliedPoseClampWarningLogged = false;
