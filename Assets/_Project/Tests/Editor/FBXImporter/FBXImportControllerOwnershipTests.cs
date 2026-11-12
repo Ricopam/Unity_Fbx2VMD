@@ -74,10 +74,10 @@ namespace Tests.Editor.FBXImporter
             MethodInfo controllerConfigureIfNeededMethod = typeof(FBXImportController).GetMethod(
                 "ConfigureEditorImportSettingsIfNeeded",
                 BindingFlags.Instance | BindingFlags.NonPublic);
-            MethodInfo controllerDecisionMethod = typeof(FBXImportController).GetMethod(
+            MethodInfo controllerDecisionMethod = typeof(EditorFbxImportSettingsDriver).GetMethod(
                 "ShouldConfigureEditorImportSettings",
                 BindingFlags.Static | BindingFlags.NonPublic);
-            MethodInfo controllerConfigureMethod = typeof(FBXImportController).GetMethod(
+            MethodInfo controllerConfigureMethod = typeof(EditorFbxImportSettingsDriver).GetMethod(
                 "ConfigureImportSettings",
                 BindingFlags.Static | BindingFlags.NonPublic);
             MethodInfo pipelineDecisionMethod = typeof(FBXVmdPipeline).GetMethod(

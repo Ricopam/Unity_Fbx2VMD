@@ -48,7 +48,7 @@ namespace Tests.Editor.FBXImporter
                 }
             };
 
-            Type policyType = typeof(FBXImportController).Assembly.GetType(
+            Type policyType = typeof(FbxEditorFeatureWiring).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.HumanoidClipImportPolicy");
             MethodInfo applyMethod = policyType?.GetMethod(
                 "ApplyRootPoseContract",
@@ -134,7 +134,7 @@ namespace Tests.Editor.FBXImporter
 
         private static MethodInfo FindPolicyMethod(string methodName)
         {
-            Type policyType = typeof(FBXImportController).Assembly.GetType(
+            Type policyType = typeof(FbxEditorFeatureWiring).Assembly.GetType(
                 "Fbx2Vmd.FBXImporter.HumanoidClipImportPolicy");
             MethodInfo method = policyType?.GetMethod(
                 methodName,
@@ -145,13 +145,15 @@ namespace Tests.Editor.FBXImporter
 
         private static string ReadControllerSource()
         {
+            // 임포트 설정 구현은 S4b.7에서 에디터 드라이버로 이관됨 — 이동 파일 소스를 검사한다.
             string path = Path.Combine(
                 Directory.GetCurrentDirectory(),
                 "Assets",
                 "_Project",
                 "Scripts",
+                "Editor",
                 "FBXImporter",
-                "FBXImportController.cs");
+                "EditorFbxImportSettingsDriver.cs");
             return File.ReadAllText(path);
         }
     }

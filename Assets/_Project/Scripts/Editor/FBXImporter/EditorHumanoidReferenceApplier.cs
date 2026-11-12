@@ -119,10 +119,10 @@ namespace Fbx2Vmd.FBXImporter
             string importedFilePath,
             string sourceFilePath)
         {
-            string sourceRelativePath = FBXImportController.ToAssetRelativePath(
+            string sourceRelativePath = EditorFbxImportSettingsDriver.ToAssetRelativePath(
                 sourceFilePath,
                 Application.dataPath);
-            string importedRelativePath = FBXImportController.ToAssetRelativePath(
+            string importedRelativePath = EditorFbxImportSettingsDriver.ToAssetRelativePath(
                 importedFilePath,
                 Application.dataPath);
             string sourceFileName = string.IsNullOrEmpty(sourceFilePath)
@@ -141,7 +141,7 @@ namespace Fbx2Vmd.FBXImporter
             string sourceFileName,
             Func<string, bool> hasHumanoidAnimationClip)
         {
-            if (!FBXImportController.IsControlledImportAssetPath(sourceRelativePath) &&
+            if (!EditorFbxImportSettingsDriver.IsControlledImportAssetPath(sourceRelativePath) &&
                 hasHumanoidAnimationClip(sourceRelativePath))
             {
                 return sourceRelativePath;

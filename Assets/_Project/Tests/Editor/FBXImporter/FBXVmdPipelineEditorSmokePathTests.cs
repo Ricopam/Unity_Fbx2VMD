@@ -1386,14 +1386,14 @@ namespace Tests.Editor.FBXImporter
 
         private static bool ShouldConfigureImportSettings(string sourcePath, string targetPath, string dataPath)
         {
-            MethodInfo method = typeof(FBXImportController).GetMethod(
+            MethodInfo method = typeof(EditorFbxImportSettingsDriver).GetMethod(
                 "ShouldConfigureEditorImportSettings",
                 BindingFlags.Static | BindingFlags.NonPublic,
                 binder: null,
                 types: new[] { typeof(string), typeof(string), typeof(string) },
                 modifiers: null);
 
-            Assert.That(method, Is.Not.Null, "FBXImportController must expose a fakeable import-settings decision helper.");
+            Assert.That(method, Is.Not.Null, "EditorFbxImportSettingsDriver must expose a fakeable import-settings decision helper.");
             return (bool)method.Invoke(null, new object[] { sourcePath, targetPath, dataPath });
         }
 

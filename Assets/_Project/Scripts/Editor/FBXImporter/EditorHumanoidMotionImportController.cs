@@ -37,7 +37,7 @@ namespace Fbx2Vmd.FBXImporter
                 0.05f);
 
             string controlledPath = _importController.CopyToControlledImportFolder(sourcePath);
-            string assetPath = FBXImportController.ToAssetRelativePath(
+            string assetPath = EditorFbxImportSettingsDriver.ToAssetRelativePath(
                 controlledPath,
                 Application.dataPath);
             if (string.IsNullOrEmpty(assetPath))
