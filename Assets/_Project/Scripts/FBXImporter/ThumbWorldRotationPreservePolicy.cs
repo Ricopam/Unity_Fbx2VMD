@@ -19,7 +19,7 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            if (!PoseSpaceRetargeter.TryGetThumbBoneSide(thumbBone, out bool leftHand) ||
+            if (!ThumbGuardPolicy.TryGetBoneSide(thumbBone, out bool leftHand) ||
                 !ThumbGuardPolicy.TryGetWorldRotationDiagnosticBone(thumbBone, out bool proximalBone))
             {
                 return ThumbGuardPolicy.ShouldPreserveManualLocalRotationReference(

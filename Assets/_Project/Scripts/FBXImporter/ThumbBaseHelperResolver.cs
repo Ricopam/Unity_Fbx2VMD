@@ -227,6 +227,18 @@ namespace Fbx2Vmd.FBXImporter
                 normalizedName.Contains("thumbtip");
         }
 
+        internal static bool HasDetachedRelationship(PoseSpaceRetargeter owner, HumanBodyBones thumbBone, bool leftHand)
+        {
+            if (thumbBone != HumanBodyBones.LeftThumbProximal &&
+                thumbBone != HumanBodyBones.RightThumbProximal)
+            {
+                return false;
+            }
+
+            return owner.GetCachedThumbBaseHelper(leftHand) != null &&
+                owner.GetCachedExplicitThumbBaseSource(leftHand) != null;
+        }
+
         private static bool IsRelatedToThumbChain(
             Transform candidate,
             Transform hand,

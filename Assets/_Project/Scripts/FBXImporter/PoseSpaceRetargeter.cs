@@ -1400,7 +1400,7 @@ namespace Fbx2Vmd.FBXImporter
         private bool _poseWarningLogged;
         private bool _muscleClampWarningLogged;
         private bool _anatomyGuardWarningLogged;
-        private bool _thumbGuardWarningLogged;
+        internal bool _thumbGuardWarningLogged;
         internal bool _thumbLocalRotationGuardWarningLogged;
         private bool _rootDeltaSpikeWarningLogged;
         private bool _appliedPoseClampWarningLogged;
@@ -1923,7 +1923,7 @@ namespace Fbx2Vmd.FBXImporter
             ApplyEditorHumanoidBodyRotationReference(ref _humanPose);
             if (ShouldApplyRetargetSafetyGuards())
             {
-                ApplyThumbAnatomicalGuard(ref _humanPose, ShouldApplyThumbStretchOffset());
+                ThumbMuscleGuardPolicy.ApplyAnatomicalGuard(this, ref _humanPose, ThumbMuscleGuardPolicy.ShouldApplyStretchOffset(this));
             }
             ClampPoseMuscles(ref _humanPose);
             _stageMuscleDiagnostics.AfterClampPoseMuscles = _muscleIndexMap.ReadStageSnapshot(_humanPose);
@@ -2435,7 +2435,7 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         }
 
-        private Transform GetCachedThumbBaseHelper(bool leftHand)
+        internal Transform GetCachedThumbBaseHelper(bool leftHand)
         {
 #if UNITY_EDITOR
             return RetargetingEditorReferenceHooks.ThumbReference?.GetCachedThumbBaseHelper(this, leftHand);
@@ -2444,7 +2444,7 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         }
 
-        private Transform GetCachedExplicitThumbBaseSource(bool leftHand)
+        internal Transform GetCachedExplicitThumbBaseSource(bool leftHand)
         {
 #if UNITY_EDITOR
             return RetargetingEditorReferenceHooks.ThumbReference?.GetCachedExplicitThumbBaseSource(this, leftHand);
@@ -3100,7 +3100,7 @@ namespace Fbx2Vmd.FBXImporter
                     clampArmStretchMuscles);
             }
 
-            changed += ApplyThumbAnatomicalGuard(ref _appliedTargetPose, false);
+            changed += ThumbMuscleGuardPolicy.ApplyAnatomicalGuard(this, ref _appliedTargetPose, false);
 
             if (changed <= 0)
             {
@@ -3123,11 +3123,6 @@ namespace Fbx2Vmd.FBXImporter
 #else
             return true;
 #endif
-        }
-
-        private bool ShouldApplyThumbStretchOffset()
-        {
-            return !ShouldPreserveManualFingerReferenceThumbMuscles();
         }
 
         public bool IsManualThumbLocalRotationReferenceActive
@@ -3183,96 +3178,7 @@ namespace Fbx2Vmd.FBXImporter
 
         public bool ShouldSuppressThumbPoseShapingGuardForHand(bool leftHand)
         {
-#if UNITY_EDITOR
-            if (!IsManualThumbLocalRotationReferenceActive ||
-                !preserveManualFingerReferenceThumbMuscles)
-            {
-                return false;
-            }
-
-            if (ShouldSuppressCompetingManualThumbOverride(leftHand))
-            {
-                return false;
-            }
-
-            float risk = float.NaN;
-            return !(RetargetingEditorReferenceHooks.ThumbReference?.TryEvaluateManualOverrideRisk(this, leftHand, out risk) ?? false) ||
-                risk < ManualThumbPoseShapingSuppressMaxRisk;
-#else
-            return false;
-#endif
-        }
-
-        private bool ShouldPreserveManualFingerReferenceThumbMuscles()
-        {
-#if UNITY_EDITOR
-            return _useEditorFingerPoseReference && preserveManualFingerReferenceThumbMuscles;
-#else
-            return false;
-#endif
-        }
-
-        private int ApplyThumbAnatomicalGuard(ref HumanPose pose, bool applyStretchOffset)
-        {
-            if (!enableThumbAnatomicalGuard || pose.muscles == null)
-            {
-                return 0;
-            }
-
-            if (ShouldPreserveManualFingerReferenceThumbMuscles())
-            {
-                return 0;
-            }
-
-            float safeStretchMin = Mathf.Min(thumbStretchMin, thumbStretchMax);
-            float safeStretchMax = Mathf.Max(thumbStretchMin, thumbStretchMax);
-            float safeSpreadMin = Mathf.Min(thumbSpreadMin, thumbSpreadMax);
-            float safeSpreadMax = Mathf.Max(thumbSpreadMin, thumbSpreadMax);
-            int count = Mathf.Min(pose.muscles.Length, HumanTrait.MuscleCount);
-            int changed = 0;
-
-            for (int i = 0; i < count; i++)
-            {
-                string muscleName = HumanTrait.MuscleName[i];
-                if (string.IsNullOrEmpty(muscleName))
-                {
-                    continue;
-                }
-
-                string normalizedName = muscleName.Replace(" ", "").ToLowerInvariant();
-                if (!normalizedName.Contains("thumb"))
-                {
-                    continue;
-                }
-
-                float before = pose.muscles[i];
-                float after = before;
-                if (normalizedName.Contains("spread"))
-                {
-                    after = Mathf.Clamp(before, safeSpreadMin, safeSpreadMax);
-                }
-                else if (normalizedName.Contains("stretch"))
-                {
-                    float offset = applyStretchOffset ? thumbStretchOffset : 0f;
-                    after = Mathf.Clamp(before + offset, safeStretchMin, safeStretchMax);
-                }
-
-                if (Mathf.Approximately(before, after))
-                {
-                    continue;
-                }
-
-                pose.muscles[i] = after;
-                changed++;
-            }
-
-            if (changed > 0 && logThumbAnatomicalGuardCorrections && !_thumbGuardWarningLogged)
-            {
-                Debug.LogWarning($"[PoseSpaceRetargeter] 엄지 해부학적 제한으로 thumb muscle {changed}개를 보정했습니다.");
-                _thumbGuardWarningLogged = true;
-            }
-
-            return changed;
+            return ThumbMuscleGuardPolicy.ShouldSuppressPoseShapingGuardForHand(this, leftHand);
         }
 
 
@@ -3294,34 +3200,12 @@ namespace Fbx2Vmd.FBXImporter
 
         internal bool HasDetachedThumbBaseHelperRelationship(HumanBodyBones thumbBone, bool leftHand)
         {
-            if (thumbBone != HumanBodyBones.LeftThumbProximal &&
-                thumbBone != HumanBodyBones.RightThumbProximal)
-            {
-                return false;
-            }
-
-            return GetCachedThumbBaseHelper(leftHand) != null &&
-                GetCachedExplicitThumbBaseSource(leftHand) != null;
+            return ThumbBaseHelperResolver.HasDetachedRelationship(this, thumbBone, leftHand);
         }
 
         internal static bool TryGetThumbBoneSide(HumanBodyBones thumbBone, out bool leftHand)
         {
-            switch (thumbBone)
-            {
-                case HumanBodyBones.LeftThumbProximal:
-                case HumanBodyBones.LeftThumbIntermediate:
-                case HumanBodyBones.LeftThumbDistal:
-                    leftHand = true;
-                    return true;
-                case HumanBodyBones.RightThumbProximal:
-                case HumanBodyBones.RightThumbIntermediate:
-                case HumanBodyBones.RightThumbDistal:
-                    leftHand = false;
-                    return true;
-                default:
-                    leftHand = false;
-                    return false;
-            }
+            return ThumbGuardPolicy.TryGetBoneSide(thumbBone, out leftHand);
         }
 
 

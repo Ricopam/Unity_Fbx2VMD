@@ -145,7 +145,7 @@ namespace Fbx2Vmd.FBXImporter
                 owner.useManualAnimatorThumbLocalRotationReference &&
                 owner._editorFingerReferenceAnimator != null &&
                 targetThumb != null &&
-                PoseSpaceRetargeter.TryGetThumbBoneSide(thumbBone, out leftHand);
+                TryGetBoneSide(thumbBone, out leftHand);
         }
 
         private static bool TryEvaluateLocalRotationOverrideRisks(
@@ -211,6 +211,26 @@ namespace Fbx2Vmd.FBXImporter
                     return Mathf.Clamp(owner.thumbDistalMaxLocalAngle, 0f, 120f);
                 default:
                     return 0f;
+            }
+        }
+
+        internal static bool TryGetBoneSide(HumanBodyBones thumbBone, out bool leftHand)
+        {
+            switch (thumbBone)
+            {
+                case HumanBodyBones.LeftThumbProximal:
+                case HumanBodyBones.LeftThumbIntermediate:
+                case HumanBodyBones.LeftThumbDistal:
+                    leftHand = true;
+                    return true;
+                case HumanBodyBones.RightThumbProximal:
+                case HumanBodyBones.RightThumbIntermediate:
+                case HumanBodyBones.RightThumbDistal:
+                    leftHand = false;
+                    return true;
+                default:
+                    leftHand = false;
+                    return false;
             }
         }
 
