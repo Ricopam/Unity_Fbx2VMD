@@ -94,7 +94,16 @@ namespace Fbx2Vmd.ClothPhysics
 
                 SuppressAnimator(report);
 
-                yield return RunRotationPhase();
+                // 1. 몸 회전 — 긴 머리카락 관성 침투 유발
+                // 루트도 movedBones에 넣어 중단(Stop) 시에도 원위치 복원되게 한다.
+                // 첫 yield는 RunPhase 열거자여야 한다 — 수동 펌프 테스트가 직접 꺼내 쓴다.
+                Quaternion bodyRest = TrackRest(transform);
+                yield return RunPhase("몸 회전", phaseDuration, t =>
+                {
+                    float a = Mathf.Sin(t * Mathf.PI * 2f) * rotateDegrees * 0.5f;
+                    transform.rotation = bodyRest * Quaternion.Euler(0, a, 0);
+                });
+
                 yield return RunArmSwingPhase(report);
                 yield return RunBendPhase();
                 completed = true;
@@ -137,19 +146,6 @@ namespace Fbx2Vmd.ClothPhysics
             }
         }
 
-        // 1. 몸 회전 — 긴 머리카락 관성 침투 유발
-        // 루트도 movedBones에 넣어 중단(Stop) 시에도 원위치 복원되게 한다.
-        IEnumerator RunRotationPhase()
-        {
-            Track(transform);
-            Quaternion bodyRest = transform.rotation;
-            yield return RunPhase("몸 회전", phaseDuration, t =>
-            {
-                float a = Mathf.Sin(t * Mathf.PI * 2f) * rotateDegrees * 0.5f;
-                transform.rotation = bodyRest * Quaternion.Euler(0, a, 0);
-            });
-        }
-
         // 2. 팔 휘두름 — 트윈테일/긴 머리카락 궤적과 교차, 손발 꼬임 유발
         IEnumerator RunArmSwingPhase(StringBuilder report)
         {
@@ -182,13 +178,24 @@ namespace Fbx2Vmd.ClothPhysics
             if (spine == null)
                 yield break;
 
-            Track(spine);
-            Quaternion spineRest = spine.localRotation;
+            Quaternion spineRest = TrackLocalRest(spine);
             yield return RunPhase("몸 굽힘", phaseDuration, t =>
             {
                 float a = Mathf.Sin(t * Mathf.PI) * bendDegrees;
                 spine.localRotation = spineRest * Quaternion.Euler(a, 0, 0);
             });
+        }
+
+        Quaternion TrackRest(Transform bone)
+        {
+            Track(bone);
+            return bone.rotation;
+        }
+
+        Quaternion TrackLocalRest(Transform bone)
+        {
+            Track(bone);
+            return bone.localRotation;
         }
 
         void FinalizeAborted(StringBuilder report)

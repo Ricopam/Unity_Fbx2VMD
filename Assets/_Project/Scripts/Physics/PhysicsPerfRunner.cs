@@ -172,15 +172,7 @@ namespace Fbx2Vmd.ClothPhysics
             }
 
             var summary = new StringBuilder("[PhysicsPerfRunner] 계측 시작\n");
-            summary.AppendLine($"sceneLoadInit: frames={sceneLoadInitFrames} initClothNs={sceneLoadInitNs} preBuildNs={sceneLoadPreBuildNs}");
-            // 시작 프레임 상위 3개 — 스파이크 프레임과 그 안의 MC2 비용 비중
-            var top = startupFrameMs
-                .Select((ms, i) => (ms, i))
-                .OrderByDescending(x => x.ms)
-                .Take(3);
-            foreach (var (ms, i) in top)
-                summary.AppendLine(
-                    $"startup frame[{i}]: {ms:F1}ms initClothNs={startupInitNs[i]} preBuildNs={startupPreBuildNs[i]}");
+            AppendStartupSummary(summary);
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             // PipelineRunProfiler 호출은 에디터/Development Build에서만 컴파일된다
             summary.AppendLine("경고: 릴리즈 빌드라 계측이 비활성입니다. Development Build로 실행하세요.");
@@ -222,6 +214,19 @@ namespace Fbx2Vmd.ClothPhysics
         }
 
         /// <summary>계측 중 변경한 설정 필드를 원복한다.</summary>
+        // 시작 프레임 상위 3개 — 스파이크 프레임과 그 안의 MC2 비용 비중
+        void AppendStartupSummary(StringBuilder summary)
+        {
+            summary.AppendLine($"sceneLoadInit: frames={sceneLoadInitFrames} initClothNs={sceneLoadInitNs} preBuildNs={sceneLoadPreBuildNs}");
+            var top = startupFrameMs
+                .Select((ms, i) => (ms, i))
+                .OrderByDescending(x => x.ms)
+                .Take(3);
+            foreach (var (ms, i) in top)
+                summary.AppendLine(
+                    $"startup frame[{i}]: {ms:F1}ms initClothNs={startupInitNs[i]} preBuildNs={startupPreBuildNs[i]}");
+        }
+
         void RestorePatchedSettings()
         {
             if (!usePreBuildPatched)
@@ -279,64 +284,14 @@ namespace Fbx2Vmd.ClothPhysics
             var meshRecorder = default(ProfilerRecorder);
             try
             {
-                if (reuseBaked)
-                {
-                    // 이미 씬 로드 시 프리빌드 경로로 빌드 완료. BuildAndRun()은 빌드된 클로스에서
-                    // 예외를 던지므로 재빌드하지 않고, 초기화 비용은 씬 로드 계측값을 사용한다.
-                    summary.AppendLine(
-                        $"{tag}: 직렬화 프리빌드 재사용 — init은 씬 로드 계측(sceneLoadInit) 참조");
-                }
-                else
-                {
-                    setup.Setup();
-#if UNITY_EDITOR
-                    if (usePreBuild)
-                    {
-                        // 런타임 생성 클로스는 베이크 데이터가 없으므로 에디터에서 즉시 베이크.
-                        // 같은 프레임에 주입해야 Start()의 자동 빌드가 프리빌드 경로를 탄다.
-                        PipelineRunProfiler.NoteStage($"Physics.PreBuildBake.{tag}", "에디터 베이크", false);
-                        int baked = EditorBakeMissingPreBuildDataHook?.Invoke(this) ?? 0;
-                        summary.AppendLine($"{tag}: 프리빌드 데이터 {baked}개 에디터 베이크");
-                    }
-#else
-                    if (usePreBuild)
-                    {
-                        summary.AppendLine($"{tag}: 베이크 데이터 없음 — 씬 직렬화 프리빌드가 필요해 패스 건너뜀");
-                        yield break;
-                    }
-#endif
-                }
+                if (!RunBuildPhase(tag, usePreBuild, reuseBaked, summary))
+                    yield break;
+
                 long memBefore = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
                 PipelineRunProfiler.NoteStage($"Physics.InitWait.{tag}",
                     $"cloths={setup.generatedCloths.Count}", false);
 
-                // MC2 비동기 빌드 완료까지 대기 — 프레임 수가 곧 초기화 지연
-                int waited = 0;
-                double initNs = 0, preBuildNs = 0;
-                while (waited < buildTimeoutFrames &&
-                       setup.generatedCloths.Any(c => c == null || !c.IsValid()))
-                {
-                    initNs += ReadNs(initRecorder);
-                    preBuildNs += ReadNs(preBuildRecorder);
-                    waited++;
-                    yield return null;
-                }
-                initNs += ReadNs(initRecorder);
-                preBuildNs += ReadNs(preBuildRecorder);
-
-                int validCount = setup.generatedCloths.Count(c => c != null && c.IsValid());
-                // enabled만으로는 부족 — 프리빌드 ScriptableObject가 실제 있어야 데이터 경로가 됨
-                int preBuiltCount = setup.generatedCloths.Count(c =>
-                    c != null &&
-                    c.GetSerializeData2().preBuildData.preBuildScriptableObject != null);
-                long memAfter = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
-                string initInfo =
-                    $"waitFrames={waited} valid={validCount}/{setup.generatedCloths.Count} " +
-                    $"initClothNs={(long)initNs} preBuildNs={(long)preBuildNs} " +
-                    $"memDeltaKB={(memAfter - memBefore) / 1024} " +
-                    $"preBuildData={preBuiltCount}";
-                PipelineRunProfiler.NoteStage($"Physics.Warmup.{tag}", initInfo, false);
-                summary.AppendLine($"{tag}: {initInfo}{(waited >= buildTimeoutFrames ? " [타임아웃]" : "")}");
+                yield return WaitForClothBuild(tag, summary, initRecorder, preBuildRecorder, memBefore);
 
                 for (int i = 0; i < warmupFrames; i++)
                 {
@@ -346,30 +301,7 @@ namespace Fbx2Vmd.ClothPhysics
 
                 simRecorder = StartRecorder("StartClothUpdate.Time");
                 meshRecorder = StartRecorder("WriteMesh");
-                double simNsSum = 0, meshNsSum = 0, simNsMax = 0;
-                int simFrames = 0;
-                PipelineRunProfiler.NoteStage($"Physics.Measure.{tag}", "", false);
-                if (validationSequence != null && !validationSequence.isRunning)
-                    validationSequence.Run();
-                for (int i = 0; i < measureFrames; i++)
-                {
-                    yield return null;
-                    PipelineRunProfiler.SampleFrame(Time.deltaTime);
-                    double simNs = ReadNs(simRecorder);
-                    double meshNs = ReadNs(meshRecorder);
-                    simNsSum += simNs;
-                    meshNsSum += meshNs;
-                    if (simNs > simNsMax)
-                        simNsMax = simNs;
-                    if (simNs > 0)
-                        simFrames++;
-                }
-
-                double simMeanMs = simFrames > 0 ? simNsSum / simFrames / 1e6 : 0;
-                string measureInfo = $"simMean={simMeanMs:F3}ms simMax={simNsMax / 1e6:F3}ms " +
-                    $"meshNsTotal={(long)meshNsSum} markerFrames={simFrames}";
-                PipelineRunProfiler.NoteStage($"Physics.MeasureDone.{tag}", measureInfo, false);
-                summary.AppendLine($"{tag} 계측: {measureInfo}");
+                yield return RunMeasureLoop(tag, summary, simRecorder, meshRecorder);
             }
             finally
             {
@@ -379,6 +311,102 @@ namespace Fbx2Vmd.ClothPhysics
                 DisposeRecorder(ref simRecorder);
                 DisposeRecorder(ref meshRecorder);
             }
+        }
+
+        // Setup() 또는 베이크된 프리빌드 재사용을 수행한다.
+        // 반환 false면 이번 패스를 건너뛴다(비에디터에서 베이크 데이터 부재).
+        bool RunBuildPhase(string tag, bool usePreBuild, bool reuseBaked, StringBuilder summary)
+        {
+            if (reuseBaked)
+            {
+                // 이미 씬 로드 시 프리빌드 경로로 빌드 완료. BuildAndRun()은 빌드된 클로스에서
+                // 예외를 던지므로 재빌드하지 않고, 초기화 비용은 씬 로드 계측값을 사용한다.
+                summary.AppendLine(
+                    $"{tag}: 직렬화 프리빌드 재사용 — init은 씬 로드 계측(sceneLoadInit) 참조");
+                return true;
+            }
+
+            setup.Setup();
+#if UNITY_EDITOR
+            if (usePreBuild)
+            {
+                // 런타임 생성 클로스는 베이크 데이터가 없으므로 에디터에서 즉시 베이크.
+                // 같은 프레임에 주입해야 Start()의 자동 빌드가 프리빌드 경로를 탄다.
+                PipelineRunProfiler.NoteStage($"Physics.PreBuildBake.{tag}", "에디터 베이크", false);
+                int baked = EditorBakeMissingPreBuildDataHook?.Invoke(this) ?? 0;
+                summary.AppendLine($"{tag}: 프리빌드 데이터 {baked}개 에디터 베이크");
+            }
+#else
+            if (usePreBuild)
+            {
+                summary.AppendLine($"{tag}: 베이크 데이터 없음 — 씬 직렬화 프리빌드가 필요해 패스 건너뜀");
+                return false;
+            }
+#endif
+            return true;
+        }
+
+        // MC2 비동기 빌드 완료까지 대기 — 프레임 수가 곧 초기화 지연
+        IEnumerator WaitForClothBuild(
+            string tag, StringBuilder summary,
+            ProfilerRecorder initRecorder, ProfilerRecorder preBuildRecorder, long memBefore)
+        {
+            int waited = 0;
+            double initNs = 0, preBuildNs = 0;
+            while (waited < buildTimeoutFrames &&
+                   setup.generatedCloths.Any(c => c == null || !c.IsValid()))
+            {
+                initNs += ReadNs(initRecorder);
+                preBuildNs += ReadNs(preBuildRecorder);
+                waited++;
+                yield return null;
+            }
+            initNs += ReadNs(initRecorder);
+            preBuildNs += ReadNs(preBuildRecorder);
+
+            int validCount = setup.generatedCloths.Count(c => c != null && c.IsValid());
+            // enabled만으로는 부족 — 프리빌드 ScriptableObject가 실제 있어야 데이터 경로가 됨
+            int preBuiltCount = setup.generatedCloths.Count(c =>
+                c != null &&
+                c.GetSerializeData2().preBuildData.preBuildScriptableObject != null);
+            long memAfter = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
+            string initInfo =
+                $"waitFrames={waited} valid={validCount}/{setup.generatedCloths.Count} " +
+                $"initClothNs={(long)initNs} preBuildNs={(long)preBuildNs} " +
+                $"memDeltaKB={(memAfter - memBefore) / 1024} " +
+                $"preBuildData={preBuiltCount}";
+            PipelineRunProfiler.NoteStage($"Physics.Warmup.{tag}", initInfo, false);
+            summary.AppendLine($"{tag}: {initInfo}{(waited >= buildTimeoutFrames ? " [타임아웃]" : "")}");
+        }
+
+        IEnumerator RunMeasureLoop(
+            string tag, StringBuilder summary,
+            ProfilerRecorder simRecorder, ProfilerRecorder meshRecorder)
+        {
+            double simNsSum = 0, meshNsSum = 0, simNsMax = 0;
+            int simFrames = 0;
+            PipelineRunProfiler.NoteStage($"Physics.Measure.{tag}", "", false);
+            if (validationSequence != null && !validationSequence.isRunning)
+                validationSequence.Run();
+            for (int i = 0; i < measureFrames; i++)
+            {
+                yield return null;
+                PipelineRunProfiler.SampleFrame(Time.deltaTime);
+                double simNs = ReadNs(simRecorder);
+                double meshNs = ReadNs(meshRecorder);
+                simNsSum += simNs;
+                meshNsSum += meshNs;
+                if (simNs > simNsMax)
+                    simNsMax = simNs;
+                if (simNs > 0)
+                    simFrames++;
+            }
+
+            double simMeanMs = simFrames > 0 ? simNsSum / simFrames / 1e6 : 0;
+            string measureInfo = $"simMean={simMeanMs:F3}ms simMax={simNsMax / 1e6:F3}ms " +
+                $"meshNsTotal={(long)meshNsSum} markerFrames={simFrames}";
+            PipelineRunProfiler.NoteStage($"Physics.MeasureDone.{tag}", measureInfo, false);
+            summary.AppendLine($"{tag} 계측: {measureInfo}");
         }
 
         static ProfilerRecorder StartRecorder(string markerName)

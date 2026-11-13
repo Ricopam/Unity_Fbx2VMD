@@ -15,6 +15,13 @@ namespace Tests.Editor.Settings
         private const string RecordingSettingSourcePath =
             "Assets/_Project/Scripts/Settings/RecordingSetting.cs";
 
+        // RecordingSetting은 partial로 분할돼 있어 소스 스캔은 전 파트를 합쳐 판독함.
+        private static string ReadRecordingSettingSources() =>
+            File.ReadAllText(RecordingSettingSourcePath) +
+            File.ReadAllText("Assets/_Project/Scripts/Settings/RecordingSetting.Settings.cs") +
+            File.ReadAllText("Assets/_Project/Scripts/Settings/RecordingSetting.SharedSettings.cs") +
+            File.ReadAllText("Assets/_Project/Scripts/Settings/RecordingSetting.Diagnostics.cs");
+
         [Test]
         public void Given_SameImportCommandTwice_When_Processing_Then_StartsOnceAndConsumesEachEnvelope()
         {
@@ -87,7 +94,7 @@ namespace Tests.Editor.Settings
         {
             Assert.That(File.Exists(ProcessorSourcePath), Is.True, ProcessorSourcePath);
             string processorSource = File.ReadAllText(ProcessorSourcePath);
-            string recordingSettingSource = File.ReadAllText(RecordingSettingSourcePath);
+            string recordingSettingSource = ReadRecordingSettingSources();
 
             Assert.That(processorSource,
                 Does.Contain("internal sealed class MainRecordingSettingsFbxImportCommandProcessor"));

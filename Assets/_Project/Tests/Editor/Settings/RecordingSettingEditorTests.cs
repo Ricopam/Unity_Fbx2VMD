@@ -49,6 +49,13 @@ namespace Tests.Editor.Settings
         private const string SharedSettingsFileSessionTypeName =
             "Fbx2Vmd.Settings.RecordingSharedSettingsFileSession, Fbx2Vmd.Settings";
 
+        // RecordingSetting은 partial로 분할돼 있어 소스 스캔은 전 파트를 합쳐 판독함.
+        private static string ReadRecordingSettingSources() =>
+            File.ReadAllText("Assets/_Project/Scripts/Settings/RecordingSetting.cs") +
+            File.ReadAllText("Assets/_Project/Scripts/Settings/RecordingSetting.Settings.cs") +
+            File.ReadAllText("Assets/_Project/Scripts/Settings/RecordingSetting.SharedSettings.cs") +
+            File.ReadAllText("Assets/_Project/Scripts/Settings/RecordingSetting.Diagnostics.cs");
+
         [Test]
         public void Given_RecordingSetting_When_InspectingSharedSettingsFileState_Then_DelegatesToFileSession()
         {
@@ -60,7 +67,7 @@ namespace Tests.Editor.Settings
             Assert.That(File.Exists(sessionSourcePath), Is.True, sessionSourcePath);
             Assert.That(Type.GetType(SharedSettingsFileSessionTypeName), Is.Not.Null);
 
-            string recordingSettingSource = File.ReadAllText(recordingSettingSourcePath);
+            string recordingSettingSource = ReadRecordingSettingSources();
             string sessionSource = File.ReadAllText(sessionSourcePath);
 
             Assert.That(
@@ -95,7 +102,7 @@ namespace Tests.Editor.Settings
             Assert.That(Type.GetType(diagnosticsSettingsTypeName), Is.Not.Null, diagnosticsSettingsTypeName);
 
             string diagnosticsSettingsSource = File.ReadAllText(diagnosticsSettingsSourcePath);
-            string recordingSettingSource = File.ReadAllText(recordingSettingSourcePath);
+            string recordingSettingSource = ReadRecordingSettingSources();
             string pipelineSource = File.ReadAllText(pipelineSourcePath);
 
             Assert.That(diagnosticsSettingsSource, Does.Contain("public readonly struct RecordingDiagnosticsSettings"));
@@ -1207,7 +1214,7 @@ namespace Tests.Editor.Settings
                 "Assets/_Project/Scripts/Settings/RecordingSetting.cs";
 
             string bootstrapSource = File.ReadAllText(bootstrapSourcePath);
-            string recordingSettingSource = File.ReadAllText(recordingSettingSourcePath);
+            string recordingSettingSource = ReadRecordingSettingSources();
 
             Assert.That(
                 bootstrapSource,
@@ -2251,7 +2258,7 @@ namespace Tests.Editor.Settings
 
             Assert.That(File.Exists(resolverPath), Is.True, resolverPath);
 
-            string recordingSettingSource = File.ReadAllText(recordingSettingPath);
+            string recordingSettingSource = ReadRecordingSettingSources();
             string popupSource = File.ReadAllText(popupPath);
             string resolverSource = File.ReadAllText(resolverPath);
 

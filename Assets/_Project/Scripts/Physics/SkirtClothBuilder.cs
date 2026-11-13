@@ -199,6 +199,27 @@ namespace Fbx2Vmd.ClothPhysics
             var remainTris = new List<int>[subCount];
             var topology = new MeshTopology[subCount];
             var used = new bool[mesh.vertexCount];
+            if (!ClassifySkirtTriangles(mesh, attrs, extractTris, remainTris, topology, used))
+                return null;
+
+            int vcnt = mesh.vertexCount;
+            int ncnt;
+            var remap = BuildVertexRemap(used, out ncnt);
+            Mesh newMesh = BuildSkirtMesh(
+                mesh, attrs, extractTris, used, remap, ncnt, subCount, out remappedAttrs);
+            Mesh remainMesh = CloneRemainMesh(mesh, remainTris, topology);
+            return CreateExtractedRenderer(source, mesh, newMesh, remainMesh);
+        }
+
+        // 서브메시별로 스커트/잔여 삼각형을 분류한다. 1개 이상의 스커트 버텍스를 가진
+        // 삼각형도 추출 — 무효 버텍스는 추출본에서 Fixed로 격상돼 본 스키닝 위치를
+        // 그대로 추적하므로 본체의 인접 삼각형과 이음매가 어긋나지 않는다 (균열 방지)
+        static bool ClassifySkirtTriangles(
+            Mesh mesh, VertexAttribute[] attrs,
+            List<int>[] extractTris, List<int>[] remainTris,
+            MeshTopology[] topology, bool[] used)
+        {
+            int subCount = mesh.subMeshCount;
             bool any = false;
             for (int s = 0; s < subCount; s++)
             {
@@ -214,9 +235,6 @@ namespace Fbx2Vmd.ClothPhysics
                 var tris = mesh.GetTriangles(s);
                 for (int i = 0; i < tris.Length; i += 3)
                 {
-                    // 1개 이상의 스커트 버텍스를 가진 삼각형도 추출 — 무효 버텍스는
-                    // 추출본에서 Fixed로 격상돼 본 스키닝 위치를 그대로 추적하므로
-                    // 본체의 인접 삼각형과 이음매가 어긋나지 않는다 (균열 방지)
                     bool skirt = !attrs[tris[i]].IsInvalid()
                         || !attrs[tris[i + 1]].IsInvalid()
                         || !attrs[tris[i + 2]].IsInvalid();
@@ -229,20 +247,40 @@ namespace Fbx2Vmd.ClothPhysics
                     }
                 }
             }
-            if (!any)
-                return null;
+            return any;
+        }
 
-            // 버텍스 리맵 + 속성 재배열
-            int vcnt = mesh.vertexCount;
-            var remap = new int[vcnt];
-            int ncnt = 0;
-            for (int v = 0; v < vcnt; v++)
+        static int[] BuildVertexRemap(bool[] used, out int ncnt)
+        {
+            var remap = new int[used.Length];
+            ncnt = 0;
+            for (int v = 0; v < used.Length; v++)
                 if (used[v]) remap[v] = ncnt++;
+            return remap;
+        }
 
+        static Mesh BuildSkirtMesh(
+            Mesh mesh, VertexAttribute[] attrs, List<int>[] extractTris,
+            bool[] used, int[] remap, int ncnt, int subCount,
+            out VertexAttribute[] remappedAttrs)
+        {
+            int vcnt = mesh.vertexCount;
             var newMesh = new Mesh { name = mesh.name + "_skirt" };
+            remappedAttrs = FillVerticesAndChannels(mesh, newMesh, attrs, used, remap, ncnt, vcnt);
+            CopyBoneWeights(mesh, newMesh, used, remap, ncnt, vcnt);
+            SetRemappedTriangles(newMesh, extractTris, remap, subCount);
+            newMesh.RecalculateBounds();
+            CopyBlendShapes(mesh, newMesh, used, remap, vcnt, ncnt);
+            return newMesh;
+        }
+
+        static VertexAttribute[] FillVerticesAndChannels(
+            Mesh mesh, Mesh newMesh, VertexAttribute[] attrs,
+            bool[] used, int[] remap, int ncnt, int vcnt)
+        {
             var verts = mesh.vertices;
             var newVerts = new Vector3[ncnt];
-            remappedAttrs = new VertexAttribute[ncnt];
+            var remappedAttrs = new VertexAttribute[ncnt];
             for (int v = 0; v < vcnt; v++)
                 if (used[v])
                 {
@@ -257,8 +295,13 @@ namespace Fbx2Vmd.ClothPhysics
             CopyVertexChannel(mesh, newMesh, remap, used, vcnt, UVertexAttribute.Color);
             for (var uv = UVertexAttribute.TexCoord0; uv <= UVertexAttribute.TexCoord7; uv++)
                 CopyVertexChannel(mesh, newMesh, remap, used, vcnt, uv);
+            return remappedAttrs;
+        }
 
-            // 본 가중치 복사 (추출 메시도 원본 bones 배열을 공유)
+        // 본 가중치 복사 (추출 메시도 원본 bones 배열을 공유)
+        static void CopyBoneWeights(
+            Mesh mesh, Mesh newMesh, bool[] used, int[] remap, int ncnt, int vcnt)
+        {
             using var allWeights = mesh.GetAllBoneWeights();
             using var bonesPerVertex = mesh.GetBonesPerVertex();
             var newBpv = new NativeArray<byte>(ncnt, Allocator.Temp);
@@ -279,8 +322,12 @@ namespace Fbx2Vmd.ClothPhysics
                 newMesh.SetBoneWeights(newBpv, weightsNA);
             newBpv.Dispose();
             newMesh.bindposes = mesh.bindposes;
+        }
 
-            // 서브메시 구조/머티리얼 순서 유지
+        // 서브메시 구조/머티리얼 순서 유지
+        static void SetRemappedTriangles(
+            Mesh newMesh, List<int>[] extractTris, int[] remap, int subCount)
+        {
             newMesh.subMeshCount = subCount;
             for (int s = 0; s < subCount; s++)
             {
@@ -290,10 +337,13 @@ namespace Fbx2Vmd.ClothPhysics
                     remapped[i] = remap[tris[i]];
                 newMesh.SetTriangles(remapped, s);
             }
-            newMesh.RecalculateBounds();
+        }
 
-            // 블렌드셰이프 복사 — 스커트 버텍스에 델타가 있는 셰이프는
-            // 프레임 구성을 유지한 채 전체 프레임을 이관한다
+        // 블렌드셰이프 복사 — 스커트 버텍스에 델타가 있는 셰이프는
+        // 프레임 구성을 유지한 채 전체 프레임을 이관한다
+        static void CopyBlendShapes(
+            Mesh mesh, Mesh newMesh, bool[] used, int[] remap, int vcnt, int ncnt)
+        {
             for (int s = 0; s < mesh.blendShapeCount; s++)
             {
                 int frames = mesh.GetBlendShapeFrameCount(s);
@@ -329,14 +379,22 @@ namespace Fbx2Vmd.ClothPhysics
                         shapeName, mesh.GetBlendShapeFrameWeight(s, f), ndv, ndn, ndt);
                 }
             }
+        }
 
-            // 원본 메시 클론에서 스커트 삼각형 제거 (토폴로지 유지)
+        // 원본 메시 클론에서 스커트 삼각형 제거 (토폴로지 유지)
+        static Mesh CloneRemainMesh(Mesh mesh, List<int>[] remainTris, MeshTopology[] topology)
+        {
             var remainMesh = Object.Instantiate(mesh);
             remainMesh.name = mesh.name + "_body";
-            for (int s = 0; s < subCount; s++)
+            for (int s = 0; s < mesh.subMeshCount; s++)
                 remainMesh.SetIndices(remainTris[s], topology[s], s);
+            return remainMesh;
+        }
 
-            // 추출 렌더러 생성 — 원본 설정/본/머티리얼 상속
+        // 추출 렌더러 생성 — 원본 설정/본/머티리얼 상속
+        static ExtractedSkirtMesh CreateExtractedRenderer(
+            SkinnedMeshRenderer source, Mesh mesh, Mesh newMesh, Mesh remainMesh)
+        {
             var go = new GameObject(CharacterPhysicsSetup.ClothNamePrefix + "SkirtMesh_" + source.name);
             go.transform.SetParent(source.transform.parent, false);
             go.transform.SetPositionAndRotation(source.transform.position, source.transform.rotation);
@@ -448,6 +506,27 @@ namespace Fbx2Vmd.ClothPhysics
             result.skirtBoneCount = skirtBoneDepths.Count;
 
             var inputs = new List<(SkinnedMeshRenderer smr, VertexAttribute[] attrs)>();
+            CollectInputs(renderers, skirtBoneDepths, skirtWeightThreshold, fixedChainDepth,
+                result, inputs);
+            if (inputs.Count == 0)
+                return result; // 스커트 버텍스 없음 — MeshCloth 불가
+            result.rendererCount = inputs.Count;
+
+            result.cloth = BuildCloth(parent, colliders, torso, reductionScale,
+                useBackstop, backstopDistance, usePresetBaseline, tuning, inputs);
+            if (result.fixedVertexCount == 0)
+                result.warnings.Add("고정 버텍스 없음 — 스커트가 몸에서 떨어질 수 있음. fixedChainDepth 상향 검토");
+            return result;
+        }
+
+        // 렌더러별 버텍스 속성을 계산하고 한도 초과 메시는 스커트 삼각형 추출본으로 대체한다.
+        static void CollectInputs(
+            SkinnedMeshRenderer[] renderers,
+            Dictionary<Transform, int> skirtBoneDepths,
+            float skirtWeightThreshold, int fixedChainDepth,
+            Result result,
+            List<(SkinnedMeshRenderer smr, VertexAttribute[] attrs)> inputs)
+        {
             foreach (var smr in renderers)
             {
                 if (smr == null)
@@ -497,10 +576,14 @@ namespace Fbx2Vmd.ClothPhysics
                 result.fixedVertexCount += fc;
                 result.moveVertexCount += mc;
             }
-            if (inputs.Count == 0)
-                return result; // 스커트 버텍스 없음 — MeshCloth 불가
-            result.rendererCount = inputs.Count;
+        }
 
+        static MagicaCloth BuildCloth(
+            Transform parent, List<ColliderComponent> colliders,
+            float torso, float reductionScale, bool useBackstop,
+            float backstopDistance, bool usePresetBaseline, SkirtTuning? tuning,
+            List<(SkinnedMeshRenderer smr, VertexAttribute[] attrs)> inputs)
+        {
             var go = new GameObject(CharacterPhysicsSetup.ClothNamePrefix + "Skirt");
             go.transform.SetParent(parent, false);
             var cloth = go.AddComponent<MagicaCloth>();
@@ -527,12 +610,7 @@ namespace Fbx2Vmd.ClothPhysics
 
             ApplySimParams(sdata, colliders, useBackstop, backstopDistance,
                 tuning ?? SkirtTuning.Default);
-
-            if (result.fixedVertexCount == 0)
-                result.warnings.Add("고정 버텍스 없음 — 스커트가 몸에서 떨어질 수 있음. fixedChainDepth 상향 검토");
-
-            result.cloth = cloth;
-            return result;
+            return cloth;
         }
 
         /// <summary>
