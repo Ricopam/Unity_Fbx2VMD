@@ -27,16 +27,8 @@ namespace Fbx2Vmd.FBXImporter
             return builder.ToString();
         }
 
-        internal static string RenderHeader(YybVisualComparisonSummaryData summary)
+        private static void AppendSessionLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
         {
-            if (summary == null)
-            {
-                throw new ArgumentNullException(nameof(summary));
-            }
-
-            StringBuilder builder = new StringBuilder();
-            builder.AppendLine("# YYB Visual Comparison Batch");
-            builder.AppendLine();
             builder.AppendLine($"- session id: `{EscapeMarkdown(summary.session_id)}`");
             builder.AppendLine($"- generated at: `{FormatGeneratedAt(summary.generated_at)}`");
             builder.AppendLine($"- fbx file: `{EscapeMarkdown(summary.fbx_file)}`");
@@ -50,6 +42,10 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- MMD IK delta guard recovery debt VMD: `{FormatRuntimeOverride(summary.mmd_ik_delta_guard_recovery_debt_vmd)}`");
             builder.AppendLine($"- MMD IK delta guard recovery hold frames: `{FormatRuntimeOverride(summary.mmd_ik_delta_guard_recovery_hold_frames)}`");
             builder.AppendLine($"- Final IK foot grounding runtime override: `{summary.final_ik_foot_grounding_enabled}`");
+        }
+
+        private static void AppendManualAnimatorLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- Manual Animator lower-body localRotation runtime override: `{summary.manual_animator_foot_local_rotation_enabled}`");
             builder.AppendLine($"- Manual Animator lower-body localRotation runtime disable: `{summary.manual_animator_foot_local_rotation_disabled}`");
             builder.AppendLine($"- Manual Animator full-body pose runtime override: `{summary.manual_animator_full_body_pose_enabled}`");
@@ -62,9 +58,17 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- Manual Animator full-body pose left arm muscles only: `{summary.manual_animator_full_body_pose_left_arm_muscles_only}`");
             builder.AppendLine($"- Manual Animator full-body pose right sleeve chain muscles only: `{summary.manual_animator_full_body_pose_right_sleeve_chain_muscles_only}`");
             builder.AppendLine($"- Manual Animator full-body pose frame gate: `{summary.manual_animator_full_body_pose_frame_gate_start:F1}-{summary.manual_animator_full_body_pose_frame_gate_end:F1}`");
+        }
+
+        private static void AppendHumanPoseOutputLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- SetHumanPose right leg twist output reference: `{summary.set_human_pose_right_leg_twist_output_enabled}`");
             builder.AppendLine($"- SetHumanPose right leg twist output reference weight: `{summary.set_human_pose_right_leg_twist_output_weight:F3}`");
             builder.AppendLine($"- SetHumanPose right leg twist output reference max delta: `{summary.set_human_pose_right_leg_twist_output_max_delta:F3}`");
+        }
+
+        private static void AppendBodyRotationHandLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- Manual Animator body rotation runtime override: `{summary.manual_animator_body_rotation_enabled}`");
             builder.AppendLine($"- Manual Animator body rotation runtime disable: `{summary.manual_animator_body_rotation_disabled}`");
             builder.AppendLine($"- Manual Animator body rotation weight: `{summary.manual_animator_body_rotation_weight:F3}`");
@@ -72,12 +76,20 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- Manual Animator thumb local rotation runtime override: `{summary.manual_animator_thumb_local_rotation_enabled}`");
             builder.AppendLine($"- Manual Animator hand palm-frame runtime override: `{summary.manual_animator_hand_palm_frame_enabled}`");
             builder.AppendLine($"- Manual Animator hand palm-frame weight: `{summary.manual_animator_hand_palm_frame_weight:F3}`");
+        }
+
+        private static void AppendRetargetSpikeLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- Retarget pose visual spike smoothing runtime settings override: `{summary.retarget_pose_visual_spike_smoothing_override}`");
             builder.AppendLine($"- Retarget pose visual spike smoothing enabled: `{summary.retarget_pose_visual_spike_smoothing_enabled}`");
             builder.AppendLine($"- Retarget pose visual spike current weight: `{summary.retarget_pose_visual_spike_current_weight:F3}`");
             builder.AppendLine($"- Retarget pose visual spike forearm stretch clamp max offset: `{summary.retarget_pose_visual_spike_forearm_stretch_clamp_max_offset:F3}`");
             builder.AppendLine($"- Retarget arm stretch clamp runtime override: `{summary.retarget_arm_stretch_clamp_enabled}`");
             builder.AppendLine($"- Retarget arm stretch muscle limit: `{summary.retarget_arm_stretch_muscle_limit:F3}`");
+        }
+
+        private static void AppendYybArmLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- YYB arm swing limit runtime override: `{summary.yyb_arm_swing_limit_enabled}`");
             builder.AppendLine($"- YYB arm swing limit weight: `{summary.yyb_arm_swing_limit_weight:F3}`");
             builder.AppendLine($"- YYB arm swing max down dot: `{summary.yyb_arm_swing_max_down_dot:F3}`");
@@ -109,6 +121,10 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- YYB arm visual forearm influence: `{summary.yyb_arm_visual_forearm_influence:F3}`");
             builder.AppendLine($"- YYB arm visual upper-arm max degrees: `{summary.yyb_arm_visual_upper_arm_max_degrees:F3}`");
             builder.AppendLine($"- YYB arm visual forearm max degrees: `{summary.yyb_arm_visual_forearm_max_degrees:F3}`");
+        }
+
+        private static void AppendSegmentDirectionLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- Manual Animator lower-body segment direction runtime override: `{summary.manual_animator_lower_body_segment_direction_enabled}`");
             builder.AppendLine($"- Manual Animator lower-body segment direction runtime disable: `{summary.manual_animator_lower_body_segment_direction_disabled}`");
             builder.AppendLine($"- Manual Animator lower-body segment direction weight: `{summary.manual_animator_lower_body_segment_direction_weight:F3}`");
@@ -129,6 +145,10 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- Manual Animator foot hips-aligned residual yaw runtime disable: `{summary.manual_animator_foot_hips_aligned_residual_yaw_disabled}`");
             builder.AppendLine($"- Manual Animator foot hips-aligned residual yaw weight: `{summary.manual_animator_foot_hips_aligned_residual_yaw_weight:F3}`");
             builder.AppendLine($"- Manual Animator foot hips-aligned residual yaw max angle: `{summary.manual_animator_foot_hips_aligned_residual_yaw_max_angle:F3}`");
+        }
+
+        private static void AppendPostEndpointLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- Post-SetHumanPose right endpoint position runtime override: `{summary.post_set_human_pose_right_endpoint_position_enabled}`");
             builder.AppendLine($"- Post-SetHumanPose right endpoint position weight: `{summary.post_set_human_pose_right_endpoint_position_weight:F3}`");
             builder.AppendLine($"- Post-SetHumanPose right endpoint position max offset: `{summary.post_set_human_pose_right_endpoint_position_max_offset:F3}`");
@@ -136,6 +156,10 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- Post-SetHumanPose right endpoint position toes blend weight: `{summary.post_set_human_pose_right_endpoint_position_toes_blend_weight:F3}`");
             builder.AppendLine($"- Post-SetHumanPose right endpoint position frame gate: `{summary.post_set_human_pose_right_endpoint_position_frame_gate_start:F0}-{summary.post_set_human_pose_right_endpoint_position_frame_gate_end:F0}`");
             builder.AppendLine($"- Post-SetHumanPose endpoint position use left side: `{summary.post_set_human_pose_endpoint_position_use_left_side}`");
+        }
+
+        private static void AppendPreEndpointLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- Pre-SetHumanPose right endpoint position runtime override: `{summary.pre_set_human_pose_right_endpoint_position_enabled}`");
             builder.AppendLine($"- Pre-SetHumanPose right endpoint position weight: `{summary.pre_set_human_pose_right_endpoint_position_weight:F3}`");
             builder.AppendLine($"- Pre-SetHumanPose right endpoint position max offset: `{summary.pre_set_human_pose_right_endpoint_position_max_offset:F3}`");
@@ -172,6 +196,28 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- reference clip: `{EscapeMarkdown(summary.reference_clip_name)}`");
             builder.AppendLine($"- reference clip asset: `{EscapeMarkdown(summary.reference_clip_asset_path)}`");
             builder.AppendLine();
+        }
+
+
+        internal static string RenderHeader(YybVisualComparisonSummaryData summary)
+        {
+            if (summary == null)
+            {
+                throw new ArgumentNullException(nameof(summary));
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("# YYB Visual Comparison Batch");
+            builder.AppendLine();
+            AppendSessionLines(builder, summary);
+            AppendManualAnimatorLines(builder, summary);
+            AppendHumanPoseOutputLines(builder, summary);
+            AppendBodyRotationHandLines(builder, summary);
+            AppendRetargetSpikeLines(builder, summary);
+            AppendYybArmLines(builder, summary);
+            AppendSegmentDirectionLines(builder, summary);
+            AppendPostEndpointLines(builder, summary);
+            AppendPreEndpointLines(builder, summary);
             return builder.ToString();
         }
 
