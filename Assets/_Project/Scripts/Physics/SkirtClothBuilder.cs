@@ -131,12 +131,7 @@ namespace Fbx2Vmd.ClothPhysics
                 return attrs;
 
             // 본 인덱스 → 스커트 깊이 (비스커트 본은 사전 부재)
-            var boneDepthByIndex = new Dictionary<int, int>(bones.Length);
-            for (int i = 0; i < bones.Length; i++)
-            {
-                if (bones[i] != null && skirtBoneDepths.TryGetValue(bones[i], out int d))
-                    boneDepthByIndex[i] = d;
-            }
+            var boneDepthByIndex = BuildBoneDepthIndex(bones, skirtBoneDepths);
             if (boneDepthByIndex.Count == 0)
                 return attrs;
 
@@ -174,6 +169,18 @@ namespace Fbx2Vmd.ClothPhysics
                 // 임계 미만 → Invalid 유지 (스커트 아님 — 본래 스키닝 유지)
             }
             return attrs;
+        }
+
+        static Dictionary<int, int> BuildBoneDepthIndex(
+            Transform[] bones, Dictionary<Transform, int> skirtBoneDepths)
+        {
+            var map = new Dictionary<int, int>(bones.Length);
+            for (int i = 0; i < bones.Length; i++)
+            {
+                if (bones[i] != null && skirtBoneDepths.TryGetValue(bones[i], out int d))
+                    map[i] = d;
+            }
+            return map;
         }
 
         /// <summary>
@@ -650,6 +657,13 @@ namespace Fbx2Vmd.ClothPhysics
             sdata.distanceConstraint.stiffness.SetValue(1.0f, 1.0f, 0.5f, true);
             sdata.triangleBendingConstraint.stiffness = 1.0f; // MeshCloth 사실상 필수
 
+            ApplyAngleConstraints(sdata, tuning);
+            ApplyMotionParams(sdata, useBackstop, backstopDistance);
+            ApplyColliderAndSpringParams(sdata, colliders);
+        }
+
+        static void ApplyAngleConstraints(ClothSerializeData sdata, in SkirtTuning tuning)
+        {
             sdata.angleRestorationConstraint.useAngleRestoration = true;
             sdata.angleRestorationConstraint.stiffness.SetValue(0.2f, 1.0f, 0.5f, true);
             HairPhysicsParameters.ScaleCurveTip(
@@ -662,7 +676,11 @@ namespace Fbx2Vmd.ClothPhysics
             sdata.angleLimitConstraint.useAngleLimit = true;
             sdata.angleLimitConstraint.limitAngle.SetValue(60.0f, 0.0f, 1.0f, true);
             sdata.angleLimitConstraint.stiffness = 1.0f;
+        }
 
+        static void ApplyMotionParams(
+            ClothSerializeData sdata, bool useBackstop, float backstopDistance)
+        {
             sdata.motionConstraint.useMaxDistance = false;
             // 백스톱: 스킨 포즈 기준 법선 내측 진입을 제한해 다리 관통을 막는다.
             // 설치 버전(2.18.1)에 Penetration 제약이 없어 이것이 대체 수단.
@@ -676,7 +694,11 @@ namespace Fbx2Vmd.ClothPhysics
                     Mathf.Max(0f, backstopDistance));
             }
             sdata.motionConstraint.stiffness = 1.0f;
+        }
 
+        static void ApplyColliderAndSpringParams(
+            ClothSerializeData sdata, List<ColliderComponent> colliders)
+        {
             sdata.colliderCollisionConstraint.mode = ColliderCollisionConstraint.Mode.Point;
             sdata.colliderCollisionConstraint.friction = 0.05f;
             sdata.colliderCollisionConstraint.colliderList.Clear();

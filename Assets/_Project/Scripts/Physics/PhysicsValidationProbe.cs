@@ -138,53 +138,62 @@ namespace Fbx2Vmd.ClothPhysics
             for (int i = 0; i < trackedBones.Count; i++)
             {
                 var (bone, cloth) = trackedBones[i];
-                Vector3 p = bone.position;
-                float maxDepth = 0f;
-                string maxCol = "";
-                foreach (var col in cloth.SerializeData.colliderCollisionConstraint.colliderList)
-                {
-                    if (col == null)
-                        continue;
-                    float depth = MeasurePenetration(p, col);
-                    if (depth > maxDepth)
-                    {
-                        maxDepth = depth;
-                        maxCol = col.name;
-                    }
-                }
-                if (float.IsNaN(baselines[i]))
-                {
-                    baselines[i] = maxDepth; // 초기 프레임을 정적 기저선으로 채택
-                    if (maxDepth > baselineWorstPenetration)
-                        baselineWorstPenetration = maxDepth;
-                    continue;
-                }
-                float excess = maxDepth - baselines[i];
-                if (excess >= penetrationWarningDepth)
-                {
-                    consecutivePenetrations[i]++;
-                    if (consecutivePenetrations[i] > maxConsecutivePenetrationSamples)
-                        maxConsecutivePenetrationSamples = consecutivePenetrations[i];
-                    if (consecutivePenetrations[i] >= stuckSampleThreshold)
-                        stuckBoneIndexes.Add(i);
+                if (SampleBonePenetration(i, bone, cloth))
                     penetratedThisFrame = true;
-                }
-                else
-                {
-                    consecutivePenetrations[i] = 0;
-                }
-                if (excess > worstPenetration)
-                {
-                    worstPenetration = excess;
-                    worstFrame = frame;
-                    worstPoint = p;
-                    worstInfo = $"{bone.name} -> {maxCol} ({cloth.name}) " +
-                        $"[기저 {baselines[i] * 1000f:F0}mm]";
-                }
-                suspectedStuckBoneCount = stuckBoneIndexes.Count;
             }
             if (penetratedThisFrame)
                 penetrationFrameCount++;
+        }
+
+        // 본 하나의 침투 심도를 측정하고 기저선 대비 초과분을 추적 지표에 반영한다.
+        bool SampleBonePenetration(int i, Transform bone, MagicaCloth cloth)
+        {
+            Vector3 p = bone.position;
+            float maxDepth = 0f;
+            string maxCol = "";
+            foreach (var col in cloth.SerializeData.colliderCollisionConstraint.colliderList)
+            {
+                if (col == null)
+                    continue;
+                float depth = MeasurePenetration(p, col);
+                if (depth > maxDepth)
+                {
+                    maxDepth = depth;
+                    maxCol = col.name;
+                }
+            }
+            if (float.IsNaN(baselines[i]))
+            {
+                baselines[i] = maxDepth; // 초기 프레임을 정적 기저선으로 채택
+                if (maxDepth > baselineWorstPenetration)
+                    baselineWorstPenetration = maxDepth;
+                return false;
+            }
+            float excess = maxDepth - baselines[i];
+            bool penetrated = false;
+            if (excess >= penetrationWarningDepth)
+            {
+                consecutivePenetrations[i]++;
+                if (consecutivePenetrations[i] > maxConsecutivePenetrationSamples)
+                    maxConsecutivePenetrationSamples = consecutivePenetrations[i];
+                if (consecutivePenetrations[i] >= stuckSampleThreshold)
+                    stuckBoneIndexes.Add(i);
+                penetrated = true;
+            }
+            else
+            {
+                consecutivePenetrations[i] = 0;
+            }
+            if (excess > worstPenetration)
+            {
+                worstPenetration = excess;
+                worstFrame = frame;
+                worstPoint = p;
+                worstInfo = $"{bone.name} -> {maxCol} ({cloth.name}) " +
+                    $"[기저 {baselines[i] * 1000f:F0}mm]";
+            }
+            suspectedStuckBoneCount = stuckBoneIndexes.Count;
+            return penetrated;
         }
 
         /// <summary>본 위치가 콜라이더 안으로 들어간 깊이(m). 양수=침투.</summary>
