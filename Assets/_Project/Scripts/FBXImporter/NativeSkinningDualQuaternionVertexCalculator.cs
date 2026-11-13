@@ -84,38 +84,31 @@ namespace Fbx2Vmd.FBXImporter
             Vector4 realSum = Vector4.zero;
             Vector4 dualSum = Vector4.zero;
             bool hasReference = false;
-            Accumulate(
+            int[] boneIndices =
+            {
                 weights.boneIndex0,
-                weights.weight0,
-                transforms,
-                ref referenceReal,
-                ref hasReference,
-                ref realSum,
-                ref dualSum);
-            Accumulate(
                 weights.boneIndex1,
-                weights.weight1,
-                transforms,
-                ref referenceReal,
-                ref hasReference,
-                ref realSum,
-                ref dualSum);
-            Accumulate(
                 weights.boneIndex2,
+                weights.boneIndex3
+            };
+            float[] boneWeights =
+            {
+                weights.weight0,
+                weights.weight1,
                 weights.weight2,
-                transforms,
-                ref referenceReal,
-                ref hasReference,
-                ref realSum,
-                ref dualSum);
-            Accumulate(
-                weights.boneIndex3,
-                weights.weight3,
-                transforms,
-                ref referenceReal,
-                ref hasReference,
-                ref realSum,
-                ref dualSum);
+                weights.weight3
+            };
+            for (int slot = 0; slot < boneIndices.Length; slot++)
+            {
+                Accumulate(
+                    boneIndices[slot],
+                    boneWeights[slot],
+                    transforms,
+                    ref referenceReal,
+                    ref hasReference,
+                    ref realSum,
+                    ref dualSum);
+            }
 
             float magnitude = Mathf.Sqrt(Vector4.Dot(realSum, realSum));
             if (!hasReference ||

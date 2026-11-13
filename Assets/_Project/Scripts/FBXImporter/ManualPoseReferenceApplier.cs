@@ -235,7 +235,34 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            Quaternion correction = Quaternion.FromToRotation(currentDirection, referenceDirection);
+            if (!TryBuildCorrection(
+                    referenceDirection,
+                    currentDirection,
+                    maxAngleDegrees,
+                    correctionAxisXzScale,
+                    weight,
+                    out Quaternion correction))
+            {
+                return false;
+            }
+
+            nextParentWorldRotation = correction * currentParentWorldRotation;
+            if (!IsFinite(nextParentWorldRotation) ||
+                Quaternion.Angle(currentParentWorldRotation, nextParentWorldRotation) <= 0.001f)
+            {
+                nextParentWorldRotation = currentParentWorldRotation;
+                return false;
+            }
+
+            return true;
+        }
+
+        static bool TryBuildCorrection(
+            Vector3 referenceDirection, Vector3 currentDirection,
+            float maxAngleDegrees, float correctionAxisXzScale, float weight,
+            out Quaternion correction)
+        {
+            correction = Quaternion.FromToRotation(currentDirection, referenceDirection);
             if (!IsFinite(correction))
             {
                 return false;
@@ -262,15 +289,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 correction = Quaternion.Slerp(Quaternion.identity, correction, clampedWeight);
             }
-
-            nextParentWorldRotation = correction * currentParentWorldRotation;
-            if (!IsFinite(nextParentWorldRotation) ||
-                Quaternion.Angle(currentParentWorldRotation, nextParentWorldRotation) <= 0.001f)
-            {
-                nextParentWorldRotation = currentParentWorldRotation;
-                return false;
-            }
-
             return true;
         }
 
