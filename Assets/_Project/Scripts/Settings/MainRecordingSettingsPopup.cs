@@ -76,20 +76,7 @@ namespace Fbx2Vmd.Settings
 
         internal void EnsureBuilt()
         {
-            RectTransform ownedContentRoot = null;
-            bool hasSingleOwnedContent = panelRoot != null &&
-                MainRecordingSettingsGeneratedHierarchy.TryFindContent(
-                    panelRoot,
-                    out ownedContentRoot);
-            if (hasSingleOwnedContent &&
-                generatedContentRoot != null &&
-                generatedContentRoot == ownedContentRoot &&
-                MainRecordingSettingsGeneratedHierarchy.HasCompleteContent(
-                    generatedContentRoot,
-                    MainRecordingSettingsLayoutSpec.Cards) &&
-                canvasGroup != null &&
-                notificationText != null &&
-                cardButtons.Count == MainRecordingSettingsLayoutSpec.Cards.Length)
+            if (HasCompleteOwnedHierarchy())
             {
                 return;
             }
@@ -101,20 +88,7 @@ namespace Fbx2Vmd.Settings
             string preservedNotification = hadGeneratedHierarchy
                 ? MainRecordingSettingsGeneratedHierarchy.FindNotificationText(panelRoot)
                 : string.Empty;
-            int generatedContentSiblingIndex =
-                MainRecordingSettingsGeneratedHierarchy.FindOwnedSiblingIndex(panelRoot);
-            canvasGroup = gameObject.GetComponent<CanvasGroup>();
-            if (canvasGroup == null)
-            {
-                canvasGroup = gameObject.AddComponent<CanvasGroup>();
-            }
-
-            if (gameObject.GetComponent<RectMask2D>() == null)
-            {
-                gameObject.AddComponent<RectMask2D>();
-            }
-
-            ConfigurePanelRoot(root, !hadGeneratedHierarchy);
+            EnsurePanelInfrastructure(root, !hadGeneratedHierarchy);
             if (TryRestoreGeneratedHierarchy())
             {
                 return;
@@ -126,7 +100,54 @@ namespace Fbx2Vmd.Settings
                 return;
             }
 
-            generatedContentSiblingIndex =
+            RebuildGeneratedContent(
+                elementBuilder,
+                hadGeneratedHierarchy,
+                preservedNotification,
+                hadCanvasGroup);
+        }
+
+        private bool HasCompleteOwnedHierarchy()
+        {
+            RectTransform ownedContentRoot = null;
+            bool hasSingleOwnedContent = panelRoot != null &&
+                MainRecordingSettingsGeneratedHierarchy.TryFindContent(
+                    panelRoot,
+                    out ownedContentRoot);
+            return hasSingleOwnedContent &&
+                generatedContentRoot != null &&
+                generatedContentRoot == ownedContentRoot &&
+                MainRecordingSettingsGeneratedHierarchy.HasCompleteContent(
+                    generatedContentRoot,
+                    MainRecordingSettingsLayoutSpec.Cards) &&
+                canvasGroup != null &&
+                notificationText != null &&
+                cardButtons.Count == MainRecordingSettingsLayoutSpec.Cards.Length;
+        }
+
+        private void EnsurePanelInfrastructure(RectTransform root, bool resetAnchoredPosition)
+        {
+            canvasGroup = gameObject.GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            if (gameObject.GetComponent<RectMask2D>() == null)
+            {
+                gameObject.AddComponent<RectMask2D>();
+            }
+
+            ConfigurePanelRoot(root, resetAnchoredPosition);
+        }
+
+        private void RebuildGeneratedContent(
+            MainRecordingSettingsElementBuilder elementBuilder,
+            bool hadGeneratedHierarchy,
+            string preservedNotification,
+            bool hadCanvasGroup)
+        {
+            int generatedContentSiblingIndex =
                 MainRecordingSettingsGeneratedHierarchy.FindOwnedSiblingIndex(panelRoot);
             RemoveOwnedGeneratedHierarchy();
             generatedContentRoot = elementBuilder.CreateRectTransform(

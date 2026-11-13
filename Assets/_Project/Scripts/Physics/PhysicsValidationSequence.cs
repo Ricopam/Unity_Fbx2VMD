@@ -92,61 +92,11 @@ namespace Fbx2Vmd.ClothPhysics
                     probe.RebuildTracking();
                 }
 
-                // Animator가 Update 단계에서 본 회전을 덮어쓰므로 시퀀스 중에는 비활성화한다.
-                // 비활성화해도 isHuman/GetBoneTransform의 Avatar 매핑은 유지된다.
-                Animator animator = setup != null ? setup.targetAnimator : null;
-                if (animator == null)
-                    animator = GetComponent<Animator>();
-                if (animator != null && animator.enabled && disableAnimatorDuringSequence)
-                {
-                    animator.enabled = false;
-                    suppressedAnimator = animator;
-                    report.AppendLine("Animator를 일시 비활성화해 검증 포즈를 구동함");
-                }
+                SuppressAnimator(report);
 
-                // 1. 몸 회전 — 긴 머리카락 관성 침투 유발
-                // 루트도 movedBones에 넣어 중단(Stop) 시에도 원위치 복원되게 한다.
-                Track(transform);
-                Quaternion bodyRest = transform.rotation;
-                yield return RunPhase("몸 회전", phaseDuration, t =>
-                {
-                    float a = Mathf.Sin(t * Mathf.PI * 2f) * rotateDegrees * 0.5f;
-                    transform.rotation = bodyRest * Quaternion.Euler(0, a, 0);
-                });
-
-                // 2. 팔 휘두름 — 트윈테일/긴 머리카락 궤적과 교차, 손발 꼬임 유발
-                Transform lArm = ResolveBone(HumanBodyBones.LeftUpperArm);
-                Transform rArm = ResolveBone(HumanBodyBones.RightUpperArm);
-                if (lArm == null && rArm == null)
-                    report.AppendLine("팔 본을 해석할 수 없어 팔 휘두름을 건너뜀");
-                else
-                {
-                    Track(lArm);
-                    Track(rArm);
-                    Quaternion lRest = lArm != null ? lArm.rotation : Quaternion.identity;
-                    Quaternion rRest = rArm != null ? rArm.rotation : Quaternion.identity;
-                    yield return RunPhase("팔 휘두름", phaseDuration * armSwingCount, t =>
-                    {
-                        float a = Mathf.Sin(t * armSwingCount * Mathf.PI * 2f) * armSwingDegrees;
-                        if (lArm != null)
-                            lArm.rotation = lRest * Quaternion.Euler(0, 0, a);
-                        if (rArm != null)
-                            rArm.rotation = rRest * Quaternion.Euler(0, 0, -a);
-                    });
-                }
-
-                // 3. 몸 굽힘 — 앞머리 백스톱/가슴 콜라이더 검증
-                Transform spine = ResolveBone(HumanBodyBones.Chest) ?? ResolveBone(HumanBodyBones.Spine);
-                if (spine != null)
-                {
-                    Track(spine);
-                    Quaternion spineRest = spine.localRotation;
-                    yield return RunPhase("몸 굽힘", phaseDuration, t =>
-                    {
-                        float a = Mathf.Sin(t * Mathf.PI) * bendDegrees;
-                        spine.localRotation = spineRest * Quaternion.Euler(a, 0, 0);
-                    });
-                }
+                yield return RunRotationPhase();
+                yield return RunArmSwingPhase(report);
+                yield return RunBendPhase();
                 completed = true;
             }
             finally
@@ -156,19 +106,7 @@ namespace Fbx2Vmd.ClothPhysics
                 RestoreAnimator();
                 if (!completed)
                 {
-                    isRunning = false;
-                    routine = null;
-                    report.AppendLine("[검증 시퀀스] 예외 또는 중단으로 종료 — 본/Animator 복원 완료");
-                    if (probe != null)
-                    {
-                        try { report.AppendLine(probe.BuildReport()); }
-                        catch (System.Exception e)
-                        {
-                            report.AppendLine($"프로브 리포트 생성 실패: {e.Message}");
-                        }
-                    }
-                    lastReport = report.ToString();
-                    Debug.LogWarning(lastReport, this);
+                    FinalizeAborted(report);
                 }
             }
 
@@ -179,16 +117,99 @@ namespace Fbx2Vmd.ClothPhysics
             isRunning = false;
             routine = null;
             report.AppendLine("[검증 시퀀스] 완료");
-            if (probe != null)
-            {
-                try { report.AppendLine(probe.BuildReport()); }
-                catch (System.Exception e)
-                {
-                    report.AppendLine($"프로브 리포트 생성 실패: {e.Message}");
-                }
-            }
+            AppendProbeReport(report);
             lastReport = report.ToString();
             Debug.Log(lastReport, this);
+        }
+
+        // Animator가 Update 단계에서 본 회전을 덮어쓰므로 시퀀스 중에는 비활성화한다.
+        // 비활성화해도 isHuman/GetBoneTransform의 Avatar 매핑은 유지된다.
+        void SuppressAnimator(StringBuilder report)
+        {
+            Animator animator = setup != null ? setup.targetAnimator : null;
+            if (animator == null)
+                animator = GetComponent<Animator>();
+            if (animator != null && animator.enabled && disableAnimatorDuringSequence)
+            {
+                animator.enabled = false;
+                suppressedAnimator = animator;
+                report.AppendLine("Animator를 일시 비활성화해 검증 포즈를 구동함");
+            }
+        }
+
+        // 1. 몸 회전 — 긴 머리카락 관성 침투 유발
+        // 루트도 movedBones에 넣어 중단(Stop) 시에도 원위치 복원되게 한다.
+        IEnumerator RunRotationPhase()
+        {
+            Track(transform);
+            Quaternion bodyRest = transform.rotation;
+            yield return RunPhase("몸 회전", phaseDuration, t =>
+            {
+                float a = Mathf.Sin(t * Mathf.PI * 2f) * rotateDegrees * 0.5f;
+                transform.rotation = bodyRest * Quaternion.Euler(0, a, 0);
+            });
+        }
+
+        // 2. 팔 휘두름 — 트윈테일/긴 머리카락 궤적과 교차, 손발 꼬임 유발
+        IEnumerator RunArmSwingPhase(StringBuilder report)
+        {
+            Transform lArm = ResolveBone(HumanBodyBones.LeftUpperArm);
+            Transform rArm = ResolveBone(HumanBodyBones.RightUpperArm);
+            if (lArm == null && rArm == null)
+            {
+                report.AppendLine("팔 본을 해석할 수 없어 팔 휘두름을 건너뜀");
+                yield break;
+            }
+
+            Track(lArm);
+            Track(rArm);
+            Quaternion lRest = lArm != null ? lArm.rotation : Quaternion.identity;
+            Quaternion rRest = rArm != null ? rArm.rotation : Quaternion.identity;
+            yield return RunPhase("팔 휘두름", phaseDuration * armSwingCount, t =>
+            {
+                float a = Mathf.Sin(t * armSwingCount * Mathf.PI * 2f) * armSwingDegrees;
+                if (lArm != null)
+                    lArm.rotation = lRest * Quaternion.Euler(0, 0, a);
+                if (rArm != null)
+                    rArm.rotation = rRest * Quaternion.Euler(0, 0, -a);
+            });
+        }
+
+        // 3. 몸 굽힘 — 앞머리 백스톱/가슴 콜라이더 검증
+        IEnumerator RunBendPhase()
+        {
+            Transform spine = ResolveBone(HumanBodyBones.Chest) ?? ResolveBone(HumanBodyBones.Spine);
+            if (spine == null)
+                yield break;
+
+            Track(spine);
+            Quaternion spineRest = spine.localRotation;
+            yield return RunPhase("몸 굽힘", phaseDuration, t =>
+            {
+                float a = Mathf.Sin(t * Mathf.PI) * bendDegrees;
+                spine.localRotation = spineRest * Quaternion.Euler(a, 0, 0);
+            });
+        }
+
+        void FinalizeAborted(StringBuilder report)
+        {
+            isRunning = false;
+            routine = null;
+            report.AppendLine("[검증 시퀀스] 예외 또는 중단으로 종료 — 본/Animator 복원 완료");
+            AppendProbeReport(report);
+            lastReport = report.ToString();
+            Debug.LogWarning(lastReport, this);
+        }
+
+        void AppendProbeReport(StringBuilder report)
+        {
+            if (probe == null)
+                return;
+            try { report.AppendLine(probe.BuildReport()); }
+            catch (System.Exception e)
+            {
+                report.AppendLine($"프로브 리포트 생성 실패: {e.Message}");
+            }
         }
 
         void Track(Transform bone)
