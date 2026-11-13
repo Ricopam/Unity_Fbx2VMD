@@ -209,57 +209,19 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             var evaluatedVertexSet = new HashSet<int>(evaluatedVertices);
-            var affectedFaces = new HashSet<int>();
-            var edgeFaces = new Dictionary<NativeSkinningEdgeKey, List<int>>();
-            int faceCount = triangles.Length / 3;
-            for (int faceIndex = 0; faceIndex < faceCount; faceIndex++)
-            {
-                int offset = faceIndex * 3;
-                int first = triangles[offset];
-                int second = triangles[offset + 1];
-                int third = triangles[offset + 2];
-                if (evaluatedVertexSet.Contains(first) ||
-                    evaluatedVertexSet.Contains(second) ||
-                    evaluatedVertexSet.Contains(third))
-                {
-                    affectedFaces.Add(faceIndex);
-                }
-                AddEdgeFace(edgeFaces, new NativeSkinningEdgeKey(first, second), faceIndex);
-                AddEdgeFace(edgeFaces, new NativeSkinningEdgeKey(second, third), faceIndex);
-                AddEdgeFace(edgeFaces, new NativeSkinningEdgeKey(third, first), faceIndex);
-            }
-
-            NativeSkinningFacePair[] facePairs = edgeFaces
-                .Where(entry => entry.Value.Count == 2 &&
-                    (affectedFaces.Contains(entry.Value[0]) ||
-                     affectedFaces.Contains(entry.Value[1])))
-                .Select(entry => CreateFacePair(
-                    triangles,
-                    entry.Key,
-                    entry.Value[0],
-                    entry.Value[1]))
-                .ToArray();
-            if (facePairs.Length == 0)
+            if (!TryCollectTopology(
+                    triangles, evaluatedVertexSet,
+                    out HashSet<int> affectedFaces,
+                    out NativeSkinningFacePair[] facePairs))
             {
                 return false;
             }
 
-            float[] restAngles = facePairs
-                .Select(pair => TryMeasureAngle(
-                    restVertices,
-                    pair,
-                    out float angleDegrees)
-                        ? angleDegrees
-                        : 180f)
-                .ToArray();
-            float[] restShapeRecoveryMaximumCosines = restAngles
-                .Select(angleDegrees => Mathf.Cos(
-                    (angleDegrees + 90f) * Mathf.Deg2Rad))
-                .ToArray();
-            NativeSkinningFacePairRestLengths[] facePairRestLengths = facePairs
-                .Select(pair => NativeSkinningRestShapeCollapseDetector
-                    .MeasureRestLengths(restVertices, pair))
-                .ToArray();
+            BuildRestGeometry(
+                restVertices, facePairs,
+                out float[] restAngles,
+                out float[] restShapeRecoveryMaximumCosines,
+                out NativeSkinningFacePairRestLengths[] facePairRestLengths);
             int[] orderedAffectedFaces = affectedFaces
                 .OrderBy(index => index)
                 .ToArray();
@@ -284,6 +246,68 @@ namespace Fbx2Vmd.FBXImporter
                     orderedAffectedFaces),
                 selection.ArmChainLength);
             return true;
+        }
+
+        static bool TryCollectTopology(
+            int[] triangles, HashSet<int> evaluatedVertexSet,
+            out HashSet<int> affectedFaces,
+            out NativeSkinningFacePair[] facePairs)
+        {
+            affectedFaces = new HashSet<int>();
+            var edgeFaces = new Dictionary<NativeSkinningEdgeKey, List<int>>();
+            int faceCount = triangles.Length / 3;
+            for (int faceIndex = 0; faceIndex < faceCount; faceIndex++)
+            {
+                int offset = faceIndex * 3;
+                int first = triangles[offset];
+                int second = triangles[offset + 1];
+                int third = triangles[offset + 2];
+                if (evaluatedVertexSet.Contains(first) ||
+                    evaluatedVertexSet.Contains(second) ||
+                    evaluatedVertexSet.Contains(third))
+                {
+                    affectedFaces.Add(faceIndex);
+                }
+                AddEdgeFace(edgeFaces, new NativeSkinningEdgeKey(first, second), faceIndex);
+                AddEdgeFace(edgeFaces, new NativeSkinningEdgeKey(second, third), faceIndex);
+                AddEdgeFace(edgeFaces, new NativeSkinningEdgeKey(third, first), faceIndex);
+            }
+
+            facePairs = edgeFaces
+                .Where(entry => entry.Value.Count == 2 &&
+                    (affectedFaces.Contains(entry.Value[0]) ||
+                     affectedFaces.Contains(entry.Value[1])))
+                .Select(entry => CreateFacePair(
+                    triangles,
+                    entry.Key,
+                    entry.Value[0],
+                    entry.Value[1]))
+                .ToArray();
+            return facePairs.Length != 0;
+        }
+
+        static void BuildRestGeometry(
+            Vector3[] restVertices, NativeSkinningFacePair[] facePairs,
+            out float[] restAngles,
+            out float[] restShapeRecoveryMaximumCosines,
+            out NativeSkinningFacePairRestLengths[] facePairRestLengths)
+        {
+            restAngles = facePairs
+                .Select(pair => TryMeasureAngle(
+                    restVertices,
+                    pair,
+                    out float angleDegrees)
+                        ? angleDegrees
+                        : 180f)
+                .ToArray();
+            restShapeRecoveryMaximumCosines = restAngles
+                .Select(angleDegrees => Mathf.Cos(
+                    (angleDegrees + 90f) * Mathf.Deg2Rad))
+                .ToArray();
+            facePairRestLengths = facePairs
+                .Select(pair => NativeSkinningRestShapeCollapseDetector
+                    .MeasureRestLengths(restVertices, pair))
+                .ToArray();
         }
 
         internal static bool TryMeasureAngle(

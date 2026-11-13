@@ -127,6 +127,59 @@ namespace Fbx2Vmd.FBXImporter
 
             var candidateVertexIndices = new List<int>();
             var candidateOffsets = new List<Vector3>();
+            CollectBlendCandidates(
+                baselineVertices,
+                restVertices,
+                boneTransforms,
+                blendContract,
+                candidateVertexIndices,
+                candidateOffsets);
+
+            if (candidateVertexIndices.Count == 0)
+            {
+                result = CreateNoCorrectionResult(baselineVertices);
+                return true;
+            }
+
+            Vector3[] candidateVertices = baselineVertices.ToArray();
+            if (!NativeSkinningDualQuaternionQualityEvaluator.TryCreate(
+                    baselineVertices,
+                    restVertices,
+                    blendContract,
+                    out NativeSkinningDualQuaternionQualityEvaluator qualityEvaluator))
+            {
+                return false;
+            }
+            if (!TrySearchBlend(
+                    baselineVertices,
+                    originalVertices,
+                    blendContract,
+                    qualityEvaluator,
+                    candidateVertexIndices,
+                    candidateOffsets,
+                    candidateVertices,
+                    out bool foundBlend,
+                    out result))
+            {
+                return false;
+            }
+            if (foundBlend)
+            {
+                return true;
+            }
+
+            result = CreateNoCorrectionResult(baselineVertices);
+            return true;
+        }
+
+        static void CollectBlendCandidates(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> restVertices,
+            IReadOnlyList<NativeSkinningDualQuaternionTransform> boneTransforms,
+            NativeSkinningDualQuaternionBlendContract blendContract,
+            List<int> candidateVertexIndices,
+            List<Vector3> candidateOffsets)
+        {
             foreach (NativeSkinningDualQuaternionBlendVertex blendVertex in
                      blendContract.Vertices)
             {
@@ -151,23 +204,22 @@ namespace Fbx2Vmd.FBXImporter
                 candidateVertexIndices.Add(vertexIndex);
                 candidateOffsets.Add(offset);
             }
+        }
 
-            if (candidateVertexIndices.Count == 0)
-            {
-                result = CreateNoCorrectionResult(baselineVertices);
-                return true;
-            }
-
-            Vector3[] candidateVertices = baselineVertices.ToArray();
+        static bool TrySearchBlend(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> originalVertices,
+            NativeSkinningDualQuaternionBlendContract blendContract,
+            NativeSkinningDualQuaternionQualityEvaluator qualityEvaluator,
+            List<int> candidateVertexIndices,
+            List<Vector3> candidateOffsets,
+            Vector3[] candidateVertices,
+            out bool foundBlend,
+            out NativeSkinningDualQuaternionBlendResult result)
+        {
+            foundBlend = false;
+            result = null;
             var changedVertexIndices = new List<int>(candidateVertexIndices.Count);
-            if (!NativeSkinningDualQuaternionQualityEvaluator.TryCreate(
-                    baselineVertices,
-                    restVertices,
-                    blendContract,
-                    out NativeSkinningDualQuaternionQualityEvaluator qualityEvaluator))
-            {
-                return false;
-            }
             float blend = MaximumBlend;
             for (int step = 0; step < BlendSearchStepCount; step++)
             {
@@ -225,13 +277,12 @@ namespace Fbx2Vmd.FBXImporter
                         maximumRestEdgeStrainIncrease,
                         newDegenerateFaceCount,
                         reversedFaceCount);
+                    foundBlend = true;
                     return true;
                 }
 
                 blend *= 0.5f;
             }
-
-            result = CreateNoCorrectionResult(baselineVertices);
             return true;
         }
 
