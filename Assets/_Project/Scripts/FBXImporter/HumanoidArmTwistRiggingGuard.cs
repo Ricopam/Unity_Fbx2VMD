@@ -93,15 +93,7 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            Transform leftUpperArm = _animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
-            Transform leftLowerArm = _animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);
-            Transform leftHand = _animator.GetBoneTransform(HumanBodyBones.LeftHand);
-            Transform rightUpperArm = _animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
-            Transform rightLowerArm = _animator.GetBoneTransform(HumanBodyBones.RightLowerArm);
-            Transform rightHand = _animator.GetBoneTransform(HumanBodyBones.RightHand);
-
-            if (leftUpperArm == null || leftLowerArm == null || leftHand == null ||
-                rightUpperArm == null || rightLowerArm == null || rightHand == null)
+            if (!TryResolveArmBones(out ArmBones bones))
             {
                 Debug.LogWarning("[HumanoidArmTwistRiggingGuard] Humanoid 팔 본을 찾지 못해 Animation Rigging 보정을 건너뜁니다.");
                 return false;
@@ -110,36 +102,7 @@ namespace Fbx2Vmd.FBXImporter
             _rig = GetOrCreateRig();
             _rig.weight = rigWeight;
 
-            int configuredCount = 0;
-            configuredCount += ConfigureTwistCorrection(
-                "LeftUpperArmTwistCorrection",
-                leftUpperArm,
-                leftLowerArm,
-                FindExactChildren(leftUpperArm, "joint_LeftArmTwist"),
-                upperArmTwistWeight,
-                1);
-            configuredCount += ConfigureTwistCorrection(
-                "RightUpperArmTwistCorrection",
-                rightUpperArm,
-                rightLowerArm,
-                FindExactChildren(rightUpperArm, "joint_RightArmTwist"),
-                upperArmTwistWeight,
-                1);
-            configuredCount += ConfigureTwistCorrection(
-                "LeftForearmTwistCorrection",
-                leftLowerArm,
-                leftHand,
-                FindExactChildren(leftLowerArm, "joint_LeftHandTwist", "joint_LeftHandTwist1", "!joint_LeftHandTwist2", "joint_LeftHandTwist3"),
-                forearmTwistWeight,
-                4);
-            configuredCount += ConfigureTwistCorrection(
-                "RightForearmTwistCorrection",
-                rightLowerArm,
-                rightHand,
-                FindExactChildren(rightLowerArm, "joint_RightHandTwist", "joint_RightHandTwist1", "!joint_RightHandTwist2", "joint_RightHandTwist3"),
-                forearmTwistWeight,
-                4);
-
+            int configuredCount = ConfigureTwistCorrections(bones);
             if (configuredCount == 0)
             {
                 Debug.LogWarning("[HumanoidArmTwistRiggingGuard] YYB 팔 twist 보조본을 찾지 못해 Animation Rigging 보정을 구성하지 못했습니다.");
@@ -155,6 +118,67 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             return true;
+        }
+
+        // Humanoid 팔 6본 묶음 — twist 보조본 탐색의 입력.
+        struct ArmBones
+        {
+            public Transform leftUpperArm;
+            public Transform leftLowerArm;
+            public Transform leftHand;
+            public Transform rightUpperArm;
+            public Transform rightLowerArm;
+            public Transform rightHand;
+        }
+
+        bool TryResolveArmBones(out ArmBones bones)
+        {
+            bones = new ArmBones
+            {
+                leftUpperArm = _animator.GetBoneTransform(HumanBodyBones.LeftUpperArm),
+                leftLowerArm = _animator.GetBoneTransform(HumanBodyBones.LeftLowerArm),
+                leftHand = _animator.GetBoneTransform(HumanBodyBones.LeftHand),
+                rightUpperArm = _animator.GetBoneTransform(HumanBodyBones.RightUpperArm),
+                rightLowerArm = _animator.GetBoneTransform(HumanBodyBones.RightLowerArm),
+                rightHand = _animator.GetBoneTransform(HumanBodyBones.RightHand)
+            };
+            return bones.leftUpperArm != null && bones.leftLowerArm != null &&
+                bones.leftHand != null && bones.rightUpperArm != null &&
+                bones.rightLowerArm != null && bones.rightHand != null;
+        }
+
+        int ConfigureTwistCorrections(ArmBones bones)
+        {
+            int configuredCount = 0;
+            configuredCount += ConfigureTwistCorrection(
+                "LeftUpperArmTwistCorrection",
+                bones.leftUpperArm,
+                bones.leftLowerArm,
+                FindExactChildren(bones.leftUpperArm, "joint_LeftArmTwist"),
+                upperArmTwistWeight,
+                1);
+            configuredCount += ConfigureTwistCorrection(
+                "RightUpperArmTwistCorrection",
+                bones.rightUpperArm,
+                bones.rightLowerArm,
+                FindExactChildren(bones.rightUpperArm, "joint_RightArmTwist"),
+                upperArmTwistWeight,
+                1);
+            configuredCount += ConfigureTwistCorrection(
+                "LeftForearmTwistCorrection",
+                bones.leftLowerArm,
+                bones.leftHand,
+                FindExactChildren(bones.leftLowerArm, "joint_LeftHandTwist", "joint_LeftHandTwist1", "!joint_LeftHandTwist2", "joint_LeftHandTwist3"),
+                forearmTwistWeight,
+                4);
+            configuredCount += ConfigureTwistCorrection(
+                "RightForearmTwistCorrection",
+                bones.rightLowerArm,
+                bones.rightHand,
+                FindExactChildren(bones.rightLowerArm, "joint_RightHandTwist", "joint_RightHandTwist1", "!joint_RightHandTwist2", "joint_RightHandTwist3"),
+                forearmTwistWeight,
+                4);
+            return configuredCount;
         }
 
         public void DisableRigging()

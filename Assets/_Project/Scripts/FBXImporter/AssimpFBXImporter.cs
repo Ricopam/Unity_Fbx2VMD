@@ -401,60 +401,8 @@ namespace Fbx2Vmd.FBXImporter
 
             foreach (var anim in scene.Animations)
             {
-                AnimationClip clip = new AnimationClip();
-                clip.name = anim.Name;
-                if (string.IsNullOrEmpty(clip.name))
-                {
-                    clip.name = "Animation_" + scene.Animations.IndexOf(anim);
-                }
-
-                // 런타임 Legacy 재생을 위해 true 설정
-                clip.legacy = true;
-                clip.wrapMode = WrapMode.Loop;
-
-                // FBX tick → Unity seconds 변환
-                double ticksPerSecond = anim.TicksPerSecond;
-                if (ticksPerSecond <= 1.0)
-                {
-                    ticksPerSecond = 60.0;
-                    Debug.LogWarning($"[FBXImport] TicksPerSecond 데이터가 없어 기본값 60 FPS 사용함. 값={anim.TicksPerSecond}");
-                }
-                float timeScale = 1.0f / (float)ticksPerSecond;
-
-                foreach (var channel in anim.NodeAnimationChannels)
-                {
-                    if (!_nodeMap.TryGetValue(channel.NodeName, out Transform targetNode)) continue;
-
-                    string relativePath = GetRelativePath(rootObject.transform, targetNode);
-                    // 위치 애니메이션
-                    if (channel.HasPositionKeys)
-                    {
-                        string positionCurveNodeName = targetNode != null
-                            ? targetNode.name
-                            : Path.GetFileName(relativePath);
-                        if (ImportNonRootPositionCurves ||
-                            RuntimeAnimationPositionCurvePolicy.ShouldImport(
-                                relativePath,
-                                positionCurveNodeName))
-                        {
-                            SetPositionCurves(clip, relativePath, channel.PositionKeys, timeScale);
-                        }
-                    }
-                    // 회전 애니메이션
-                    if (channel.HasRotationKeys)
-                    {
-                        SetRotationCurves(clip, relativePath, channel.RotationKeys, timeScale);
-                    }
-                    // 스케일 애니메이션
-                    if (channel.HasScalingKeys)
-                    {
-                        if (ImportScaleCurves)
-                        {
-                            SetScaleCurves(clip, relativePath, channel.ScalingKeys, timeScale);
-                        }
-                    }
-                }
-
+                AnimationClip clip = CreateAnimationClip(anim, scene);
+                ApplyNodeChannels(clip, anim, rootObject);
                 clip.frameRate = 60;
 
                 // 컴포넌트에 클립 등록
@@ -472,6 +420,66 @@ namespace Fbx2Vmd.FBXImporter
             else
             {
                 Debug.LogWarning("[FBXImport] 애니메이션 클립이 생성되지 않음.");
+            }
+        }
+
+        static AnimationClip CreateAnimationClip(Assimp.Animation anim, Scene scene)
+        {
+            var clip = new AnimationClip { name = anim.Name };
+            if (string.IsNullOrEmpty(clip.name))
+            {
+                clip.name = "Animation_" + scene.Animations.IndexOf(anim);
+            }
+
+            // 런타임 Legacy 재생을 위해 true 설정
+            clip.legacy = true;
+            clip.wrapMode = WrapMode.Loop;
+            return clip;
+        }
+
+        void ApplyNodeChannels(AnimationClip clip, Assimp.Animation anim, GameObject rootObject)
+        {
+            // FBX tick → Unity seconds 변환
+            double ticksPerSecond = anim.TicksPerSecond;
+            if (ticksPerSecond <= 1.0)
+            {
+                ticksPerSecond = 60.0;
+                Debug.LogWarning($"[FBXImport] TicksPerSecond 데이터가 없어 기본값 60 FPS 사용함. 값={anim.TicksPerSecond}");
+            }
+            float timeScale = 1.0f / (float)ticksPerSecond;
+
+            foreach (var channel in anim.NodeAnimationChannels)
+            {
+                if (!_nodeMap.TryGetValue(channel.NodeName, out Transform targetNode)) continue;
+
+                string relativePath = GetRelativePath(rootObject.transform, targetNode);
+                // 위치 애니메이션
+                if (channel.HasPositionKeys)
+                {
+                    string positionCurveNodeName = targetNode != null
+                        ? targetNode.name
+                        : Path.GetFileName(relativePath);
+                    if (ImportNonRootPositionCurves ||
+                        RuntimeAnimationPositionCurvePolicy.ShouldImport(
+                            relativePath,
+                            positionCurveNodeName))
+                    {
+                        SetPositionCurves(clip, relativePath, channel.PositionKeys, timeScale);
+                    }
+                }
+                // 회전 애니메이션
+                if (channel.HasRotationKeys)
+                {
+                    SetRotationCurves(clip, relativePath, channel.RotationKeys, timeScale);
+                }
+                // 스케일 애니메이션
+                if (channel.HasScalingKeys)
+                {
+                    if (ImportScaleCurves)
+                    {
+                        SetScaleCurves(clip, relativePath, channel.ScalingKeys, timeScale);
+                    }
+                }
             }
         }
 

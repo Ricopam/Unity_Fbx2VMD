@@ -171,57 +171,11 @@ namespace Fbx2Vmd.FBXImporter
                 }
 
                 byte[] bytes = File.ReadAllBytes(resolvedPath);
-                int minimumLength = Magic.Length + sizeof(int) +
-                    KeyHashLength + sizeof(int) + sizeof(uint);
-                if (bytes.Length < minimumLength)
+                if (!TryReadDocument(
+                        bytes, expectedKeyHash,
+                        out document, out errorMessage))
                 {
-                    errorMessage = "표면 보정 캐시 파일이 손상됐습니다.";
                     return false;
-                }
-                for (int index = 0; index < Magic.Length; index++)
-                {
-                    if (bytes[index] != Magic[index])
-                    {
-                        errorMessage = "표면 보정 캐시 파일 형식이 아닙니다.";
-                        return false;
-                    }
-                }
-
-                using (var stream = new MemoryStream(bytes))
-                using (var reader = new BinaryReader(stream, Encoding.UTF8))
-                {
-                    reader.BaseStream.Position = Magic.Length;
-                    int version = reader.ReadInt32();
-                    if (version != FormatVersion)
-                    {
-                        errorMessage =
-                            $"표면 보정 캐시 형식 버전이 다릅니다: {version}";
-                        return false;
-                    }
-                    byte[] storedKey = reader.ReadBytes(KeyHashLength);
-                    if (expectedKeyHash != null &&
-                        !AreEqual(storedKey, expectedKeyHash))
-                    {
-                        errorMessage = "표면 보정 캐시 키가 일치하지 않습니다.";
-                        return false;
-                    }
-                    int payloadLength = reader.ReadInt32();
-                    long expectedTotal = stream.Position + payloadLength +
-                        sizeof(uint);
-                    if (payloadLength < 0 || expectedTotal != bytes.Length)
-                    {
-                        errorMessage = "표면 보정 캐시 파일 길이가 손상됐습니다.";
-                        return false;
-                    }
-                    byte[] payload = reader.ReadBytes(payloadLength);
-                    uint storedChecksum = reader.ReadUInt32();
-                    if (Crc32.Compute(payload) != storedChecksum)
-                    {
-                        errorMessage = "표면 보정 캐시 체크섬이 일치하지 않습니다.";
-                        return false;
-                    }
-
-                    document = ReadPayload(payload);
                 }
 
                 if (!TryValidateDocument(document, out errorMessage))
@@ -240,6 +194,68 @@ namespace Fbx2Vmd.FBXImporter
                     $"표면 보정 캐시를 불러오지 못했습니다: {exception.Message}";
                 return false;
             }
+        }
+
+        static bool TryReadDocument(
+            byte[] bytes, byte[] expectedKeyHash,
+            out NativeSkinningCorrectionCacheDocument document,
+            out string errorMessage)
+        {
+            document = null;
+            errorMessage = string.Empty;
+            int minimumLength = Magic.Length + sizeof(int) +
+                KeyHashLength + sizeof(int) + sizeof(uint);
+            if (bytes.Length < minimumLength)
+            {
+                errorMessage = "표면 보정 캐시 파일이 손상됐습니다.";
+                return false;
+            }
+            for (int index = 0; index < Magic.Length; index++)
+            {
+                if (bytes[index] != Magic[index])
+                {
+                    errorMessage = "표면 보정 캐시 파일 형식이 아닙니다.";
+                    return false;
+                }
+            }
+
+            using (var stream = new MemoryStream(bytes))
+            using (var reader = new BinaryReader(stream, Encoding.UTF8))
+            {
+                reader.BaseStream.Position = Magic.Length;
+                int version = reader.ReadInt32();
+                if (version != FormatVersion)
+                {
+                    errorMessage =
+                        $"표면 보정 캐시 형식 버전이 다릅니다: {version}";
+                    return false;
+                }
+                byte[] storedKey = reader.ReadBytes(KeyHashLength);
+                if (expectedKeyHash != null &&
+                    !AreEqual(storedKey, expectedKeyHash))
+                {
+                    errorMessage = "표면 보정 캐시 키가 일치하지 않습니다.";
+                    return false;
+                }
+                int payloadLength = reader.ReadInt32();
+                long expectedTotal = stream.Position + payloadLength +
+                    sizeof(uint);
+                if (payloadLength < 0 || expectedTotal != bytes.Length)
+                {
+                    errorMessage = "표면 보정 캐시 파일 길이가 손상됐습니다.";
+                    return false;
+                }
+                byte[] payload = reader.ReadBytes(payloadLength);
+                uint storedChecksum = reader.ReadUInt32();
+                if (Crc32.Compute(payload) != storedChecksum)
+                {
+                    errorMessage = "표면 보정 캐시 체크섬이 일치하지 않습니다.";
+                    return false;
+                }
+
+                document = ReadPayload(payload);
+            }
+            return true;
         }
 
         private static byte[] WritePayload(

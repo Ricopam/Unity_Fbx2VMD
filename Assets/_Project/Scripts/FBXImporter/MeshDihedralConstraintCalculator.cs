@@ -63,6 +63,82 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            if (!TryBuildGeometry(
+                    opposite0, opposite1, edge0, edge1,
+                    out DihedralGeometry geometry))
+            {
+                return false;
+            }
+
+            float currentAngleRadians = Mathf.Acos(Mathf.Clamp(
+                Vector3.Dot(geometry.unitNormal0, geometry.unitNormal1),
+                -1f,
+                1f));
+            float maximumAngleRadians = maximumAngleDegrees * Mathf.Deg2Rad;
+            if (!IsFinite(currentAngleRadians) ||
+                currentAngleRadians <= maximumAngleRadians)
+            {
+                return false;
+            }
+
+            float gradientSquaredSum =
+                geometry.gradient0.sqrMagnitude +
+                geometry.gradient1.sqrMagnitude +
+                geometry.gradient2.sqrMagnitude +
+                geometry.gradient3.sqrMagnitude;
+            if (!IsFinite(gradientSquaredSum) ||
+                gradientSquaredSum < MinimumNormalSquaredMagnitude)
+            {
+                return false;
+            }
+
+            float lambda =
+                (currentAngleRadians - maximumAngleRadians) /
+                gradientSquaredSum * Mathf.Clamp01(stiffness);
+            if (Vector3.Dot(
+                    Vector3.Cross(geometry.unitNormal0, geometry.unitNormal1),
+                    geometry.sharedEdge) > 0f)
+            {
+                lambda = -lambda;
+            }
+
+            opposite0Correction = -lambda * geometry.gradient0;
+            opposite1Correction = -lambda * geometry.gradient1;
+            edge0Correction = -lambda * geometry.gradient2;
+            edge1Correction = -lambda * geometry.gradient3;
+            if (AreFinite(
+                    opposite0Correction,
+                    opposite1Correction,
+                    edge0Correction,
+                    edge1Correction))
+            {
+                return true;
+            }
+
+            opposite0Correction = Vector3.zero;
+            opposite1Correction = Vector3.zero;
+            edge0Correction = Vector3.zero;
+            edge1Correction = Vector3.zero;
+            return false;
+        }
+
+        // 두 면의 법선·그라디언트를 한 번에 계산하는 중간 기하 묶음.
+        struct DihedralGeometry
+        {
+            public Vector3 sharedEdge;
+            public Vector3 unitNormal0;
+            public Vector3 unitNormal1;
+            public Vector3 gradient0;
+            public Vector3 gradient1;
+            public Vector3 gradient2;
+            public Vector3 gradient3;
+        }
+
+        static bool TryBuildGeometry(
+            Vector3 opposite0, Vector3 opposite1, Vector3 edge0, Vector3 edge1,
+            out DihedralGeometry geometry)
+        {
+            geometry = default;
             Vector3 sharedEdge = edge1 - edge0;
             float sharedEdgeLength = sharedEdge.magnitude;
             if (sharedEdgeLength < MinimumEdgeLength)
@@ -84,74 +160,28 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            Vector3 gradient0 = sharedEdgeLength *
+            geometry.sharedEdge = sharedEdge;
+            geometry.gradient0 = sharedEdgeLength *
                 (unscaledNormal0 / normal0SquaredMagnitude);
-            Vector3 gradient1 = sharedEdgeLength *
+            geometry.gradient1 = sharedEdgeLength *
                 (unscaledNormal1 / normal1SquaredMagnitude);
             float inverseEdgeLength = 1f / sharedEdgeLength;
-            Vector3 gradient2 =
+            geometry.gradient2 =
                 Vector3.Dot(opposite0 - edge1, sharedEdge) * inverseEdgeLength *
                 (unscaledNormal0 / normal0SquaredMagnitude) +
                 Vector3.Dot(opposite1 - edge1, sharedEdge) * inverseEdgeLength *
                 (unscaledNormal1 / normal1SquaredMagnitude);
-            Vector3 gradient3 =
+            geometry.gradient3 =
                 Vector3.Dot(edge0 - opposite0, sharedEdge) * inverseEdgeLength *
                 (unscaledNormal0 / normal0SquaredMagnitude) +
                 Vector3.Dot(edge0 - opposite1, sharedEdge) * inverseEdgeLength *
                 (unscaledNormal1 / normal1SquaredMagnitude);
 
-            Vector3 unitNormal0 = unscaledNormal0 /
+            geometry.unitNormal0 = unscaledNormal0 /
                 Mathf.Sqrt(normal0SquaredMagnitude);
-            Vector3 unitNormal1 = unscaledNormal1 /
+            geometry.unitNormal1 = unscaledNormal1 /
                 Mathf.Sqrt(normal1SquaredMagnitude);
-            float currentAngleRadians = Mathf.Acos(Mathf.Clamp(
-                Vector3.Dot(unitNormal0, unitNormal1),
-                -1f,
-                1f));
-            float maximumAngleRadians = maximumAngleDegrees * Mathf.Deg2Rad;
-            if (!IsFinite(currentAngleRadians) ||
-                currentAngleRadians <= maximumAngleRadians)
-            {
-                return false;
-            }
-
-            float gradientSquaredSum =
-                gradient0.sqrMagnitude +
-                gradient1.sqrMagnitude +
-                gradient2.sqrMagnitude +
-                gradient3.sqrMagnitude;
-            if (!IsFinite(gradientSquaredSum) ||
-                gradientSquaredSum < MinimumNormalSquaredMagnitude)
-            {
-                return false;
-            }
-
-            float lambda =
-                (currentAngleRadians - maximumAngleRadians) /
-                gradientSquaredSum * Mathf.Clamp01(stiffness);
-            if (Vector3.Dot(Vector3.Cross(unitNormal0, unitNormal1), sharedEdge) > 0f)
-            {
-                lambda = -lambda;
-            }
-
-            opposite0Correction = -lambda * gradient0;
-            opposite1Correction = -lambda * gradient1;
-            edge0Correction = -lambda * gradient2;
-            edge1Correction = -lambda * gradient3;
-            if (AreFinite(
-                    opposite0Correction,
-                    opposite1Correction,
-                    edge0Correction,
-                    edge1Correction))
-            {
-                return true;
-            }
-
-            opposite0Correction = Vector3.zero;
-            opposite1Correction = Vector3.zero;
-            edge0Correction = Vector3.zero;
-            edge1Correction = Vector3.zero;
-            return false;
+            return true;
         }
 
         private static bool TryCalculateUnitNormals(

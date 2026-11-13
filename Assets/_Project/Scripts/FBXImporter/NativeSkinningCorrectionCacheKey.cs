@@ -94,32 +94,15 @@ namespace Fbx2Vmd.FBXImporter
                 };
 
                 // 렌더러 — 경로·메시 에셋·정점 내용. 경로 정렬로 순서를 고정한다.
-                RendererIdentity[] identities = contracts
-                    .Select(contract => contract.Renderer)
-                    .Where(renderer => renderer != null)
-                    .Distinct()
-                    .Select(renderer => BuildIdentity(
-                        animator,
-                        renderer,
-                        GetAssetIdentity(renderer.sharedMesh)))
-                    .Where(identity => identity.HasValue)
-                    .Select(identity => identity.Value)
-                    .OrderBy(identity => identity.RendererPath,
-                             StringComparer.Ordinal)
-                    .ToArray();
+                RendererIdentity[] identities =
+                    CollectRendererIdentities(animator, contracts);
                 if (identities.Length == 0)
                 {
                     errorMessage =
                         "보정 캐시 키를 계산할 Renderer가 없습니다.";
                     return false;
                 }
-                foreach (RendererIdentity identity in identities)
-                {
-                    segments.Add("renderer:" + identity.RendererPath);
-                    segments.Add("mesh:" + identity.MeshAssetId);
-                    segments.Add("verts:" + identity.VertexCount);
-                    segments.Add("vhash:" + identity.VertexHash);
-                }
+                AppendRendererSegments(segments, identities);
 
                 keyHash = ComputeKeyHash(segments);
                 return true;
@@ -129,6 +112,36 @@ namespace Fbx2Vmd.FBXImporter
                 errorMessage =
                     $"보정 캐시 키를 계산하지 못했습니다: {exception.Message}";
                 return false;
+            }
+        }
+
+        static RendererIdentity[] CollectRendererIdentities(
+            Animator animator, NativeSkinningSurfaceContract[] contracts)
+        {
+            return contracts
+                .Select(contract => contract.Renderer)
+                .Where(renderer => renderer != null)
+                .Distinct()
+                .Select(renderer => BuildIdentity(
+                    animator,
+                    renderer,
+                    GetAssetIdentity(renderer.sharedMesh)))
+                .Where(identity => identity.HasValue)
+                .Select(identity => identity.Value)
+                .OrderBy(identity => identity.RendererPath,
+                         StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        static void AppendRendererSegments(
+            List<string> segments, RendererIdentity[] identities)
+        {
+            foreach (RendererIdentity identity in identities)
+            {
+                segments.Add("renderer:" + identity.RendererPath);
+                segments.Add("mesh:" + identity.MeshAssetId);
+                segments.Add("verts:" + identity.VertexCount);
+                segments.Add("vhash:" + identity.VertexHash);
             }
         }
 #endif
