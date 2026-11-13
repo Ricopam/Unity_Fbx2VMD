@@ -212,16 +212,8 @@ namespace Fbx2Vmd.CharacterLibrary
                     continue;
                 }
 
-                string[] files;
-                string[] subdirs;
-                try
+                if (!TryListTextureDirectory(item.Key, out string[] files, out string[] subdirs))
                 {
-                    files = Directory.GetFiles(item.Key);
-                    subdirs = Directory.GetDirectories(item.Key);
-                }
-                catch (Exception exception)
-                {
-                    Debug.LogWarning($"PMX 텍스처 폴더를 읽을 수 없어 건너뜁니다: {item.Key} ({exception.Message})");
                     continue;
                 }
 
@@ -243,6 +235,23 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 Debug.LogWarning(
                     $"PMX 텍스처 탐색 깊이 상한({MaxDepth})을 넘는 폴더를 건너뛰었습니다: {sourceDir}");
+            }
+        }
+
+        static bool TryListTextureDirectory(string dir, out string[] files, out string[] subdirs)
+        {
+            try
+            {
+                files = Directory.GetFiles(dir);
+                subdirs = Directory.GetDirectories(dir);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                files = null;
+                subdirs = null;
+                Debug.LogWarning($"PMX 텍스처 폴더를 읽을 수 없어 건너뜁니다: {dir} ({exception.Message})");
+                return false;
             }
         }
 
