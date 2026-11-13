@@ -52,21 +52,21 @@ namespace Fbx2Vmd.CharacterLibrary
                 return fbxResult;
             }
 
+            return await LoadVrmAsync(path, cancellationToken);
+        }
+
+        private static async Task<Result> LoadVrmAsync(string path, CancellationToken cancellationToken)
+        {
             var result = new Result();
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            if (IsMissingCharacterFile(path, result))
             {
-                result.error = $"캐릭터 파일이 없습니다: {path}";
                 return result;
             }
 
             RuntimeGltfInstance loaded = null;
             try
             {
-                IAwaitCaller awaitCaller = Application.isPlaying
-                    ? (IAwaitCaller)new RuntimeOnlyAwaitCaller()
-                    : new ImmediateCaller();
-
-                loaded = await VrmUtility.LoadAsync(path, awaitCaller);
+                loaded = await VrmUtility.LoadAsync(path, CreateAwaitCaller());
 
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -75,23 +75,8 @@ namespace Fbx2Vmd.CharacterLibrary
                     return result;
                 }
 
-                GameObject root = loaded != null ? loaded.Root : null;
-                if (root == null)
+                if (!TryCommitVrmInstance(loaded, result))
                 {
-                    result.error = "VRM 로드 결과가 비어 있습니다.";
-                    DestroyInstance(loaded);
-                    return result;
-                }
-
-                // 커밋 전까지 화면에 보이지 않게 한다.
-                root.SetActive(false);
-
-                Animator animator = root.GetComponent<Animator>();
-                if (animator == null || animator.avatar == null ||
-                    !animator.avatar.isValid || !animator.avatar.isHuman)
-                {
-                    result.error = "유효한 Humanoid Avatar가 없어 리타게팅 대상으로 사용할 수 없습니다.";
-                    DestroyInstance(loaded);
                     return result;
                 }
 
@@ -100,10 +85,58 @@ namespace Fbx2Vmd.CharacterLibrary
             }
             catch (Exception error)
             {
-                result.error = $"VRM 로드 실패: {error.Message}";
-                DestroyInstance(loaded);
-                return result;
+                return FailVrmLoad(result, loaded, error);
             }
+        }
+
+        private static bool IsMissingCharacterFile(string path, Result result)
+        {
+            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+            {
+                return false;
+            }
+
+            result.error = $"캐릭터 파일이 없습니다: {path}";
+            return true;
+        }
+
+        private static Result FailVrmLoad(Result result, RuntimeGltfInstance loaded, Exception error)
+        {
+            result.error = $"VRM 로드 실패: {error.Message}";
+            DestroyInstance(loaded);
+            return result;
+        }
+
+        private static IAwaitCaller CreateAwaitCaller()
+        {
+            return Application.isPlaying
+                ? (IAwaitCaller)new RuntimeOnlyAwaitCaller()
+                : new ImmediateCaller();
+        }
+
+        private static bool TryCommitVrmInstance(RuntimeGltfInstance loaded, Result result)
+        {
+            GameObject root = loaded != null ? loaded.Root : null;
+            if (root == null)
+            {
+                result.error = "VRM 로드 결과가 비어 있습니다.";
+                DestroyInstance(loaded);
+                return false;
+            }
+
+            // 커밋 전까지 화면에 보이지 않게 한다.
+            root.SetActive(false);
+
+            Animator animator = root.GetComponent<Animator>();
+            if (animator == null || animator.avatar == null ||
+                !animator.avatar.isValid || !animator.avatar.isHuman)
+            {
+                result.error = "유효한 Humanoid Avatar가 없어 리타게팅 대상으로 사용할 수 없습니다.";
+                DestroyInstance(loaded);
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>

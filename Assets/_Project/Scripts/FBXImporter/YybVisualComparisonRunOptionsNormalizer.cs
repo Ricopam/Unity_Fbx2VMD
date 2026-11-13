@@ -25,6 +25,18 @@ namespace Fbx2Vmd.FBXImporter
                 throw new ArgumentOutOfRangeException(nameof(frameRate), frameRate, "프레임 속도는 양수여야 합니다.");
             }
 
+            NormalizeClipAndIkGuardOptions(options, defaults, frameRate);
+            NormalizePoseAndSmoothingOptions(options, defaults);
+            NormalizeArmSwingOptions(options, defaults);
+            NormalizeArmDirectionAndSleeveOptions(options, defaults);
+            NormalizeLegSegmentOptions(options, defaults);
+            NormalizeEndpointPositionOptions(options, defaults);
+            NormalizeBodyPositionAndDiagnosticOptions(options, defaults);
+            return options;
+        }
+
+        private static void NormalizeClipAndIkGuardOptions(YybVisualComparisonRunOptions options, YybVisualComparisonRunOptions defaults, float frameRate)
+        {
             options.fbxFileName = FbxReferenceClipPathResolver.NormalizeFileName(options.fbxFileName, defaults.fbxFileName);
             options.durationSeconds = Mathf.Max(0.1f, options.durationSeconds);
             options.targetFrameCount = Mathf.Max(1, Mathf.CeilToInt(options.durationSeconds * frameRate));
@@ -32,6 +44,10 @@ namespace Fbx2Vmd.FBXImporter
             options.mmdIkDeltaGuardRecoveryTriggerVmd = VmdIkDeltaGuardRuntimeOverrideApplier.NormalizeLimit(options.mmdIkDeltaGuardRecoveryTriggerVmd);
             options.mmdIkDeltaGuardRecoveryDebtThresholdVmd = VmdIkDeltaGuardRuntimeOverrideApplier.NormalizeLimit(options.mmdIkDeltaGuardRecoveryDebtThresholdVmd);
             options.mmdIkDeltaGuardRecoveryHoldFrames = VmdIkDeltaGuardRuntimeOverrideApplier.NormalizeRecoveryHoldFrames(options.mmdIkDeltaGuardRecoveryHoldFrames);
+        }
+
+        private static void NormalizePoseAndSmoothingOptions(YybVisualComparisonRunOptions options, YybVisualComparisonRunOptions defaults)
+        {
             options.manualAnimatorFullBodyPoseReferenceWeight = Mathf.Clamp01(options.manualAnimatorFullBodyPoseReferenceWeight);
             options.manualAnimatorFullBodyPoseReferenceFrameGateStart = Mathf.Max(0f, options.manualAnimatorFullBodyPoseReferenceFrameGateStart);
             options.manualAnimatorFullBodyPoseReferenceFrameGateEnd = Mathf.Max(0f, options.manualAnimatorFullBodyPoseReferenceFrameGateEnd);
@@ -42,6 +58,10 @@ namespace Fbx2Vmd.FBXImporter
             options.retargetPoseVisualSpikeCurrentWeight = Mathf.Clamp( options.retargetPoseVisualSpikeCurrentWeight, 0.1f, 1f);
             options.retargetPoseVisualSpikeForearmStretchClampMaxOffset = Mathf.Clamp01(options.retargetPoseVisualSpikeForearmStretchClampMaxOffset);
             options.retargetArmStretchMuscleLimit = Mathf.Clamp( options.retargetArmStretchMuscleLimit, 0f, defaults.retargetArmStretchMuscleLimit);
+        }
+
+        private static void NormalizeArmSwingOptions(YybVisualComparisonRunOptions options, YybVisualComparisonRunOptions defaults)
+        {
             options.yybArmSwingLimitWeight = Mathf.Clamp01(options.yybArmSwingLimitWeight);
             options.yybArmSwingMaxDownDot = Mathf.Clamp01(options.yybArmSwingMaxDownDot);
             options.yybArmSwingMinHandHorizontalRatio = Mathf.Clamp(options.yybArmSwingMinHandHorizontalRatio, 0f, 1.5f);
@@ -54,6 +74,10 @@ namespace Fbx2Vmd.FBXImporter
             options.yybArmSwingRaisedPoseMinUpperArmDownDot = Mathf.Clamp01( options.yybArmSwingRaisedPoseMinUpperArmDownDot);
             options.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio = Mathf.Clamp( options.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio, 0f, 1.5f);
             options.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio = Mathf.Clamp( options.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio, 0f, 1.5f);
+        }
+
+        private static void NormalizeArmDirectionAndSleeveOptions(YybVisualComparisonRunOptions options, YybVisualComparisonRunOptions defaults)
+        {
             options.yybArmDirectionUpperArmWeight = Mathf.Clamp01(options.yybArmDirectionUpperArmWeight);
             options.yybArmDirectionForearmWeight = Mathf.Clamp01(options.yybArmDirectionForearmWeight);
             options.yybArmDirectionUpperArmMaxDegrees = Mathf.Clamp(options.yybArmDirectionUpperArmMaxDegrees, 0f, 120f);
@@ -67,6 +91,10 @@ namespace Fbx2Vmd.FBXImporter
             options.yybArmVisualForearmInfluence = Mathf.Clamp01(options.yybArmVisualForearmInfluence);
             options.yybArmVisualUpperArmMaxDegrees = Mathf.Clamp(options.yybArmVisualUpperArmMaxDegrees, 0f, 120f);
             options.yybArmVisualForearmMaxDegrees = Mathf.Clamp(options.yybArmVisualForearmMaxDegrees, 0f, 120f);
+        }
+
+        private static void NormalizeLegSegmentOptions(YybVisualComparisonRunOptions options, YybVisualComparisonRunOptions defaults)
+        {
             options.manualAnimatorLowerBodySegmentDirectionReferenceWeight = Mathf.Clamp01( options.manualAnimatorLowerBodySegmentDirectionReferenceWeight);
             options.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle = Mathf.Max( 0f, options.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle);
             options.manualAnimatorUpperLegToLowerLegSegmentDirectionReferenceMaxAngle = Mathf.Max( 0f, options.manualAnimatorUpperLegToLowerLegSegmentDirectionReferenceMaxAngle);
@@ -81,6 +109,10 @@ namespace Fbx2Vmd.FBXImporter
             options.manualAnimatorFootToToesSegmentDirectionReferenceMaxAngle = Mathf.Max( 0f, options.manualAnimatorFootToToesSegmentDirectionReferenceMaxAngle);
             options.manualAnimatorFootHipsAlignedResidualYawReferenceWeight = Mathf.Clamp01( options.manualAnimatorFootHipsAlignedResidualYawReferenceWeight);
             options.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle = Mathf.Max( 0f, options.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle);
+        }
+
+        private static void NormalizeEndpointPositionOptions(YybVisualComparisonRunOptions options, YybVisualComparisonRunOptions defaults)
+        {
             options.postSetHumanPoseRightEndpointPositionReferenceWeight = Mathf.Clamp01( options.postSetHumanPoseRightEndpointPositionReferenceWeight);
             options.postSetHumanPoseRightEndpointPositionReferenceMaxOffset = Mathf.Max( 0f, options.postSetHumanPoseRightEndpointPositionReferenceMaxOffset);
             options.postSetHumanPoseRightEndpointPositionReferencePositiveZScale = Mathf.Clamp01( options.postSetHumanPoseRightEndpointPositionReferencePositiveZScale);
@@ -94,6 +126,10 @@ namespace Fbx2Vmd.FBXImporter
             options.preSetHumanPoseRightEndpointPositionReferenceFrameGateStart = Mathf.Max( 0f, options.preSetHumanPoseRightEndpointPositionReferenceFrameGateStart);
             options.preSetHumanPoseRightEndpointPositionReferenceFrameGateEnd = Mathf.Max( 0f, options.preSetHumanPoseRightEndpointPositionReferenceFrameGateEnd);
             options.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude = Mathf.Max( 0f, options.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude);
+        }
+
+        private static void NormalizeBodyPositionAndDiagnosticOptions(YybVisualComparisonRunOptions options, YybVisualComparisonRunOptions defaults)
+        {
             options.manualAnimatorBipedIkFootPositionReferenceWeight = Mathf.Clamp01( options.manualAnimatorBipedIkFootPositionReferenceWeight);
             options.manualAnimatorBipedIkFootPositionReferenceMaxOffset = Mathf.Max( 0f, options.manualAnimatorBipedIkFootPositionReferenceMaxOffset);
             options.manualAnimatorHipsLocalPositionReferenceWeight = Mathf.Clamp01( options.manualAnimatorHipsLocalPositionReferenceWeight);
@@ -114,7 +150,6 @@ namespace Fbx2Vmd.FBXImporter
             options.diagnosticCaptureHeightOverride = VisualComparisonScreenshotOverridePolicy.NormalizeCaptureDimension(options.diagnosticCaptureHeightOverride, defaults.diagnosticCaptureHeightOverride);
             options.diagnosticScreenshotPaddingOverride = VisualComparisonScreenshotOverridePolicy.NormalizePadding(options.diagnosticScreenshotPaddingOverride, defaults.diagnosticScreenshotPaddingOverride);
             options.diagnosticScreenshotVerticalViewportCenterOverride = VisualComparisonScreenshotOverridePolicy.NormalizeVerticalViewportCenter(options.diagnosticScreenshotVerticalViewportCenterOverride, defaults.diagnosticScreenshotVerticalViewportCenterOverride);
-            return options;
         }
     }
 }

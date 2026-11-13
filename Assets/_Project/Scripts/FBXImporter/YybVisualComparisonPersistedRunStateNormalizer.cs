@@ -19,6 +19,18 @@ namespace Fbx2Vmd.FBXImporter
                 throw new ArgumentNullException(nameof(defaults));
             }
 
+            NormalizeClipAndIkGuardState(state, defaults);
+            NormalizePoseAndSmoothingState(state, defaults);
+            NormalizeArmSwingState(state, defaults);
+            NormalizeArmDirectionAndSleeveState(state, defaults);
+            NormalizeLegSegmentState(state, defaults);
+            NormalizeEndpointPositionState(state, defaults);
+            NormalizeBodyPositionAndDiagnosticState(state, defaults);
+            return state;
+        }
+
+        private static void NormalizeClipAndIkGuardState(YybVisualComparisonRunStateData state, YybVisualComparisonRunOptions defaults)
+        {
             state.fbxFileName = string.IsNullOrWhiteSpace(state.fbxFileName) ? defaults.fbxFileName : state.fbxFileName;
             state.durationSeconds = Mathf.Max(0.1f, state.durationSeconds);
             state.targetFrameCount = Mathf.Max(1, state.targetFrameCount);
@@ -26,6 +38,10 @@ namespace Fbx2Vmd.FBXImporter
             state.mmdIkDeltaGuardRecoveryTriggerVmd = VmdIkDeltaGuardRuntimeOverrideApplier.NormalizeLimit(state.mmdIkDeltaGuardRecoveryTriggerVmd);
             state.mmdIkDeltaGuardRecoveryDebtThresholdVmd = VmdIkDeltaGuardRuntimeOverrideApplier.NormalizeLimit(state.mmdIkDeltaGuardRecoveryDebtThresholdVmd);
             state.mmdIkDeltaGuardRecoveryHoldFrames = VmdIkDeltaGuardRuntimeOverrideApplier.NormalizeRecoveryHoldFrames(state.mmdIkDeltaGuardRecoveryHoldFrames);
+        }
+
+        private static void NormalizePoseAndSmoothingState(YybVisualComparisonRunStateData state, YybVisualComparisonRunOptions defaults)
+        {
             state.manualAnimatorFullBodyPoseReferenceWeight = float.IsNaN(state.manualAnimatorFullBodyPoseReferenceWeight) || float.IsInfinity(state.manualAnimatorFullBodyPoseReferenceWeight) ? defaults.manualAnimatorFullBodyPoseReferenceWeight : Mathf.Clamp01(state.manualAnimatorFullBodyPoseReferenceWeight);
             state.manualAnimatorFullBodyPoseReferenceFrameGateStart = Mathf.Max( 0f, VisualComparisonRuntimeValueNormalizer.NormalizeFinite( state.manualAnimatorFullBodyPoseReferenceFrameGateStart, defaults.manualAnimatorFullBodyPoseReferenceFrameGateStart));
             state.manualAnimatorFullBodyPoseReferenceFrameGateEnd = Mathf.Max( 0f, VisualComparisonRuntimeValueNormalizer.NormalizeFinite( state.manualAnimatorFullBodyPoseReferenceFrameGateEnd, defaults.manualAnimatorFullBodyPoseReferenceFrameGateEnd));
@@ -36,6 +52,10 @@ namespace Fbx2Vmd.FBXImporter
             state.retargetPoseVisualSpikeCurrentWeight = Mathf.Clamp( VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.retargetPoseVisualSpikeCurrentWeight, defaults.retargetPoseVisualSpikeCurrentWeight), 0.1f, 1f);
             state.retargetPoseVisualSpikeForearmStretchClampMaxOffset = Mathf.Clamp01( VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.retargetPoseVisualSpikeForearmStretchClampMaxOffset, defaults.retargetPoseVisualSpikeForearmStretchClampMaxOffset));
             state.retargetArmStretchMuscleLimit = Mathf.Clamp( VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.retargetArmStretchMuscleLimit, defaults.retargetArmStretchMuscleLimit), 0f, defaults.retargetArmStretchMuscleLimit);
+        }
+
+        private static void NormalizeArmSwingState(YybVisualComparisonRunStateData state, YybVisualComparisonRunOptions defaults)
+        {
             state.yybArmSwingLimitWeight = Mathf.Clamp01(VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.yybArmSwingLimitWeight, defaults.yybArmSwingLimitWeight));
             state.yybArmSwingMaxDownDot = Mathf.Clamp01(VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.yybArmSwingMaxDownDot, defaults.yybArmSwingMaxDownDot));
             state.yybArmSwingMinHandHorizontalRatio = Mathf.Clamp( VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.yybArmSwingMinHandHorizontalRatio, defaults.yybArmSwingMinHandHorizontalRatio), 0f, 1.5f);
@@ -48,6 +68,10 @@ namespace Fbx2Vmd.FBXImporter
             state.yybArmSwingRaisedPoseMinUpperArmDownDot = Mathf.Clamp01(VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.yybArmSwingRaisedPoseMinUpperArmDownDot, defaults.yybArmSwingRaisedPoseMinUpperArmDownDot));
             state.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio = Mathf.Clamp( VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio, defaults.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio), 0f, 1.5f);
             state.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio = Mathf.Clamp( VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio, defaults.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio), 0f, 1.5f);
+        }
+
+        private static void NormalizeArmDirectionAndSleeveState(YybVisualComparisonRunStateData state, YybVisualComparisonRunOptions defaults)
+        {
             state.yybArmDirectionUpperArmWeight = Mathf.Clamp01(VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.yybArmDirectionUpperArmWeight, defaults.yybArmDirectionUpperArmWeight));
             state.yybArmDirectionForearmWeight = Mathf.Clamp01(VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.yybArmDirectionForearmWeight, defaults.yybArmDirectionForearmWeight));
             state.yybArmDirectionUpperArmMaxDegrees = Mathf.Clamp( VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.yybArmDirectionUpperArmMaxDegrees, defaults.yybArmDirectionUpperArmMaxDegrees), 0f, 120f);
@@ -64,6 +88,10 @@ namespace Fbx2Vmd.FBXImporter
             state.yybRightSleeveSilhouetteLocalOffsetX = Mathf.Clamp( VisualComparisonRuntimeValueNormalizer.NormalizeFinite( state.yybRightSleeveSilhouetteLocalOffsetX, defaults.yybRightSleeveSilhouetteLocalOffsetX), -0.2f, 0.2f);
             state.yybRightSleeveSilhouetteLocalOffsetFrameGateStart = Mathf.Clamp( VisualComparisonRuntimeValueNormalizer.NormalizeFinite( state.yybRightSleeveSilhouetteLocalOffsetFrameGateStart, defaults.yybRightSleeveSilhouetteLocalOffsetFrameGateStart), 0f, 6000f);
             state.yybRightSleeveSilhouetteLocalOffsetFrameGateEnd = Mathf.Clamp( VisualComparisonRuntimeValueNormalizer.NormalizeFinite( state.yybRightSleeveSilhouetteLocalOffsetFrameGateEnd, defaults.yybRightSleeveSilhouetteLocalOffsetFrameGateEnd), 0f, 6000f);
+        }
+
+        private static void NormalizeLegSegmentState(YybVisualComparisonRunStateData state, YybVisualComparisonRunOptions defaults)
+        {
             state.manualAnimatorLowerBodySegmentDirectionReferenceWeight = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.manualAnimatorLowerBodySegmentDirectionReferenceWeight, defaults.manualAnimatorLowerBodySegmentDirectionReferenceWeight);
             state.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle, defaults.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle);
             state.manualAnimatorUpperLegToLowerLegSegmentDirectionReferenceMaxAngle = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.manualAnimatorUpperLegToLowerLegSegmentDirectionReferenceMaxAngle, defaults.manualAnimatorUpperLegToLowerLegSegmentDirectionReferenceMaxAngle);
@@ -78,6 +106,10 @@ namespace Fbx2Vmd.FBXImporter
             state.manualAnimatorFootToToesSegmentDirectionReferenceMaxAngle = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.manualAnimatorFootToToesSegmentDirectionReferenceMaxAngle, defaults.manualAnimatorFootToToesSegmentDirectionReferenceMaxAngle);
             state.manualAnimatorFootHipsAlignedResidualYawReferenceWeight = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.manualAnimatorFootHipsAlignedResidualYawReferenceWeight, defaults.manualAnimatorFootHipsAlignedResidualYawReferenceWeight);
             state.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle, defaults.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle);
+        }
+
+        private static void NormalizeEndpointPositionState(YybVisualComparisonRunStateData state, YybVisualComparisonRunOptions defaults)
+        {
             state.postSetHumanPoseRightEndpointPositionReferenceWeight = Mathf.Clamp01( VisualComparisonRuntimeValueNormalizer.NormalizeFinite( state.postSetHumanPoseRightEndpointPositionReferenceWeight, defaults.postSetHumanPoseRightEndpointPositionReferenceWeight));
             state.postSetHumanPoseRightEndpointPositionReferenceMaxOffset = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.postSetHumanPoseRightEndpointPositionReferenceMaxOffset, defaults.postSetHumanPoseRightEndpointPositionReferenceMaxOffset);
             state.postSetHumanPoseRightEndpointPositionReferencePositiveZScale = Mathf.Clamp01( VisualComparisonRuntimeValueNormalizer.NormalizeFinite( state.postSetHumanPoseRightEndpointPositionReferencePositiveZScale, defaults.postSetHumanPoseRightEndpointPositionReferencePositiveZScale));
@@ -91,6 +123,10 @@ namespace Fbx2Vmd.FBXImporter
             state.preSetHumanPoseRightEndpointPositionReferenceFrameGateStart = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.preSetHumanPoseRightEndpointPositionReferenceFrameGateStart, defaults.preSetHumanPoseRightEndpointPositionReferenceFrameGateStart);
             state.preSetHumanPoseRightEndpointPositionReferenceFrameGateEnd = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.preSetHumanPoseRightEndpointPositionReferenceFrameGateEnd, defaults.preSetHumanPoseRightEndpointPositionReferenceFrameGateEnd);
             state.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude, defaults.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude);
+        }
+
+        private static void NormalizeBodyPositionAndDiagnosticState(YybVisualComparisonRunStateData state, YybVisualComparisonRunOptions defaults)
+        {
             state.manualAnimatorBipedIkFootPositionReferenceWeight = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.manualAnimatorBipedIkFootPositionReferenceWeight, defaults.manualAnimatorBipedIkFootPositionReferenceWeight);
             state.manualAnimatorBipedIkFootPositionReferenceMaxOffset = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.manualAnimatorBipedIkFootPositionReferenceMaxOffset, defaults.manualAnimatorBipedIkFootPositionReferenceMaxOffset);
             state.manualAnimatorHipsLocalPositionReferenceWeight = VisualComparisonRuntimeValueNormalizer.NormalizePositive( state.manualAnimatorHipsLocalPositionReferenceWeight, defaults.manualAnimatorHipsLocalPositionReferenceWeight);
@@ -108,7 +144,6 @@ namespace Fbx2Vmd.FBXImporter
             state.diagnosticCaptureHeightOverride = VisualComparisonScreenshotOverridePolicy.NormalizeCaptureDimension(state.diagnosticCaptureHeightOverride, defaults.diagnosticCaptureHeightOverride);
             state.diagnosticScreenshotPaddingOverride = VisualComparisonScreenshotOverridePolicy.NormalizePadding(state.diagnosticScreenshotPaddingOverride, defaults.diagnosticScreenshotPaddingOverride);
             state.diagnosticScreenshotVerticalViewportCenterOverride = VisualComparisonScreenshotOverridePolicy.NormalizeVerticalViewportCenter(state.diagnosticScreenshotVerticalViewportCenterOverride, defaults.diagnosticScreenshotVerticalViewportCenterOverride);
-            return state;
         }
     }
 }

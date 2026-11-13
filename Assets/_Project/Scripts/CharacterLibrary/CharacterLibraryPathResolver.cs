@@ -24,6 +24,22 @@ namespace Fbx2Vmd.CharacterLibrary
             string persistentDataRoot = null,
             bool readProcessEnvironment = true)
         {
+            string explicitResult = ResolveExplicitOverride(
+                explicitPath, environmentOverridePath, readProcessEnvironment);
+            if (explicitResult != null)
+            {
+                return explicitResult;
+            }
+
+            string root = ResolveStorageRoot(localAppDataRoot, persistentDataRoot);
+            return Path.Combine(root, AppFolderName, FeatureFolderName, LibraryFileName);
+        }
+
+        private static string ResolveExplicitOverride(
+            string explicitPath,
+            string environmentOverridePath,
+            bool readProcessEnvironment)
+        {
             if (!string.IsNullOrWhiteSpace(explicitPath))
             {
                 return explicitPath.Trim();
@@ -43,6 +59,11 @@ namespace Fbx2Vmd.CharacterLibrary
                 }
             }
 
+            return null;
+        }
+
+        private static string ResolveStorageRoot(string localAppDataRoot, string persistentDataRoot)
+        {
             string root = localAppDataRoot;
             if (string.IsNullOrWhiteSpace(root))
             {
@@ -59,7 +80,7 @@ namespace Fbx2Vmd.CharacterLibrary
                 root = Application.persistentDataPath;
             }
 
-            return Path.Combine(root, AppFolderName, FeatureFolderName, LibraryFileName);
+            return root;
         }
 
         /// <summary>

@@ -109,9 +109,7 @@ namespace Fbx2Vmd.ClothPhysics
         {
             if (setup == null) setup = GetComponent<CharacterPhysicsSetup>();
             if (probe == null) probe = GetComponent<PhysicsValidationProbe>();
-            var animator = setup != null ? setup.targetAnimator : null;
-            if (animator == null && setup != null)
-                animator = setup.GetComponentInChildren<Animator>(true);
+            var animator = ResolveAnimator();
 
             foreach (var clip in clips.Where(c => c != null))
             {
@@ -122,50 +120,12 @@ namespace Fbx2Vmd.ClothPhysics
                 {
                     if (animator != null)
                     {
-                        graph = PlayableGraph.Create("clothqa_" + clip.name);
-                        var playable = AnimationClipPlayable.Create(graph, clip);
-                        var output = AnimationPlayableOutput.Create(graph, "anim", animator);
-                        output.SetSourcePlayable(playable);
-                        graph.Play();
+                        graph = StartClipGraph(clip, animator);
                     }
 
-                    // 시크 직후 급변 구간은 제외하고 프로브를 재무장한다
-                    setup?.ResetPhysics(true);
-                    probe?.RebuildTracking();
-                    probe?.ResetStats();
-                    yield return new WaitForSeconds(settleSeconds);
-                    probe?.RebuildTracking();
-                    probe?.ResetStats();
-
-                    float watch = Mathf.Min(secondsPerClip, Mathf.Max(clip.length, 0.5f));
-                    float t0 = Time.time;
-                    int frames = 0;
-                    while (Time.time - t0 < watch)
-                    {
-                        frames++;
-                        yield return null;
-                    }
-                    result.avgFrameMs = frames > 0 ? (Time.time - t0) * 1000f / frames : 0f;
-                    if (probe != null)
-                    {
-                        result.sampledFrames = probe.sampledFrames;
-                        result.worstExcessPenetrationMm = probe.worstPenetration * 1000f;
-                        result.warningFrames = probe.penetrationFrameCount;
-                        result.suspectedStuckBones = probe.suspectedStuckBoneCount;
-                        result.baselineWorstMm = probe.baselineWorstPenetration * 1000f;
-                    }
-                    if (setup != null)
-                        result.validCloths = setup.generatedCloths.Count(c => c != null && c.IsValid());
-
-                    if (captureGolden)
-                    {
-                        string dir = System.IO.Path.GetFullPath(goldenDir);
-                        System.IO.Directory.CreateDirectory(dir);
-                        string file = System.IO.Path.Combine(dir, $"{name}_{clip.name}.png");
-                        UnityEngine.ScreenCapture.CaptureScreenshot(file);
-                        result.golden = file;
-                        yield return null; // 캡처 완료 프레임
-                    }
+                    var sampling = SampleClip(clip, result);
+                    while (sampling.MoveNext())
+                        yield return sampling.Current;
                 }
                 finally
                 {
@@ -175,6 +135,75 @@ namespace Fbx2Vmd.ClothPhysics
                 report.clips.Add(result);
             }
             currentClip = null;
+        }
+
+        private Animator ResolveAnimator()
+        {
+            var animator = setup != null ? setup.targetAnimator : null;
+            if (animator == null && setup != null)
+                animator = setup.GetComponentInChildren<Animator>(true);
+            return animator;
+        }
+
+        private static PlayableGraph StartClipGraph(AnimationClip clip, Animator animator)
+        {
+            var graph = PlayableGraph.Create("clothqa_" + clip.name);
+            var playable = AnimationClipPlayable.Create(graph, clip);
+            var output = AnimationPlayableOutput.Create(graph, "anim", animator);
+            output.SetSourcePlayable(playable);
+            graph.Play();
+            return graph;
+        }
+
+        IEnumerator SampleClip(AnimationClip clip, ClipResult result)
+        {
+            // 시크 직후 급변 구간은 제외하고 프로브를 재무장한다
+            setup?.ResetPhysics(true);
+            probe?.RebuildTracking();
+            probe?.ResetStats();
+            yield return new WaitForSeconds(settleSeconds);
+            probe?.RebuildTracking();
+            probe?.ResetStats();
+
+            float watch = Mathf.Min(secondsPerClip, Mathf.Max(clip.length, 0.5f));
+            float t0 = Time.time;
+            int frames = 0;
+            while (Time.time - t0 < watch)
+            {
+                frames++;
+                yield return null;
+            }
+            result.avgFrameMs = frames > 0 ? (Time.time - t0) * 1000f / frames : 0f;
+            CollectProbeMetrics(result);
+
+            if (captureGolden)
+            {
+                result.golden = SaveGoldenScreenshot(clip);
+                yield return null; // 캡처 완료 프레임
+            }
+        }
+
+        private void CollectProbeMetrics(ClipResult result)
+        {
+            if (probe != null)
+            {
+                result.sampledFrames = probe.sampledFrames;
+                result.worstExcessPenetrationMm = probe.worstPenetration * 1000f;
+                result.warningFrames = probe.penetrationFrameCount;
+                result.suspectedStuckBones = probe.suspectedStuckBoneCount;
+                result.baselineWorstMm = probe.baselineWorstPenetration * 1000f;
+            }
+            if (setup != null)
+                result.validCloths = setup.generatedCloths.Count(c => c != null && c.IsValid());
+        }
+
+        private string SaveGoldenScreenshot(AnimationClip clip)
+        {
+            string dir = System.IO.Path.GetFullPath(goldenDir);
+            System.IO.Directory.CreateDirectory(dir);
+            string file = System.IO.Path.Combine(dir, $"{name}_{clip.name}.png");
+            UnityEngine.ScreenCapture.CaptureScreenshot(file);
+            return file;
         }
 
         void WriteReport(Report report)

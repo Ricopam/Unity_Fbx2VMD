@@ -43,6 +43,16 @@ namespace Fbx2Vmd.FBXImporter
                 return 0;
 
             int span = Math.Min(Degree + (int)((frame - _first) / _spacing), ControlCount - 1);
+            ComputeBasisWeights(frame, span, weights);
+
+            double envelope = Ease((frame - _first) / _fadeWidth) * Ease((_last - frame) / _fadeWidth);
+            for (int index = 0; index <= Degree; index++)
+                weights[index] *= envelope;
+            return span - Degree;
+        }
+
+        private void ComputeBasisWeights(double frame, int span, Span<double> weights)
+        {
             Span<double> left = stackalloc double[Degree + 1];
             Span<double> right = stackalloc double[Degree + 1];
             weights[0] = 1;
@@ -59,11 +69,6 @@ namespace Fbx2Vmd.FBXImporter
                 }
                 weights[order] = carried;
             }
-
-            double envelope = Ease((frame - _first) / _fadeWidth) * Ease((_last - frame) / _fadeWidth);
-            for (int index = 0; index <= Degree; index++)
-                weights[index] *= envelope;
-            return span - Degree;
         }
 
         private static double Ease(double value)

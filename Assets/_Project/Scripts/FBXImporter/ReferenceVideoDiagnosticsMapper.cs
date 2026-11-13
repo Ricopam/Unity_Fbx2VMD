@@ -18,15 +18,44 @@ namespace Fbx2Vmd.FBXImporter
                 throw new ArgumentNullException(nameof(diagnostics));
             }
 
+            InitializePaths(
+                diagnostics,
+                provenanceEvidencePath,
+                analysisResultPath,
+                frameMetricsPath,
+                contactSheetPath);
+            InitializeClipWindow(diagnostics, referenceClipStartSeconds, requestedDurationSeconds);
+            InitializeSampleDefaults(diagnostics);
+        }
+
+        private static void InitializePaths(
+            VisualComparisonFrameRoleDiagnosticsData diagnostics,
+            string provenanceEvidencePath,
+            string analysisResultPath,
+            string frameMetricsPath,
+            string contactSheetPath)
+        {
             diagnostics.reference_mp4_provenance_evidence_path = provenanceEvidencePath ?? string.Empty;
             diagnostics.reference_mp4_analysis_result_path = analysisResultPath ?? string.Empty;
             diagnostics.reference_mp4_frame_metrics_path = frameMetricsPath ?? string.Empty;
             diagnostics.reference_mp4_contact_sheet_path = contactSheetPath ?? string.Empty;
+        }
+
+        private static void InitializeClipWindow(
+            VisualComparisonFrameRoleDiagnosticsData diagnostics,
+            float referenceClipStartSeconds,
+            float requestedDurationSeconds)
+        {
             diagnostics.reference_mp4_current_clip_start_seconds = Math.Max(0f, referenceClipStartSeconds);
             diagnostics.reference_mp4_current_clip_duration_seconds = Math.Max(0f, requestedDurationSeconds);
             diagnostics.reference_mp4_current_clip_end_seconds =
                 diagnostics.reference_mp4_current_clip_start_seconds +
                 diagnostics.reference_mp4_current_clip_duration_seconds;
+        }
+
+        private static void InitializeSampleDefaults(
+            VisualComparisonFrameRoleDiagnosticsData diagnostics)
+        {
             diagnostics.reference_mp4_current_clip_first_sample_seconds = float.NaN;
             diagnostics.reference_mp4_current_clip_last_sample_seconds = float.NaN;
             diagnostics.reference_mp4_current_clip_sample_gap_seconds =
@@ -52,6 +81,28 @@ namespace Fbx2Vmd.FBXImporter
             bool provenanceEvidenceExists,
             bool contactSheetExists)
         {
+            ValidateApplyInputs(diagnostics, referenceVideo, coverage);
+
+            ApplyReferenceVideoFields(
+                diagnostics,
+                referenceVideo,
+                provenanceEvidenceExists,
+                contactSheetExists);
+            diagnostics.reference_mp4_current_clip_end_seconds = coverage.EndSeconds;
+            diagnostics.reference_mp4_current_clip_sample_gap_seconds = coverage.SampleGapSeconds;
+            if (diagnostics.reference_mp4_current_clip_duration_seconds <= 0f)
+            {
+                return;
+            }
+
+            ApplyClipCoverageFields(diagnostics, coverage);
+        }
+
+        private static void ValidateApplyInputs(
+            VisualComparisonFrameRoleDiagnosticsData diagnostics,
+            ReferenceVideoDiagnosticsData referenceVideo,
+            ReferenceVideoClipCoverageData coverage)
+        {
             if (diagnostics == null)
             {
                 throw new ArgumentNullException(nameof(diagnostics));
@@ -66,7 +117,14 @@ namespace Fbx2Vmd.FBXImporter
             {
                 throw new ArgumentNullException(nameof(coverage));
             }
+        }
 
+        private static void ApplyReferenceVideoFields(
+            VisualComparisonFrameRoleDiagnosticsData diagnostics,
+            ReferenceVideoDiagnosticsData referenceVideo,
+            bool provenanceEvidenceExists,
+            bool contactSheetExists)
+        {
             diagnostics.reference_mp4_provenance_evidence_exists = provenanceEvidenceExists;
             diagnostics.reference_mp4_contact_sheet_exists = contactSheetExists;
             diagnostics.reference_mp4_analysis_result_exists = referenceVideo.AnalysisFileExists;
@@ -89,13 +147,12 @@ namespace Fbx2Vmd.FBXImporter
             diagnostics.reference_mp4_center_x_range_ratio = referenceVideo.CenterXRangeRatio;
             diagnostics.reference_mp4_max_bottom_gap_ratio = referenceVideo.MaxBottomGapRatio;
             diagnostics.reference_mp4_avg_bright_area_ratio = referenceVideo.AverageBrightAreaRatio;
-            diagnostics.reference_mp4_current_clip_end_seconds = coverage.EndSeconds;
-            diagnostics.reference_mp4_current_clip_sample_gap_seconds = coverage.SampleGapSeconds;
-            if (diagnostics.reference_mp4_current_clip_duration_seconds <= 0f)
-            {
-                return;
-            }
+        }
 
+        private static void ApplyClipCoverageFields(
+            VisualComparisonFrameRoleDiagnosticsData diagnostics,
+            ReferenceVideoClipCoverageData coverage)
+        {
             diagnostics.reference_mp4_current_clip_sample_count = coverage.SampleCount;
             diagnostics.reference_mp4_current_clip_sample_seconds = coverage.SampleSeconds;
             if (coverage.SampleCount <= 0)

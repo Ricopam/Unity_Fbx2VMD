@@ -39,23 +39,28 @@ namespace Fbx2Vmd.FBXImporter
                     return;
                 }
 
-                data.AnalysisSchema = document.schema ?? string.Empty;
-                data.ExtractedFrameCount = Math.Max(0, document.extractedFrameCount);
-                if (document.video == null)
-                {
-                    return;
-                }
-
-                data.VideoWidth = Math.Max(0, document.video.width);
-                data.VideoHeight = Math.Max(0, document.video.height);
-                data.AverageFrameRate = document.video.avg_frame_rate ?? string.Empty;
-                data.StreamDurationSeconds = ParseInvariantFloat(document.video.stream_duration);
-                data.TotalVideoFrames = ParseInvariantInt(document.video.nb_frames);
+                ApplyAnalysisDocument(document, data);
             }
             catch (Exception ex)
             {
                 data.AnalysisError = ex.GetType().Name + ": " + ex.Message;
             }
+        }
+
+        private static void ApplyAnalysisDocument(AnalysisDocument document, ReferenceVideoDiagnosticsData data)
+        {
+            data.AnalysisSchema = document.schema ?? string.Empty;
+            data.ExtractedFrameCount = Math.Max(0, document.extractedFrameCount);
+            if (document.video == null)
+            {
+                return;
+            }
+
+            data.VideoWidth = Math.Max(0, document.video.width);
+            data.VideoHeight = Math.Max(0, document.video.height);
+            data.AverageFrameRate = document.video.avg_frame_rate ?? string.Empty;
+            data.StreamDurationSeconds = ParseInvariantFloat(document.video.stream_duration);
+            data.TotalVideoFrames = ParseInvariantInt(document.video.nb_frames);
         }
 
         private static void ReadFrameMetrics(string path, ReferenceVideoDiagnosticsData data)
@@ -74,20 +79,25 @@ namespace Fbx2Vmd.FBXImporter
                     return;
                 }
 
-                data.FrameMetricsSchema = document.schema ?? string.Empty;
-                data.FrameMetricsSampleCount = Math.Max(0, document.sampleCount);
-                data.FrameMetricsExtractedFrameCount = Math.Max(0, document.extractedFrameCount);
-                data.AverageBBoxHeightRatio = document.avgBBoxHeightRatio;
-                data.AverageBBoxWidthRatio = document.avgBBoxWidthRatio;
-                data.CenterXRangeRatio = document.centerXRangeRatio;
-                data.MaxBottomGapRatio = document.maxBottomGapRatio;
-                data.AverageBrightAreaRatio = document.avgBrightAreaRatio;
-                data.FrameMetricRows = document.rows ?? Array.Empty<ReferenceMp4FrameMetricRow>();
+                ApplyFrameMetricsDocument(document, data);
             }
             catch (Exception ex)
             {
                 data.FrameMetricsError = ex.GetType().Name + ": " + ex.Message;
             }
+        }
+
+        private static void ApplyFrameMetricsDocument(FrameMetricsDocument document, ReferenceVideoDiagnosticsData data)
+        {
+            data.FrameMetricsSchema = document.schema ?? string.Empty;
+            data.FrameMetricsSampleCount = Math.Max(0, document.sampleCount);
+            data.FrameMetricsExtractedFrameCount = Math.Max(0, document.extractedFrameCount);
+            data.AverageBBoxHeightRatio = document.avgBBoxHeightRatio;
+            data.AverageBBoxWidthRatio = document.avgBBoxWidthRatio;
+            data.CenterXRangeRatio = document.centerXRangeRatio;
+            data.MaxBottomGapRatio = document.maxBottomGapRatio;
+            data.AverageBrightAreaRatio = document.avgBrightAreaRatio;
+            data.FrameMetricRows = document.rows ?? Array.Empty<ReferenceMp4FrameMetricRow>();
         }
 
         private static int ParseInvariantInt(string value)

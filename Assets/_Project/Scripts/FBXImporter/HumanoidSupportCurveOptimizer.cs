@@ -42,31 +42,47 @@ namespace Fbx2Vmd.FBXImporter
                 Evaluation sample = evaluate(current, true);
                 if (!TryGetDirection(sample, out double[] direction, out double[] rowNorm, out double meritWeight)) break;
                 double currentMerit = Merit(sample, rowNorm, meritWeight);
-                bool improved = false;
-                foreach (double scale in SearchScales)
-                {
-                    double[] trial = Move(current, direction, scale);
-                    Evaluation result = evaluate(trial, false);
-                    if (!(Merit(result, rowNorm, meritWeight) < currentMerit - 1e-9)) continue;
-
-                    // 탐색 중 제약 초과는 허용하되 정확한 비선형 조건을 통과한 곡선만 반환함.
-                    double[] difference = Move(trial, best, -1);
-                    foreach (double fraction in FeasibleScales)
-                    {
-                        double[] feasible = fraction == 1 ? trial : Move(best, difference, fraction);
-                        Evaluation checkedPose = fraction == 1 ? result : evaluate(feasible, false);
-                        if (!IsFeasible(checkedPose.Slack) || !(checkedPose.Cost < bestCost - 1e-9)) continue;
-                        best = feasible;
-                        bestCost = checkedPose.Cost;
-                        break;
-                    }
-                    current = trial;
-                    improved = true;
-                    break;
-                }
-                if (!improved) break;
+                if (!TryImprove(current, direction, rowNorm, meritWeight, currentMerit, evaluate,
+                    ref best, ref bestCost, out double[] next)) break;
+                current = next;
             }
             return bestCost < initial.Cost - 1e-9;
+        }
+
+        private static bool TryImprove(
+            double[] current, double[] direction, double[] rowNorm, double meritWeight,
+            double currentMerit, Func<double[], bool, Evaluation> evaluate,
+            ref double[] best, ref double bestCost, out double[] next)
+        {
+            next = null;
+            foreach (double scale in SearchScales)
+            {
+                double[] trial = Move(current, direction, scale);
+                Evaluation result = evaluate(trial, false);
+                if (!(Merit(result, rowNorm, meritWeight) < currentMerit - 1e-9)) continue;
+
+                TryCommitFeasiblePose(trial, result, evaluate, ref best, ref bestCost);
+                next = trial;
+                return true;
+            }
+            return false;
+        }
+
+        // 탐색 중 제약 초과는 허용하되 정확한 비선형 조건을 통과한 곡선만 반환함.
+        private static void TryCommitFeasiblePose(
+            double[] trial, Evaluation result, Func<double[], bool, Evaluation> evaluate,
+            ref double[] best, ref double bestCost)
+        {
+            double[] difference = Move(trial, best, -1);
+            foreach (double fraction in FeasibleScales)
+            {
+                double[] feasible = fraction == 1 ? trial : Move(best, difference, fraction);
+                Evaluation checkedPose = fraction == 1 ? result : evaluate(feasible, false);
+                if (!IsFeasible(checkedPose.Slack) || !(checkedPose.Cost < bestCost - 1e-9)) continue;
+                best = feasible;
+                bestCost = checkedPose.Cost;
+                break;
+            }
         }
 
         private static bool TryGetDirection(Evaluation sample, out double[] direction, out double[] rowNorm, out double meritWeight)

@@ -28,6 +28,13 @@ namespace Fbx2Vmd.CharacterLibrary
                 document.presets = new List<CharacterPreset>();
             }
 
+            NormalizePresetList(document);
+            NormalizeFbxOverrideList(document);
+            return document;
+        }
+
+        private static void NormalizePresetList(CharacterPresetDocument document)
+        {
             var seenIds = new HashSet<string>(StringComparer.Ordinal);
             // 앞에서부터 순회해 중복 id는 첫 항목만 유지한다(역순이면 마지막이 남는다).
             for (int i = document.presets.Count - 1; i >= 0; i--)
@@ -41,24 +48,35 @@ namespace Fbx2Vmd.CharacterLibrary
             for (int i = 0; i < document.presets.Count; i++)
             {
                 CharacterPreset preset = document.presets[i];
-                preset.id = NormalizeString(preset.id);
-                if (preset.id.Length == 0)
-                {
-                    preset.id = Guid.NewGuid().ToString("N");
-                }
-                if (!seenIds.Add(preset.id))
+                if (!TryNormalizePresetItem(preset, seenIds))
                 {
                     document.presets.RemoveAt(i);
                     i--;
-                    continue;
                 }
+            }
+        }
 
-                preset.name = NormalizeString(preset.name);
-                preset.createdAtUtc = NormalizeString(preset.createdAtUtc);
-                preset.updatedAtUtc = NormalizeString(preset.updatedAtUtc);
-                NormalizeSections(preset);
+        private static bool TryNormalizePresetItem(CharacterPreset preset, HashSet<string> seenIds)
+        {
+            preset.id = NormalizeString(preset.id);
+            if (preset.id.Length == 0)
+            {
+                preset.id = Guid.NewGuid().ToString("N");
+            }
+            if (!seenIds.Add(preset.id))
+            {
+                return false;
             }
 
+            preset.name = NormalizeString(preset.name);
+            preset.createdAtUtc = NormalizeString(preset.createdAtUtc);
+            preset.updatedAtUtc = NormalizeString(preset.updatedAtUtc);
+            NormalizeSections(preset);
+            return true;
+        }
+
+        private static void NormalizeFbxOverrideList(CharacterPresetDocument document)
+        {
             if (document.fbxOverrides == null)
             {
                 document.fbxOverrides = new List<CharacterFbxOverride>();
@@ -75,19 +93,27 @@ namespace Fbx2Vmd.CharacterLibrary
             for (int i = 0; i < document.fbxOverrides.Count; i++)
             {
                 CharacterFbxOverride fbxOverride = document.fbxOverrides[i];
-                fbxOverride.fbxKey =
-                    CharacterLibraryRegistry.NormalizeFbxKey(fbxOverride.fbxKey);
-                if (fbxOverride.fbxKey.Length == 0 || !seenKeys.Add(fbxOverride.fbxKey))
+                if (!TryNormalizeFbxOverrideItem(fbxOverride, seenKeys))
                 {
                     document.fbxOverrides.RemoveAt(i);
                     i--;
-                    continue;
                 }
-                fbxOverride.name = NormalizeString(fbxOverride.name);
-                fbxOverride.updatedAtUtc = NormalizeString(fbxOverride.updatedAtUtc);
-                NormalizeSections(fbxOverride);
             }
-            return document;
+        }
+
+        private static bool TryNormalizeFbxOverrideItem(
+            CharacterFbxOverride fbxOverride, HashSet<string> seenKeys)
+        {
+            fbxOverride.fbxKey =
+                CharacterLibraryRegistry.NormalizeFbxKey(fbxOverride.fbxKey);
+            if (fbxOverride.fbxKey.Length == 0 || !seenKeys.Add(fbxOverride.fbxKey))
+            {
+                return false;
+            }
+            fbxOverride.name = NormalizeString(fbxOverride.name);
+            fbxOverride.updatedAtUtc = NormalizeString(fbxOverride.updatedAtUtc);
+            NormalizeSections(fbxOverride);
+            return true;
         }
 
         private static void NormalizeSections(CharacterPreset preset)

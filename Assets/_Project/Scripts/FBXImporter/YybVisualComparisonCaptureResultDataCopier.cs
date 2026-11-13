@@ -18,6 +18,16 @@ namespace Fbx2Vmd.FBXImporter
                 throw new ArgumentNullException(nameof(destination));
             }
 
+            CopyJobMetadata(source, destination);
+            CopyManualAnimatorPoseSettings(source, destination);
+            CopySegmentDirectionAndYawSettings(source, destination);
+            CopyEndpointPositionSettings(source, destination);
+            CopyBodyPositionSettings(source, destination);
+            CopyYybArmCorrectionSettings(source, destination);
+        }
+
+        private static void CopyJobMetadata(YybVisualComparisonCaptureResultData source, YybVisualComparisonCaptureResultData destination)
+        {
             destination.jobMode = source.jobMode;
             destination.jobDisplayName = source.jobDisplayName;
             destination.sceneName = source.sceneName;
@@ -34,6 +44,10 @@ namespace Fbx2Vmd.FBXImporter
             destination.comparisonFrameIndexPath = source.comparisonFrameIndexPath;
             destination.comparisonSessionId = source.comparisonSessionId;
             destination.hasFBXVmdPipelineEffectiveSettings = source.hasFBXVmdPipelineEffectiveSettings;
+        }
+
+        private static void CopyManualAnimatorPoseSettings(YybVisualComparisonCaptureResultData source, YybVisualComparisonCaptureResultData destination)
+        {
             destination.ShouldUseManualAnimatorFootLocalRotationReference = source.ShouldUseManualAnimatorFootLocalRotationReference;
             destination.manualAnimatorFootLocalRotationReferenceWeight = source.manualAnimatorFootLocalRotationReferenceWeight;
             destination.ShouldUseManualAnimatorFullBodyPoseReference = source.ShouldUseManualAnimatorFullBodyPoseReference;
@@ -51,6 +65,10 @@ namespace Fbx2Vmd.FBXImporter
             destination.setHumanPoseRightLegTwistOutputReferenceMaxDelta = source.setHumanPoseRightLegTwistOutputReferenceMaxDelta;
             destination.ShouldUseManualAnimatorBodyRotationReference = source.ShouldUseManualAnimatorBodyRotationReference;
             destination.manualAnimatorBodyRotationReferenceWeight = source.manualAnimatorBodyRotationReferenceWeight;
+        }
+
+        private static void CopySegmentDirectionAndYawSettings(YybVisualComparisonCaptureResultData source, YybVisualComparisonCaptureResultData destination)
+        {
             destination.ShouldUseManualAnimatorLowerBodySegmentDirectionReference = source.ShouldUseManualAnimatorLowerBodySegmentDirectionReference;
             destination.manualAnimatorLowerBodySegmentDirectionReferenceWeight = source.manualAnimatorLowerBodySegmentDirectionReferenceWeight;
             destination.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle = source.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle;
@@ -70,6 +88,10 @@ namespace Fbx2Vmd.FBXImporter
             destination.ShouldUseManualAnimatorFootHipsAlignedResidualYawReference = source.ShouldUseManualAnimatorFootHipsAlignedResidualYawReference;
             destination.manualAnimatorFootHipsAlignedResidualYawReferenceWeight = source.manualAnimatorFootHipsAlignedResidualYawReferenceWeight;
             destination.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle = source.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle;
+        }
+
+        private static void CopyEndpointPositionSettings(YybVisualComparisonCaptureResultData source, YybVisualComparisonCaptureResultData destination)
+        {
             destination.usePostSetHumanPoseRightEndpointPositionReference = source.usePostSetHumanPoseRightEndpointPositionReference;
             destination.postSetHumanPoseRightEndpointPositionReferenceWeight = source.postSetHumanPoseRightEndpointPositionReferenceWeight;
             destination.postSetHumanPoseRightEndpointPositionReferenceMaxOffset = source.postSetHumanPoseRightEndpointPositionReferenceMaxOffset;
@@ -89,6 +111,10 @@ namespace Fbx2Vmd.FBXImporter
             destination.preSetHumanPoseEndpointPositionUseGhostCurrentBasis = source.preSetHumanPoseEndpointPositionUseGhostCurrentBasis;
             destination.ShouldInvertPreSetHumanPoseEndpointPositionBodyX = source.ShouldInvertPreSetHumanPoseEndpointPositionBodyX;
             destination.ShouldInvertPreSetHumanPoseEndpointPositionBodyZ = source.ShouldInvertPreSetHumanPoseEndpointPositionBodyZ;
+        }
+
+        private static void CopyBodyPositionSettings(YybVisualComparisonCaptureResultData source, YybVisualComparisonCaptureResultData destination)
+        {
             destination.usePostSetHumanPoseRightFootEvaluatorXzReference = source.usePostSetHumanPoseRightFootEvaluatorXzReference;
             destination.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude = source.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude;
             destination.ShouldUseManualAnimatorBodyPositionXzReference = source.ShouldUseManualAnimatorBodyPositionXzReference;
@@ -99,6 +125,10 @@ namespace Fbx2Vmd.FBXImporter
             destination.manualAnimatorBodyPositionXzReferenceFrameGateBlendFrames = source.manualAnimatorBodyPositionXzReferenceFrameGateBlendFrames;
             destination.manualAnimatorBodyPositionXzReferenceAxisXScale = source.manualAnimatorBodyPositionXzReferenceAxisXScale;
             destination.manualAnimatorBodyPositionXzReferenceAxisZScale = source.manualAnimatorBodyPositionXzReferenceAxisZScale;
+        }
+
+        private static void CopyYybArmCorrectionSettings(YybVisualComparisonCaptureResultData source, YybVisualComparisonCaptureResultData destination)
+        {
             destination.enableYybArmSwingLimitCorrection = source.enableYybArmSwingLimitCorrection;
             destination.yybArmSwingLimitWeight = source.yybArmSwingLimitWeight;
             destination.yybArmSwingMaxDownDot = source.yybArmSwingMaxDownDot;

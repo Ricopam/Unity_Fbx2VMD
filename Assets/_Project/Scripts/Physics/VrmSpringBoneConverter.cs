@@ -42,6 +42,13 @@ namespace Fbx2Vmd.ClothPhysics
             float dragForce, float gravityPower, Vector3 gravityDir, float hitRadius,
             float unit = 1f)
         {
+            ApplyStiffnessAndDamping(s, stiffnessForce, dragForce);
+            ApplyGravityAndRadius(s, gravityPower, gravityDir, hitRadius);
+            ApplySafetyInertia(s, unit);
+        }
+
+        static void ApplyStiffnessAndDamping(ClothSerializeData s, float stiffnessForce, float dragForce)
+        {
             // 복원 강성 — 깊이 커브 없이 균일값 (VRM은 체인 단위 스칼라)
             var rest = s.angleRestorationConstraint;
             rest.useAngleRestoration = true;
@@ -49,7 +56,10 @@ namespace Fbx2Vmd.ClothPhysics
 
             // VRM dragForce(프레임당 운동량 손실률) → MC2 damping
             s.damping.SetValue(Mathf.Clamp01(dragForce));
+        }
 
+        static void ApplyGravityAndRadius(ClothSerializeData s, float gravityPower, Vector3 gravityDir, float hitRadius)
+        {
             // VRM의 gravityDir*gravityPower는 가속도 벡터 — MC2는 크기+방향 분리
             s.gravity = gravityPower;
             s.gravityDirection = gravityDir.sqrMagnitude > 1e-6f
@@ -58,7 +68,10 @@ namespace Fbx2Vmd.ClothPhysics
 
             // 파티클 충돌 반경
             s.radius.SetValue(Mathf.Max(hitRadius, 0.001f));
+        }
 
+        static void ApplySafetyInertia(ClothSerializeData s, float unit)
+        {
             // 프로젝트 공통 안전값 — 텔레포트 후 폭주 방지, 낮은 마찰
             var inertia = s.inertiaConstraint;
             inertia.teleportMode = InertiaConstraint.TeleportMode.Keep;
@@ -104,8 +117,47 @@ namespace Fbx2Vmd.ClothPhysics
         {
             // MC2 rootBones는 Fixed 앵커 — 리프 단독 루트는 전 입자 고정인
             // 죽은 체인이 되므로 변환 대상에서 제외한다.
-            var roots = new List<Transform>();
             var leafRoots = new HashSet<Transform>();
+            List<Transform> roots = SelectConvertibleRoots(spring, leafRoots);
+            if (roots.Count == 0)
+            {
+                report?.Add($"VRM 스프링 '{spring.name}' — 변환 가능한 루트본이 " +
+                    $"없어 건너뜀 (리프 루트 {leafRoots.Count}개)");
+                return null;
+            }
+
+            var cloth = CreateBoneCloth(setupRoot, index, roots, spring, unit);
+            var sdata = cloth.SerializeData;
+
+            int colliderCount = PopulateClothColliders(spring, sdata, result);
+
+            spring.enabled = false; // 삭제가 아닌 비활성 — 호출부가 disabledSprings로 복원 책임
+            result.cloths.Add(cloth);
+            result.disabledSprings.Add(spring);
+            ReportUnsupportedFields(spring, unit, leafRoots, result);
+            report?.Add($"VRM→MC2 변환: {cloth.name} (체인 루트 {roots.Count}개, " +
+                $"콜라이더 {colliderCount}개)");
+            return cloth;
+        }
+
+        static MagicaCloth CreateBoneCloth(Transform setupRoot, int index,
+            List<Transform> roots, VRMSpringBone spring, float unit)
+        {
+            var go = new GameObject($"{CharacterPhysicsSetup.ClothNamePrefix}Vrm_{index}");
+            go.transform.SetParent(setupRoot, false);
+            var cloth = go.AddComponent<MagicaCloth>();
+            var sdata = cloth.SerializeData;
+            sdata.clothType = ClothProcess.ClothType.BoneCloth;
+            sdata.rootBones.Clear();
+            sdata.rootBones.AddRange(roots);
+            ApplyParams(sdata, spring.m_stiffnessForce, spring.m_dragForce,
+                spring.m_gravityPower, spring.m_gravityDir, spring.m_hitRadius, unit);
+            return cloth;
+        }
+
+        static List<Transform> SelectConvertibleRoots(VRMSpringBone spring, HashSet<Transform> leafRoots)
+        {
+            var roots = new List<Transform>();
             if (spring.RootBones != null)
                 foreach (var rb in spring.RootBones)
                 {
@@ -116,25 +168,13 @@ namespace Fbx2Vmd.ClothPhysics
                     else
                         roots.Add(rb);
                 }
-            if (roots.Count == 0)
-            {
-                report?.Add($"VRM 스프링 '{spring.name}' — 변환 가능한 루트본이 " +
-                    $"없어 건너뜀 (리프 루트 {leafRoots.Count}개)");
-                return null;
-            }
+            return roots;
+        }
 
-            var go = new GameObject($"{CharacterPhysicsSetup.ClothNamePrefix}Vrm_{index}");
-            go.transform.SetParent(setupRoot, false);
-            var cloth = go.AddComponent<MagicaCloth>();
-            var sdata = cloth.SerializeData;
-            sdata.clothType = ClothProcess.ClothType.BoneCloth;
-            sdata.rootBones.Clear();
-            sdata.rootBones.AddRange(roots);
-            ApplyParams(sdata, spring.m_stiffnessForce, spring.m_dragForce,
-                spring.m_gravityPower, spring.m_gravityDir, spring.m_hitRadius, unit);
-
-            // 그룹별 콜라이더 → MC2 SphereCollider — 같은 그룹을 공유하는
-            // 스프링이 있으므로 그룹당 1회만 생성해 컴포넌트를 재사용한다.
+        // 그룹별 콜라이더 → MC2 SphereCollider — 같은 그룹을 공유하는
+        // 스프링이 있으므로 그룹당 1회만 생성해 컴포넌트를 재사용한다.
+        static int PopulateClothColliders(VRMSpringBone spring, ClothSerializeData sdata, Result result)
+        {
             var clothColliders = sdata.colliderCollisionConstraint.colliderList;
             clothColliders.Clear();
             bool colliderCapped = false;
@@ -156,11 +196,13 @@ namespace Fbx2Vmd.ClothPhysics
                 }
             if (colliderCapped)
                 result.unsupported.Add($"{spring.name}: 콜라이더 32개 상한 초과 — 잘림");
+            return clothColliders.Count;
+        }
 
-            spring.enabled = false; // 삭제가 아닌 비활성 — 호출부가 disabledSprings로 복원 책임
-            result.cloths.Add(cloth);
-            result.disabledSprings.Add(spring);
-            // 미지원·근사 필드 기록 — Phase 4 검증 때 판정 재료로 쓴다
+        // 미지원·근사 필드 기록 — Phase 4 검증 때 판정 재료로 쓴다
+        static void ReportUnsupportedFields(VRMSpringBone spring, float unit,
+            HashSet<Transform> leafRoots, Result result)
+        {
             if (leafRoots.Count > 0)
                 result.unsupported.Add(
                     $"{spring.name}: 리프 루트본 {leafRoots.Count}개 미변환 (MC2 고정 앵커)");
@@ -179,9 +221,6 @@ namespace Fbx2Vmd.ClothPhysics
             if (Mathf.Abs(unit - 1f) > 0.01f)
                 result.unsupported.Add(
                     $"{spring.name}: hitRadius unit 스케일 미적용 — Phase 4 캘리브레이션 필요");
-            report?.Add($"VRM→MC2 변환: {go.name} (체인 루트 {roots.Count}개, " +
-                $"콜라이더 {clothColliders.Count}개)");
-            return cloth;
         }
 
         /// <summary>그룹의 SphereCollider[]를 MC2 SphereCollider로 복사한다 (그룹당 1회).</summary>

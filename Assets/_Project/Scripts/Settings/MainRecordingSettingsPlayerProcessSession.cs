@@ -19,18 +19,32 @@ namespace Fbx2Vmd.Settings
             }
 
             MainRecordingSettingsLaunchPlan plan = createPlan();
+            string validationError = ValidatePlan(plan);
+            if (validationError != null)
+            {
+                return MainRecordingSettingsActionResult.Failure(validationError);
+            }
+
+            return TryStartProcess(plan);
+        }
+
+        private static string ValidatePlan(MainRecordingSettingsLaunchPlan plan)
+        {
             if (!Directory.Exists(plan.WorkingDirectory))
             {
-                return MainRecordingSettingsActionResult.Failure(
-                    $"Web 설정창 폴더를 찾을 수 없습니다: {plan.WorkingDirectory}");
+                return $"Web 설정창 폴더를 찾을 수 없습니다: {plan.WorkingDirectory}";
             }
 
             if (!File.Exists(plan.ExecutablePath))
             {
-                return MainRecordingSettingsActionResult.Failure(
-                    $"Web 설정창 실행 파일을 찾을 수 없습니다: {plan.ExecutablePath}");
+                return $"Web 설정창 실행 파일을 찾을 수 없습니다: {plan.ExecutablePath}";
             }
 
+            return null;
+        }
+
+        private MainRecordingSettingsActionResult TryStartProcess(MainRecordingSettingsLaunchPlan plan)
+        {
             try
             {
                 startedProcess = LaunchProcess(plan);

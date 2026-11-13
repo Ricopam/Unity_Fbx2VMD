@@ -20,6 +20,20 @@ namespace Fbx2Vmd.FBXImporter
                 throw new ArgumentNullException(nameof(state));
             }
 
+            CaptureSessionAndIkGuardSummary(summary, state, targetFrameCount);
+            CaptureManualAnimatorPoseSummary(summary, state);
+            CaptureRotationAndSmoothingSummary(summary, state);
+            CaptureYybArmSwingSummary(summary, state);
+            CaptureYybArmDirectionSummary(summary, state);
+            CaptureYybSleeveAnchorAndTwistSummary(summary, state);
+            CaptureLegSegmentDirectionSummary(summary, state);
+            CaptureEndpointPositionSummary(summary, state);
+            CaptureBodyPositionSummary(summary, state);
+            CaptureRuntimeOverrideAndDiagnosticSummary(summary, state, vmdPlaybackProbeSourceVmdPath);
+        }
+
+        private static void CaptureSessionAndIkGuardSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state, int targetFrameCount)
+        {
             summary.session_id = state.summarySessionId;
             summary.fbx_file = state.fbxFileName;
             summary.duration_seconds = state.durationSeconds;
@@ -33,10 +47,20 @@ namespace Fbx2Vmd.FBXImporter
             summary.mmd_ik_delta_guard_recovery_debt_vmd = state.mmdIkDeltaGuardRecoveryDebtThresholdVmd;
             summary.mmd_ik_delta_guard_recovery_hold_frames = state.mmdIkDeltaGuardRecoveryHoldFrames;
             summary.final_ik_foot_grounding_enabled = state.enableFinalIkFootGroundingRuntimeOverride;
+        }
+
+        private static void CaptureManualAnimatorPoseSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.manual_animator_foot_local_rotation_enabled =
                 state.enableManualAnimatorFootLocalRotationRuntimeOverride;
             summary.manual_animator_foot_local_rotation_disabled =
                 state.disableManualAnimatorFootLocalRotationRuntimeOverride;
+            CaptureFullBodyPoseSummary(summary, state);
+            CaptureLegTwistOutputSummary(summary, state);
+        }
+
+        private static void CaptureFullBodyPoseSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.manual_animator_full_body_pose_enabled =
                 state.enableManualAnimatorFullBodyPoseRuntimeOverride;
             summary.manual_animator_full_body_pose_disabled =
@@ -58,12 +82,20 @@ namespace Fbx2Vmd.FBXImporter
                 state.manualAnimatorFullBodyPoseReferenceFrameGateStart;
             summary.manual_animator_full_body_pose_frame_gate_end =
                 state.manualAnimatorFullBodyPoseReferenceFrameGateEnd;
+        }
+
+        private static void CaptureLegTwistOutputSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.set_human_pose_right_leg_twist_output_enabled =
                 state.enableSetHumanPoseRightLegTwistOutputReferenceRuntimeOverride;
             summary.set_human_pose_right_leg_twist_output_weight =
                 state.setHumanPoseRightLegTwistOutputReferenceWeight;
             summary.set_human_pose_right_leg_twist_output_max_delta =
                 state.setHumanPoseRightLegTwistOutputReferenceMaxDelta;
+        }
+
+        private static void CaptureRotationAndSmoothingSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.manual_animator_body_rotation_enabled = state.enableManualAnimatorBodyRotationRuntimeOverride;
             summary.manual_animator_body_rotation_disabled = state.disableManualAnimatorBodyRotationRuntimeOverride;
             summary.manual_animator_body_rotation_weight = state.manualAnimatorBodyRotationReferenceWeight;
@@ -82,6 +114,10 @@ namespace Fbx2Vmd.FBXImporter
                 state.retargetPoseVisualSpikeForearmStretchClampMaxOffset;
             summary.retarget_arm_stretch_clamp_enabled = state.enableRetargetArmStretchClampRuntimeOverride;
             summary.retarget_arm_stretch_muscle_limit = state.retargetArmStretchMuscleLimit;
+        }
+
+        private static void CaptureYybArmSwingSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.yyb_arm_swing_limit_enabled = state.enableYybArmSwingLimitRuntimeOverride;
             summary.yyb_arm_swing_limit_weight = state.yybArmSwingLimitWeight;
             summary.yyb_arm_swing_max_down_dot = state.yybArmSwingMaxDownDot;
@@ -100,6 +136,10 @@ namespace Fbx2Vmd.FBXImporter
                 state.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio;
             summary.yyb_arm_swing_raised_pose_max_hand_horizontal_reach_ratio =
                 state.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio;
+        }
+
+        private static void CaptureYybArmDirectionSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.yyb_arm_direction_retarget_enabled = state.enableYybArmDirectionRetargetRuntimeOverride;
             summary.yyb_arm_direction_upper_arm_weight = state.yybArmDirectionUpperArmWeight;
             summary.yyb_arm_direction_forearm_weight = state.yybArmDirectionForearmWeight;
@@ -107,6 +147,10 @@ namespace Fbx2Vmd.FBXImporter
             summary.yyb_arm_direction_forearm_max_degrees = state.yybArmDirectionForearmMaxDegrees;
             summary.yyb_arm_direction_left_side_weight_scale = state.yybArmDirectionLeftSideWeightScale;
             summary.yyb_arm_direction_right_side_weight_scale = state.yybArmDirectionRightSideWeightScale;
+        }
+
+        private static void CaptureYybSleeveAnchorAndTwistSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.yyb_arm_sleeve_anchor_override = state.overrideYybArmSleeveAnchorRuntimeSettings;
             summary.yyb_arm_sleeve_anchor_enabled = state.enableYybArmSleeveAnchorRuntimeOverride;
             summary.yyb_arm_sleeve_anchor_influence = state.yybArmSleeveAnchorInfluence;
@@ -118,6 +162,10 @@ namespace Fbx2Vmd.FBXImporter
             summary.yyb_arm_visual_forearm_influence = state.yybArmVisualForearmInfluence;
             summary.yyb_arm_visual_upper_arm_max_degrees = state.yybArmVisualUpperArmMaxDegrees;
             summary.yyb_arm_visual_forearm_max_degrees = state.yybArmVisualForearmMaxDegrees;
+        }
+
+        private static void CaptureLegSegmentDirectionSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.manual_animator_lower_body_segment_direction_enabled =
                 state.enableManualAnimatorLowerBodySegmentDirectionRuntimeOverride;
             summary.manual_animator_lower_body_segment_direction_disabled =
@@ -138,6 +186,11 @@ namespace Fbx2Vmd.FBXImporter
                 state.manualAnimatorLeftLowerLegToFootSegmentDirectionReferenceMaxAngle;
             summary.manual_animator_right_lower_leg_to_foot_segment_direction_max_angle =
                 state.manualAnimatorRightLowerLegToFootSegmentDirectionReferenceMaxAngle;
+            CaptureRightLowerLegDetailAndFootYawSummary(summary, state);
+        }
+
+        private static void CaptureRightLowerLegDetailAndFootYawSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.manual_animator_right_lower_leg_to_foot_segment_direction_axis_xz_scale =
                 state.manualAnimatorRightLowerLegToFootSegmentDirectionReferenceAxisXzScale;
             summary.manual_animator_right_lower_leg_to_foot_segment_direction_blend_weight =
@@ -160,6 +213,10 @@ namespace Fbx2Vmd.FBXImporter
                 state.manualAnimatorFootHipsAlignedResidualYawReferenceWeight;
             summary.manual_animator_foot_hips_aligned_residual_yaw_max_angle =
                 state.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle;
+        }
+
+        private static void CaptureEndpointPositionSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.post_set_human_pose_right_endpoint_position_enabled =
                 state.enablePostSetHumanPoseRightEndpointPositionRuntimeOverride;
             summary.post_set_human_pose_right_endpoint_position_weight =
@@ -176,6 +233,11 @@ namespace Fbx2Vmd.FBXImporter
                 state.postSetHumanPoseRightEndpointPositionReferenceFrameGateEnd;
             summary.post_set_human_pose_endpoint_position_use_left_side =
                 state.ShouldUseLeftSideForPostSetHumanPoseEndpointPosition;
+            CapturePreEndpointAndFlagSummary(summary, state);
+        }
+
+        private static void CapturePreEndpointAndFlagSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.pre_set_human_pose_right_endpoint_position_enabled =
                 state.enablePreSetHumanPoseRightEndpointPositionRuntimeOverride;
             summary.pre_set_human_pose_right_endpoint_position_weight =
@@ -198,6 +260,10 @@ namespace Fbx2Vmd.FBXImporter
                 state.ShouldInvertPreSetHumanPoseEndpointPositionBodyX;
             summary.pre_set_human_pose_endpoint_position_invert_body_position_z =
                 state.ShouldInvertPreSetHumanPoseEndpointPositionBodyZ;
+        }
+
+        private static void CaptureBodyPositionSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state)
+        {
             summary.post_set_human_pose_right_foot_evaluator_xz_reference_enabled =
                 state.usePostSetHumanPoseRightFootEvaluatorXzReference;
             summary.post_set_human_pose_right_foot_evaluator_xz_reference_target_magnitude =
@@ -220,6 +286,10 @@ namespace Fbx2Vmd.FBXImporter
                 state.manualAnimatorBodyPositionXzReferenceFrameGateBlendFrames;
             summary.manual_animator_body_position_xz_axis_x_scale = state.manualAnimatorBodyPositionXzReferenceAxisXScale;
             summary.manual_animator_body_position_xz_axis_z_scale = state.manualAnimatorBodyPositionXzReferenceAxisZScale;
+        }
+
+        private static void CaptureRuntimeOverrideAndDiagnosticSummary(YybVisualComparisonSummaryData summary, YybVisualComparisonRunStateData state, string vmdPlaybackProbeSourceVmdPath)
+        {
             summary.retarget_body_position_xz_root_motion_enabled =
                 state.enableRetargetBodyPositionXzRootMotionRuntimeOverride;
             summary.target_humanoid_bone_position_lock_disabled =

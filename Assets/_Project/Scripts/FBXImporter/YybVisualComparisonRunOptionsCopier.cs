@@ -20,6 +20,15 @@ namespace Fbx2Vmd.FBXImporter
 
             VisualComparisonRunOptionsCopier.Copy(source, destination);
             destination.f13PairOnly = source.f13PairOnly;
+            CopyArmSwingSettings(source, destination);
+            CopyArmDirectionSettings(source, destination);
+            CopySleeveAndTwistSettings(source, destination);
+        }
+
+        private static void CopyArmSwingSettings(
+            YybVisualComparisonRunOptions source,
+            YybVisualComparisonRunOptions destination)
+        {
             destination.enableYybArmSwingLimitRuntimeOverride = source.enableYybArmSwingLimitRuntimeOverride;
             destination.yybArmSwingLimitWeight = source.yybArmSwingLimitWeight;
             destination.yybArmSwingMaxDownDot = source.yybArmSwingMaxDownDot;
@@ -33,6 +42,12 @@ namespace Fbx2Vmd.FBXImporter
             destination.yybArmSwingRaisedPoseMinUpperArmDownDot = source.yybArmSwingRaisedPoseMinUpperArmDownDot;
             destination.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio = source.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio;
             destination.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio = source.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio;
+        }
+
+        private static void CopyArmDirectionSettings(
+            YybVisualComparisonRunOptions source,
+            YybVisualComparisonRunOptions destination)
+        {
             destination.enableYybArmDirectionRetargetRuntimeOverride = source.enableYybArmDirectionRetargetRuntimeOverride;
             destination.yybArmDirectionUpperArmWeight = source.yybArmDirectionUpperArmWeight;
             destination.yybArmDirectionForearmWeight = source.yybArmDirectionForearmWeight;
@@ -40,6 +55,12 @@ namespace Fbx2Vmd.FBXImporter
             destination.yybArmDirectionForearmMaxDegrees = source.yybArmDirectionForearmMaxDegrees;
             destination.yybArmDirectionLeftSideWeightScale = source.yybArmDirectionLeftSideWeightScale;
             destination.yybArmDirectionRightSideWeightScale = source.yybArmDirectionRightSideWeightScale;
+        }
+
+        private static void CopySleeveAndTwistSettings(
+            YybVisualComparisonRunOptions source,
+            YybVisualComparisonRunOptions destination)
+        {
             destination.overrideYybArmSleeveAnchorRuntimeSettings = source.overrideYybArmSleeveAnchorRuntimeSettings;
             destination.enableYybArmSleeveAnchorRuntimeOverride = source.enableYybArmSleeveAnchorRuntimeOverride;
             destination.yybArmSleeveAnchorInfluence = source.yybArmSleeveAnchorInfluence;

@@ -18,6 +18,17 @@ namespace Fbx2Vmd.FBXImporter
                 throw new ArgumentNullException(nameof(destination));
             }
 
+            CopyClipAndIkGuardOptions(source, destination);
+            CopyManualAnimatorPoseOptions(source, destination);
+            CopySmoothingAndStretchOptions(source, destination);
+            CopyRuntimeOverrideFlags(source, destination);
+            CopyLegSegmentOptions(source, destination);
+            CopyEndpointPositionOptions(source, destination);
+            CopyBodyPositionAndDiagnosticOptions(source, destination);
+        }
+
+        private static void CopyClipAndIkGuardOptions(VisualComparisonRunOptions source, VisualComparisonRunOptions destination)
+        {
             destination.fbxFileName = source.fbxFileName;
             destination.durationSeconds = source.durationSeconds;
             destination.targetFrameCount = source.targetFrameCount;
@@ -28,6 +39,10 @@ namespace Fbx2Vmd.FBXImporter
             destination.mmdIkDeltaGuardRecoveryDebtThresholdVmd = source.mmdIkDeltaGuardRecoveryDebtThresholdVmd;
             destination.mmdIkDeltaGuardRecoveryHoldFrames = source.mmdIkDeltaGuardRecoveryHoldFrames;
             destination.enableFinalIkFootGroundingRuntimeOverride = source.enableFinalIkFootGroundingRuntimeOverride;
+        }
+
+        private static void CopyManualAnimatorPoseOptions(VisualComparisonRunOptions source, VisualComparisonRunOptions destination)
+        {
             destination.enableManualAnimatorFootLocalRotationRuntimeOverride = source.enableManualAnimatorFootLocalRotationRuntimeOverride;
             destination.disableManualAnimatorFootLocalRotationRuntimeOverride = source.disableManualAnimatorFootLocalRotationRuntimeOverride;
             destination.enableManualAnimatorFullBodyPoseRuntimeOverride = source.enableManualAnimatorFullBodyPoseRuntimeOverride;
@@ -51,12 +66,20 @@ namespace Fbx2Vmd.FBXImporter
             destination.enableManualAnimatorThumbLocalRotationRuntimeOverride = source.enableManualAnimatorThumbLocalRotationRuntimeOverride;
             destination.enableManualAnimatorHandPalmFrameRuntimeOverride = source.enableManualAnimatorHandPalmFrameRuntimeOverride;
             destination.manualAnimatorHandPalmFrameWeight = source.manualAnimatorHandPalmFrameWeight;
+        }
+
+        private static void CopySmoothingAndStretchOptions(VisualComparisonRunOptions source, VisualComparisonRunOptions destination)
+        {
             destination.overrideRetargetPoseVisualSpikeSmoothingRuntimeSettings = source.overrideRetargetPoseVisualSpikeSmoothingRuntimeSettings;
             destination.enableRetargetPoseVisualSpikeSmoothingRuntimeOverride = source.enableRetargetPoseVisualSpikeSmoothingRuntimeOverride;
             destination.retargetPoseVisualSpikeCurrentWeight = source.retargetPoseVisualSpikeCurrentWeight;
             destination.retargetPoseVisualSpikeForearmStretchClampMaxOffset = source.retargetPoseVisualSpikeForearmStretchClampMaxOffset;
             destination.enableRetargetArmStretchClampRuntimeOverride = source.enableRetargetArmStretchClampRuntimeOverride;
             destination.retargetArmStretchMuscleLimit = source.retargetArmStretchMuscleLimit;
+        }
+
+        private static void CopyRuntimeOverrideFlags(VisualComparisonRunOptions source, VisualComparisonRunOptions destination)
+        {
             destination.enableManualAnimatorLowerBodySegmentDirectionRuntimeOverride = source.enableManualAnimatorLowerBodySegmentDirectionRuntimeOverride;
             destination.enableManualAnimatorFootHipsAlignedResidualYawRuntimeOverride = source.enableManualAnimatorFootHipsAlignedResidualYawRuntimeOverride;
             destination.disableManualAnimatorLowerBodySegmentDirectionRuntimeOverride = source.disableManualAnimatorLowerBodySegmentDirectionRuntimeOverride;
@@ -71,6 +94,10 @@ namespace Fbx2Vmd.FBXImporter
             destination.enableManualAnimatorBodyPositionXzRuntimeOverride = source.enableManualAnimatorBodyPositionXzRuntimeOverride;
             destination.enableRetargetBodyPositionXzRootMotionRuntimeOverride = source.enableRetargetBodyPositionXzRootMotionRuntimeOverride;
             destination.disableTargetHumanoidBonePositionLockRuntimeOverride = source.disableTargetHumanoidBonePositionLockRuntimeOverride;
+        }
+
+        private static void CopyLegSegmentOptions(VisualComparisonRunOptions source, VisualComparisonRunOptions destination)
+        {
             destination.manualAnimatorLowerBodySegmentDirectionReferenceWeight = source.manualAnimatorLowerBodySegmentDirectionReferenceWeight;
             destination.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle = source.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle;
             destination.manualAnimatorUpperLegToLowerLegSegmentDirectionReferenceMaxAngle = source.manualAnimatorUpperLegToLowerLegSegmentDirectionReferenceMaxAngle;
@@ -85,6 +112,10 @@ namespace Fbx2Vmd.FBXImporter
             destination.manualAnimatorFootToToesSegmentDirectionReferenceMaxAngle = source.manualAnimatorFootToToesSegmentDirectionReferenceMaxAngle;
             destination.manualAnimatorFootHipsAlignedResidualYawReferenceWeight = source.manualAnimatorFootHipsAlignedResidualYawReferenceWeight;
             destination.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle = source.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle;
+        }
+
+        private static void CopyEndpointPositionOptions(VisualComparisonRunOptions source, VisualComparisonRunOptions destination)
+        {
             destination.postSetHumanPoseRightEndpointPositionReferenceWeight = source.postSetHumanPoseRightEndpointPositionReferenceWeight;
             destination.postSetHumanPoseRightEndpointPositionReferenceMaxOffset = source.postSetHumanPoseRightEndpointPositionReferenceMaxOffset;
             destination.postSetHumanPoseRightEndpointPositionReferencePositiveZScale = source.postSetHumanPoseRightEndpointPositionReferencePositiveZScale;
@@ -104,6 +135,10 @@ namespace Fbx2Vmd.FBXImporter
             destination.ShouldInvertPreSetHumanPoseEndpointPositionBodyZ = source.ShouldInvertPreSetHumanPoseEndpointPositionBodyZ;
             destination.usePostSetHumanPoseRightFootEvaluatorXzReference = source.usePostSetHumanPoseRightFootEvaluatorXzReference;
             destination.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude = source.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude;
+        }
+
+        private static void CopyBodyPositionAndDiagnosticOptions(VisualComparisonRunOptions source, VisualComparisonRunOptions destination)
+        {
             destination.manualAnimatorBipedIkFootPositionReferenceWeight = source.manualAnimatorBipedIkFootPositionReferenceWeight;
             destination.manualAnimatorBipedIkFootPositionReferenceMaxOffset = source.manualAnimatorBipedIkFootPositionReferenceMaxOffset;
             destination.manualAnimatorHipsLocalPositionReferenceWeight = source.manualAnimatorHipsLocalPositionReferenceWeight;

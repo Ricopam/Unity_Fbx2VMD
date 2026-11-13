@@ -17,37 +17,48 @@ namespace Fbx2Vmd.FBXImporter
             List<string> failures = new List<string>();
             foreach (MotionComparisonFrameQualitySummary summary in summaries)
             {
-                if (summary == null ||
-                    !string.Equals(summary.status, "fail", StringComparison.OrdinalIgnoreCase))
+                string message = TryFormatFailure(summary, acceptedArtifactPreservesRawDiagnostic);
+                if (message != null)
                 {
-                    continue;
+                    failures.Add(message);
                 }
-
-                if (acceptedArtifactPreservesRawDiagnostic && IsRawCandidateRole(summary))
-                {
-                    continue;
-                }
-
-                string candidate = string.IsNullOrWhiteSpace(summary.candidate_label)
-                    ? "unknown candidate"
-                    : summary.candidate_label;
-                string role = string.IsNullOrWhiteSpace(summary.frame_quality_evaluation_role)
-                    ? "unknown_role"
-                    : summary.frame_quality_evaluation_role;
-                string reason = string.IsNullOrWhiteSpace(summary.status_reason)
-                    ? "status=fail"
-                    : summary.status_reason;
-
-                failures.Add(
-                    "frame-quality gate failed: " +
-                    $"candidate={candidate}; " +
-                    $"role={role}; " +
-                    $"reason={reason}; " +
-                    $"metrics={summary.candidate_metrics_csv ?? string.Empty}; " +
-                    $"vmd={summary.candidate_vmd_path ?? string.Empty}");
             }
 
             return failures.ToArray();
+        }
+
+        private static string TryFormatFailure(
+            MotionComparisonFrameQualitySummary summary,
+            bool acceptedArtifactPreservesRawDiagnostic)
+        {
+            if (summary == null ||
+                !string.Equals(summary.status, "fail", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (acceptedArtifactPreservesRawDiagnostic && IsRawCandidateRole(summary))
+            {
+                return null;
+            }
+
+            string candidate = string.IsNullOrWhiteSpace(summary.candidate_label)
+                ? "unknown candidate"
+                : summary.candidate_label;
+            string role = string.IsNullOrWhiteSpace(summary.frame_quality_evaluation_role)
+                ? "unknown_role"
+                : summary.frame_quality_evaluation_role;
+            string reason = string.IsNullOrWhiteSpace(summary.status_reason)
+                ? "status=fail"
+                : summary.status_reason;
+
+            return
+                "frame-quality gate failed: " +
+                $"candidate={candidate}; " +
+                $"role={role}; " +
+                $"reason={reason}; " +
+                $"metrics={summary.candidate_metrics_csv ?? string.Empty}; " +
+                $"vmd={summary.candidate_vmd_path ?? string.Empty}";
         }
 
         internal static bool IsRawCandidateRole(MotionComparisonFrameQualitySummary summary)

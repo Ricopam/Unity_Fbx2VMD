@@ -47,7 +47,12 @@ namespace Fbx2Vmd.Settings
             }
 
             updateDocument?.Invoke(current);
+            return TryCommitImportCommand(store, current);
+        }
 
+        private static bool TryCommitImportCommand(
+            MainRecordingSettingsStore store, MainRecordingSettingsDocument current)
+        {
             string fbxPath = string.IsNullOrWhiteSpace(current.fbxPath)
                 ? string.Empty
                 : current.fbxPath.Trim();

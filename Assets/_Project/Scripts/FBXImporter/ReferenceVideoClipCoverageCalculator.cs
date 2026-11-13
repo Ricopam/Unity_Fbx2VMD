@@ -24,19 +24,28 @@ namespace Fbx2Vmd.FBXImporter
                 return data;
             }
 
-            float endSeconds = data.EndSeconds;
-            float firstSeconds = float.PositiveInfinity;
-            float lastSeconds = float.NegativeInfinity;
-            float sumBBoxHeight = 0f;
-            float sumBBoxWidth = 0f;
-            float sumBrightArea = 0f;
-            float maxBottomGap = float.NegativeInfinity;
-            float minCenterX = float.PositiveInfinity;
-            float maxCenterX = float.NegativeInfinity;
-            List<float> sampleSeconds = new List<float>();
-            List<ReferenceMp4FrameMetricRow> selectedRows =
-                new List<ReferenceMp4FrameMetricRow>();
+            SampleAccumulator accumulator = new SampleAccumulator();
+            CollectSamples(rows, safeStartSeconds, safeDurationSeconds, data.EndSeconds, accumulator);
 
+            data.Rows = accumulator.SelectedRows.ToArray();
+            data.SampleSeconds = accumulator.SampleSeconds.ToArray();
+            data.SampleCount = data.Rows.Length;
+            if (data.SampleCount <= 0)
+            {
+                return data;
+            }
+
+            accumulator.ApplyAggregates(data, safeDurationSeconds);
+            return data;
+        }
+
+        private static void CollectSamples(
+            ReferenceMp4FrameMetricRow[] rows,
+            float safeStartSeconds,
+            float safeDurationSeconds,
+            float endSeconds,
+            SampleAccumulator accumulator)
+        {
             foreach (ReferenceMp4FrameMetricRow row in rows)
             {
                 if (row == null ||
@@ -50,10 +59,30 @@ namespace Fbx2Vmd.FBXImporter
                 float localSeconds = Math.Min(
                     safeDurationSeconds,
                     Math.Max(0f, row.seconds - safeStartSeconds));
-                selectedRows.Add(row);
-                sampleSeconds.Add(localSeconds);
-                firstSeconds = Math.Min(firstSeconds, localSeconds);
-                lastSeconds = Math.Max(lastSeconds, localSeconds);
+                accumulator.Add(row, localSeconds);
+            }
+        }
+
+        private sealed class SampleAccumulator
+        {
+            internal float FirstSeconds = float.PositiveInfinity;
+            internal float LastSeconds = float.NegativeInfinity;
+            private float sumBBoxHeight;
+            private float sumBBoxWidth;
+            private float sumBrightArea;
+            private float maxBottomGap = float.NegativeInfinity;
+            private float minCenterX = float.PositiveInfinity;
+            private float maxCenterX = float.NegativeInfinity;
+            internal readonly List<float> SampleSeconds = new List<float>();
+            internal readonly List<ReferenceMp4FrameMetricRow> SelectedRows =
+                new List<ReferenceMp4FrameMetricRow>();
+
+            internal void Add(ReferenceMp4FrameMetricRow row, float localSeconds)
+            {
+                SelectedRows.Add(row);
+                SampleSeconds.Add(localSeconds);
+                FirstSeconds = Math.Min(FirstSeconds, localSeconds);
+                LastSeconds = Math.Max(LastSeconds, localSeconds);
                 sumBBoxHeight += row.bboxHeightRatio;
                 sumBBoxWidth += row.bboxWidthRatio;
                 sumBrightArea += row.brightAreaRatio;
@@ -62,24 +91,18 @@ namespace Fbx2Vmd.FBXImporter
                 maxCenterX = Math.Max(maxCenterX, row.centerXRatio);
             }
 
-            data.Rows = selectedRows.ToArray();
-            data.SampleSeconds = sampleSeconds.ToArray();
-            data.SampleCount = data.Rows.Length;
-            if (data.SampleCount <= 0)
+            internal void ApplyAggregates(ReferenceVideoClipCoverageData data, float safeDurationSeconds)
             {
-                return data;
+                data.FirstSampleSeconds = FirstSeconds;
+                data.LastSampleSeconds = LastSeconds;
+                data.SampleCoverageRatio = Clamp01(LastSeconds / safeDurationSeconds);
+                data.SampleGapSeconds = Math.Max(0f, safeDurationSeconds - LastSeconds);
+                data.AverageBBoxHeightRatio = sumBBoxHeight / data.SampleCount;
+                data.AverageBBoxWidthRatio = sumBBoxWidth / data.SampleCount;
+                data.CenterXRangeRatio = maxCenterX - minCenterX;
+                data.MaxBottomGapRatio = maxBottomGap;
+                data.AverageBrightAreaRatio = sumBrightArea / data.SampleCount;
             }
-
-            data.FirstSampleSeconds = firstSeconds;
-            data.LastSampleSeconds = lastSeconds;
-            data.SampleCoverageRatio = Clamp01(lastSeconds / safeDurationSeconds);
-            data.SampleGapSeconds = Math.Max(0f, safeDurationSeconds - lastSeconds);
-            data.AverageBBoxHeightRatio = sumBBoxHeight / data.SampleCount;
-            data.AverageBBoxWidthRatio = sumBBoxWidth / data.SampleCount;
-            data.CenterXRangeRatio = maxCenterX - minCenterX;
-            data.MaxBottomGapRatio = maxBottomGap;
-            data.AverageBrightAreaRatio = sumBrightArea / data.SampleCount;
-            return data;
         }
 
         private static float Clamp01(float value)

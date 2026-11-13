@@ -61,6 +61,13 @@ namespace Fbx2Vmd.Settings
                 MainRecordingSettingsLayoutSpec.ActiveColor, FontStyles.Bold,
                 TextAlignmentOptions.MidlineLeft, new Rect(101f, 46f, 178f, 22f));
 
+            BuildSidebarItems(parent, elementBuilder);
+        }
+
+        private static void BuildSidebarItems(
+            Transform parent,
+            MainRecordingSettingsElementBuilder elementBuilder)
+        {
             MainRecordingSettingsSidebarItemSpec[] sidebarItems = MainRecordingSettingsLayoutSpec.SidebarItems;
 
             elementBuilder.CreateText("SidebarGroupCamera", parent, "시네마토그래피", 11, new Color32(52, 64, 76, 255),

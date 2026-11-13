@@ -132,14 +132,25 @@ namespace Fbx2Vmd.Settings
                 }
             }
 
+            if (!HasValidRootStructure(contentRoot, out Transform mainContent))
+            {
+                return false;
+            }
+
+            return HasValidCardChildren(mainContent, cards);
+        }
+
+        private static bool HasValidRootStructure(RectTransform contentRoot, out Transform mainContent)
+        {
+            mainContent = null;
             Transform mainViewport = contentRoot.Find("MainViewport");
-            Transform mainContent = mainViewport != null ? mainViewport.Find("MainContent") : null;
+            Transform candidateContent = mainViewport != null ? mainViewport.Find("MainContent") : null;
             Transform closeButtonTransform = contentRoot.Find("CloseButton");
             if (!HasRequiredRootComponents(contentRoot) ||
                 mainViewport == null ||
                 mainViewport.GetComponent<RectMask2D>() == null ||
                 mainViewport.childCount != 1 ||
-                mainContent == null ||
+                candidateContent == null ||
                 closeButtonTransform == null ||
                 closeButtonTransform.GetComponent<Button>() == null ||
                 closeButtonTransform.GetComponent<Image>() == null ||
@@ -149,6 +160,12 @@ namespace Fbx2Vmd.Settings
                 return false;
             }
 
+            mainContent = candidateContent;
+            return true;
+        }
+
+        private static bool HasValidCardChildren(Transform mainContent, MainRecordingSettingsCardSpec[] cards)
+        {
             if (mainContent.childCount != cards.Length * 4)
             {
                 return false;

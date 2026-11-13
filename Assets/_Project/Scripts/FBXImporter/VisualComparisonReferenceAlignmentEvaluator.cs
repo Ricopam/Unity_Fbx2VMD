@@ -19,16 +19,31 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            return HasCleanInputs(diagnostics) &&
+                HasSufficientMatchedSamples(diagnostics) &&
+                HasAlignedFramingMetrics(diagnostics);
+        }
+
+        private static bool HasCleanInputs(VisualComparisonFrameRoleDiagnosticsData diagnostics)
+        {
             return string.IsNullOrWhiteSpace(diagnostics.candidate_screenshot_frame_metrics_error) &&
                 string.IsNullOrWhiteSpace(diagnostics.reference_mp4_analysis_error) &&
-                string.IsNullOrWhiteSpace(diagnostics.reference_mp4_frame_metrics_error) &&
-                diagnostics.reference_mp4_current_clip_sample_count >= MinMatchedSampleCount &&
+                string.IsNullOrWhiteSpace(diagnostics.reference_mp4_frame_metrics_error);
+        }
+
+        private static bool HasSufficientMatchedSamples(VisualComparisonFrameRoleDiagnosticsData diagnostics)
+        {
+            return diagnostics.reference_mp4_current_clip_sample_count >= MinMatchedSampleCount &&
                 diagnostics.candidate_vs_reference_time_matched_sample_count >= MinMatchedSampleCount &&
                 diagnostics.candidate_screenshot_nonblank_frame_count >=
                     diagnostics.candidate_vs_reference_time_matched_sample_count &&
                 IsFinite(diagnostics.candidate_vs_reference_time_matched_max_seconds_gap) &&
-                diagnostics.candidate_vs_reference_time_matched_max_seconds_gap <= MaxSecondsGap &&
-                IsFinite(diagnostics.candidate_vs_reference_time_matched_max_bbox_height_ratio_abs_delta) &&
+                diagnostics.candidate_vs_reference_time_matched_max_seconds_gap <= MaxSecondsGap;
+        }
+
+        private static bool HasAlignedFramingMetrics(VisualComparisonFrameRoleDiagnosticsData diagnostics)
+        {
+            return IsFinite(diagnostics.candidate_vs_reference_time_matched_max_bbox_height_ratio_abs_delta) &&
                 diagnostics.candidate_vs_reference_time_matched_max_bbox_height_ratio_abs_delta <=
                     MaxBoundingBoxHeightRatioDelta &&
                 IsFinite(diagnostics.candidate_vs_reference_time_matched_max_bottom_gap_ratio_abs_delta) &&

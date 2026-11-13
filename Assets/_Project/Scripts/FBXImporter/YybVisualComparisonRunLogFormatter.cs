@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace Fbx2Vmd.FBXImporter
@@ -29,6 +30,14 @@ namespace Fbx2Vmd.FBXImporter
             YybVisualComparisonRunOptions options,
             string segment)
         {
+            var fields = new List<string>();
+            fields.AddRange(BuildIkAndManualPoseFields(options));
+            fields.AddRange(BuildRetargetAndDiagnosticFields(options, segment));
+            return fields.ToArray();
+        }
+
+        private static string[] BuildIkAndManualPoseFields(YybVisualComparisonRunOptions options)
+        {
             return new[]
             {
                 $"fingerCloseups={options.enableFingerCloseups}",
@@ -49,7 +58,16 @@ namespace Fbx2Vmd.FBXImporter
                 $"yybArmDirection={options.enableYybArmDirectionRetargetRuntimeOverride}/{options.yybArmDirectionUpperArmWeight:F2}/{options.yybArmDirectionForearmWeight:F2}",
                 $"yybArmSleeveAnchor={options.overrideYybArmSleeveAnchorRuntimeSettings}/{options.enableYybArmSleeveAnchorRuntimeOverride}/{options.yybArmSleeveAnchorInfluence:F2}/{options.yybArmShoulderCapAnchorInfluence:F2}/{options.yybArmSleeveAnchorMaxDegrees:F1}",
                 $"yybArmVisualTwist={options.overrideYybArmVisualTwistRuntimeSettings}/{options.enableYybArmVisualTwistRuntimeOverride}/{options.yybArmVisualUpperArmInfluence:F2}/{options.yybArmVisualForearmInfluence:F2}/{options.yybArmVisualUpperArmMaxDegrees:F1}/{options.yybArmVisualForearmMaxDegrees:F1}",
-                $"manualHipsLocalPosition={options.enableManualAnimatorHipsLocalPositionRuntimeOverride}/{options.manualAnimatorHipsLocalPositionReferenceWeight:F2}/{options.manualAnimatorHipsLocalPositionReferenceMaxOffset:F3}",
+                $"manualHipsLocalPosition={options.enableManualAnimatorHipsLocalPositionRuntimeOverride}/{options.manualAnimatorHipsLocalPositionReferenceWeight:F2}/{options.manualAnimatorHipsLocalPositionReferenceMaxOffset:F3}"
+            };
+        }
+
+        private static string[] BuildRetargetAndDiagnosticFields(
+            YybVisualComparisonRunOptions options,
+            string segment)
+        {
+            return new[]
+            {
                 $"retargetBodyPositionXzRootMotion={options.enableRetargetBodyPositionXzRootMotionRuntimeOverride}",
                 $"targetBoneLockDisabled={options.disableTargetHumanoidBonePositionLockRuntimeOverride}",
                 $"vmdPlaybackProbe={options.enableVmdPlaybackProbeRuntimeOverride}",

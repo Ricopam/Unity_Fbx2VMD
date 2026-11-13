@@ -10,6 +10,14 @@ namespace Fbx2Vmd.Settings
                 return new MainRecordingSettingsDocument();
             }
 
+            NormalizeDocumentRoot(document);
+            NormalizePendingCommand(document);
+            NormalizeLastCommandResult(document);
+            return document;
+        }
+
+        private static void NormalizeDocumentRoot(MainRecordingSettingsDocument document)
+        {
             if (document.schemaVersion <= 0)
             {
                 document.schemaVersion = 1;
@@ -25,20 +33,9 @@ namespace Fbx2Vmd.Settings
                 document.captureHeight = 1080;
             }
 
-            if (document.updatedAtUtc == null)
-            {
-                document.updatedAtUtc = string.Empty;
-            }
-
-            if (document.fbxPath == null)
-            {
-                document.fbxPath = string.Empty;
-            }
-
-            if (document.characterModelPath == null)
-            {
-                document.characterModelPath = string.Empty;
-            }
+            EnsureNonEmpty(ref document.updatedAtUtc);
+            EnsureNonEmpty(ref document.fbxPath);
+            EnsureNonEmpty(ref document.characterModelPath);
 
             if (document.runtimeState == null)
             {
@@ -46,83 +43,47 @@ namespace Fbx2Vmd.Settings
             }
 
             document.runtimeState.Normalize();
+        }
 
+        private static void NormalizePendingCommand(MainRecordingSettingsDocument document)
+        {
             if (document.pendingCommand == null)
             {
                 document.pendingCommand = new MainRecordingSettingsCommandEnvelope();
             }
 
-            if (document.pendingCommand.commandId == null)
-            {
-                document.pendingCommand.commandId = string.Empty;
-            }
+            MainRecordingSettingsCommandEnvelope command = document.pendingCommand;
+            EnsureNonEmpty(ref command.commandId);
+            EnsureNonEmpty(ref command.action);
+            EnsureNonEmpty(ref command.fbxPath);
+            EnsureNonEmpty(ref command.characterId);
+            EnsureNonEmpty(ref command.presetId);
+            EnsureNonEmpty(ref command.path);
+            EnsureNonEmpty(ref command.paramsJson);
+            EnsureNonEmpty(ref command.requestedAtUtc);
+        }
 
-            if (document.pendingCommand.action == null)
-            {
-                document.pendingCommand.action = string.Empty;
-            }
-
-            if (document.pendingCommand.fbxPath == null)
-            {
-                document.pendingCommand.fbxPath = string.Empty;
-            }
-
-            if (document.pendingCommand.characterId == null)
-            {
-                document.pendingCommand.characterId = string.Empty;
-            }
-
-            if (document.pendingCommand.presetId == null)
-            {
-                document.pendingCommand.presetId = string.Empty;
-            }
-
-            if (document.pendingCommand.path == null)
-            {
-                document.pendingCommand.path = string.Empty;
-            }
-
-            if (document.pendingCommand.paramsJson == null)
-            {
-                document.pendingCommand.paramsJson = string.Empty;
-            }
-
-            if (document.pendingCommand.requestedAtUtc == null)
-            {
-                document.pendingCommand.requestedAtUtc = string.Empty;
-            }
-
+        private static void NormalizeLastCommandResult(MainRecordingSettingsDocument document)
+        {
             if (document.lastCommandResult == null)
             {
                 document.lastCommandResult = new MainRecordingSettingsCommandResult();
             }
 
-            if (document.lastCommandResult.commandId == null)
-            {
-                document.lastCommandResult.commandId = string.Empty;
-            }
+            MainRecordingSettingsCommandResult lastResult = document.lastCommandResult;
+            EnsureNonEmpty(ref lastResult.commandId);
+            EnsureNonEmpty(ref lastResult.action);
+            EnsureNonEmpty(ref lastResult.state);
+            EnsureNonEmpty(ref lastResult.message);
+            EnsureNonEmpty(ref lastResult.finishedAtUtc);
+        }
 
-            if (document.lastCommandResult.action == null)
+        private static void EnsureNonEmpty(ref string value)
+        {
+            if (value == null)
             {
-                document.lastCommandResult.action = string.Empty;
+                value = string.Empty;
             }
-
-            if (document.lastCommandResult.state == null)
-            {
-                document.lastCommandResult.state = string.Empty;
-            }
-
-            if (document.lastCommandResult.message == null)
-            {
-                document.lastCommandResult.message = string.Empty;
-            }
-
-            if (document.lastCommandResult.finishedAtUtc == null)
-            {
-                document.lastCommandResult.finishedAtUtc = string.Empty;
-            }
-
-            return document;
         }
     }
 }

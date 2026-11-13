@@ -85,6 +85,12 @@ namespace Fbx2Vmd.CharacterLibrary
                 entry.status = CharacterLibraryEntryStatus.Ready;
             }
 
+            NormalizeEntryMeta(entry);
+            NormalizeEntryCompatibility(entry);
+        }
+
+        private static void NormalizeEntryMeta(CharacterLibraryEntry entry)
+        {
             if (entry.meta == null)
             {
                 entry.meta = new CharacterLibraryEntryMeta();
@@ -99,7 +105,10 @@ namespace Fbx2Vmd.CharacterLibrary
             entry.meta.allowedUser = NormalizeString(entry.meta.allowedUser);
             entry.meta.commercialUsage = NormalizeString(entry.meta.commercialUsage);
             entry.meta.otherLicenseUrl = NormalizeString(entry.meta.otherLicenseUrl);
+        }
 
+        private static void NormalizeEntryCompatibility(CharacterLibraryEntry entry)
+        {
             if (entry.compatibility == null)
             {
                 entry.compatibility = new CharacterLibraryEntryCompatibility();

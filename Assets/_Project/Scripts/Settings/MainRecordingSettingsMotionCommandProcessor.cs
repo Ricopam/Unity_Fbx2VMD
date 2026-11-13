@@ -57,38 +57,48 @@ namespace Fbx2Vmd.Settings
             bool isRecording,
             Func<string, bool> tryExecute)
         {
-            string failure;
             if (!shouldExecute)
             {
-                failure = "초기 설정의 이전 모션 명령을 취소했습니다. 다시 요청해 주세요.";
-            }
-            else if (isRecording)
-            {
-                failure = "녹화 중에는 모션 재생 상태를 변경할 수 없습니다.";
-            }
-            else if (tryExecute == null)
-            {
-                failure = "모션 명령을 적용할 FBXVmdPipeline을 찾지 못했습니다.";
-            }
-            else
-            {
-                try
-                {
-                    if (tryExecute(command.action))
-                    {
-                        // 재생 요청은 보정 준비를 먼저 시작할 수 있으므로 재생 완료로 표시하지 않음.
-                        return MainRecordingSettingsCommandResult.Success(
-                            command.commandId, command.action, "모션 명령을 수락했습니다.");
-                    }
-                    failure = "현재 모션 상태에서 요청을 실행할 수 없습니다.";
-                }
-                catch (Exception exception)
-                {
-                    failure = $"모션 명령 처리에 실패했습니다: {exception.Message}";
-                }
+                return Fail(command, "초기 설정의 이전 모션 명령을 취소했습니다. 다시 요청해 주세요.");
             }
 
-            return MainRecordingSettingsCommandResult.Failure(command.commandId, command.action, failure);
+            if (isRecording)
+            {
+                return Fail(command, "녹화 중에는 모션 재생 상태를 변경할 수 없습니다.");
+            }
+
+            if (tryExecute == null)
+            {
+                return Fail(command, "모션 명령을 적용할 FBXVmdPipeline을 찾지 못했습니다.");
+            }
+
+            return TryExecuteMotion(command, tryExecute);
+        }
+
+        private static MainRecordingSettingsCommandResult TryExecuteMotion(
+            MainRecordingSettingsCommandEnvelope command,
+            Func<string, bool> tryExecute)
+        {
+            try
+            {
+                if (tryExecute(command.action))
+                {
+                    // 재생 요청은 보정 준비를 먼저 시작할 수 있으므로 재생 완료로 표시하지 않음.
+                    return MainRecordingSettingsCommandResult.Success(
+                        command.commandId, command.action, "모션 명령을 수락했습니다.");
+                }
+                return Fail(command, "현재 모션 상태에서 요청을 실행할 수 없습니다.");
+            }
+            catch (Exception exception)
+            {
+                return Fail(command, $"모션 명령 처리에 실패했습니다: {exception.Message}");
+            }
+        }
+
+        private static MainRecordingSettingsCommandResult Fail(
+            MainRecordingSettingsCommandEnvelope command, string message)
+        {
+            return MainRecordingSettingsCommandResult.Failure(command.commandId, command.action, message);
         }
     }
 }

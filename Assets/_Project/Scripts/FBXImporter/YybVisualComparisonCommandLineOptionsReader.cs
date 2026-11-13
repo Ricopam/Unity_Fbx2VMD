@@ -11,6 +11,19 @@ namespace Fbx2Vmd.FBXImporter
                 throw new ArgumentNullException(nameof(options));
             }
 
+            ApplySessionOptions(arguments, options);
+            ApplyManualAnimatorPoseOptions(arguments, options);
+            ApplySmoothingAndStretchOptions(arguments, options);
+            ApplyYybArmSwingOptions(arguments, options);
+            ApplyYybArmDirectionOptions(arguments, options);
+            ApplyYybSleeveAndTwistOptions(arguments, options);
+            ApplyLegSegmentOptions(arguments, options);
+            ApplyEndpointPositionOptions(arguments, options);
+            ApplyBodyPositionAndMiscOptions(arguments, options);
+        }
+
+        private static void ApplySessionOptions(string[] arguments, YybVisualComparisonRunOptions options)
+        {
             options.fbxFileName = CommandLineOptionReader.ReadValue(arguments, "-yybCompareFbx", options.fbxFileName);
             options.durationSeconds = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareDuration", options.durationSeconds);
             options.enableFingerCloseups = CommandLineOptionReader.ReadBool(arguments, "-yybCompareFingerCloseups", options.enableFingerCloseups);
@@ -20,6 +33,10 @@ namespace Fbx2Vmd.FBXImporter
             options.mmdIkDeltaGuardRecoveryDebtThresholdVmd = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareMmdIkDeltaGuardRecoveryDebtVmd", options.mmdIkDeltaGuardRecoveryDebtThresholdVmd);
             options.mmdIkDeltaGuardRecoveryHoldFrames = CommandLineOptionReader.ReadInt(arguments, "-yybCompareMmdIkDeltaGuardRecoveryHoldFrames", options.mmdIkDeltaGuardRecoveryHoldFrames);
             options.enableFinalIkFootGroundingRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareFinalIkFootGroundingEnabled", options.enableFinalIkFootGroundingRuntimeOverride);
+        }
+
+        private static void ApplyManualAnimatorPoseOptions(string[] arguments, YybVisualComparisonRunOptions options)
+        {
             options.enableManualAnimatorFootLocalRotationRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareManualAnimatorFootLocalRotationEnabled", options.enableManualAnimatorFootLocalRotationRuntimeOverride);
             options.disableManualAnimatorFootLocalRotationRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareManualAnimatorFootLocalRotationDisabled", options.disableManualAnimatorFootLocalRotationRuntimeOverride);
             options.enableManualAnimatorFullBodyPoseRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareManualAnimatorFullBodyPoseEnabled", options.enableManualAnimatorFullBodyPoseRuntimeOverride);
@@ -43,12 +60,20 @@ namespace Fbx2Vmd.FBXImporter
             options.enableManualAnimatorThumbLocalRotationRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareManualAnimatorThumbLocalRotationEnabled", options.enableManualAnimatorThumbLocalRotationRuntimeOverride);
             options.enableManualAnimatorHandPalmFrameRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareManualAnimatorHandPalmFrameEnabled", options.enableManualAnimatorHandPalmFrameRuntimeOverride);
             options.manualAnimatorHandPalmFrameWeight = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareManualAnimatorHandPalmFrameWeight", options.manualAnimatorHandPalmFrameWeight);
+        }
+
+        private static void ApplySmoothingAndStretchOptions(string[] arguments, YybVisualComparisonRunOptions options)
+        {
             options.overrideRetargetPoseVisualSpikeSmoothingRuntimeSettings = CommandLineOptionReader.ReadBool(arguments, "-yybCompareRetargetPoseVisualSpikeSmoothingOverride", options.overrideRetargetPoseVisualSpikeSmoothingRuntimeSettings);
             options.enableRetargetPoseVisualSpikeSmoothingRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareRetargetPoseVisualSpikeSmoothingEnabled", options.enableRetargetPoseVisualSpikeSmoothingRuntimeOverride);
             options.retargetPoseVisualSpikeCurrentWeight = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareRetargetPoseVisualSpikeCurrentWeight", options.retargetPoseVisualSpikeCurrentWeight);
             options.retargetPoseVisualSpikeForearmStretchClampMaxOffset = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareRetargetPoseVisualSpikeForearmStretchClampMaxOffset", options.retargetPoseVisualSpikeForearmStretchClampMaxOffset);
             options.enableRetargetArmStretchClampRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareRetargetArmStretchClampEnabled", options.enableRetargetArmStretchClampRuntimeOverride);
             options.retargetArmStretchMuscleLimit = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareRetargetArmStretchMuscleLimit", options.retargetArmStretchMuscleLimit);
+        }
+
+        private static void ApplyYybArmSwingOptions(string[] arguments, YybVisualComparisonRunOptions options)
+        {
             options.enableYybArmSwingLimitRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareYybArmSwingLimitEnabled", options.enableYybArmSwingLimitRuntimeOverride);
             options.yybArmSwingLimitWeight = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmSwingLimitWeight", options.yybArmSwingLimitWeight);
             options.yybArmSwingMaxDownDot = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmSwingMaxDownDot", options.yybArmSwingMaxDownDot);
@@ -62,6 +87,10 @@ namespace Fbx2Vmd.FBXImporter
             options.yybArmSwingRaisedPoseMinUpperArmDownDot = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmSwingRaisedPoseMinUpperArmDownDot", options.yybArmSwingRaisedPoseMinUpperArmDownDot);
             options.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmSwingRaisedPoseMaxHandBelowShoulderRatio", options.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio);
             options.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmSwingRaisedPoseMaxHandHorizontalReachRatio", options.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio);
+        }
+
+        private static void ApplyYybArmDirectionOptions(string[] arguments, YybVisualComparisonRunOptions options)
+        {
             options.enableYybArmDirectionRetargetRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareYybArmDirectionRetargetEnabled", options.enableYybArmDirectionRetargetRuntimeOverride);
             options.yybArmDirectionUpperArmWeight = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmDirectionUpperArmWeight", options.yybArmDirectionUpperArmWeight);
             options.yybArmDirectionForearmWeight = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmDirectionForearmWeight", options.yybArmDirectionForearmWeight);
@@ -69,6 +98,10 @@ namespace Fbx2Vmd.FBXImporter
             options.yybArmDirectionForearmMaxDegrees = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmDirectionForearmMaxDegrees", options.yybArmDirectionForearmMaxDegrees);
             options.yybArmDirectionLeftSideWeightScale = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmDirectionLeftSideWeightScale", options.yybArmDirectionLeftSideWeightScale);
             options.yybArmDirectionRightSideWeightScale = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmDirectionRightSideWeightScale", options.yybArmDirectionRightSideWeightScale);
+        }
+
+        private static void ApplyYybSleeveAndTwistOptions(string[] arguments, YybVisualComparisonRunOptions options)
+        {
             options.overrideYybArmSleeveAnchorRuntimeSettings = CommandLineOptionReader.ReadBool(arguments, "-yybCompareYybArmSleeveAnchorOverride", options.overrideYybArmSleeveAnchorRuntimeSettings);
             options.enableYybArmSleeveAnchorRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareYybArmSleeveAnchorEnabled", options.enableYybArmSleeveAnchorRuntimeOverride);
             options.yybArmSleeveAnchorInfluence = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmSleeveAnchorInfluence", options.yybArmSleeveAnchorInfluence);
@@ -80,6 +113,10 @@ namespace Fbx2Vmd.FBXImporter
             options.yybArmVisualForearmInfluence = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmVisualForearmInfluence", options.yybArmVisualForearmInfluence);
             options.yybArmVisualUpperArmMaxDegrees = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmVisualUpperArmMaxDegrees", options.yybArmVisualUpperArmMaxDegrees);
             options.yybArmVisualForearmMaxDegrees = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareYybArmVisualForearmMaxDegrees", options.yybArmVisualForearmMaxDegrees);
+        }
+
+        private static void ApplyLegSegmentOptions(string[] arguments, YybVisualComparisonRunOptions options)
+        {
             options.enableManualAnimatorLowerBodySegmentDirectionRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareManualAnimatorLowerBodySegmentDirectionEnabled", options.enableManualAnimatorLowerBodySegmentDirectionRuntimeOverride);
             options.disableManualAnimatorLowerBodySegmentDirectionRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareManualAnimatorLowerBodySegmentDirectionDisabled", options.disableManualAnimatorLowerBodySegmentDirectionRuntimeOverride);
             options.manualAnimatorLowerBodySegmentDirectionReferenceWeight = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareManualAnimatorLowerBodySegmentDirectionWeight", options.manualAnimatorLowerBodySegmentDirectionReferenceWeight);
@@ -101,6 +138,10 @@ namespace Fbx2Vmd.FBXImporter
             options.disableManualAnimatorFootHipsAlignedResidualYawRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareManualAnimatorFootHipsAlignedResidualYawDisabled", options.disableManualAnimatorFootHipsAlignedResidualYawRuntimeOverride);
             options.manualAnimatorFootHipsAlignedResidualYawReferenceWeight = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareManualAnimatorFootHipsAlignedResidualYawWeight", options.manualAnimatorFootHipsAlignedResidualYawReferenceWeight);
             options.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareManualAnimatorFootHipsAlignedResidualYawMaxAngle", options.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle);
+        }
+
+        private static void ApplyEndpointPositionOptions(string[] arguments, YybVisualComparisonRunOptions options)
+        {
             options.enablePostSetHumanPoseRightEndpointPositionRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybComparePostSetHumanPoseRightEndpointPositionEnabled", options.enablePostSetHumanPoseRightEndpointPositionRuntimeOverride);
             options.postSetHumanPoseRightEndpointPositionReferenceWeight = CommandLineOptionReader.ReadFloat(arguments, "-yybComparePostSetHumanPoseRightEndpointPositionWeight", options.postSetHumanPoseRightEndpointPositionReferenceWeight);
             options.postSetHumanPoseRightEndpointPositionReferenceMaxOffset = CommandLineOptionReader.ReadFloat(arguments, "-yybComparePostSetHumanPoseRightEndpointPositionMaxOffset", options.postSetHumanPoseRightEndpointPositionReferenceMaxOffset);
@@ -122,6 +163,10 @@ namespace Fbx2Vmd.FBXImporter
             options.ShouldInvertPreSetHumanPoseEndpointPositionBodyZ = CommandLineOptionReader.ReadBool(arguments, "-yybComparePreSetHumanPoseEndpointPositionInvertBodyPositionZ", options.ShouldInvertPreSetHumanPoseEndpointPositionBodyZ);
             options.usePostSetHumanPoseRightFootEvaluatorXzReference = CommandLineOptionReader.ReadBool(arguments, "-yybComparePostSetHumanPoseRightFootEvaluatorXzReferenceEnabled", options.usePostSetHumanPoseRightFootEvaluatorXzReference);
             options.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude = CommandLineOptionReader.ReadFloat(arguments, "-yybComparePostSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude", options.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude);
+        }
+
+        private static void ApplyBodyPositionAndMiscOptions(string[] arguments, YybVisualComparisonRunOptions options)
+        {
             options.enableManualAnimatorBipedIkFootPositionRuntimeOverride = CommandLineOptionReader.ReadBool(arguments, "-yybCompareManualAnimatorBipedIkFootPositionEnabled", options.enableManualAnimatorBipedIkFootPositionRuntimeOverride);
             options.manualAnimatorBipedIkFootPositionReferenceWeight = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareManualAnimatorBipedIkFootPositionWeight", options.manualAnimatorBipedIkFootPositionReferenceWeight);
             options.manualAnimatorBipedIkFootPositionReferenceMaxOffset = CommandLineOptionReader.ReadFloat(arguments, "-yybCompareManualAnimatorBipedIkFootPositionMaxOffset", options.manualAnimatorBipedIkFootPositionReferenceMaxOffset);

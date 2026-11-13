@@ -20,24 +20,68 @@ namespace Fbx2Vmd.FBXImporter
                 throw new ArgumentNullException(nameof(diagnostic));
             }
 
-            diagnostic.job_mode = jobMode ?? string.Empty;
-            diagnostic.scene_name = sceneName ?? string.Empty;
-            diagnostic.metrics_csv = metricsCsvPath ?? string.Empty;
+            PopulateHeader(diagnostic, jobMode, sceneName, metricsCsvPath);
             string absolutePath = VisualComparisonArtifactPathResolver.ToAbsoluteProjectPath(metricsCsvPath, projectRoot);
             if (string.IsNullOrWhiteSpace(absolutePath) || !File.Exists(absolutePath))
             {
                 return;
             }
 
-            string[] lines = File.ReadAllLines(absolutePath, Encoding.UTF8);
-            if (lines.Length <= 1)
+            if (!TryReadMetricRows(absolutePath, out List<string[]> rows, out Dictionary<string, int> indices))
             {
                 return;
             }
 
+            diagnostic.metric_row_count = rows.Count;
+            if (rows.Count == 0)
+            {
+                return;
+            }
+
+            PopulateMetrics(diagnostic, rows, indices);
+        }
+
+        private static void PopulateHeader(
+            VisualComparisonSampleOrderingDiagnosticData diagnostic,
+            string jobMode,
+            string sceneName,
+            string metricsCsvPath)
+        {
+            diagnostic.job_mode = jobMode ?? string.Empty;
+            diagnostic.scene_name = sceneName ?? string.Empty;
+            diagnostic.metrics_csv = metricsCsvPath ?? string.Empty;
+        }
+
+        private static void PopulateMetrics(
+            VisualComparisonSampleOrderingDiagnosticData diagnostic,
+            List<string[]> rows,
+            Dictionary<string, int> indices)
+        {
+            string[] first = rows[0];
+            string[] finish = rows.LastOrDefault(row =>
+                string.Equals(VisualComparisonCsvMetricReader.ReadString(row, indices, "reason"), "finish", StringComparison.OrdinalIgnoreCase))
+                ?? rows[rows.Count - 1];
+
+            PopulateFirstMetrics(diagnostic, first, indices);
+            PopulateFinishMetrics(diagnostic, finish, indices);
+            PopulateRecordingSpans(diagnostic);
+        }
+
+        private static bool TryReadMetricRows(
+            string absolutePath,
+            out List<string[]> rows,
+            out Dictionary<string, int> indices)
+        {
+            rows = new List<string[]>();
+            indices = null;
+            string[] lines = File.ReadAllLines(absolutePath, Encoding.UTF8);
+            if (lines.Length <= 1)
+            {
+                return false;
+            }
+
             string[] headers = VisualComparisonCsvMetricReader.SplitLine(lines[0]);
-            Dictionary<string, int> indices = VisualComparisonCsvMetricReader.BuildIndexMap(headers);
-            List<string[]> rows = new List<string[]>();
+            indices = VisualComparisonCsvMetricReader.BuildIndexMap(headers);
             for (int lineIndex = 1; lineIndex < lines.Length; lineIndex++)
             {
                 if (string.IsNullOrWhiteSpace(lines[lineIndex]))
@@ -48,17 +92,14 @@ namespace Fbx2Vmd.FBXImporter
                 rows.Add(VisualComparisonCsvMetricReader.SplitLine(lines[lineIndex]));
             }
 
-            diagnostic.metric_row_count = rows.Count;
-            if (rows.Count == 0)
-            {
-                return;
-            }
+            return true;
+        }
 
-            string[] first = rows[0];
-            string[] finish = rows.LastOrDefault(row =>
-                string.Equals(VisualComparisonCsvMetricReader.ReadString(row, indices, "reason"), "finish", StringComparison.OrdinalIgnoreCase))
-                ?? rows[rows.Count - 1];
-
+        private static void PopulateFirstMetrics(
+            VisualComparisonSampleOrderingDiagnosticData diagnostic,
+            string[] first,
+            Dictionary<string, int> indices)
+        {
             diagnostic.first_metric_reason = VisualComparisonCsvMetricReader.ReadString(first, indices, "reason");
             diagnostic.first_metric_recorder_frame = VisualComparisonCsvMetricReader.ReadInt(first, indices, "recorderFrame");
             diagnostic.first_metric_engine_frame_count = VisualComparisonCsvMetricReader.ReadInt(first, indices, "frameCount");
@@ -76,6 +117,13 @@ namespace Fbx2Vmd.FBXImporter
                 diagnostic.first_metric_grounding_max_step_per_frame);
             diagnostic.first_metric_grounding_vertical_step_at_max_step =
                 VisualComparisonMetricCalculator.IsGroundingStepAtMax(diagnostic.first_metric_grounding_vertical_step_to_max_ratio);
+        }
+
+        private static void PopulateFinishMetrics(
+            VisualComparisonSampleOrderingDiagnosticData diagnostic,
+            string[] finish,
+            Dictionary<string, int> indices)
+        {
             diagnostic.finish_metric_reason = VisualComparisonCsvMetricReader.ReadString(finish, indices, "reason");
             diagnostic.finish_metric_recorder_frame = VisualComparisonCsvMetricReader.ReadInt(finish, indices, "recorderFrame");
             diagnostic.finish_metric_engine_frame_count = VisualComparisonCsvMetricReader.ReadInt(finish, indices, "frameCount");
@@ -92,6 +140,10 @@ namespace Fbx2Vmd.FBXImporter
                 diagnostic.finish_metric_grounding_max_step_per_frame);
             diagnostic.finish_metric_grounding_vertical_step_at_max_step =
                 VisualComparisonMetricCalculator.IsGroundingStepAtMax(diagnostic.finish_metric_grounding_vertical_step_to_max_ratio);
+        }
+
+        private static void PopulateRecordingSpans(VisualComparisonSampleOrderingDiagnosticData diagnostic)
+        {
             diagnostic.recording_metric_recorder_frame_span = VisualComparisonMetricCalculator.CalculateIntSpan(
                 diagnostic.first_metric_recorder_frame,
                 diagnostic.finish_metric_recorder_frame);

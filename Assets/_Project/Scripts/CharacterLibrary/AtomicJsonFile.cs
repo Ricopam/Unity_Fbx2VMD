@@ -56,29 +56,41 @@ namespace Fbx2Vmd.CharacterLibrary
             string tempPath = path + ".tmp-" + Guid.NewGuid().ToString("N");
             try
             {
-                File.WriteAllText(tempPath, json, Utf8NoBom);
-                if (File.Exists(path))
-                {
-                    File.Replace(tempPath, path, null);
-                }
-                else
-                {
-                    File.Move(tempPath, path);
-                }
+                CommitTempFile(tempPath, path, json);
             }
             finally
             {
-                if (File.Exists(tempPath))
-                {
-                    try
-                    {
-                        File.Delete(tempPath);
-                    }
-                    catch
-                    {
-                        // 임시 파일 정리 실패는 저장 결과를 덮지 않는다.
-                    }
-                }
+                CleanupTempFile(tempPath);
+            }
+        }
+
+        private static void CommitTempFile(string tempPath, string path, string json)
+        {
+            File.WriteAllText(tempPath, json, Utf8NoBom);
+            if (File.Exists(path))
+            {
+                File.Replace(tempPath, path, null);
+            }
+            else
+            {
+                File.Move(tempPath, path);
+            }
+        }
+
+        private static void CleanupTempFile(string tempPath)
+        {
+            if (!File.Exists(tempPath))
+            {
+                return;
+            }
+
+            try
+            {
+                File.Delete(tempPath);
+            }
+            catch
+            {
+                // 임시 파일 정리 실패는 저장 결과를 덮지 않는다.
             }
         }
 

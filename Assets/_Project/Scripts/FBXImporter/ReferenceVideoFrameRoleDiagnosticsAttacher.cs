@@ -32,6 +32,23 @@ namespace Fbx2Vmd.FBXImporter
             diagnostics.reference_mp4_canonical_context = canonicalContext ?? string.Empty;
             diagnostics.reference_mp4_analysis_metric_basis = analysisMetricBasis ?? string.Empty;
 
+            return ResolveAndApply(
+                diagnostics,
+                provenanceEvidencePath,
+                analysisResultPath,
+                frameMetricsPath,
+                contactSheetPath,
+                projectRoot);
+        }
+
+        private static ReferenceVideoClipCoverageData ResolveAndApply(
+            VisualComparisonFrameRoleDiagnosticsData diagnostics,
+            string provenanceEvidencePath,
+            string analysisResultPath,
+            string frameMetricsPath,
+            string contactSheetPath,
+            string projectRoot)
+        {
             string resolvedResultPath = ResolveProjectRelative(analysisResultPath, projectRoot);
             string resolvedFrameMetricsPath = ResolveProjectRelative(frameMetricsPath, projectRoot);
             string resolvedContactSheetPath = ResolveProjectRelative(contactSheetPath, projectRoot);

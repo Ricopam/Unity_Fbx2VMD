@@ -10,10 +10,28 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             result.hasFBXVmdPipelineEffectiveSettings = true;
+            CaptureManualAnimatorPoseSettings(result, fileManager);
+            CaptureLegSegmentDirectionSettings(result, fileManager);
+            CaptureFootSegmentAndYawSettings(result, fileManager);
+            CapturePostEndpointSettings(result, fileManager);
+            CapturePreEndpointSettings(result, fileManager);
+            CaptureFootEvaluatorAndBodyPositionSettings(result, fileManager);
+            CaptureArmCorrectionSettings(result, fileManager);
+        }
+
+
+        private static void CaptureManualAnimatorPoseSettings(YybVisualComparisonCaptureResultData result, FBXVmdPipeline fileManager)
+        {
             result.ShouldUseManualAnimatorFootLocalRotationReference =
                 fileManager.ShouldUseManualAnimatorFootLocalRotationReference;
             result.manualAnimatorFootLocalRotationReferenceWeight =
                 fileManager.manualAnimatorFootLocalRotationReferenceWeight;
+            CaptureFullBodyPoseAndLegTwistSettings(result, fileManager);
+            CaptureBodyRotationAndLowerBodySettings(result, fileManager);
+        }
+
+        private static void CaptureFullBodyPoseAndLegTwistSettings(YybVisualComparisonCaptureResultData result, FBXVmdPipeline fileManager)
+        {
             result.ShouldUseManualAnimatorFullBodyPoseReference =
                 fileManager.ShouldUseManualAnimatorFullBodyPoseReference;
             result.manualAnimatorFullBodyPoseReferenceWeight =
@@ -40,6 +58,10 @@ namespace Fbx2Vmd.FBXImporter
                 fileManager.setHumanPoseRightLegTwistOutputReferenceWeight;
             result.setHumanPoseRightLegTwistOutputReferenceMaxDelta =
                 fileManager.setHumanPoseRightLegTwistOutputReferenceMaxDelta;
+        }
+
+        private static void CaptureBodyRotationAndLowerBodySettings(YybVisualComparisonCaptureResultData result, FBXVmdPipeline fileManager)
+        {
             result.ShouldUseManualAnimatorBodyRotationReference = fileManager.ShouldUseManualAnimatorBodyRotationReference;
             result.manualAnimatorBodyRotationReferenceWeight = fileManager.manualAnimatorBodyRotationReferenceWeight;
             result.ShouldUseManualAnimatorLowerBodySegmentDirectionReference =
@@ -48,6 +70,10 @@ namespace Fbx2Vmd.FBXImporter
                 fileManager.manualAnimatorLowerBodySegmentDirectionReferenceWeight;
             result.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle =
                 fileManager.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle;
+        }
+
+        private static void CaptureLegSegmentDirectionSettings(YybVisualComparisonCaptureResultData result, FBXVmdPipeline fileManager)
+        {
             result.ShouldDisableManualAnimatorUpperLegToLowerLegSegmentDirectionReference =
                 fileManager.ShouldDisableManualAnimatorUpperLegToLowerLegSegmentDirectionReference;
             result.manualAnimatorUpperLegToLowerLegSegmentDirectionReferenceMaxAngle =
@@ -70,6 +96,10 @@ namespace Fbx2Vmd.FBXImporter
                 fileManager.manualAnimatorRightLowerLegToFootSegmentDirectionReferenceFrameGateEnd;
             result.manualAnimatorRightLowerLegToFootSegmentDirectionReferenceEndpointBlendWeight =
                 fileManager.manualAnimatorRightLowerLegToFootSegmentDirectionReferenceEndpointBlendWeight;
+        }
+
+        private static void CaptureFootSegmentAndYawSettings(YybVisualComparisonCaptureResultData result, FBXVmdPipeline fileManager)
+        {
             result.ShouldDisableManualAnimatorFootToToesSegmentDirectionReference =
                 fileManager.ShouldDisableManualAnimatorFootToToesSegmentDirectionReference;
             result.manualAnimatorFootToToesSegmentDirectionReferenceMaxAngle =
@@ -80,6 +110,10 @@ namespace Fbx2Vmd.FBXImporter
                 fileManager.manualAnimatorFootHipsAlignedResidualYawReferenceWeight;
             result.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle =
                 fileManager.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle;
+        }
+
+        private static void CapturePostEndpointSettings(YybVisualComparisonCaptureResultData result, FBXVmdPipeline fileManager)
+        {
             result.usePostSetHumanPoseRightEndpointPositionReference =
                 fileManager.usePostSetHumanPoseRightEndpointPositionReference;
             result.postSetHumanPoseRightEndpointPositionReferenceWeight =
@@ -96,6 +130,10 @@ namespace Fbx2Vmd.FBXImporter
                 fileManager.postSetHumanPoseRightEndpointPositionReferenceFrameGateEnd;
             result.ShouldUseLeftSideForPostSetHumanPoseEndpointPosition =
                 fileManager.ShouldUseLeftSideForPostSetHumanPoseEndpointPosition;
+        }
+
+        private static void CapturePreEndpointSettings(YybVisualComparisonCaptureResultData result, FBXVmdPipeline fileManager)
+        {
             result.usePreSetHumanPoseRightEndpointPositionReference =
                 fileManager.usePreSetHumanPoseRightEndpointPositionReference;
             result.preSetHumanPoseRightEndpointPositionReferenceWeight =
@@ -118,6 +156,10 @@ namespace Fbx2Vmd.FBXImporter
                 fileManager.ShouldInvertPreSetHumanPoseEndpointPositionBodyX;
             result.ShouldInvertPreSetHumanPoseEndpointPositionBodyZ =
                 fileManager.ShouldInvertPreSetHumanPoseEndpointPositionBodyZ;
+        }
+
+        private static void CaptureFootEvaluatorAndBodyPositionSettings(YybVisualComparisonCaptureResultData result, FBXVmdPipeline fileManager)
+        {
             result.usePostSetHumanPoseRightFootEvaluatorXzReference =
                 fileManager.usePostSetHumanPoseRightFootEvaluatorXzReference;
             result.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude =
@@ -138,6 +180,10 @@ namespace Fbx2Vmd.FBXImporter
                 fileManager.manualAnimatorBodyPositionXzReferenceAxisXScale;
             result.manualAnimatorBodyPositionXzReferenceAxisZScale =
                 fileManager.manualAnimatorBodyPositionXzReferenceAxisZScale;
+        }
+
+        private static void CaptureArmCorrectionSettings(YybVisualComparisonCaptureResultData result, FBXVmdPipeline fileManager)
+        {
             result.enableYybArmSwingLimitCorrection = fileManager.enableYybArmSwingLimitCorrection;
             result.yybArmSwingLimitWeight = fileManager.YybArmSwingLimitWeight;
             result.yybArmSwingMaxDownDot = fileManager.YybArmSwingMaxDownDot;
@@ -162,6 +208,5 @@ namespace Fbx2Vmd.FBXImporter
             result.clampRetargetArmStretchMuscles = fileManager.clampRetargetArmStretchMuscles;
             result.armStretchMuscleLimit = fileManager.ArmStretchMuscleLimit;
         }
-
     }
 }

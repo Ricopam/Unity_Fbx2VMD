@@ -16,41 +16,53 @@ namespace Fbx2Vmd.FBXImporter
 
             foreach (MotionComparisonFrameQualitySummary summary in summaries)
             {
-                if (summary == null ||
-                    !string.Equals(summary.status, "fail", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
+                TryMarkSummaryAsAligned(summary, summaries);
+            }
+        }
 
-                if (IsSubManualPoseOnlyResidual(summary))
-                {
-                    MarkAsReferenceAligned(
-                        summary,
-                        "Sub_Manual Unity pose delta kept as diagnostic because time-matched ref MP4 image-space evidence is aligned");
-                    continue;
-                }
+        private static void TryMarkSummaryAsAligned(
+            MotionComparisonFrameQualitySummary summary,
+            MotionComparisonFrameQualitySummary[] summaries)
+        {
+            if (summary == null ||
+                !string.Equals(summary.status, "fail", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
 
-                if (IsEvaluationCandidateRole(summary) &&
-                    HasReferenceAlignedCorrectedCounterpart(summary, summaries))
-                {
-                    MarkAsReferenceAligned(
-                        summary,
-                        "raw replay vertical residual kept as diagnostic because corrected candidate and ref MP4 image-space evidence are aligned");
-                }
+            if (IsSubManualPoseOnlyResidual(summary))
+            {
+                MarkAsReferenceAligned(
+                    summary,
+                    "Sub_Manual Unity pose delta kept as diagnostic because time-matched ref MP4 image-space evidence is aligned");
+                return;
+            }
+
+            if (IsEvaluationCandidateRole(summary) &&
+                HasReferenceAlignedCorrectedCounterpart(summary, summaries))
+            {
+                MarkAsReferenceAligned(
+                    summary,
+                    "raw replay vertical residual kept as diagnostic because corrected candidate and ref MP4 image-space evidence are aligned");
             }
         }
 
         private static bool IsSubManualPoseOnlyResidual(MotionComparisonFrameQualitySummary summary)
         {
             string reason = summary.status_reason ?? string.Empty;
-            return reason.IndexOf("same-frame limb pose delta threshold exceeded", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                reason.IndexOf("YYB deformation risk", StringComparison.OrdinalIgnoreCase) < 0 &&
-                reason.IndexOf("below-floor", StringComparison.OrdinalIgnoreCase) < 0 &&
-                reason.IndexOf("root position delta threshold exceeded", StringComparison.OrdinalIgnoreCase) < 0 &&
-                reason.IndexOf("one-frame root/center/IK teleport", StringComparison.OrdinalIgnoreCase) < 0 &&
-                reason.IndexOf("stationary preview limb-motion root travel", StringComparison.OrdinalIgnoreCase) < 0 &&
-                reason.IndexOf("same-frame hips Y delta fail threshold exceeded", StringComparison.OrdinalIgnoreCase) < 0 &&
-                reason.IndexOf("same-frame foot bottom Y delta fail threshold exceeded", StringComparison.OrdinalIgnoreCase) < 0;
+            bool isLimbPoseDelta = reason.IndexOf("same-frame limb pose delta threshold exceeded", StringComparison.OrdinalIgnoreCase) >= 0;
+            return isLimbPoseDelta && !HasDisqualifyingReasonFragment(reason);
+        }
+
+        private static bool HasDisqualifyingReasonFragment(string reason)
+        {
+            return reason.IndexOf("YYB deformation risk", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                reason.IndexOf("below-floor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                reason.IndexOf("root position delta threshold exceeded", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                reason.IndexOf("one-frame root/center/IK teleport", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                reason.IndexOf("stationary preview limb-motion root travel", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                reason.IndexOf("same-frame hips Y delta fail threshold exceeded", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                reason.IndexOf("same-frame foot bottom Y delta fail threshold exceeded", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static bool HasReferenceAlignedCorrectedCounterpart(

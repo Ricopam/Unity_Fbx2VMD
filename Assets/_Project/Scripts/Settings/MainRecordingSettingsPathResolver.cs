@@ -18,6 +18,22 @@ namespace Fbx2Vmd.Settings
             string persistentDataRoot = null,
             bool readProcessEnvironment = true)
         {
+            string explicitResult = ResolveExplicitOverride(
+                explicitPath, environmentOverridePath, readProcessEnvironment);
+            if (explicitResult != null)
+            {
+                return explicitResult;
+            }
+
+            string root = ResolveStorageRoot(localAppDataRoot, persistentDataRoot);
+            return Path.Combine(root, AppFolderName, FeatureFolderName, SettingsFileName);
+        }
+
+        private static string ResolveExplicitOverride(
+            string explicitPath,
+            string environmentOverridePath,
+            bool readProcessEnvironment)
+        {
             if (!string.IsNullOrWhiteSpace(explicitPath))
             {
                 return explicitPath.Trim();
@@ -37,6 +53,11 @@ namespace Fbx2Vmd.Settings
                 }
             }
 
+            return null;
+        }
+
+        private static string ResolveStorageRoot(string localAppDataRoot, string persistentDataRoot)
+        {
             string root = localAppDataRoot;
             if (string.IsNullOrWhiteSpace(root))
             {
@@ -53,7 +74,7 @@ namespace Fbx2Vmd.Settings
                 root = Application.persistentDataPath;
             }
 
-            return Path.Combine(root, AppFolderName, FeatureFolderName, SettingsFileName);
+            return root;
         }
     }
 }
