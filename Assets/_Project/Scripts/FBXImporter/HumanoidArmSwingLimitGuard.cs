@@ -240,35 +240,22 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
-            Vector3 upperToLower = lower.position - upper.position;
-            Vector3 lowerToHand = hand.position - lower.position;
-            float upperLength = upperToLower.magnitude;
-            float lowerLength = lowerToHand.magnitude;
-            float armLength = upperLength + lowerLength;
-            if (upperLength <= 0.0001f || armLength <= 0.0001f)
+            if (!TryMeasureArmPose(upper, lower, hand, out ArmPoseMeasure pose))
             {
                 return;
             }
 
             float forearmStretchBefore = CaptureForearmStretchMuscle(upperBone);
-            Vector3 currentWorldDirection = upperToLower / upperLength;
-            Vector3 originalHandPosition = hand.position;
-            Vector3 currentLocalDirection = transform.InverseTransformDirection(currentWorldDirection).normalized;
-            float currentDownDot = Mathf.Clamp01(-currentLocalDirection.y);
-            Vector3 localHandOffset = transform.InverseTransformPoint(hand.position) -
-                                      transform.InverseTransformPoint(upper.position);
-            float horizontalRatio = new Vector2(localHandOffset.x, localHandOffset.z).magnitude / armLength;
-            float belowShoulderRatio = Mathf.Max(0f, -localHandOffset.y) / armLength;
-            if (currentDownDot <= maxUpperArmDownDot)
+            if (pose.currentDownDot <= maxUpperArmDownDot)
             {
                 bool raisedReachLimited = TryApplyRaisedPoseHorizontalReachLimit(
                     upper,
                     lower,
                     hand,
-                    localHandOffset,
-                    armLength,
-                    currentDownDot,
-                    belowShoulderRatio);
+                    pose.localHandOffset,
+                    pose.armLength,
+                    pose.currentDownDot,
+                    pose.belowShoulderRatio);
                 RecordArmLimitDiagnostics(
                     upperBone,
                     standardLimitApplied: false,
@@ -282,12 +269,12 @@ namespace Fbx2Vmd.FBXImporter
                 upper,
                 lower,
                 hand,
-                localHandOffset,
-                armLength,
-                belowShoulderRatio);
+                pose.localHandOffset,
+                pose.armLength,
+                pose.belowShoulderRatio);
 
-            if (horizontalRatio < minHandHorizontalRatio ||
-                belowShoulderRatio > maxHandBelowShoulderRatio)
+            if (pose.horizontalRatio < minHandHorizontalRatio ||
+                pose.belowShoulderRatio > maxHandBelowShoulderRatio)
             {
                 RecordArmLimitDiagnostics(
                     upperBone,
@@ -298,6 +285,57 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
+            ApplyStandardDownLimit(
+                upperBone, upper, lower, hand, pose,
+                fallbackSideSign, forearmStretchBefore, horizontalReachLimited);
+        }
+
+        // 팔 포즈 측정값 묶음 — 제한 판정·적용의 입력.
+        struct ArmPoseMeasure
+        {
+            public float armLength;
+            public float currentDownDot;
+            public float horizontalRatio;
+            public float belowShoulderRatio;
+            public Vector3 currentWorldDirection;
+            public Vector3 originalHandPosition;
+            public Vector3 currentLocalDirection;
+            public Vector3 localHandOffset;
+        }
+
+        bool TryMeasureArmPose(Transform upper, Transform lower, Transform hand,
+            out ArmPoseMeasure pose)
+        {
+            pose = default;
+            Vector3 upperToLower = lower.position - upper.position;
+            Vector3 lowerToHand = hand.position - lower.position;
+            float upperLength = upperToLower.magnitude;
+            float armLength = upperLength + lowerToHand.magnitude;
+            if (upperLength <= 0.0001f || armLength <= 0.0001f)
+            {
+                return false;
+            }
+
+            pose.armLength = armLength;
+            pose.currentWorldDirection = upperToLower / upperLength;
+            pose.originalHandPosition = hand.position;
+            pose.currentLocalDirection =
+                transform.InverseTransformDirection(pose.currentWorldDirection).normalized;
+            pose.currentDownDot = Mathf.Clamp01(-pose.currentLocalDirection.y);
+            pose.localHandOffset = transform.InverseTransformPoint(hand.position) -
+                                   transform.InverseTransformPoint(upper.position);
+            pose.horizontalRatio =
+                new Vector2(pose.localHandOffset.x, pose.localHandOffset.z).magnitude / armLength;
+            pose.belowShoulderRatio = Mathf.Max(0f, -pose.localHandOffset.y) / armLength;
+            return true;
+        }
+
+        void ApplyStandardDownLimit(
+            HumanBodyBones upperBone, Transform upper, Transform lower,
+            Transform hand, ArmPoseMeasure pose, float fallbackSideSign,
+            float forearmStretchBefore, bool horizontalReachLimited)
+        {
+            Vector3 currentLocalDirection = pose.currentLocalDirection;
             Vector3 horizontal = new Vector3(currentLocalDirection.x, 0f, currentLocalDirection.z);
             if (horizontal.sqrMagnitude <= 0.000001f)
             {
@@ -322,7 +360,7 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
-            Quaternion rotationDelta = Quaternion.FromToRotation(currentWorldDirection, targetWorldDirection);
+            Quaternion rotationDelta = Quaternion.FromToRotation(pose.currentWorldDirection, targetWorldDirection);
             Quaternion targetRotation = rotationDelta * upper.rotation;
             if (!IsFinite(targetRotation))
             {
@@ -338,10 +376,10 @@ namespace Fbx2Vmd.FBXImporter
             upper.rotation = Quaternion.Slerp(upper.rotation, targetRotation, correctionWeight);
             if (preserveHandTarget && !horizontalReachLimited)
             {
-                RedirectForearmToHandTarget(lower, hand, originalHandPosition, correctionWeight);
+                RedirectForearmToHandTarget(lower, hand, pose.originalHandPosition, correctionWeight);
             }
 
-            LogOnce($"상완 하강 각도를 제한했습니다. bone={upper.name}, downDot={currentDownDot:F3}, horizontalRatio={horizontalRatio:F3}, belowRatio={belowShoulderRatio:F3}");
+            LogOnce($"상완 하강 각도를 제한했습니다. bone={upper.name}, downDot={pose.currentDownDot:F3}, horizontalRatio={pose.horizontalRatio:F3}, belowRatio={pose.belowShoulderRatio:F3}");
             RecordArmLimitDiagnostics(
                 upperBone,
                 standardLimitApplied: true,
