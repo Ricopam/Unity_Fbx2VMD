@@ -283,6 +283,16 @@ namespace Fbx2Vmd.FBXImporter
                 $"start={plan.startTime:F2}s, duration={plan.length:F2}s, " +
                 $"targetFrameCount={plan.targetFrameCount}");
 
+            TryApplyEditorReferenceTiming(
+                ref plan, clip, outputBaseName, editorDiagnosticSession,
+                recorderController, hasEditorSmokeTimingOverride);
+        }
+
+        void TryApplyEditorReferenceTiming(
+            ref RecordingPlan plan, AnimationClip clip, string outputBaseName,
+            FBXEditorDiagnosticSession editorDiagnosticSession,
+            HumanoidSampleCode recorderController, bool hasEditorSmokeTimingOverride)
+        {
             if (!hasEditorSmokeTimingOverride &&
                 FBXEditorDiagnosticPlanner.TryBuildKnownReferenceRecordingPlan(
                 outputBaseName,
