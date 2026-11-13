@@ -71,14 +71,13 @@ namespace Tests.Editor.FBXImporter
                 "ClearActiveRecordingSubscription",
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
-            string controllerSourcePath = Path.Combine(
+            string controllerDirectory = Path.Combine(
                 Directory.GetCurrentDirectory(),
                 "Assets",
                 "_Project",
                 "Scripts",
-                "FBXImporter",
-                "VMDRecordingController.cs");
-            string controllerSource = File.ReadAllText(controllerSourcePath);
+                "FBXImporter");
+            string controllerSource = ReadVmdRecordingControllerSources(controllerDirectory);
             string pipelineSourcePath = Path.Combine(
                 Directory.GetCurrentDirectory(),
                 "Assets",
@@ -307,6 +306,26 @@ namespace Tests.Editor.FBXImporter
             Assert.That(VMDRecordingController.ResolveRecordingLengthForPlaybackSpeed(10f, 2f), Is.EqualTo(5f));
             Assert.That(VMDRecordingController.ResolvePrewarmFrameCount(-1), Is.EqualTo(0));
             Assert.That(VMDRecordingController.ResolvePrewarmFrameCount(121), Is.EqualTo(120));
+        }
+
+        // 컨트롤러 partial 소스 전체를 합쳐 소스 계약을 검사한다.
+        static string ReadVmdRecordingControllerSources(string controllerDirectory)
+        {
+            var builder = new System.Text.StringBuilder();
+            foreach (string fileName in new[]
+                     {
+                         "VMDRecordingController.cs",
+                         "VMDRecordingController.RecordingPlan.cs"
+                     })
+            {
+                string path = Path.Combine(controllerDirectory, fileName);
+                if (File.Exists(path))
+                {
+                    builder.Append(File.ReadAllText(path));
+                    builder.Append('\n');
+                }
+            }
+            return builder.ToString();
         }
     }
 }
