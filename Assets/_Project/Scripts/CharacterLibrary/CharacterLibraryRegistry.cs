@@ -111,56 +111,16 @@ namespace Fbx2Vmd.CharacterLibrary
             var result = new RegisterResult();
             ReloadIfExternallyChanged();
 
-            string normalizedPath;
-            try
+            if (!TryNormalizeAndValidate(sourcePath, out string normalizedPath, result))
             {
-                normalizedPath = Path.GetFullPath((sourcePath ?? string.Empty).Trim());
-            }
-            catch (Exception error)
-            {
-                result.error = $"경로가 유효하지 않습니다: {error.Message}";
                 return result;
             }
 
-            if (!File.Exists(normalizedPath))
+            if (!TryReadUniqueContent(
+                    normalizedPath, out long fileSize, out string lastWriteTimeUtc,
+                    out string contentHash, result))
             {
-                result.error = $"파일이 없습니다: {normalizedPath}";
                 return result;
-            }
-
-            string extension = Path.GetExtension(normalizedPath);
-            if (!string.Equals(extension, ".vrm", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(extension, ".fbx", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(extension, ".pmx", StringComparison.OrdinalIgnoreCase))
-            {
-                result.error = "캐릭터 파일(.vrm/.fbx/.pmx)만 등록할 수 있습니다.";
-                return result;
-            }
-
-            CharacterLibraryEntry existing = FindBySourcePath(normalizedPath);
-            if (existing != null)
-            {
-                result.error = "이미 등록된 캐릭터입니다.";
-                result.entry = existing;
-                return result;
-            }
-
-            if (!CharacterFileHasher.TryCaptureFileStat(
-                    normalizedPath, out long fileSize, out string lastWriteTimeUtc, out string contentHash))
-            {
-                result.error = "파일 정보를 읽을 수 없습니다.";
-                return result;
-            }
-
-            // 다른 경로에 같은 내용의 파일이 이미 등록돼 있으면 중복으로 간주한다.
-            for (int i = 0; i < Document.entries.Count; i++)
-            {
-                if (string.Equals(Document.entries[i].contentHash, contentHash, StringComparison.Ordinal))
-                {
-                    result.error = "동일한 내용의 파일이 이미 등록되어 있습니다.";
-                    result.entry = Document.entries[i];
-                    return result;
-                }
             }
 
             VrmCharacterMetaResult meta = _metaReader(normalizedPath);
@@ -204,6 +164,71 @@ namespace Fbx2Vmd.CharacterLibrary
             }
             result.entry = entry;
             return result;
+        }
+
+        bool TryNormalizeAndValidate(string sourcePath, out string normalizedPath, RegisterResult result)
+        {
+            try
+            {
+                normalizedPath = Path.GetFullPath((sourcePath ?? string.Empty).Trim());
+            }
+            catch (Exception error)
+            {
+                normalizedPath = null;
+                result.error = $"경로가 유효하지 않습니다: {error.Message}";
+                return false;
+            }
+
+            if (!File.Exists(normalizedPath))
+            {
+                result.error = $"파일이 없습니다: {normalizedPath}";
+                return false;
+            }
+
+            string extension = Path.GetExtension(normalizedPath);
+            if (!string.Equals(extension, ".vrm", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(extension, ".fbx", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(extension, ".pmx", StringComparison.OrdinalIgnoreCase))
+            {
+                result.error = "캐릭터 파일(.vrm/.fbx/.pmx)만 등록할 수 있습니다.";
+                return false;
+            }
+
+            CharacterLibraryEntry existing = FindBySourcePath(normalizedPath);
+            if (existing != null)
+            {
+                result.error = "이미 등록된 캐릭터입니다.";
+                result.entry = existing;
+                return false;
+            }
+            return true;
+        }
+
+        bool TryReadUniqueContent(
+            string normalizedPath, out long fileSize, out string lastWriteTimeUtc,
+            out string contentHash, RegisterResult result)
+        {
+            fileSize = 0;
+            lastWriteTimeUtc = null;
+            contentHash = null;
+            if (!CharacterFileHasher.TryCaptureFileStat(
+                    normalizedPath, out fileSize, out lastWriteTimeUtc, out contentHash))
+            {
+                result.error = "파일 정보를 읽을 수 없습니다.";
+                return false;
+            }
+
+            // 다른 경로에 같은 내용의 파일이 이미 등록돼 있으면 중복으로 간주한다.
+            for (int i = 0; i < Document.entries.Count; i++)
+            {
+                if (string.Equals(Document.entries[i].contentHash, contentHash, StringComparison.Ordinal))
+                {
+                    result.error = "동일한 내용의 파일이 이미 등록되어 있습니다.";
+                    result.entry = Document.entries[i];
+                    return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -285,8 +310,34 @@ namespace Fbx2Vmd.CharacterLibrary
                 return false;
             }
 
-            // 재연결은 같은 파일의 위치만 바꾸므로 확장자가 달라지면
-            // 로더 분기(spec)가 어긋난다. 형식 변경은 새 등록으로 처리한다.
+            if (!TryValidateRelinkTarget(
+                    entry, normalizedPath,
+                    out long fileSize, out string lastWriteTimeUtc, out string contentHash,
+                    out error))
+            {
+                return false;
+            }
+
+            entry.sourcePath = normalizedPath;
+            entry.fileSize = fileSize;
+            entry.lastWriteTimeUtc = lastWriteTimeUtc;
+            entry.status = CharacterLibraryEntryStatus.Ready;
+            entry.lastError = string.Empty;
+            Save();
+            return true;
+        }
+
+        // 재연결은 같은 파일의 위치만 바꾸므로 확장자가 달라지면
+        // 로더 분기(spec)가 어긋난다. 형식 변경은 새 등록으로 처리한다.
+        static bool TryValidateRelinkTarget(
+            CharacterLibraryEntry entry, string normalizedPath,
+            out long fileSize, out string lastWriteTimeUtc, out string contentHash,
+            out string error)
+        {
+            fileSize = 0;
+            lastWriteTimeUtc = null;
+            contentHash = null;
+            error = null;
             string newExtension = Path.GetExtension(normalizedPath);
             if (!string.Equals(
                     newExtension, Path.GetExtension(entry.sourcePath),
@@ -297,7 +348,7 @@ namespace Fbx2Vmd.CharacterLibrary
             }
 
             if (!CharacterFileHasher.TryCaptureFileStat(
-                    normalizedPath, out long fileSize, out string lastWriteTimeUtc, out string contentHash))
+                    normalizedPath, out fileSize, out lastWriteTimeUtc, out contentHash))
             {
                 error = "파일 정보를 읽을 수 없습니다.";
                 return false;
@@ -308,13 +359,6 @@ namespace Fbx2Vmd.CharacterLibrary
                 error = "파일 내용이 등록된 캐릭터와 다릅니다.";
                 return false;
             }
-
-            entry.sourcePath = normalizedPath;
-            entry.fileSize = fileSize;
-            entry.lastWriteTimeUtc = lastWriteTimeUtc;
-            entry.status = CharacterLibraryEntryStatus.Ready;
-            entry.lastError = string.Empty;
-            Save();
             return true;
         }
 

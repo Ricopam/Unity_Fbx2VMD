@@ -151,13 +151,41 @@ namespace Fbx2Vmd.CharacterLibrary
         /// </summary>
         public async Task<bool> SelectCharacterAsync(string entryId)
         {
+            if (!TryBeginSelection(entryId, out CharacterLibraryEntry entry))
+            {
+                return false;
+            }
+
+            CharacterLoader.Result result = await LoadCharacterAsync(entry);
+
+            // await 중 매니저가 파괴됐으면 로드된 인스턴스만 정리하고 끝낸다.
+            if (this == null)
+            {
+                if (result != null)
+                {
+                    CharacterLoader.DestroyResult(result);
+                }
+                return false;
+            }
+
+            if (!ValidateLoadedResult(entry, result))
+            {
+                return false;
+            }
+
+            return CommitAndFinalize(entry, result);
+        }
+
+        bool TryBeginSelection(string entryId, out CharacterLibraryEntry entry)
+        {
+            entry = null;
             if (IsLoading)
             {
                 _lastError = "이미 캐릭터 로드가 진행 중입니다.";
                 return false;
             }
 
-            CharacterLibraryEntry entry = Registry.FindById(entryId);
+            entry = Registry.FindById(entryId);
             if (entry == null)
             {
                 _lastError = "라이브러리에 없는 캐릭터입니다.";
@@ -188,7 +216,11 @@ namespace Fbx2Vmd.CharacterLibrary
                 SetState(LoadState.Failed);
                 return false;
             }
+            return true;
+        }
 
+        async Task<CharacterLoader.Result> LoadCharacterAsync(CharacterLibraryEntry entry)
+        {
             // 로컬에 캡처해 await 중 OnDestroy가 _cancellation을 비워도 Dispose가 안전하다.
             var cts = _cancellation = new CancellationTokenSource();
             SetState(LoadState.Loading);
@@ -212,17 +244,11 @@ namespace Fbx2Vmd.CharacterLibrary
                     _cancellation = null;
                 }
             }
+            return result;
+        }
 
-            // await 중 매니저가 파괴됐으면 로드된 인스턴스만 정리하고 끝낸다.
-            if (this == null)
-            {
-                if (result != null)
-                {
-                    CharacterLoader.DestroyResult(result);
-                }
-                return false;
-            }
-
+        bool ValidateLoadedResult(CharacterLibraryEntry entry, CharacterLoader.Result result)
+        {
             if (!EnsurePipeline())
             {
                 CharacterLoader.DestroyResult(result);
@@ -251,7 +277,11 @@ namespace Fbx2Vmd.CharacterLibrary
                 SetState(LoadState.Failed);
                 return false;
             }
+            return true;
+        }
 
+        bool CommitAndFinalize(CharacterLibraryEntry entry, CharacterLoader.Result result)
+        {
             SetState(LoadState.Validating);
             // Humanoid 검증은 CharacterLoader 내부에서 완료됐다.
 

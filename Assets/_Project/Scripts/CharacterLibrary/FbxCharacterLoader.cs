@@ -225,46 +225,18 @@ namespace Fbx2Vmd.CharacterLibrary
                     continue;
                 }
 
-                foreach (string file in files)
+                if (!CopyTextureFiles(files, sourceDir, targetFull, textureExts, ref copied, MaxFiles))
                 {
-                    if (!textureExts.Contains(Path.GetExtension(file)))
-                    {
-                        continue;
-                    }
-                    if (++copied > MaxFiles)
-                    {
-                        Debug.LogWarning($"PMX 텍스처 복사 상한({MaxFiles}개)에 도달했습니다: {sourceDir}");
-                        return;
-                    }
-                    try
-                    {
-                        string relative = file.Substring(sourceDir.Length).TrimStart(
-                            Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                        string dest = Path.Combine(targetFull, relative);
-                        Directory.CreateDirectory(Path.GetDirectoryName(dest));
-                        File.Copy(file, dest, true);
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.LogWarning($"PMX 텍스처 복사를 건너뜁니다: {file} ({exception.Message})");
-                    }
+                    return;
                 }
 
                 foreach (string sub in subdirs)
                 {
                     var info = new DirectoryInfo(sub);
-                    // 정션·심볼릭 링크는 순환 복사 위험이 있으므로 따라가지 않는다.
-                    if ((info.Attributes & FileAttributes.ReparsePoint) != 0)
+                    if (ShouldDescendInto(info, targetFull))
                     {
-                        continue;
+                        pending.Push(new KeyValuePair<string, int>(sub, item.Value + 1));
                     }
-                    // 관리 폴더가 소스 트리 안에 있으면 자기 복사를 막는다.
-                    if (info.FullName.StartsWith(targetFull, StringComparison.OrdinalIgnoreCase) ||
-                        targetFull.StartsWith(info.FullName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-                    pending.Push(new KeyValuePair<string, int>(sub, item.Value + 1));
                 }
             }
             if (depthSkipped)
@@ -272,6 +244,53 @@ namespace Fbx2Vmd.CharacterLibrary
                 Debug.LogWarning(
                     $"PMX 텍스처 탐색 깊이 상한({MaxDepth})을 넘는 폴더를 건너뛰었습니다: {sourceDir}");
             }
+        }
+
+        static bool CopyTextureFiles(
+            string[] files, string sourceDir, string targetFull,
+            HashSet<string> textureExts, ref int copied, int maxFiles)
+        {
+            foreach (string file in files)
+            {
+                if (!textureExts.Contains(Path.GetExtension(file)))
+                {
+                    continue;
+                }
+                if (++copied > maxFiles)
+                {
+                    Debug.LogWarning($"PMX 텍스처 복사 상한({maxFiles}개)에 도달했습니다: {sourceDir}");
+                    return false;
+                }
+                try
+                {
+                    string relative = file.Substring(sourceDir.Length).TrimStart(
+                        Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    string dest = Path.Combine(targetFull, relative);
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                    File.Copy(file, dest, true);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogWarning($"PMX 텍스처 복사를 건너뜁니다: {file} ({exception.Message})");
+                }
+            }
+            return true;
+        }
+
+        static bool ShouldDescendInto(DirectoryInfo info, string targetFull)
+        {
+            // 정션·심볼릭 링크는 순환 복사 위험이 있으므로 따라가지 않는다.
+            if ((info.Attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                return false;
+            }
+            // 관리 폴더가 소스 트리 안에 있으면 자기 복사를 막는다.
+            if (info.FullName.StartsWith(targetFull, StringComparison.OrdinalIgnoreCase) ||
+                targetFull.StartsWith(info.FullName, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            return true;
         }
 
         /// <summary>

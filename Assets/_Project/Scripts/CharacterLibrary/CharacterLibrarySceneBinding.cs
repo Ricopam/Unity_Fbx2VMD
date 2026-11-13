@@ -53,6 +53,14 @@ namespace Fbx2Vmd.CharacterLibrary
                 marker.previousSceneTarget = previousTarget;
             }
 
+            ApplyCommitSwap(pipeline, newRoot, previousTarget, previousDeactivated, gltfInstance);
+            CleanupLibraryLeftovers(pipeline, newRoot);
+        }
+
+        static void ApplyCommitSwap(
+            FBXVmdPipeline pipeline, GameObject newRoot, GameObject previousTarget,
+            bool previousDeactivated, RuntimeGltfInstance gltfInstance)
+        {
             try
             {
                 newRoot.name = "Library Character";
@@ -82,9 +90,12 @@ namespace Fbx2Vmd.CharacterLibrary
                 }
                 throw;
             }
+        }
 
-            // 같은 씬의 이전 라이브러리 캐릭터가 남아 있으면 정리한다.
-            // 다른 열린 씬/프리팹 편집 단계의 마커는 건드리지 않는다.
+        // 같은 씬의 이전 라이브러리 캐릭터가 남아 있으면 정리한다.
+        // 다른 열린 씬/프리팹 편집 단계의 마커는 건드리지 않는다.
+        static void CleanupLibraryLeftovers(FBXVmdPipeline pipeline, GameObject newRoot)
+        {
             List<GameObject> leftovers = FindAllLibraryRoots(pipeline.gameObject.scene);
             for (int i = 0; i < leftovers.Count; i++)
             {
