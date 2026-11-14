@@ -81,6 +81,18 @@ namespace Fbx2Vmd.FBXImporter
                 thumbGuard = targetObject.AddComponent<HumanoidThumbDeformationGuard>();
             }
 
+            ConfigureGuard(thumbGuard, targetAnimator, linkedRetargeter, options);
+            thumbGuard.enabled = true;
+            thumbGuard.RecaptureBaseline();
+            return true;
+        }
+
+        static void ConfigureGuard(
+            HumanoidThumbDeformationGuard thumbGuard,
+            Animator targetAnimator,
+            PoseSpaceRetargeter linkedRetargeter,
+            HumanoidThumbDeformationGuardOptions options)
+        {
             thumbGuard.Configure(
                 targetAnimator,
                 linkedRetargeter,
@@ -118,9 +130,6 @@ namespace Fbx2Vmd.FBXImporter
                 options.WebbingCreaseStabilizeWeight,
                 options.WebbingCreaseMaxLocalAngle,
                 options.WebbingCreaseMaxPositionOffset);
-            thumbGuard.enabled = true;
-            thumbGuard.RecaptureBaseline();
-            return true;
         }
     }
 }

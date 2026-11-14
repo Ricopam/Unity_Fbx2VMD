@@ -328,6 +328,28 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            return ApplyXzCorrection(
+                normalizedDelta,
+                magnitude,
+                clampedTargetMagnitude,
+                weight,
+                maxOffset,
+                currentFootPosition,
+                ref diagnostics,
+                out nextFootPosition);
+        }
+
+        static bool ApplyXzCorrection(
+            Vector3 normalizedDelta,
+            float magnitude,
+            float clampedTargetMagnitude,
+            float weight,
+            float maxOffset,
+            Vector3 currentFootPosition,
+            ref RetargetingEndpointDiagnosticSnapshot diagnostics,
+            out Vector3 nextFootPosition)
+        {
+            nextFootPosition = currentFootPosition;
             Vector3 desiredNormalizedDelta = normalizedDelta * (clampedTargetMagnitude / magnitude);
             diagnostics.EvaluatorXzDesiredNormalizedDelta = desiredNormalizedDelta;
             Vector3 correction = desiredNormalizedDelta - normalizedDelta;

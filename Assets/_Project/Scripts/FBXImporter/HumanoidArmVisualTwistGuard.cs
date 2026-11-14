@@ -104,6 +104,21 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            int configuredCount = ConfigureArmSegments();
+
+            _configured = configuredCount > 0;
+            enabled = _configured;
+
+            if (logConfiguration)
+            {
+                Debug.Log($"[HumanoidArmVisualTwistGuard] 보조본 회전 분배 구성 완료. segments={_segments.Count}, nodes={configuredCount}");
+            }
+
+            return _configured;
+        }
+
+        int ConfigureArmSegments()
+        {
             int configuredCount = 0;
             configuredCount += ConfigureSegment(
                 HumanBodyBones.LeftUpperArm,
@@ -135,16 +150,7 @@ namespace Fbx2Vmd.FBXImporter
                 "joint_RightHandTwist1",
                 "!joint_RightHandTwist2",
                 "joint_RightHandTwist3");
-
-            _configured = configuredCount > 0;
-            enabled = _configured;
-
-            if (logConfiguration)
-            {
-                Debug.Log($"[HumanoidArmVisualTwistGuard] 보조본 회전 분배 구성 완료. segments={_segments.Count}, nodes={configuredCount}");
-            }
-
-            return _configured;
+            return configuredCount;
         }
 
         public void DisableCorrection()

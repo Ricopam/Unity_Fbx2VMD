@@ -137,6 +137,16 @@ namespace Fbx2Vmd.FBXImporter
                 return true;
             }
 
+            distance = CalculateSegmentDistanceCore(
+                firstStart, firstDelta, firstLengthSquared,
+                secondStart, secondDelta, secondLengthSquared);
+            return IsFinite(distance);
+        }
+
+        static float CalculateSegmentDistanceCore(
+            Vector3 firstStart, Vector3 firstDelta, float firstLengthSquared,
+            Vector3 secondStart, Vector3 secondDelta, float secondLengthSquared)
+        {
             Vector3 startDelta = firstStart - secondStart;
             float firstSecondDot = Vector3.Dot(firstDelta, secondDelta);
             float firstStartDot = Vector3.Dot(firstDelta, startDelta);
@@ -163,8 +173,7 @@ namespace Fbx2Vmd.FBXImporter
 
             Vector3 firstClosest = firstStart + firstDelta * firstParameter;
             Vector3 secondClosest = secondStart + secondDelta * secondParameter;
-            distance = Vector3.Distance(firstClosest, secondClosest);
-            return IsFinite(distance);
+            return Vector3.Distance(firstClosest, secondClosest);
         }
 
         private static float CalculatePointSegmentDistance(

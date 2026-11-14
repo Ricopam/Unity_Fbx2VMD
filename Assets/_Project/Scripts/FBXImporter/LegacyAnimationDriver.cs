@@ -108,35 +108,10 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            if (TryCalculateManualLegacyAnimationTime(
-                currentTime,
-                _previousTime,
-                length,
-                state.speed,
-                deltaTime,
-                isPlaying,
-                out float manualAnimationTime))
-            {
-                currentTime = manualAnimationTime;
-                state.enabled = true;
-                state.time = currentTime;
-                _animation.Sample();
-            }
+            ApplyManualTimeIfNeeded(state, length, deltaTime, isPlaying, ref currentTime);
 
             float maxStep = 1f / Mathf.Clamp(frameRate, 15f, 120f);
-            if (TryClampLegacyAnimationEndWrap(
-                currentTime,
-                _previousTime,
-                length,
-                maxStep,
-                out float clampedEndTime))
-            {
-                currentTime = clampedEndTime;
-                state.enabled = true;
-                state.time = currentTime;
-                state.speed = 0f;
-                _animation.Sample();
-            }
+            ApplyEndWrapClampIfNeeded(state, length, maxStep, ref currentTime);
 
             if (currentTime + 0.0001f < _previousTime)
             {
@@ -164,6 +139,44 @@ namespace Fbx2Vmd.FBXImporter
 
             _previousTime = currentTime;
             return false;
+        }
+
+        void ApplyManualTimeIfNeeded(
+            AnimationState state, float length, float deltaTime,
+            bool isPlaying, ref float currentTime)
+        {
+            if (TryCalculateManualLegacyAnimationTime(
+                currentTime,
+                _previousTime,
+                length,
+                state.speed,
+                deltaTime,
+                isPlaying,
+                out float manualAnimationTime))
+            {
+                currentTime = manualAnimationTime;
+                state.enabled = true;
+                state.time = currentTime;
+                _animation.Sample();
+            }
+        }
+
+        void ApplyEndWrapClampIfNeeded(
+            AnimationState state, float length, float maxStep, ref float currentTime)
+        {
+            if (TryClampLegacyAnimationEndWrap(
+                currentTime,
+                _previousTime,
+                length,
+                maxStep,
+                out float clampedEndTime))
+            {
+                currentTime = clampedEndTime;
+                state.enabled = true;
+                state.time = currentTime;
+                state.speed = 0f;
+                _animation.Sample();
+            }
         }
 
         /// <returns>true이면 시작 포즈를 Sample했으며 false이면 Animation state가 없어 변경하지 않았음을 뜻함.</returns>
