@@ -158,6 +158,23 @@ namespace Fbx2Vmd.FBXImporter
                 return true;
             }
 
+            return TryResolveEnabledRangeSeconds(
+                playback,
+                clipLength,
+                clipFrameRate,
+                ref startTimeSeconds,
+                ref endTimeSeconds,
+                ref errorMessage);
+        }
+
+        private bool TryResolveEnabledRangeSeconds(
+            HumanoidMotionPlaybackController playback,
+            float clipLength,
+            float clipFrameRate,
+            ref float startTimeSeconds,
+            ref float endTimeSeconds,
+            ref string errorMessage)
+        {
             if (_motionVideoRangeStartFrame < 0 || _motionVideoRangeEndFrame < 0)
             {
                 errorMessage = "녹화 구간 프레임은 0 이상이어야 합니다.";
@@ -289,26 +306,10 @@ namespace Fbx2Vmd.FBXImporter
             _pendingNativeSkinningPlaybackRequest =
                 NativeSkinningPendingPlaybackRequest.None;
             _nativeSkinningCorrectionSetupError = string.Empty;
-            _humanoidMotionPlaybackController ??=
-                new HumanoidMotionPlaybackController();
-            if (sourceModelAsset == null)
-            {
-                _humanoidMotionPlaybackController.Prepare(targetAnimator, clip);
-            }
-            else
-            {
-                _humanoidMotionPlaybackController.PrepareWithArmDirectionReference(
-                    targetAnimator,
-                    clip,
-                    sourceModelAsset);
-            }
-            _humanoidMotionPlaybackController.SetGroundResponseEnabled(true);
-            // goal IK 경로 기본 활성 — 발 모임 등 근육 리타겟 왜곡을 소스 목표로 직접 구동해 차단한다.
-            _humanoidMotionPlaybackController.SetIkGoalFootDrive(true, 1f);
-            // 정지 발 순간이동 확산 기본 활성 — 소스 클립의 단발 불연속이 지지 발을
-            // 순간이동시키는 스냅을 수 프레임에 걸쳐 완화한다.
-            _humanoidMotionPlaybackController.SetFootStepDiffusion(true);
-            _humanoidMotionPlaybackController.PrepareSupportCurves(targetAnimator);
+            InitializePlaybackController(
+                targetAnimator,
+                clip,
+                sourceModelAsset);
             _poseCorrectionDocument = new HumanoidPoseCorrectionDocument(
                 motionName,
                 _humanoidMotionPlaybackController.ClipFrameRate);
@@ -319,18 +320,8 @@ namespace Fbx2Vmd.FBXImporter
                 CollectAlphaHiddenRenderers());
             _preparedMotionName = motionName;
             _isProcessing = false;
-            if (!NativeSkinningCorrectionPlaybackDriver.TryAttach(
-                    gameObject,
-                    targetAnimator,
-                    _humanoidMotionPlaybackController,
-                    out _nativeSkinningCorrectionPlaybackDriver,
-                    out _nativeSkinningCorrectionSetupError))
+            if (!TryAttachSkinningDriverOrFail(targetAnimator))
             {
-                SetSessionState(
-                    FBXSessionState.Failed,
-                    _nativeSkinningCorrectionSetupError,
-                    0f);
-                PlaybackControlsEnsureRequested?.Invoke(this);
                 return;
             }
             _nativeSkinningCorrectionPlaybackDriver?.ConfigureCacheIdentity(
@@ -344,6 +335,52 @@ namespace Fbx2Vmd.FBXImporter
             PlaybackControlsEnsureRequested?.Invoke(this);
         }
 #endif
+
+        private void InitializePlaybackController(
+            Animator targetAnimator,
+            AnimationClip clip,
+            GameObject referenceModel)
+        {
+            _humanoidMotionPlaybackController ??=
+                new HumanoidMotionPlaybackController();
+            if (referenceModel == null)
+            {
+                _humanoidMotionPlaybackController.Prepare(targetAnimator, clip);
+            }
+            else
+            {
+                _humanoidMotionPlaybackController.PrepareWithArmDirectionReference(
+                    targetAnimator,
+                    clip,
+                    referenceModel);
+            }
+            _humanoidMotionPlaybackController.SetGroundResponseEnabled(true);
+            // goal IK 경로 기본 활성 — 발 모임 등 근육 리타겟 왜곡을 소스 목표로 직접 구동해 차단한다.
+            _humanoidMotionPlaybackController.SetIkGoalFootDrive(true, 1f);
+            // 정지 발 순간이동 확산 기본 활성 — 소스 클립의 단발 불연속이 지지 발을
+            // 순간이동시키는 스냅을 수 프레임에 걸쳐 완화한다.
+            _humanoidMotionPlaybackController.SetFootStepDiffusion(true);
+            _humanoidMotionPlaybackController.PrepareSupportCurves(targetAnimator);
+        }
+
+        private bool TryAttachSkinningDriverOrFail(Animator targetAnimator)
+        {
+            if (NativeSkinningCorrectionPlaybackDriver.TryAttach(
+                    gameObject,
+                    targetAnimator,
+                    _humanoidMotionPlaybackController,
+                    out _nativeSkinningCorrectionPlaybackDriver,
+                    out _nativeSkinningCorrectionSetupError))
+            {
+                return true;
+            }
+            SetSessionState(
+                FBXSessionState.Failed,
+                _nativeSkinningCorrectionSetupError,
+                0f);
+            PlaybackControlsEnsureRequested?.Invoke(this);
+            return false;
+        }
 
         /// <summary>
         /// 빌드 환경의 Humanoid 재생 세션 준비 — 에디터 경로와 같은 보정 스택을 쓰되
@@ -363,26 +400,10 @@ namespace Fbx2Vmd.FBXImporter
             _pendingNativeSkinningPlaybackRequest =
                 NativeSkinningPendingPlaybackRequest.None;
             _nativeSkinningCorrectionSetupError = string.Empty;
-            _humanoidMotionPlaybackController ??=
-                new HumanoidMotionPlaybackController();
-            if (importedModel == null)
-            {
-                _humanoidMotionPlaybackController.Prepare(targetAnimator, clip);
-            }
-            else
-            {
-                _humanoidMotionPlaybackController.PrepareWithArmDirectionReference(
-                    targetAnimator,
-                    clip,
-                    importedModel);
-            }
-            _humanoidMotionPlaybackController.SetGroundResponseEnabled(true);
-            // goal IK 경로 기본 활성 — 발 모임 등 근육 리타겟 왜곡을 소스 목표로 직접 구동해 차단한다.
-            _humanoidMotionPlaybackController.SetIkGoalFootDrive(true, 1f);
-            // 정지 발 순간이동 확산 기본 활성 — 소스 클립의 단발 불연속이 지지 발을
-            // 순간이동시키는 스냅을 수 프레임에 걸쳐 완화한다.
-            _humanoidMotionPlaybackController.SetFootStepDiffusion(true);
-            _humanoidMotionPlaybackController.PrepareSupportCurves(targetAnimator);
+            InitializePlaybackController(
+                targetAnimator,
+                clip,
+                importedModel);
             _poseCorrectionDocument = new HumanoidPoseCorrectionDocument(
                 motionName,
                 _humanoidMotionPlaybackController.ClipFrameRate);
@@ -392,18 +413,8 @@ namespace Fbx2Vmd.FBXImporter
                 new NoOpMotionVideoRecorder());
             _preparedMotionName = motionName;
             _isProcessing = false;
-            if (!NativeSkinningCorrectionPlaybackDriver.TryAttach(
-                    gameObject,
-                    targetAnimator,
-                    _humanoidMotionPlaybackController,
-                    out _nativeSkinningCorrectionPlaybackDriver,
-                    out _nativeSkinningCorrectionSetupError))
+            if (!TryAttachSkinningDriverOrFail(targetAnimator))
             {
-                SetSessionState(
-                    FBXSessionState.Failed,
-                    _nativeSkinningCorrectionSetupError,
-                    0f);
-                PlaybackControlsEnsureRequested?.Invoke(this);
                 return;
             }
             // 빌드는 에셋 식별자가 없어 소스 FBX 경로+내용 해시로 캐시 키를 잡는다.

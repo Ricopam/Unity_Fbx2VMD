@@ -303,29 +303,39 @@ namespace Fbx2Vmd.FBXImporter
             }
             if (_nativeSkinningCorrectionPlaybackDriver.IsPreparing)
             {
-                // 방어적 불변식: 정상 호출 경로에선 녹화 중 재준비가 성립하지 않지만,
-                // 성립하면 재생 틱만 스킵된 채 Recorder가 렌더러 숨김 상태를 계속
-                // 캡처해 영상이 오염되므로 조용히 두지 않고 중단함.
-                if (IsImportedMotionRecording)
-                {
-                    Debug.LogWarning(
-                        "[FBXImport] 영상 녹화 중 보정 재준비가 발생해 녹화를 중단합니다.");
-                    TryStopImportedMotionRecording();
-                }
-                SetSessionState(
-                    FBXSessionState.Retargeting,
-                    $"FBX 팔 표면 보정 준비 중: " +
-                    $"{ImportedMotionCorrectionProcessedFrameCount} / " +
-                    $"{ImportedMotionCorrectionTotalFrameCount}",
-                    ImportedMotionCorrectionPreparationProgress,
-                    shouldLog: false);
-                return true;
+                return HandlePreparationInProgress();
             }
             if (_pendingNativeSkinningPlaybackRequest ==
                 NativeSkinningPendingPlaybackRequest.None)
             {
                 return false;
             }
+            return DispatchPendingPlaybackRequest();
+        }
+
+        private bool HandlePreparationInProgress()
+        {
+            // 방어적 불변식: 정상 호출 경로에선 녹화 중 재준비가 성립하지 않지만,
+            // 성립하면 재생 틱만 스킵된 채 Recorder가 렌더러 숨김 상태를 계속
+            // 캡처해 영상이 오염되므로 조용히 두지 않고 중단함.
+            if (IsImportedMotionRecording)
+            {
+                Debug.LogWarning(
+                    "[FBXImport] 영상 녹화 중 보정 재준비가 발생해 녹화를 중단합니다.");
+                TryStopImportedMotionRecording();
+            }
+            SetSessionState(
+                FBXSessionState.Retargeting,
+                $"FBX 팔 표면 보정 준비 중: " +
+                $"{ImportedMotionCorrectionProcessedFrameCount} / " +
+                $"{ImportedMotionCorrectionTotalFrameCount}",
+                ImportedMotionCorrectionPreparationProgress,
+                shouldLog: false);
+            return true;
+        }
+
+        private bool DispatchPendingPlaybackRequest()
+        {
             if (_nativeSkinningCorrectionPlaybackDriver.IsFaulted)
             {
                 string failureMessage =
