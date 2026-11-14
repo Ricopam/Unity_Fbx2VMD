@@ -145,6 +145,19 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return true;
             }
+            NativeSkinningSurfaceCorrectionResult headroom =
+                RunStrongHeadroomChain(baselineVertices, contract, timing, ref result);
+            RunStrongWideChain(baselineVertices, contract, timing, headroom, ref result);
+            return true;
+        }
+
+        // 축소 재시도·헤드룸·체인 재투입 단계. headroom은 후속 블렌드/복원 단계가 쓰므로 반환한다.
+        private static NativeSkinningSurfaceCorrectionResult RunStrongHeadroomChain(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract,
+            NativeSkinningSolverTiming timing,
+            ref NativeSkinningSurfaceCorrectionResult result)
+        {
             // 축소 예산 재시도가 더 엄격한 품질 게이트를 통과하면 그 결과를 채택한다.
             if (TryCalculateTimed(
                     baselineVertices,
@@ -191,6 +204,17 @@ namespace Fbx2Vmd.FBXImporter
             {
                 result = chained;
             }
+            return headroom;
+        }
+
+        // 와이드 탐색·블렌드·확장 예산·복원·리시드 단계.
+        private static void RunStrongWideChain(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract,
+            NativeSkinningSolverTiming timing,
+            NativeSkinningSurfaceCorrectionResult headroom,
+            ref NativeSkinningSurfaceCorrectionResult result)
+        {
             NativeSkinningSurfaceCorrectionResult wide = null;
             if (!IsWithinQuality(result, contract, StrongConfiguration) &&
                 TryCalculateTimed(
@@ -222,6 +246,18 @@ namespace Fbx2Vmd.FBXImporter
             {
                 result = blended;
             }
+            RunExtendedRestoreReseed(
+                baselineVertices, contract, timing, headroom, wide, ref result);
+        }
+
+        private static void RunExtendedRestoreReseed(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract,
+            NativeSkinningSolverTiming timing,
+            NativeSkinningSurfaceCorrectionResult headroom,
+            NativeSkinningSurfaceCorrectionResult wide,
+            ref NativeSkinningSurfaceCorrectionResult result)
+        {
             if (!IsWithinQuality(result, contract, StrongConfiguration) &&
                 TryCalculateTimed(
                     baselineVertices,
@@ -232,7 +268,7 @@ namespace Fbx2Vmd.FBXImporter
                     false,
                     timing,
                     out NativeSkinningSurfaceCorrectionResult extended) &&
-                IsWithinQuality(extended, contract, StrongConfiguration))
+                IsWithinQuality(extended, contract, StrongExtendedConfiguration))
             {
                 result = extended;
             }
@@ -263,8 +299,8 @@ namespace Fbx2Vmd.FBXImporter
             {
                 result = reseeded;
             }
-            return true;
         }
+
 
         internal static bool TryRecoverFailedFrame(
             IReadOnlyList<Vector3> baselineVertices,
@@ -284,13 +320,43 @@ namespace Fbx2Vmd.FBXImporter
             NativeSkinningSurfaceCorrectionResult initial = previous;
             NativeSkinningSurfaceCorrectionResult displayRepairSeed = null;
 
-            if (boneTransforms != null && TryDualQuaternionSeed(out result))
+            if (boneTransforms != null &&
+                TryDualQuaternionSeed(baselineVertices, contract, originalPairs, edges,
+                    restVertices, boneWeights, boneTransforms, timing,
+                    ref displayRepairSeed, out result))
             {
                 return true;
             }
 
             int[] recoveryPairs = originalPairs.Where(pairIndex =>
                 IsRestShapeRecoveryPair(baselineVertices, contract, pairIndex)).ToArray();
+            if (TryResidualRetryImprove(
+                    baselineVertices, contract, allPairs, originalPairs,
+                    recoveryPairs, edges, timing,
+                    ref previous, ref displayRepairSeed, ref result))
+            {
+                return true;
+            }
+            return (displayRepairSeed != null && TryProjectJointConstraints(
+                    baselineVertices, contract, displayRepairSeed, originalPairs, recoveryPairs, edges, out result)) ||
+                TryProjectJointConstraints(
+                baselineVertices, contract, initial, originalPairs, recoveryPairs, edges, out result);
+        }
+
+        // 잔여 폴드를 최대 ResidualFoldRetryCount회 재보정한다.
+        // 개선이 멈추면 중단하고 마지막으로 수용된 후보·표시용 시드를 갱신한다.
+        private static bool TryResidualRetryImprove(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract,
+            IEnumerable<int> allPairs,
+            HashSet<int> originalPairs,
+            int[] recoveryPairs,
+            FrameEdge[] edges,
+            NativeSkinningSolverTiming timing,
+            ref NativeSkinningSurfaceCorrectionResult previous,
+            ref NativeSkinningSurfaceCorrectionResult displayRepairSeed,
+            ref NativeSkinningSurfaceCorrectionResult result)
+        {
             var residualPairs = new HashSet<int>();
             for (int retry = 0; retry < ResidualFoldRetryCount; retry++)
             {
@@ -307,7 +373,7 @@ namespace Fbx2Vmd.FBXImporter
                     residualPairs, false, false, edges, new SolverBuffers(), timing);
                 NativeSkinningSurfaceCorrectionResult candidate = EvaluateResult(
                     baselineVertices, corrected, contract, edges, originalPairs.Count, recoveryPairs);
-                if (TryAcceptRetry(candidate))
+                if (TryAcceptRetry(baselineVertices, contract, candidate, ref displayRepairSeed))
                 {
                     result = candidate;
                     return true;
@@ -320,33 +386,46 @@ namespace Fbx2Vmd.FBXImporter
                 }
                 previous = candidate;
             }
-            return (displayRepairSeed != null && TryProjectJointConstraints(
-                    baselineVertices, contract, displayRepairSeed, originalPairs, recoveryPairs, edges, out result)) ||
-                TryProjectJointConstraints(
-                baselineVertices, contract, initial, originalPairs, recoveryPairs, edges, out result);
+            return false;
+        }
 
-            bool TryAcceptRetry(NativeSkinningSurfaceCorrectionResult candidate)
+        // 품질 게이트를 통과하면 true. 여유가 부족하면 표시 복구 시드만 갱신하고 false.
+        private static bool TryAcceptRetry(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract,
+            NativeSkinningSurfaceCorrectionResult candidate,
+            ref NativeSkinningSurfaceCorrectionResult displayRepairSeed)
+        {
+            if (!IsWithinStrongQuality(candidate, contract) ||
+                !IsCorrectedFrameWithinStrongQuality(baselineVertices, candidate.CorrectedVertices, contract))
             {
-                if (!IsWithinStrongQuality(candidate, contract) ||
-                    !IsCorrectedFrameWithinStrongQuality(baselineVertices, candidate.CorrectedVertices, contract))
-                {
-                    return false;
-                }
-                if (HasDisplayStrainMargin(candidate))
-                {
-                    return true;
-                }
-                if (displayRepairSeed == null ||
-                    candidate.MaximumEdgeLengthStrain < displayRepairSeed.MaximumEdgeLengthStrain)
-                {
-                    displayRepairSeed = candidate;
-                }
                 return false;
             }
-
-            bool TryDualQuaternionSeed(out NativeSkinningSurfaceCorrectionResult recovered)
+            if (HasDisplayStrainMargin(candidate))
             {
-                recovered = null;
+                return true;
+            }
+            if (displayRepairSeed == null ||
+                candidate.MaximumEdgeLengthStrain < displayRepairSeed.MaximumEdgeLengthStrain)
+            {
+                displayRepairSeed = candidate;
+            }
+            return false;
+        }
+
+        private static bool TryDualQuaternionSeed(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract,
+            HashSet<int> originalPairs,
+            FrameEdge[] edges,
+            Vector3[] restVertices,
+            BoneWeight[] boneWeights,
+            NativeSkinningDualQuaternionTransform[] boneTransforms,
+            NativeSkinningSolverTiming timing,
+            ref NativeSkinningSurfaceCorrectionResult displayRepairSeed,
+            out NativeSkinningSurfaceCorrectionResult recovered)
+        {
+            recovered = null;
                 LocalWorkset workset = BuildLocalWorkset(baselineVertices, contract, originalPairs,
                     StrongExtendedConfiguration.WorksetRingCount, edges, new SolverBuffers());
                 int[] indices = workset.ConstrainedVertices;
@@ -364,36 +443,60 @@ namespace Fbx2Vmd.FBXImporter
                 var localPositions = new Vector3[indices.Length];
                 foreach (float influence in DualQuaternionSeedInfluences)
                 {
-                    Vector3[] seed = baselineVertices.ToArray();
-                    for (int index = 0; index < indices.Length; index++)
+                    if (TryDualQuaternionSeedWithInfluence(
+                            baselineVertices, contract, originalPairs, edges, workset,
+                            indices, dqVertices, localPositions, influence, timing,
+                            ref displayRepairSeed, out recovered))
                     {
-                        Vector3 baseline = seed[indices[index]];
-                        localPositions[index] = baseline + Vector3.ClampMagnitude(
-                            (dqVertices[index] - baseline) * influence, MaximumDualQuaternionSeedDisplacement);
-                    }
-                    ProjectEdgeLengthBounds(seed, localPositions, indices, workset.Edges,
-                        StrongConfiguration.MaximumEdgeLengthStrain - EdgeLengthProjectionMargin,
-                        StrongConfiguration.EdgeLengthProjectionIterations);
-                    for (int index = 0; index < indices.Length; index++)
-                    {
-                        seed[indices[index]] = localPositions[index];
-                    }
-
-                    // DQ는 국소 풀이의 초기값으로 쓰고 최종 품질은 원본 메시 기준으로 판정함.
-                    NativeSkinningSurfaceCorrectionResult seedQuality = EvaluateResult(
-                        baselineVertices, seed, contract, edges, originalPairs.Count, Array.Empty<int>());
-                    if (seedQuality.NewDegenerateFaceCount == 0 && seedQuality.ReversedFaceCount == 0 &&
-                        seedQuality.MaximumEdgeLengthStrain <= StrongConfiguration.MaximumEdgeLengthStrain &&
-                        TryCalculateTimed(baselineVertices, seed, contract, StrongWideConfiguration,
-                            false, true, timing, out NativeSkinningSurfaceCorrectionResult candidate) &&
-                        TryAcceptRetry(candidate))
-                    {
-                        recovered = candidate;
                         return true;
                     }
                 }
                 return false;
+        }
+
+        private static bool TryDualQuaternionSeedWithInfluence(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract,
+            HashSet<int> originalPairs,
+            FrameEdge[] edges,
+            LocalWorkset workset,
+            int[] indices,
+            Vector3[] dqVertices,
+            Vector3[] localPositions,
+            float influence,
+            NativeSkinningSolverTiming timing,
+            ref NativeSkinningSurfaceCorrectionResult displayRepairSeed,
+            out NativeSkinningSurfaceCorrectionResult recovered)
+        {
+            recovered = null;
+            Vector3[] seed = baselineVertices.ToArray();
+            for (int index = 0; index < indices.Length; index++)
+            {
+                Vector3 baseline = seed[indices[index]];
+                localPositions[index] = baseline + Vector3.ClampMagnitude(
+                    (dqVertices[index] - baseline) * influence, MaximumDualQuaternionSeedDisplacement);
             }
+            ProjectEdgeLengthBounds(seed, localPositions, indices, workset.Edges,
+                StrongConfiguration.MaximumEdgeLengthStrain - EdgeLengthProjectionMargin,
+                StrongConfiguration.EdgeLengthProjectionIterations);
+            for (int index = 0; index < indices.Length; index++)
+            {
+                seed[indices[index]] = localPositions[index];
+            }
+
+            // DQ는 국소 풀이의 초기값으로 쓰고 최종 품질은 원본 메시 기준으로 판정함.
+            NativeSkinningSurfaceCorrectionResult seedQuality = EvaluateResult(
+                baselineVertices, seed, contract, edges, originalPairs.Count, Array.Empty<int>());
+            if (seedQuality.NewDegenerateFaceCount == 0 && seedQuality.ReversedFaceCount == 0 &&
+                seedQuality.MaximumEdgeLengthStrain <= StrongConfiguration.MaximumEdgeLengthStrain &&
+                TryCalculateTimed(baselineVertices, seed, contract, StrongWideConfiguration,
+                    false, true, timing, out NativeSkinningSurfaceCorrectionResult candidate) &&
+                TryAcceptRetry(baselineVertices, contract, candidate, ref displayRepairSeed))
+            {
+                recovered = candidate;
+                return true;
+            }
+            return false;
         }
 
         private static bool HasDisplayStrainMargin(NativeSkinningSurfaceCorrectionResult result) =>
@@ -421,34 +524,16 @@ namespace Fbx2Vmd.FBXImporter
             var localPositions = new Vector3[workset.ConstrainedVertices.Length];
             for (int round = 0; round < HeadroomStrainProjectionRoundCount; round++)
             {
-                for (int localIndex = 0; localIndex < localPositions.Length; localIndex++)
-                {
-                    localPositions[localIndex] =
-                        vertices[workset.ConstrainedVertices[localIndex]];
-                }
-                // 한 번의 투영은 0.05mm로 제한되므로 직전 후보에서 작은 단계를 이어감.
-                ProjectEdgeLengthBounds(
-                    vertices, localPositions, workset.ConstrainedVertices, workset.Edges,
-                    StrongConfiguration.MaximumEdgeLengthStrain - EdgeLengthProjectionMargin,
-                    StrongConfiguration.EdgeLengthProjectionIterations);
-                Vector3[] projected = vertices.ToArray();
-                bool hasMovement = false;
-                for (int localIndex = 0; localIndex < localPositions.Length; localIndex++)
-                {
-                    int vertexIndex = workset.ConstrainedVertices[localIndex];
-                    projected[vertexIndex] = localPositions[localIndex];
-                    hasMovement |= !projected[vertexIndex].Equals(vertices[vertexIndex]);
-                }
-                if (!AreVerticesFinite(projected))
+                if (!TryProjectRoundPositions(
+                        vertices, localPositions, workset,
+                        out Vector3[] projected, out bool hasMovement))
                 {
                     return false;
                 }
                 NativeSkinningSurfaceCorrectionResult seed = EvaluateResult(
                     baselineVertices, projected, contract, edges,
                     headroom.InitialSharpFoldCount, Array.Empty<int>());
-                if (seed.NewDegenerateFaceCount > 0 || seed.ReversedFaceCount > 0 ||
-                    seed.MaximumVertexDisplacement > contract.ArmChainLength *
-                        StrongConfiguration.MaximumTotalDisplacementToArmLengthRatio)
+                if (IsProjectionUnsafe(seed, contract))
                 {
                     return false;
                 }
@@ -467,6 +552,43 @@ namespace Fbx2Vmd.FBXImporter
                 vertices = projected;
             }
             return false;
+        }
+
+        // 한 번의 투영은 0.05mm로 제한되므로 직전 후보에서 작은 단계를 이어감.
+        private static bool TryProjectRoundPositions(
+            Vector3[] vertices,
+            Vector3[] localPositions,
+            LocalWorkset workset,
+            out Vector3[] projected,
+            out bool hasMovement)
+        {
+            for (int localIndex = 0; localIndex < localPositions.Length; localIndex++)
+            {
+                localPositions[localIndex] =
+                    vertices[workset.ConstrainedVertices[localIndex]];
+            }
+            ProjectEdgeLengthBounds(
+                vertices, localPositions, workset.ConstrainedVertices, workset.Edges,
+                StrongConfiguration.MaximumEdgeLengthStrain - EdgeLengthProjectionMargin,
+                StrongConfiguration.EdgeLengthProjectionIterations);
+            projected = vertices.ToArray();
+            hasMovement = false;
+            for (int localIndex = 0; localIndex < localPositions.Length; localIndex++)
+            {
+                int vertexIndex = workset.ConstrainedVertices[localIndex];
+                projected[vertexIndex] = localPositions[localIndex];
+                hasMovement |= !projected[vertexIndex].Equals(vertices[vertexIndex]);
+            }
+            return AreVerticesFinite(projected);
+        }
+
+        private static bool IsProjectionUnsafe(
+            NativeSkinningSurfaceCorrectionResult seed,
+            NativeSkinningSurfaceContract contract)
+        {
+            return seed.NewDegenerateFaceCount > 0 || seed.ReversedFaceCount > 0 ||
+                seed.MaximumVertexDisplacement > contract.ArmChainLength *
+                    StrongConfiguration.MaximumTotalDisplacementToArmLengthRatio;
         }
 
         internal static bool AreVerticesFinite(
