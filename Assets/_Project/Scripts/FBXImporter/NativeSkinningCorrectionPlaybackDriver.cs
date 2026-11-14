@@ -12,7 +12,7 @@ namespace Fbx2Vmd.FBXImporter
     /// </summary>
     [DefaultExecutionOrder(CorrectionPassOrder.PlaybackDriver)]
     [DisallowMultipleComponent]
-    internal sealed class NativeSkinningCorrectionPlaybackDriver : MonoBehaviour
+    internal sealed partial class NativeSkinningCorrectionPlaybackDriver : MonoBehaviour
     {
         private HumanoidMotionPlaybackController _playbackController;
         private Animator _animator;
@@ -122,24 +122,14 @@ namespace Fbx2Vmd.FBXImporter
 
             try
             {
-                NativeSkinningArmSurfaceSelection[] selections =
-                    NativeSkinningArmSurfaceSelector.FindAll(animator);
-                if (selections.Length == 0)
+                if (!TryBuildContracts(animator, out List<NativeSkinningSurfaceContract> contracts))
+                {
+                    errorMessage = "팔 표면의 Native 보정 계약을 만들지 못했습니다.";
+                    return false;
+                }
+                if (contracts == null)
                 {
                     return true;
-                }
-                var contracts = new List<NativeSkinningSurfaceContract>(
-                    selections.Length);
-                foreach (NativeSkinningArmSurfaceSelection selection in selections)
-                {
-                    if (!NativeSkinningSurfaceContractBuilder.TryBuild(
-                            selection,
-                            out NativeSkinningSurfaceContract contract))
-                    {
-                        errorMessage = "팔 표면의 Native 보정 계약을 만들지 못했습니다.";
-                        return false;
-                    }
-                    contracts.Add(contract);
                 }
 
                 driver = host.GetComponent<NativeSkinningCorrectionPlaybackDriver>();
@@ -162,6 +152,32 @@ namespace Fbx2Vmd.FBXImporter
                 }
                 return false;
             }
+        }
+
+        // contracts==null이면 선택 없음(성공), false+비null이면 계약 생성 실패.
+        static bool TryBuildContracts(
+            Animator animator,
+            out List<NativeSkinningSurfaceContract> contracts)
+        {
+            contracts = null;
+            NativeSkinningArmSurfaceSelection[] selections =
+                NativeSkinningArmSurfaceSelector.FindAll(animator);
+            if (selections.Length == 0)
+            {
+                return true;
+            }
+            contracts = new List<NativeSkinningSurfaceContract>(selections.Length);
+            foreach (NativeSkinningArmSurfaceSelection selection in selections)
+            {
+                if (!NativeSkinningSurfaceContractBuilder.TryBuild(
+                        selection,
+                        out NativeSkinningSurfaceContract contract))
+                {
+                    return false;
+                }
+                contracts.Add(contract);
+            }
+            return true;
         }
 
         internal bool BeginPreparation()
@@ -200,40 +216,12 @@ namespace Fbx2Vmd.FBXImporter
                 return IsReady;
             }
             _prepWallWatch.Reset();
-            foreach (SkinnedMeshRenderer renderer in _contracts
-                         .Select(contract => contract.Renderer)
-                         .Distinct())
+            if (!PrepareBakedMeshes())
             {
-                if (renderer == null || renderer.sharedMesh == null)
-                {
-                    return Fail("Native 보정 대상 Renderer가 사라졌습니다.");
-                }
-                var bakedMesh = new Mesh
-                {
-                    name = $"{renderer.sharedMesh.name} Native Skinning Preprocess",
-                    hideFlags = HideFlags.HideAndDontSave
-                };
-                _bakedMeshes.Add(renderer, bakedMesh);
-                _sessionMeshes[renderer] = renderer.sharedMesh;
+                return Fail("Native 보정 대상 Renderer가 사라졌습니다.");
             }
 
-            bool sessionCreated =
-                NativeSkinningCorrectionPreprocessor
-                    .IsFailureCollectionRequested()
-                    ? NativeSkinningCorrectionPreprocessor
-                        .TryCreateFailureCollectingSession(
-                            TotalFrameCount,
-                            _contracts,
-                            ReadFrameVertices,
-                            null,
-                            out _preprocessSession)
-                    : NativeSkinningCorrectionPreprocessor.TryCreateSession(
-                            TotalFrameCount,
-                            _contracts,
-                            ReadFrameVertices,
-                            null,
-                            out _preprocessSession);
-            if (!sessionCreated)
+            if (!CreatePreprocessSession())
             {
                 return Fail("Native 보정 사전 계산 session을 만들지 못했습니다.");
             }
@@ -245,6 +233,46 @@ namespace Fbx2Vmd.FBXImporter
             IsFaulted = false;
             FailureMessage = string.Empty;
             return true;
+        }
+
+        bool PrepareBakedMeshes()
+        {
+            foreach (SkinnedMeshRenderer renderer in _contracts
+                         .Select(contract => contract.Renderer)
+                         .Distinct())
+            {
+                if (renderer == null || renderer.sharedMesh == null)
+                {
+                    return false;
+                }
+                var bakedMesh = new Mesh
+                {
+                    name = $"{renderer.sharedMesh.name} Native Skinning Preprocess",
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                _bakedMeshes.Add(renderer, bakedMesh);
+                _sessionMeshes[renderer] = renderer.sharedMesh;
+            }
+            return true;
+        }
+
+        bool CreatePreprocessSession()
+        {
+            return NativeSkinningCorrectionPreprocessor
+                .IsFailureCollectionRequested()
+                ? NativeSkinningCorrectionPreprocessor
+                    .TryCreateFailureCollectingSession(
+                        TotalFrameCount,
+                        _contracts,
+                        ReadFrameVertices,
+                        null,
+                        out _preprocessSession)
+                : NativeSkinningCorrectionPreprocessor.TryCreateSession(
+                        TotalFrameCount,
+                        _contracts,
+                        ReadFrameVertices,
+                        null,
+                        out _preprocessSession);
         }
 
         internal void CancelPreparation()
@@ -378,6 +406,17 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             // Seek + Bake + 본 변환은 Unity API라 메인스레드에서만 가능 — 틱당 상한까지 캡처.
+            if (!CapturePendingFrames())
+            {
+                return;
+            }
+
+            // 대기 중인 스냅샷을 배치로 워커 솔버에 넘긴다.
+            DispatchSolveBatch();
+        }
+
+        bool CapturePendingFrames()
+        {
             int capturedCount = 0;
             while (_nextCaptureFrame < TotalFrameCount &&
                    _pendingPreparedFrames.Count < MaxPendingPreparedFrames &&
@@ -385,47 +424,52 @@ namespace Fbx2Vmd.FBXImporter
             {
                 if (!CapturePreparedFrame(_nextCaptureFrame))
                 {
-                    return;
+                    return false;
                 }
                 _nextCaptureFrame++;
                 capturedCount++;
             }
+            return true;
+        }
 
-            // 대기 중인 스냅샷을 배치로 워커 솔버에 넘긴다.
-            if (_solveTask == null && _pendingPreparedFrames.Count > 0)
+        void DispatchSolveBatch()
+        {
+            if (_solveTask != null || _pendingPreparedFrames.Count == 0)
             {
-                int batchCount = Math.Min(
-                    SolveBatchFrameCount,
-                    _pendingPreparedFrames.Count);
-                var batch = new List<NativeSkinningPreparedFrame>(batchCount);
-                for (int index = 0; index < batchCount; index++)
-                {
-                    batch.Add(_pendingPreparedFrames.Dequeue());
-                }
-                NativeSkinningCorrectionPreprocessSession session =
-                    _preprocessSession;
-                int generation = System.Threading.Volatile.Read(
-                    ref _preparationGeneration);
-                _solveTask = Task.Run(() =>
-                {
-                    var solveWatch = System.Diagnostics.Stopwatch.StartNew();
-                    try
-                    {
-                        return session.TryProcessPreparedFrames(batch);
-                    }
-                    finally
-                    {
-                        // 파이프라인이 리셋된 뒤 끝난 버려진 작업은
-                        // 다음 세션의 계측에 합산하지 않는다.
-                        if (System.Threading.Volatile.Read(
-                                ref _preparationGeneration) == generation)
-                        {
-                            System.Threading.Interlocked.Add(
-                                ref _solveTicks, solveWatch.ElapsedTicks);
-                        }
-                    }
-                });
+                return;
             }
+
+            int batchCount = Math.Min(
+                SolveBatchFrameCount,
+                _pendingPreparedFrames.Count);
+            var batch = new List<NativeSkinningPreparedFrame>(batchCount);
+            for (int index = 0; index < batchCount; index++)
+            {
+                batch.Add(_pendingPreparedFrames.Dequeue());
+            }
+            NativeSkinningCorrectionPreprocessSession session =
+                _preprocessSession;
+            int generation = System.Threading.Volatile.Read(
+                ref _preparationGeneration);
+            _solveTask = Task.Run(() =>
+            {
+                var solveWatch = System.Diagnostics.Stopwatch.StartNew();
+                try
+                {
+                    return session.TryProcessPreparedFrames(batch);
+                }
+                finally
+                {
+                    // 파이프라인이 리셋된 뒤 끝난 버려진 작업은
+                    // 다음 세션의 계측에 합산하지 않는다.
+                    if (System.Threading.Volatile.Read(
+                            ref _preparationGeneration) == generation)
+                    {
+                        System.Threading.Interlocked.Add(
+                            ref _solveTicks, solveWatch.ElapsedTicks);
+                    }
+                }
+            });
         }
 
         // 프레임 하나의 솔버 입력(스키닝 정점 + 본 변환)을 메인스레드에서 캡처함.
@@ -449,6 +493,26 @@ namespace Fbx2Vmd.FBXImporter
             // 베이크해 재비교하며 늦은 드리프트(블렌드셰이프 등)를 되돌린다.
             bool revalidateLbs =
                 frameIndex % LbsRevalidationFrameInterval == 0;
+            if (!CaptureRendererInputs(
+                    frameIndex, stageWatch, revalidateLbs,
+                    baselineVertices, skinningMatricesByRenderer))
+            {
+                return false;
+            }
+            _pendingPreparedFrames.Enqueue(new NativeSkinningPreparedFrame(
+                frameIndex,
+                baselineVertices,
+                skinningMatricesByRenderer));
+            return true;
+        }
+
+        bool CaptureRendererInputs(
+            int frameIndex,
+            System.Diagnostics.Stopwatch stageWatch,
+            bool revalidateLbs,
+            Dictionary<SkinnedMeshRenderer, Vector3[]> baselineVertices,
+            Dictionary<SkinnedMeshRenderer, Matrix4x4[]> skinningMatricesByRenderer)
+        {
             foreach (SkinnedMeshRenderer renderer in _contracts
                          .Select(contract => contract.Renderer)
                          .Distinct())
@@ -489,10 +553,6 @@ namespace Fbx2Vmd.FBXImporter
                 _boneSampleTicks += stageWatch.ElapsedTicks;
                 skinningMatricesByRenderer[renderer] = skinningMatrices;
             }
-            _pendingPreparedFrames.Enqueue(new NativeSkinningPreparedFrame(
-                frameIndex,
-                baselineVertices,
-                skinningMatricesByRenderer));
             return true;
         }
 
@@ -580,337 +640,6 @@ namespace Fbx2Vmd.FBXImporter
             }
             renderer.BakeMesh(bakedMesh, false);
             return bakedMesh.vertices;
-        }
-
-        // 캐시 복원 시도 — 실패 사유는 전부 미스로 처리해 기존 계산 경로로 넘긴다.
-        private bool TryRestoreResultFromCache(
-            out NativeSkinningCorrectionPreprocessResult result)
-        {
-            result = null;
-            _resultFromCache = false;
-            _cacheKeyHash = null;
-
-            Debug.Log("[NativePrepCache] 캐시 조회를 시작합니다.", this);
-            // 수집 모드 실행이 수동 재계산 플래그를 소비하지 않도록 먼저 확인한다.
-            if (NativeSkinningCorrectionPreprocessor.IsFailureCollectionRequested())
-            {
-                return false;
-            }
-#if UNITY_EDITOR
-            if (ForceCacheRecalculate)
-            {
-                ForceCacheRecalculate = false;
-                Debug.Log(
-                    "[NativePrepCache] 수동 재계산 요청 — 캐시 로드를 건너뜁니다.",
-                    this);
-                // 강제 재계산이어도 결과는 다시 저장해야 하므로 키는 계산한다.
-                ComputeCacheKey();
-                return false;
-            }
-#endif
-            if (!ComputeCacheKey())
-            {
-                return false;
-            }
-
-            string path = NativeSkinningCorrectionCacheFileStore.GetCachePath(
-                _cacheKeyHash);
-            if (!NativeSkinningCorrectionCacheFileStore.TryLoad(
-                    path,
-                    _cacheKeyHash,
-                    out NativeSkinningCorrectionCacheDocument document,
-                    out string loadError))
-            {
-                Debug.Log(
-                    $"[NativePrepCache] 캐시 미스 — {loadError}", this);
-                return false;
-            }
-            // 복원 경로의 어떤 예외도 미스로 내려 기존 계산 경로를 보존한다.
-            NativeSkinningRendererCorrection[] corrections;
-            try
-            {
-                if (!TryBindDocument(document, out corrections,
-                        out string bindError))
-                {
-                    Debug.Log(
-                        "[NativePrepCache] 캐시 렌더러 재바인딩 실패 — " +
-                        $"재계산합니다: {bindError}",
-                        this);
-                    return false;
-                }
-
-                result = new NativeSkinningCorrectionPreprocessResult(
-                    document.FrameCount,
-                    document.CorrectedFrameCount,
-                    document.FallbackFrameCount,
-                    document.CorrectionEntryCount,
-                    corrections);
-            }
-            catch (Exception exception)
-            {
-                Debug.Log(
-                    $"[NativePrepCache] 캐시 복원 중 예외 — 재계산합니다: " +
-                    $"{exception.Message}",
-                    this);
-                result = null;
-                return false;
-            }
-
-            _resultFromCache = true;
-            Debug.Log(
-                $"[NativePrepCache] 캐시 히트 — 렌더러 {corrections.Length}개, " +
-                $"보정 프레임 {document.CorrectedFrameCount}개를 복원했습니다.",
-                this);
-            return true;
-        }
-
-        private bool ComputeCacheKey()
-        {
-            if (_cacheKeyHash != null)
-            {
-                return true;
-            }
-            if (_animator == null ||
-                _playbackController == null ||
-                _contracts.Length == 0)
-            {
-                Debug.Log(
-                    "[NativePrepCache] 캐시 식별자가 주입되지 않아 " +
-                    "캐시를 사용하지 않습니다.",
-                    this);
-                return false;
-            }
-#if UNITY_EDITOR
-            if (_cacheMotionClip == null)
-            {
-                Debug.Log(
-                    "[NativePrepCache] 캐시 식별자가 주입되지 않아 " +
-                    "캐시를 사용하지 않습니다.",
-                    this);
-                return false;
-            }
-            bool computed = NativeSkinningCorrectionCacheKey.TryCompute(
-                _cacheMotionClip,
-                _cacheMotionName,
-                TotalFrameCount,
-                _playbackController.ClipFrameRate,
-                _cacheSourceModelAsset,
-                _animator,
-                _contracts,
-                _playbackController.GetNativePoseCacheIdentity(),
-                out _cacheKeyHash,
-                out string keyError);
-#else
-            if (string.IsNullOrEmpty(_runtimeCacheSourcePath))
-            {
-                Debug.Log(
-                    "[NativePrepCache] 캐시 식별자가 주입되지 않아 " +
-                    "캐시를 사용하지 않습니다.",
-                    this);
-                return false;
-            }
-            bool computed = NativeSkinningCorrectionCacheKey.TryComputeRuntime(
-                _runtimeCacheSourcePath,
-                _cacheMotionName,
-                TotalFrameCount,
-                _playbackController.ClipFrameRate,
-                _animator,
-                _contracts,
-                _playbackController.GetNativePoseCacheIdentity(),
-                out _cacheKeyHash,
-                out string keyError);
-#endif
-            if (!computed)
-            {
-                Debug.LogWarning(
-                    $"[NativePrepCache] 캐시 키 계산 실패 — {keyError}", this);
-                return false;
-            }
-            return true;
-        }
-
-        // 캐시 문서·바인딩이 쓰는 메시 식별자 — 에디터는 에셋 id,
-        // 빌드는 정점 내용 해시로 같은 메시를 식별한다.
-        private static string GetMeshCacheIdentity(Mesh mesh)
-        {
-#if UNITY_EDITOR
-            return NativeSkinningCorrectionCacheKey.GetAssetIdentity(mesh);
-#else
-            return NativeSkinningCorrectionCacheKey.GetRuntimeMeshIdentity(mesh);
-#endif
-        }
-
-        // 캐시 문서의 렌더러 항목을 현재 계약의 Renderer에 재바인딩한다.
-        private bool TryBindDocument(
-            NativeSkinningCorrectionCacheDocument document,
-            out NativeSkinningRendererCorrection[] corrections,
-            out string failReason)
-        {
-            corrections = null;
-            failReason = null;
-            if (document.FrameCount != TotalFrameCount)
-            {
-                failReason =
-                    $"프레임 수 불일치 문서={document.FrameCount} 현재={TotalFrameCount}";
-                return false;
-            }
-
-            // 경로→렌더러 1:1 맵 — 씬 쪽 경로 충돌(모호)은 미스로 처리한다.
-            // 문서는 보정 프레임이 생긴 렌더러만 담으므로 부분 집합이 정상이다 —
-            // 계약 렌더러 집합 자체는 캐시 키에 이미 포함돼 다른 조합은 파일이
-            // 열리지 않는다.
-            var byPath = new Dictionary<string, SkinnedMeshRenderer>(
-                StringComparer.Ordinal);
-            foreach (SkinnedMeshRenderer candidate in _contracts
-                         .Select(contract => contract.Renderer)
-                         .Where(renderer => renderer != null)
-                         .Distinct())
-            {
-                string path = NativeSkinningCorrectionCacheKey
-                    .GetRendererPath(_animator, candidate);
-                if (candidate.sharedMesh == null ||
-                    string.IsNullOrEmpty(path) ||
-                    byPath.ContainsKey(path))
-                {
-                    failReason =
-                        $"씬 렌더러 경로 구성 실패 path='{path}' mesh={(candidate.sharedMesh == null ? "null" : "ok")} 중복={byPath.ContainsKey(path)}";
-                    return false;
-                }
-                byPath.Add(path, candidate);
-            }
-
-            var bound = new List<NativeSkinningRendererCorrection>(
-                document.Renderers.Length);
-            foreach (NativeSkinningCorrectionCacheRendererEntry entry in
-                     document.Renderers)
-            {
-                if (!byPath.TryGetValue(entry.RendererPath,
-                        out SkinnedMeshRenderer renderer))
-                {
-                    failReason = $"문서 경로 '{entry.RendererPath}'에 대응하는 씬 렌더러 없음";
-                    return false;
-                }
-                if (renderer.sharedMesh.vertexCount != entry.VertexCount ||
-                    GetMeshCacheIdentity(renderer.sharedMesh) !=
-                        entry.MeshAssetId)
-                {
-                    failReason =
-                        $"메시 식별 불일치 path='{entry.RendererPath}' 정점={renderer.sharedMesh.vertexCount}/{entry.VertexCount}";
-                    return false;
-                }
-
-                var frames = new NativeSkinningCorrectionFrame[
-                    entry.Frames.Length];
-                for (int index = 0; index < entry.Frames.Length; index++)
-                {
-                    NativeSkinningCorrectionCacheFrameData frame =
-                        entry.Frames[index];
-                    var items = new NativeSkinningVertexCorrection[
-                        frame.VertexIndices.Length];
-                    for (int item = 0; item < items.Length; item++)
-                    {
-                        items[item] = new NativeSkinningVertexCorrection(
-                            frame.VertexIndices[item],
-                            frame.Deltas[item]);
-                    }
-                    frames[index] = new NativeSkinningCorrectionFrame(
-                        frame.FrameIndex,
-                        items);
-                }
-
-                bound.Add(new NativeSkinningRendererCorrection(
-                    renderer,
-                    new NativeSkinningCorrectionCache(
-                        entry.VertexCount,
-                        frames)));
-            }
-
-            corrections = bound.ToArray();
-            return true;
-        }
-
-        // 계산 결과를 캐시 파일로 기록 — 부분 결과·수집 모드·캐시 재사용분은 제외.
-        private void TrySaveResultToCache(
-            NativeSkinningCorrectionPreprocessResult result)
-        {
-            try
-            {
-                if (_resultFromCache ||
-                    result == null ||
-                    result.CollectedFailureCount > 0 ||
-                    NativeSkinningCorrectionPreprocessor
-                        .IsFailureCollectionRequested() ||
-                    !ComputeCacheKey())
-                {
-                    return;
-                }
-
-                var document = new NativeSkinningCorrectionCacheDocument
-                {
-                    FrameCount = result.FrameCount,
-                    CorrectedFrameCount = result.CorrectedFrameCount,
-                    FallbackFrameCount = result.FallbackFrameCount,
-                    CorrectionEntryCount = result.CorrectionEntryCount,
-                    Renderers = result.RendererCorrections
-                        .Select(BuildRendererEntry)
-                        .ToArray()
-                };
-                string path = NativeSkinningCorrectionCacheFileStore
-                    .GetCachePath(_cacheKeyHash);
-                if (NativeSkinningCorrectionCacheFileStore.TrySave(
-                        path,
-                        _cacheKeyHash,
-                        document,
-                        out string errorMessage))
-                {
-                    Debug.Log(
-                        $"[NativePrepCache] 보정 캐시 저장: {path}", this);
-                }
-                else
-                {
-                    Debug.LogWarning(
-                        $"[NativePrepCache] 보정 캐시 저장 실패: {errorMessage}",
-                        this);
-                }
-            }
-            catch (Exception exception)
-            {
-                // 캐시 기록 실패는 준비 결과를 실패로 뒤집지 않는다.
-                Debug.LogWarning(
-                    $"[NativePrepCache] 보정 캐시 저장 중 예외: {exception.Message}",
-                    this);
-            }
-        }
-
-        private NativeSkinningCorrectionCacheRendererEntry BuildRendererEntry(
-            NativeSkinningRendererCorrection correction)
-        {
-            return new NativeSkinningCorrectionCacheRendererEntry
-            {
-                RendererPath =
-                    NativeSkinningCorrectionCacheKey.GetRendererPath(
-                        _animator, correction.Renderer),
-                MeshAssetId =
-                    GetMeshCacheIdentity(correction.Renderer.sharedMesh),
-                VertexCount = correction.Cache.VertexCount,
-                Frames = correction.Cache.ExportFrames()
-                    .Select(frame =>
-                    {
-                        NativeSkinningVertexCorrection[] items =
-                            frame.ExportCorrections();
-                        return new NativeSkinningCorrectionCacheFrameData
-                        {
-                            FrameIndex = frame.FrameIndex,
-                            VertexIndices = items
-                                .Select(item => item.VertexIndex)
-                                .ToArray(),
-                            Deltas = items
-                                .Select(item => item.Delta)
-                                .ToArray()
-                        };
-                    })
-                    .ToArray()
-            };
         }
 
         private void CaptureAndHideRenderers()
