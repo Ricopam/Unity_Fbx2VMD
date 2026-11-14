@@ -54,25 +54,8 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                Vector3 targetPosition = GetSourcePositionInHelperParentSpace(helperTransform, sourceTransform);
-                if (_initialLocalPositions.TryGetValue(helperTransform, out Vector3 initialPosition) &&
-                    detachedThumbBaseHelperSyncWeight < 0.999f)
-                {
-                    targetPosition = Vector3.Lerp(initialPosition, targetPosition, detachedThumbBaseHelperSyncWeight);
-                }
-
-                if (_initialLocalPositions.TryGetValue(helperTransform, out initialPosition))
-                {
-                    targetPosition = initialPosition + Vector3.ClampMagnitude(
-                        targetPosition - initialPosition,
-                        detachedThumbBaseHelperMaxPositionOffset);
-                }
-
-                if (useWebbingGuard)
-                {
-                    targetPosition = ConstrainThumbWebbingHelperPosition(helperTransform, sourceTransform, targetPosition);
-                }
-
+                Vector3 targetPosition = ResolveDetachedHelperTargetPosition(
+                    helperTransform, sourceTransform, useWebbingGuard);
                 if ((helperTransform.localPosition - targetPosition).sqrMagnitude <= 0.00000001f)
                 {
                     continue;
@@ -83,6 +66,30 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             return changed;
+        }
+
+        private Vector3 ResolveDetachedHelperTargetPosition(
+            Transform helperTransform, Transform sourceTransform, bool useWebbingGuard)
+        {
+            Vector3 targetPosition = GetSourcePositionInHelperParentSpace(helperTransform, sourceTransform);
+            if (_initialLocalPositions.TryGetValue(helperTransform, out Vector3 initialPosition) &&
+                detachedThumbBaseHelperSyncWeight < 0.999f)
+            {
+                targetPosition = Vector3.Lerp(initialPosition, targetPosition, detachedThumbBaseHelperSyncWeight);
+            }
+
+            if (_initialLocalPositions.TryGetValue(helperTransform, out initialPosition))
+            {
+                targetPosition = initialPosition + Vector3.ClampMagnitude(
+                    targetPosition - initialPosition,
+                    detachedThumbBaseHelperMaxPositionOffset);
+            }
+
+            if (useWebbingGuard)
+            {
+                targetPosition = ConstrainThumbWebbingHelperPosition(helperTransform, sourceTransform, targetPosition);
+            }
+            return targetPosition;
         }
 
         private Quaternion CalculateDetachedThumbBaseHelperTargetRotation(Transform helperTransform, Transform sourceTransform)
@@ -118,20 +125,9 @@ namespace Fbx2Vmd.FBXImporter
                 stabilizeDetachedThumbBasePalm,
                 detachedThumbBasePalmStabilizeWeight);
 
-            float effectiveWebbingWeight = 0f;
-            float effectiveWebbingMaxLocalAngle = thumbWebbingCreaseMaxLocalAngle;
-            if (stabilizeThumbWebbingCrease && thumbWebbingCreaseStabilizeWeight > 0f)
-            {
-                GetEffectiveThumbWebbingCorrectiveSettings(
-                    helperTransform,
-                    sourceTransform,
-                    targetRotation,
-                    helperTransform.localPosition,
-                    out effectiveWebbingWeight,
-                    out effectiveWebbingMaxLocalAngle,
-                    out _);
-
-            }
+            float effectiveWebbingWeight = ResolveWebbingCorrectiveSettings(
+                helperTransform, sourceTransform, targetRotation,
+                out float effectiveWebbingMaxLocalAngle);
 
             return ThumbBaseHelperRotationCalculator.FinalizeRotation(
                 helperInitialRotation,
@@ -143,6 +139,28 @@ namespace Fbx2Vmd.FBXImporter
                 detachedThumbBasePalmStabilizeWeight,
                 detachedThumbBasePalmMaxLocalAngle,
                 effectiveWebbingMaxLocalAngle);
+        }
+
+        private float ResolveWebbingCorrectiveSettings(
+            Transform helperTransform,
+            Transform sourceTransform,
+            Quaternion targetRotation,
+            out float effectiveWebbingMaxLocalAngle)
+        {
+            float effectiveWebbingWeight = 0f;
+            effectiveWebbingMaxLocalAngle = thumbWebbingCreaseMaxLocalAngle;
+            if (stabilizeThumbWebbingCrease && thumbWebbingCreaseStabilizeWeight > 0f)
+            {
+                GetEffectiveThumbWebbingCorrectiveSettings(
+                    helperTransform,
+                    sourceTransform,
+                    targetRotation,
+                    helperTransform.localPosition,
+                    out effectiveWebbingWeight,
+                    out effectiveWebbingMaxLocalAngle,
+                    out _);
+            }
+            return effectiveWebbingWeight;
         }
 
         private Quaternion GetDetachedThumbBaseHelperDeltaAxisRemap(Transform sourceTransform)

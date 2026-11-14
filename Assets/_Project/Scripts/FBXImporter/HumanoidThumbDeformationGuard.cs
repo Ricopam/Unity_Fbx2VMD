@@ -28,41 +28,7 @@ namespace Fbx2Vmd.FBXImporter
             int changed = 0;
             if (clampHumanoidThumbRotations)
             {
-                foreach (HumanBodyBones thumbBone in ThumbBones)
-                {
-                    Transform thumbTransform = targetAnimator.GetBoneTransform(thumbBone);
-                    if (thumbTransform == null ||
-                        !_initialLocalRotations.TryGetValue(thumbTransform, out Quaternion initialRotation))
-                    {
-                        continue;
-                    }
-
-                    float limit = GetLimit(thumbBone);
-                    Quaternion rawRotation = GetCurrentRawLocalRotation(thumbTransform);
-                    if (!IsFinite(rawRotation))
-                    {
-                        SetCorrectedLocalRotation(thumbTransform, initialRotation, initialRotation);
-                        changed++;
-                        continue;
-                    }
-
-                    Quaternion offsetRotation = GetThumbRotationOffset(thumbBone);
-                    if (!ThumbLocalRotationCalculator.TryCalculateCorrection(
-                            initialRotation,
-                            rawRotation,
-                            thumbTransform.localRotation,
-                            offsetRotation,
-                            limit,
-                            out Quaternion correctedRotation))
-                    {
-                        continue;
-                    }
-
-                    SetCorrectedLocalRotation(thumbTransform, rawRotation, correctedRotation);
-                    changed++;
-                }
-
-                changed += ClampThumbBaseHelperTransforms();
+                changed += ClampThumbBoneRotations();
             }
 
             if (enableThumbVisualLengthGuard)
@@ -84,6 +50,47 @@ namespace Fbx2Vmd.FBXImporter
                 Debug.LogWarning($"[HumanoidThumbDeformationGuard] 엄지 본 localRotation {changed}개를 최종 렌더 포즈에서 제한했습니다.");
                 _warningLogged = true;
             }
+        }
+
+        private int ClampThumbBoneRotations()
+        {
+            int changed = 0;
+            foreach (HumanBodyBones thumbBone in ThumbBones)
+            {
+                Transform thumbTransform = targetAnimator.GetBoneTransform(thumbBone);
+                if (thumbTransform == null ||
+                    !_initialLocalRotations.TryGetValue(thumbTransform, out Quaternion initialRotation))
+                {
+                    continue;
+                }
+
+                float limit = GetLimit(thumbBone);
+                Quaternion rawRotation = GetCurrentRawLocalRotation(thumbTransform);
+                if (!IsFinite(rawRotation))
+                {
+                    SetCorrectedLocalRotation(thumbTransform, initialRotation, initialRotation);
+                    changed++;
+                    continue;
+                }
+
+                Quaternion offsetRotation = GetThumbRotationOffset(thumbBone);
+                if (!ThumbLocalRotationCalculator.TryCalculateCorrection(
+                        initialRotation,
+                        rawRotation,
+                        thumbTransform.localRotation,
+                        offsetRotation,
+                        limit,
+                        out Quaternion correctedRotation))
+                {
+                    continue;
+                }
+
+                SetCorrectedLocalRotation(thumbTransform, rawRotation, correctedRotation);
+                changed++;
+            }
+
+            changed += ClampThumbBaseHelperTransforms();
+            return changed;
         }
 
         public void Configure(
@@ -124,6 +131,40 @@ namespace Fbx2Vmd.FBXImporter
             float webbingCreaseMaxLocalAngle = 18f,
             float webbingCreaseMaxPositionOffset = 0.005f)
         {
+            ConfigureBase(
+                animator, poseSpaceRetargeter, proximalLimit, intermediateLimit, distalLimit,
+                proximalOffset, mirrorRightOffset, leftProximalOffset, rightProximalOffset,
+                logCorrectionMessages, clampHumanoidRotations, suppressPoseShapingWithManualReference);
+            ConfigureDetachedHelpers(
+                syncDetachedBaseHelpers, syncDetachedBaseHelperPositions, detachedBaseHelperSyncWeight,
+                detachedBaseHelperMaxLocalAngle, detachedBaseHelperMaxPositionOffset,
+                leftDetachedBaseHelperDeltaAxisOffset, rightDetachedBaseHelperDeltaAxisOffset,
+                leftDetachedBaseHelperTargetRotationOffset, rightDetachedBaseHelperTargetRotationOffset,
+                stabilizeDetachedBasePalm, detachedBasePalmStabilizeWeight, detachedBasePalmMaxLocalAngle,
+                stabilizeWebbingCrease, webbingCreaseStabilizeWeight,
+                webbingCreaseMaxLocalAngle, webbingCreaseMaxPositionOffset);
+            ConfigureThumbGuards(
+                enableVisualLengthGuard, projectionMinPalmNormal, projectionMaxPalmNormal,
+                projectionGuardWeight, indexMaxSpreadAngle, indexSpreadGuardWeight,
+                maxSegmentBendAngle, segmentStraightenWeight, suppressPoseShapingWithManualReference);
+            RecaptureBaseline();
+        }
+        }
+
+        private void ConfigureBase(
+            Animator animator,
+            PoseSpaceRetargeter poseSpaceRetargeter,
+            float proximalLimit,
+            float intermediateLimit,
+            float distalLimit,
+            Vector3 proximalOffset,
+            bool mirrorRightOffset,
+            Vector3 leftProximalOffset,
+            Vector3 rightProximalOffset,
+            bool logCorrectionMessages,
+            bool clampHumanoidRotations,
+            bool suppressPoseShapingWithManualReference)
+        {
             targetAnimator = animator;
             linkedPoseSpaceRetargeter = poseSpaceRetargeter;
             proximalMaxLocalAngle = Mathf.Clamp(
@@ -140,6 +181,26 @@ namespace Fbx2Vmd.FBXImporter
             rightProximalLocalRotationOffset = rightProximalOffset;
             logCorrections = logCorrectionMessages;
             clampHumanoidThumbRotations = clampHumanoidRotations;
+        }
+
+        private void ConfigureDetachedHelpers(
+            bool syncDetachedBaseHelpers,
+            bool syncDetachedBaseHelperPositions,
+            float detachedBaseHelperSyncWeight,
+            float detachedBaseHelperMaxLocalAngle,
+            float detachedBaseHelperMaxPositionOffset,
+            Vector3 leftDetachedBaseHelperDeltaAxisOffset,
+            Vector3 rightDetachedBaseHelperDeltaAxisOffset,
+            Vector3 leftDetachedBaseHelperTargetRotationOffset,
+            Vector3 rightDetachedBaseHelperTargetRotationOffset,
+            bool stabilizeDetachedBasePalm,
+            float detachedBasePalmStabilizeWeight,
+            float detachedBasePalmMaxLocalAngle,
+            bool stabilizeWebbingCrease,
+            float webbingCreaseStabilizeWeight,
+            float webbingCreaseMaxLocalAngle,
+            float webbingCreaseMaxPositionOffset)
+        {
             syncDetachedThumbBaseHelpers = syncDetachedBaseHelpers;
             syncDetachedThumbBaseHelperPositions = syncDetachedBaseHelperPositions;
             detachedThumbBaseHelperSyncWeight = Mathf.Clamp01(detachedBaseHelperSyncWeight);
@@ -156,6 +217,19 @@ namespace Fbx2Vmd.FBXImporter
             thumbWebbingCreaseStabilizeWeight = Mathf.Clamp01(webbingCreaseStabilizeWeight);
             thumbWebbingCreaseMaxLocalAngle = Mathf.Clamp(webbingCreaseMaxLocalAngle, 0f, 45f);
             thumbWebbingCreaseMaxPositionOffset = Mathf.Clamp(webbingCreaseMaxPositionOffset, 0f, 0.02f);
+        }
+
+        private void ConfigureThumbGuards(
+            bool enableVisualLengthGuard,
+            float projectionMinPalmNormal,
+            float projectionMaxPalmNormal,
+            float projectionGuardWeight,
+            float indexMaxSpreadAngle,
+            float indexSpreadGuardWeight,
+            float maxSegmentBendAngle,
+            float segmentStraightenWeight,
+            bool suppressPoseShapingWithManualReference)
+        {
             enableThumbVisualLengthGuard = enableVisualLengthGuard;
             thumbProjectionMinPalmNormal = Mathf.Clamp01(projectionMinPalmNormal);
             thumbProjectionMaxPalmNormal = Mathf.Clamp01(projectionMaxPalmNormal);
@@ -165,7 +239,6 @@ namespace Fbx2Vmd.FBXImporter
             thumbMaxSegmentBendAngle = Mathf.Clamp(maxSegmentBendAngle, 0f, 60f);
             thumbSegmentStraightenWeight = Mathf.Clamp01(segmentStraightenWeight);
             suppressPoseShapingWithManualThumbReference = suppressPoseShapingWithManualReference;
-            RecaptureBaseline();
         }
 
         public void RecaptureBaseline()
@@ -367,46 +440,13 @@ namespace Fbx2Vmd.FBXImporter
                 return 0;
             }
 
-            float minNormal = Mathf.Clamp01(thumbProjectionMinPalmNormal);
-            float maxNormal = Mathf.Clamp(Mathf.Max(thumbProjectionMaxPalmNormal, minNormal), 0f, 1f);
-            float configuredMaxSpreadAngle = Mathf.Clamp(thumbIndexMaxSpreadAngle, 0f, 90f);
-            float maxSpreadAngle = configuredMaxSpreadAngle;
-            bool useHighRiskManualOverride = false;
-            ResolveLinkedPoseSpaceRetargeter();
-            // 수동 기준 포즈에서 위험한 엄지 자세로 판정되면 이 메서드의 제한값을 더 강하게 적용합니다.
-            if (linkedPoseSpaceRetargeter != null &&
-                linkedPoseSpaceRetargeter.TryGetHighRiskManualThumbPoseConstraintOverrides(
-                    !isRightThumb,
-                    out float overrideMinNormal,
-                    out float overrideMaxNormal,
-                    out float overrideMaxSpreadAngle))
-            {
-                useHighRiskManualOverride = true;
-                minNormal = Mathf.Clamp01(overrideMinNormal);
-                maxNormal = Mathf.Clamp(Mathf.Max(overrideMaxNormal, minNormal), 0f, 1f);
-                maxSpreadAngle = ResolveManualOverrideMaxSpreadAngle(configuredMaxSpreadAngle, overrideMaxSpreadAngle);
-            }
-
-            Transform hand = targetAnimator.GetBoneTransform(isRightThumb ? HumanBodyBones.RightHand : HumanBodyBones.LeftHand);
-            Transform index = targetAnimator.GetBoneTransform(isRightThumb ? HumanBodyBones.RightIndexProximal : HumanBodyBones.LeftIndexProximal);
-            Vector3 direction = intermediate.position - proximal.position;
-            if (!TryNormalize(direction, out direction))
+            ThumbProjectionLimits limits = ResolveProjectionLimits(isRightThumb);
+            if (!TryResolveThumbDirections(
+                    proximal, intermediate, isRightThumb,
+                    out Vector3 direction, out Vector3 indexDirection, out bool hasIndexDirection))
             {
                 return 0;
             }
-
-            float indexSpreadGuardWeight = GetEffectiveThumbIndexSpreadGuardWeight(isRightThumb);
-            float projectionGuardWeight = GetEffectiveThumbProjectionGuardWeight(isRightThumb);
-            if (useHighRiskManualOverride)
-            {
-                indexSpreadGuardWeight = Mathf.Max(indexSpreadGuardWeight, 1f);
-                projectionGuardWeight = Mathf.Max(projectionGuardWeight, 1f);
-            }
-            Vector3 indexDirection = Vector3.zero;
-            bool hasIndexDirection =
-                hand != null &&
-                index != null &&
-                TryNormalize(index.position - hand.position, out indexDirection);
 
             if (!ThumbPoseDirectionCalculator.TryCalculateCorrectedDirection(
                     direction,
@@ -415,11 +455,11 @@ namespace Fbx2Vmd.FBXImporter
                     sideAxis,
                     palmNormal,
                     forwardAxis,
-                    minNormal,
-                    maxNormal,
-                    maxSpreadAngle,
-                    indexSpreadGuardWeight,
-                    projectionGuardWeight,
+                    limits.MinNormal,
+                    limits.MaxNormal,
+                    limits.MaxSpreadAngle,
+                    limits.IndexSpreadGuardWeight,
+                    limits.ProjectionGuardWeight,
                     out Vector3 targetDirection))
             {
                 return 0;
@@ -427,11 +467,11 @@ namespace Fbx2Vmd.FBXImporter
 
             // 방향 차이만 proximal 월드 회전에 얹고, 본 길이나 위치는 직접 바꾸지 않습니다.
             bool bypassManualProjectionPreserve =
-                useHighRiskManualOverride &&
+                limits.UseHighRiskManualOverride &&
                 ShouldBypassManualThumbProjectionPreserveForSmokeRisk(
                     Vector3.Dot(direction, palmNormal),
-                    minNormal,
-                    maxNormal);
+                    limits.MinNormal,
+                    limits.MaxNormal);
 
             Quaternion correctedWorldRotation = Quaternion.FromToRotation(direction, targetDirection) * proximal.rotation;
             HumanBodyBones proximalBone = isRightThumb ? HumanBodyBones.RightThumbProximal : HumanBodyBones.LeftThumbProximal;
@@ -445,6 +485,72 @@ namespace Fbx2Vmd.FBXImporter
             ApplyWorldRotationCorrection(proximal, correctedWorldRotation);
             RecordThumbProjectionCorrection(isRightThumb, false);
             return 1;
+        }
+
+        private bool TryResolveThumbDirections(
+            Transform proximal,
+            Transform intermediate,
+            bool isRightThumb,
+            out Vector3 direction,
+            out Vector3 indexDirection,
+            out bool hasIndexDirection)
+        {
+            Transform hand = targetAnimator.GetBoneTransform(isRightThumb ? HumanBodyBones.RightHand : HumanBodyBones.LeftHand);
+            Transform index = targetAnimator.GetBoneTransform(isRightThumb ? HumanBodyBones.RightIndexProximal : HumanBodyBones.LeftIndexProximal);
+            direction = intermediate.position - proximal.position;
+            if (!TryNormalize(direction, out direction))
+            {
+                indexDirection = Vector3.zero;
+                hasIndexDirection = false;
+                return false;
+            }
+
+            indexDirection = Vector3.zero;
+            hasIndexDirection =
+                hand != null &&
+                index != null &&
+                TryNormalize(index.position - hand.position, out indexDirection);
+            return true;
+        }
+
+        private struct ThumbProjectionLimits
+        {
+            internal float MinNormal;
+            internal float MaxNormal;
+            internal float MaxSpreadAngle;
+            internal bool UseHighRiskManualOverride;
+            internal float IndexSpreadGuardWeight;
+            internal float ProjectionGuardWeight;
+        }
+
+        private ThumbProjectionLimits ResolveProjectionLimits(bool isRightThumb)
+        {
+            var limits = new ThumbProjectionLimits
+            {
+                MinNormal = Mathf.Clamp01(thumbProjectionMinPalmNormal),
+                IndexSpreadGuardWeight = GetEffectiveThumbIndexSpreadGuardWeight(isRightThumb),
+                ProjectionGuardWeight = GetEffectiveThumbProjectionGuardWeight(isRightThumb)
+            };
+            limits.MaxNormal = Mathf.Clamp(Mathf.Max(thumbProjectionMaxPalmNormal, limits.MinNormal), 0f, 1f);
+            float configuredMaxSpreadAngle = Mathf.Clamp(thumbIndexMaxSpreadAngle, 0f, 90f);
+            limits.MaxSpreadAngle = configuredMaxSpreadAngle;
+            ResolveLinkedPoseSpaceRetargeter();
+            // 수동 기준 포즈에서 위험한 엄지 자세로 판정되면 이 메서드의 제한값을 더 강하게 적용합니다.
+            if (linkedPoseSpaceRetargeter != null &&
+                linkedPoseSpaceRetargeter.TryGetHighRiskManualThumbPoseConstraintOverrides(
+                    !isRightThumb,
+                    out float overrideMinNormal,
+                    out float overrideMaxNormal,
+                    out float overrideMaxSpreadAngle))
+            {
+                limits.UseHighRiskManualOverride = true;
+                limits.MinNormal = Mathf.Clamp01(overrideMinNormal);
+                limits.MaxNormal = Mathf.Clamp(Mathf.Max(overrideMaxNormal, limits.MinNormal), 0f, 1f);
+                limits.MaxSpreadAngle = ResolveManualOverrideMaxSpreadAngle(configuredMaxSpreadAngle, overrideMaxSpreadAngle);
+                limits.IndexSpreadGuardWeight = Mathf.Max(limits.IndexSpreadGuardWeight, 1f);
+                limits.ProjectionGuardWeight = Mathf.Max(limits.ProjectionGuardWeight, 1f);
+            }
+            return limits;
         }
 
         private static float ResolveManualOverrideMaxSpreadAngle(float configuredMaxSpreadAngle, float overrideMaxSpreadAngle)
