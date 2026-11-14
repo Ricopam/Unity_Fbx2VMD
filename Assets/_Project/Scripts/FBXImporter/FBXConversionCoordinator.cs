@@ -722,6 +722,20 @@ namespace Fbx2Vmd.FBXImporter
                     return RunEditorHumanoidPlaybackSession(request, importController);
                 }
 
+                return await RunImportAndRetargetAsync(request, importController);
+            }
+            catch (Exception e)
+            {
+                string errorMessage = $"FBX 처리 실패: {e.Message}";
+                _pipeline.FailSession(errorMessage, e);
+                return FBXConversionResult.Fail(errorMessage);
+            }
+        }
+
+        async Task<FBXConversionResult> RunImportAndRetargetAsync(
+            FBXConversionRequest request, FBXImportController importController)
+        {
+            {
                 FBXModelImportResult importResult = await importController.ImportRuntimeModelAsync(
                     request.SourcePath,
                     _pipeline.ShouldRecordVmdAfterImport);
@@ -803,12 +817,6 @@ namespace Fbx2Vmd.FBXImporter
                     outputBaseName);
 
                 return FBXConversionResult.Succeed(outputBaseName);
-            }
-            catch (Exception e)
-            {
-                string errorMessage = $"FBX 처리 실패: {e.Message}";
-                _pipeline.FailSession(errorMessage, e);
-                return FBXConversionResult.Fail(errorMessage);
             }
         }
     }
