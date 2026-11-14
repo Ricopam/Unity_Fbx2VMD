@@ -150,60 +150,68 @@ namespace Fbx2Vmd.FBXImporter
                 Transform foundBone;
                 string matchKind;
                 bool matched = TryFindMappedTransform(lookup, targetBoneName, out foundBone, out matchKind);
-
-                diagnostic.Matches.Add(new BoneMappingMatch
-                {
-                    HumanBoneName = humanBoneName,
-                    TargetBoneName = targetBoneName,
-                    MatchedBoneName = matched && foundBone != null ? foundBone.name : "",
-                    MatchKind = matchKind
-                });
-
-                if (matched)
-                {
-                    diagnostic.MatchedCount++;
-                    if (matchKind == "exact")
-                    {
-                        diagnostic.ExactMatchCount++;
-                    }
-                    else if (matchKind == "normalized")
-                    {
-                        diagnostic.NormalizedMatchCount++;
-                    }
-                    else if (matchKind == "alias")
-                    {
-                        diagnostic.AliasMatchCount++;
-                    }
-                }
+                RecordMappingMatch(diagnostic, humanBoneName, targetBoneName, foundBone, matched, matchKind);
             }
 
-            foreach (string bone in RequiredBones)
-            {
-                bool matched = diagnostic.Matches.Any(match => match.HumanBoneName == bone && match.MatchKind != "missing");
-                if (matched)
-                {
-                    diagnostic.RequiredMatchedCount++;
-                }
-                else
-                {
-                    diagnostic.MissingRequiredBones.Add(bone);
-                }
-            }
-
-            foreach (string bone in FingerBones)
-            {
-                bool matched = diagnostic.Matches.Any(match => match.HumanBoneName == bone && match.MatchKind != "missing");
-                if (matched)
-                {
-                    diagnostic.FingerMatchedCount++;
-                }
-                else
-                {
-                    diagnostic.MissingFingerBones.Add(bone);
-                }
-            }
+            diagnostic.RequiredMatchedCount = TallyBoneMatches(
+                diagnostic, RequiredBones, diagnostic.MissingRequiredBones);
+            diagnostic.FingerMatchedCount = TallyBoneMatches(
+                diagnostic, FingerBones, diagnostic.MissingFingerBones);
 
             return diagnostic;
+        }
+
+        private static void RecordMappingMatch(
+            BoneMappingDiagnostic diagnostic,
+            string humanBoneName, string targetBoneName,
+            Transform foundBone, bool matched, string matchKind)
+        {
+            diagnostic.Matches.Add(new BoneMappingMatch
+            {
+                HumanBoneName = humanBoneName,
+                TargetBoneName = targetBoneName,
+                MatchedBoneName = matched && foundBone != null ? foundBone.name : "",
+                MatchKind = matchKind
+            });
+
+            if (!matched)
+            {
+                return;
+            }
+
+            diagnostic.MatchedCount++;
+            if (matchKind == "exact")
+            {
+                diagnostic.ExactMatchCount++;
+            }
+            else if (matchKind == "normalized")
+            {
+                diagnostic.NormalizedMatchCount++;
+            }
+            else if (matchKind == "alias")
+            {
+                diagnostic.AliasMatchCount++;
+            }
+        }
+
+        private static int TallyBoneMatches(
+            BoneMappingDiagnostic diagnostic, string[] bones,
+            List<string> missingList)
+        {
+            int matchedCount = 0;
+            foreach (string bone in bones)
+            {
+                bool matched = diagnostic.Matches.Any(match => match.HumanBoneName == bone && match.MatchKind != "missing");
+                if (matched)
+                {
+                    matchedCount++;
+                }
+                else
+                {
+                    missingList.Add(bone);
+                }
+            }
+            return matchedCount;
         }
 
         private static Avatar CreatePureAvatar(GameObject root, Dictionary<string, string> mappingData)
@@ -414,8 +422,15 @@ namespace Fbx2Vmd.FBXImporter
         private static IEnumerable<string> GetAutoMapCandidatesForHumanBone(string humanBoneName)
         {
             yield return humanBoneName;
+            foreach (string alternate in GetAutoMapAlternates(humanBoneName))
+            {
+                yield return alternate;
+            }
+        }
 
-            // Common alternative naming found in FBX rigs (Mixamo/Bip/Blender 등)
+        // Common alternative naming found in FBX rigs (Mixamo/Bip/Blender 등)
+        private static IEnumerable<string> GetAutoMapAlternates(string humanBoneName)
+        {
             switch (humanBoneName)
             {
                 case "Hips":
@@ -578,19 +593,7 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                int score = -1;
-                if (hay == needle)
-                {
-                    score = 300;
-                }
-                else if (hay.EndsWith(needle))
-                {
-                    score = 200;
-                }
-                else if (hay.Contains(needle))
-                {
-                    score = 100;
-                }
+                int score = GetNameMatchScore(hay, needle);
 
                 if (score <= 0)
                 {
@@ -616,6 +619,23 @@ namespace Fbx2Vmd.FBXImporter
 
             foundBone = best;
             return true;
+        }
+
+        private static int GetNameMatchScore(string hay, string needle)
+        {
+            if (hay == needle)
+            {
+                return 300;
+            }
+            if (hay.EndsWith(needle))
+            {
+                return 200;
+            }
+            if (hay.Contains(needle))
+            {
+                return 100;
+            }
+            return -1;
         }
 
         internal static bool TryFindUniqueMappedTransform(Transform[] bones, string targetName,
