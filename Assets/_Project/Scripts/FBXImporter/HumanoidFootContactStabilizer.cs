@@ -115,101 +115,129 @@ namespace Fbx2Vmd.FBXImporter
 
             try
             {
-                for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
-                {
-                    float timeSeconds = Mathf.Min(frameIndex / frameRate, clip.length);
-                    if (!sourceReference.TryEvaluateFootSupportPointsAt(
-                            timeSeconds,
-                            out Vector3 sourceLeftFoot,
-                            out Vector3 sourceLeftToes,
-                            out Vector3 sourceRightFoot,
-                            out Vector3 sourceRightToes))
-                    {
-                        throw new InvalidOperationException(
-                            "원본 Humanoid 발 접촉점을 샘플링하지 못했습니다.");
-                    }
-
-                    Vector2? relativeFootHeights = null;
-                    Quaternion? leftFootFrame = null, rightFootFrame = null;
-                    if (sourceReference.HasFootRotationReference)
-                    {
-                        if (!sourceReference.TryCaptureFootSupportReference(out Vector2 heights,
-                                out Quaternion leftFrame, out Quaternion rightFrame))
-                            throw new InvalidOperationException("원본 Humanoid 발 지지 방향을 샘플링하지 못했습니다.");
-                        relativeFootHeights = heights;
-                        leftFootFrame = leftFrame;
-                        rightFootFrame = rightFrame;
-                    }
-
-                    if (!sourceReference.TryCaptureHipsPose(
-                            out Vector3 sourceHipsPosition,
-                            out Quaternion sourceHipsRotation))
-                    {
-                        throw new InvalidOperationException(
-                            "원본 Humanoid 골반 기준을 샘플링하지 못했습니다.");
-                    }
-                    _sourceHipsPositions[frameIndex] = sourceHipsPosition;
-                    _sourceHipsRotations[frameIndex] = sourceHipsRotation;
-
-                    evaluateTarget(timeSeconds);
-                    _leftBaseRootSpaceFootPositions[frameIndex] =
-                        CaptureRootSpacePosition(_leftLeg.CaptureFootPosition());
-                    _rightBaseRootSpaceFootPositions[frameIndex] =
-                        CaptureRootSpacePosition(_rightLeg.CaptureFootPosition());
-                    _leftBaseRootSpaceBendNormals[frameIndex] =
-                        CaptureRootSpaceDirection(_leftLeg.CaptureBendNormal());
-                    _rightBaseRootSpaceBendNormals[frameIndex] =
-                        CaptureRootSpaceDirection(_rightLeg.CaptureBendNormal());
-                    sourceSamples[frameIndex] = new HumanoidFootContactSample(
-                        sourceLeftFoot,
-                        sourceLeftToes,
-                        sourceRightFoot,
-                        sourceRightToes,
-                        relativeFootHeights,
-                        leftFootFrame,
-                        rightFootFrame);
-                    targetSamples[frameIndex] = new HumanoidFootContactSample(
-                        _leftLeg.CaptureFootPosition(),
-                        _leftLeg.CaptureToesPosition(),
-                        _rightLeg.CaptureFootPosition(),
-                        _rightLeg.CaptureToesPosition());
-                }
-
-                // 누적된 사람 표식을 같은 입력의 과거 증거에서 읽어 추정에 반영함.
-                IntentLabels = HumanoidFootContactIntentLabelStore.Load(sourceAssetName);
-                try
-                {
-                    IntentEstimate = HumanoidFootContactIntentEstimator.Estimate(
-                        sourceSamples, frameRate, sourceReference.SourceHumanScale,
-                        IntentLabels);
-                }
-                catch (Exception error)
-                {
-                    // 추정 실패가 접지 보정 자체를 막지 않게 구간 정책 없이 진행함.
-                    Debug.LogWarning(
-                        $"발 접지 의도 추정 실패로 의도 구간 없이 보정함: {error.Message}");
-                    IntentEstimate = null;
-                }
-
-                _plan = HumanoidFootContactPlanner.Build(
-                    sourceSamples,
-                    targetSamples,
-                    frameRate,
-                    sourceReference.SourceHumanScale,
-                    sourceToTargetRotation,
-                    targetAnimator.humanScale,
-                    IntentEstimate);
-                // 이미 평가한 원본 궤적을 정밀 밑창 접지에서도 재사용함.
-                SourceSamples = Array.AsReadOnly(sourceSamples);
-                TargetSamples = Array.AsReadOnly(targetSamples);
-                SourceHipsPositions = Array.AsReadOnly(_sourceHipsPositions);
-                SourceHipsRotations = Array.AsReadOnly(_sourceHipsRotations);
-                SourceHumanScale = sourceReference.SourceHumanScale;
+                SampleFrames(
+                    frameCount, frameRate, clip.length, evaluateTarget,
+                    sourceReference, sourceSamples, targetSamples);
+                BuildPlanAndPublish(
+                    sourceSamples, targetSamples, frameRate, sourceAssetName,
+                    sourceReference, sourceToTargetRotation,
+                    targetAnimator.humanScale);
             }
             finally
             {
                 evaluateTarget(0f);
             }
+        }
+
+        void SampleFrames(
+            int frameCount,
+            float frameRate,
+            float clipLength,
+            Action<float> evaluateTarget,
+            HumanoidPoseReferencePlayer sourceReference,
+            HumanoidFootContactSample[] sourceSamples,
+            HumanoidFootContactSample[] targetSamples)
+        {
+            for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
+            {
+                float timeSeconds = Mathf.Min(frameIndex / frameRate, clipLength);
+                if (!sourceReference.TryEvaluateFootSupportPointsAt(
+                        timeSeconds,
+                        out Vector3 sourceLeftFoot,
+                        out Vector3 sourceLeftToes,
+                        out Vector3 sourceRightFoot,
+                        out Vector3 sourceRightToes))
+                {
+                    throw new InvalidOperationException(
+                        "원본 Humanoid 발 접촉점을 샘플링하지 못했습니다.");
+                }
+
+                Vector2? relativeFootHeights = null;
+                Quaternion? leftFootFrame = null, rightFootFrame = null;
+                if (sourceReference.HasFootRotationReference)
+                {
+                    if (!sourceReference.TryCaptureFootSupportReference(out Vector2 heights,
+                            out Quaternion leftFrame, out Quaternion rightFrame))
+                        throw new InvalidOperationException("원본 Humanoid 발 지지 방향을 샘플링하지 못했습니다.");
+                    relativeFootHeights = heights;
+                    leftFootFrame = leftFrame;
+                    rightFootFrame = rightFrame;
+                }
+
+                if (!sourceReference.TryCaptureHipsPose(
+                        out Vector3 sourceHipsPosition,
+                        out Quaternion sourceHipsRotation))
+                {
+                    throw new InvalidOperationException(
+                        "원본 Humanoid 골반 기준을 샘플링하지 못했습니다.");
+                }
+                _sourceHipsPositions[frameIndex] = sourceHipsPosition;
+                _sourceHipsRotations[frameIndex] = sourceHipsRotation;
+
+                evaluateTarget(timeSeconds);
+                _leftBaseRootSpaceFootPositions[frameIndex] =
+                    CaptureRootSpacePosition(_leftLeg.CaptureFootPosition());
+                _rightBaseRootSpaceFootPositions[frameIndex] =
+                    CaptureRootSpacePosition(_rightLeg.CaptureFootPosition());
+                _leftBaseRootSpaceBendNormals[frameIndex] =
+                    CaptureRootSpaceDirection(_leftLeg.CaptureBendNormal());
+                _rightBaseRootSpaceBendNormals[frameIndex] =
+                    CaptureRootSpaceDirection(_rightLeg.CaptureBendNormal());
+                sourceSamples[frameIndex] = new HumanoidFootContactSample(
+                    sourceLeftFoot,
+                    sourceLeftToes,
+                    sourceRightFoot,
+                    sourceRightToes,
+                    relativeFootHeights,
+                    leftFootFrame,
+                    rightFootFrame);
+                targetSamples[frameIndex] = new HumanoidFootContactSample(
+                    _leftLeg.CaptureFootPosition(),
+                    _leftLeg.CaptureToesPosition(),
+                    _rightLeg.CaptureFootPosition(),
+                    _rightLeg.CaptureToesPosition());
+            }
+        }
+
+        void BuildPlanAndPublish(
+            HumanoidFootContactSample[] sourceSamples,
+            HumanoidFootContactSample[] targetSamples,
+            float frameRate,
+            string sourceAssetName,
+            HumanoidPoseReferencePlayer sourceReference,
+            Quaternion sourceToTargetRotation,
+            float targetHumanScale)
+        {
+            // 누적된 사람 표식을 같은 입력의 과거 증거에서 읽어 추정에 반영함.
+            IntentLabels = HumanoidFootContactIntentLabelStore.Load(sourceAssetName);
+            try
+            {
+                IntentEstimate = HumanoidFootContactIntentEstimator.Estimate(
+                    sourceSamples, frameRate, sourceReference.SourceHumanScale,
+                    IntentLabels);
+            }
+            catch (Exception error)
+            {
+                // 추정 실패가 접지 보정 자체를 막지 않게 구간 정책 없이 진행함.
+                Debug.LogWarning(
+                    $"발 접지 의도 추정 실패로 의도 구간 없이 보정함: {error.Message}");
+                IntentEstimate = null;
+            }
+
+            _plan = HumanoidFootContactPlanner.Build(
+                sourceSamples,
+                targetSamples,
+                frameRate,
+                sourceReference.SourceHumanScale,
+                sourceToTargetRotation,
+                targetHumanScale,
+                IntentEstimate);
+            // 이미 평가한 원본 궤적을 정밀 밑창 접지에서도 재사용함.
+            SourceSamples = Array.AsReadOnly(sourceSamples);
+            TargetSamples = Array.AsReadOnly(targetSamples);
+            SourceHipsPositions = Array.AsReadOnly(_sourceHipsPositions);
+            SourceHipsRotations = Array.AsReadOnly(_sourceHipsRotations);
+            SourceHumanScale = sourceReference.SourceHumanScale;
         }
 
         internal bool TryCaptureBendNormals(
@@ -258,47 +286,83 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            Vector3 leftCurrentRootSpacePosition =
-                CaptureRootSpacePosition(_leftLeg.CaptureFootPosition());
-            Vector3 rightCurrentRootSpacePosition =
-                CaptureRootSpacePosition(_rightLeg.CaptureFootPosition());
-            Vector3 leftWorldCorrection = _targetRoot.TransformDirection(
-                leftBaseRootSpacePosition + leftRootSpaceCorrection -
-                leftCurrentRootSpacePosition);
-            Vector3 rightWorldCorrection = _targetRoot.TransformDirection(
-                rightBaseRootSpacePosition + rightRootSpaceCorrection -
-                rightCurrentRootSpacePosition);
-            Vector3 leftWorldToeDirection =
-                _targetRoot.TransformDirection(leftRootSpaceToeDirection);
-            Vector3 rightWorldToeDirection =
-                _targetRoot.TransformDirection(rightRootSpaceToeDirection);
-            Vector3 leftWorldBendNormal = _targetRoot.TransformDirection(
-                leftBaseRootSpaceBendNormal);
-            Vector3 rightWorldBendNormal = _targetRoot.TransformDirection(
-                rightBaseRootSpaceBendNormal);
-            if (!IsFinite(leftWorldCorrection) ||
-                !IsFinite(rightWorldCorrection) ||
-                !IsFinite(leftWorldToeDirection) ||
-                !IsFinite(rightWorldToeDirection))
+            if (!TryResolveWorldCorrections(
+                    leftRootSpaceCorrection,
+                    rightRootSpaceCorrection,
+                    leftRootSpaceToeDirection,
+                    rightRootSpaceToeDirection,
+                    leftBaseRootSpacePosition,
+                    rightBaseRootSpacePosition,
+                    leftBaseRootSpaceBendNormal,
+                    rightBaseRootSpaceBendNormal,
+                    out WorldCorrections corrections))
             {
                 return false;
             }
 
             _leftLeg.Apply(
-                leftWorldCorrection,
-                leftWorldToeDirection,
-                leftWorldBendNormal.sqrMagnitude >
+                corrections.LeftCorrection,
+                corrections.LeftToeDirection,
+                corrections.LeftBendNormal.sqrMagnitude >
                     MinimumBendNormalSquaredMagnitude
-                        ? leftWorldBendNormal
+                        ? corrections.LeftBendNormal
                         : leftBendNormal);
             _rightLeg.Apply(
-                rightWorldCorrection,
-                rightWorldToeDirection,
-                rightWorldBendNormal.sqrMagnitude >
+                corrections.RightCorrection,
+                corrections.RightToeDirection,
+                corrections.RightBendNormal.sqrMagnitude >
                     MinimumBendNormalSquaredMagnitude
-                        ? rightWorldBendNormal
+                        ? corrections.RightBendNormal
                         : rightBendNormal);
             return true;
+        }
+
+        struct WorldCorrections
+        {
+            internal Vector3 LeftCorrection;
+            internal Vector3 RightCorrection;
+            internal Vector3 LeftToeDirection;
+            internal Vector3 RightToeDirection;
+            internal Vector3 LeftBendNormal;
+            internal Vector3 RightBendNormal;
+        }
+
+        bool TryResolveWorldCorrections(
+            Vector3 leftRootSpaceCorrection,
+            Vector3 rightRootSpaceCorrection,
+            Vector3 leftRootSpaceToeDirection,
+            Vector3 rightRootSpaceToeDirection,
+            Vector3 leftBaseRootSpacePosition,
+            Vector3 rightBaseRootSpacePosition,
+            Vector3 leftBaseRootSpaceBendNormal,
+            Vector3 rightBaseRootSpaceBendNormal,
+            out WorldCorrections corrections)
+        {
+            Vector3 leftCurrentRootSpacePosition =
+                CaptureRootSpacePosition(_leftLeg.CaptureFootPosition());
+            Vector3 rightCurrentRootSpacePosition =
+                CaptureRootSpacePosition(_rightLeg.CaptureFootPosition());
+            corrections = new WorldCorrections
+            {
+                LeftCorrection = _targetRoot.TransformDirection(
+                    leftBaseRootSpacePosition + leftRootSpaceCorrection -
+                    leftCurrentRootSpacePosition),
+                RightCorrection = _targetRoot.TransformDirection(
+                    rightBaseRootSpacePosition + rightRootSpaceCorrection -
+                    rightCurrentRootSpacePosition),
+                LeftToeDirection =
+                    _targetRoot.TransformDirection(leftRootSpaceToeDirection),
+                RightToeDirection =
+                    _targetRoot.TransformDirection(rightRootSpaceToeDirection),
+                LeftBendNormal = _targetRoot.TransformDirection(
+                    leftBaseRootSpaceBendNormal),
+                RightBendNormal = _targetRoot.TransformDirection(
+                    rightBaseRootSpaceBendNormal)
+            };
+            return IsFinite(corrections.LeftCorrection) &&
+                IsFinite(corrections.RightCorrection) &&
+                IsFinite(corrections.LeftToeDirection) &&
+                IsFinite(corrections.RightToeDirection);
         }
 
         internal void Clear()
