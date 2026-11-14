@@ -71,7 +71,9 @@ namespace Fbx2Vmd.FBXImporter
             "Assets/Plugins/VMDRecorderSample/SampleScript/MotionComparisonProbe.cs",
             "Assets/_Project/Scripts/FBXImporter/FBXVmdPipeline.cs",
             "Assets/_Project/Scripts/FBXImporter/HumanoidArmDeformationGuard.cs",
+            "Assets/_Project/Scripts/FBXImporter/HumanoidArmDeformationGuard.Settings.cs",
             "Assets/_Project/Scripts/FBXImporter/HumanoidArmDirectionRetargetGuard.cs",
+            "Assets/_Project/Scripts/FBXImporter/HumanoidArmDirectionRetargetGuard.Settings.cs",
             "Assets/_Project/Scripts/FBXImporter/PoseSpaceRetargeter.cs",
             "Assets/_Project/Scripts/Editor/FBXImporter/VisualComparison/YybVisualComparisonBatchRunner.cs",
             "Assets/_Project/Scripts/Editor/FBXImporter/VisualComparison/YybVisualComparisonRequestWatcher.cs"
