@@ -116,19 +116,15 @@ namespace Fbx2Vmd.FBXImporter
             }
 #endif
 
-            Transform upperArm = animator.GetBoneTransform(upperArmBone);
-            Transform lowerArm = animator.GetBoneTransform(lowerArmBone);
-            Transform hand = animator.GetBoneTransform(handBone);
-            if (upperArm == null || lowerArm == null || hand == null)
-            {
-                return;
-            }
-
             Transform[] bones = renderer.bones;
-            int upperArmIndex = Array.IndexOf(bones, upperArm);
-            int lowerArmIndex = Array.IndexOf(bones, lowerArm);
-            int handIndex = Array.IndexOf(bones, hand);
-            if (lowerArmIndex < 0)
+            if (!TryResolveArmBones(
+                    animator, bones, upperArmBone, lowerArmBone, handBone,
+                    out Transform upperArm,
+                    out Transform lowerArm,
+                    out Transform hand,
+                    out int upperArmIndex,
+                    out int lowerArmIndex,
+                    out int handIndex))
             {
                 return;
             }
@@ -210,6 +206,29 @@ namespace Fbx2Vmd.FBXImporter
                     lowerArmIndex,
                     armChainLength));
             }
+        }
+
+        static bool TryResolveArmBones(
+            Animator animator,
+            Transform[] bones,
+            HumanBodyBones upperArmBone,
+            HumanBodyBones lowerArmBone,
+            HumanBodyBones handBone,
+            out Transform upperArm,
+            out Transform lowerArm,
+            out Transform hand,
+            out int upperArmIndex,
+            out int lowerArmIndex,
+            out int handIndex)
+        {
+            upperArm = animator.GetBoneTransform(upperArmBone);
+            lowerArm = animator.GetBoneTransform(lowerArmBone);
+            hand = animator.GetBoneTransform(handBone);
+            upperArmIndex = Array.IndexOf(bones, upperArm);
+            lowerArmIndex = Array.IndexOf(bones, lowerArm);
+            handIndex = Array.IndexOf(bones, hand);
+            return upperArm != null && lowerArm != null && hand != null &&
+                lowerArmIndex >= 0;
         }
 
         static bool TryResolveArmPositions(
