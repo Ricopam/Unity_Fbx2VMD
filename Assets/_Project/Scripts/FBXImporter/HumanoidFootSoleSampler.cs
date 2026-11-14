@@ -190,9 +190,16 @@ namespace Fbx2Vmd.FBXImporter
             if (candidates.Count == 0 || !IsFinite(length) || length <= 0.000001f)
                 return false;
 
+            return FinalizePoints(candidates, up, forward, minimumHeight, length);
+        }
+
+        bool FinalizePoints(
+            List<Point> candidates, Vector3 up, Vector3 forward,
+            float minimumHeight, float length)
+        {
             candidates.RemoveAll(p => Vector3.Dot(p.Surface.GetWorldPoint(p.Vertex), up) > minimumHeight + length * 0.08f);
-            back = float.PositiveInfinity;
-            front = float.NegativeInfinity;
+            float back = float.PositiveInfinity;
+            float front = float.NegativeInfinity;
             foreach (Point p in candidates)
             {
                 float progress = Vector3.Dot(p.Surface.GetWorldPoint(p.Vertex), forward);

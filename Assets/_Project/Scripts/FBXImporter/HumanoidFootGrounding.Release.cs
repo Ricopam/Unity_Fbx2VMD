@@ -50,8 +50,8 @@ namespace Fbx2Vmd.FBXImporter
             _releaseSmoothingWindows.Clear();
             try
             {
-                PrepareLeg(_left);
-                PrepareLeg(_right);
+                PrepareLeg(_left, clip, evaluate, ground);
+                PrepareLeg(_right, clip, evaluate, ground);
             }
             finally
             {
@@ -60,55 +60,56 @@ namespace Fbx2Vmd.FBXImporter
                 _right.ResetPreparationHistory();
                 evaluate(0f);
             }
+        }
 
-            void PrepareLeg(Leg leg)
+        void PrepareLeg(Leg leg, AnimationClip clip, Action<float> evaluate,
+            HumanoidGroundResponse ground)
+        {
+            for (int start = 0; start + 2 < leg.WeightFrameCount; start++)
             {
-                for (int start = 0; start + 2 < leg.WeightFrameCount; start++)
+                if (!leg.TryGetReleaseRange(start, out int end, out int channel, out var contact) ||
+                    !leg.HasAbruptRelease(start, end, _sourceScaleRatio))
+                    continue;
+                bool overlaps = false;
+                for (int frame = start; frame < end && !overlaps; frame++)
+                    overlaps = _releaseSmoothingWindows.ContainsKey(frame) || _touchdownWindows.ContainsKey(frame) ||
+                        _left.HasReleaseReference(frame) || _right.HasReleaseReference(frame);
+                if (overlaps)
+                    continue;
+
+                var targets = new Vector3[end - start + 1];
+                Vector3 rawStart = Vector3.zero, rawEnd = Vector3.zero;
+                RaycastHit surface = default;
+                bool valid = true;
+                _left.ResetPreparationHistory();
+                _right.ResetPreparationHistory();
+                for (int frame = start; frame <= end; frame++)
                 {
-                    if (!leg.TryGetReleaseRange(start, out int end, out int channel, out var contact) ||
-                        !leg.HasAbruptRelease(start, end, _sourceScaleRatio))
-                        continue;
-                    bool overlaps = false;
-                    for (int frame = start; frame < end && !overlaps; frame++)
-                        overlaps = _releaseSmoothingWindows.ContainsKey(frame) || _touchdownWindows.ContainsKey(frame) ||
-                            _left.HasReleaseReference(frame) || _right.HasReleaseReference(frame);
-                    if (overlaps)
-                        continue;
-
-                    var targets = new Vector3[end - start + 1];
-                    Vector3 rawStart = Vector3.zero, rawEnd = Vector3.zero;
-                    RaycastHit surface = default;
-                    bool valid = true;
-                    _left.ResetPreparationHistory();
-                    _right.ResetPreparationHistory();
-                    for (int frame = start; frame <= end; frame++)
+                    RestoreAppliedPose();
+                    float time = Mathf.Min(frame / _frameRate, clip.length);
+                    evaluate(time);
+                    if (frame == start) rawStart = leg.Foot.position;
+                    if (frame == end) rawEnd = leg.Foot.position;
+                    if (!TryApplyCore(time, ground, null, false, out _, out _) ||
+                        (frame == start && !leg.TryReadReleaseSurface(out surface)))
                     {
-                        RestoreAppliedPose();
-                        float time = Mathf.Min(frame / _frameRate, clip.length);
-                        evaluate(time);
-                        if (frame == start) rawStart = leg.Foot.position;
-                        if (frame == end) rawEnd = leg.Foot.position;
-                        if (!TryApplyCore(time, ground, null, false, out _, out _) ||
-                            (frame == start && !leg.TryReadReleaseSurface(out surface)))
-                        {
-                            valid = false;
-                            break;
-                        }
-                        targets[frame - start] = leg.CaptureTarget().Position;
+                        valid = false;
+                        break;
                     }
-
-                    Vector3 direction = Vector3.ProjectOnPlane(rawEnd - rawStart, Vector3.up);
-                    if (!valid || direction.sqrMagnitude < 0.000001f ||
-                        !TryBuildReleaseOffsets(targets, direction.normalized, MaximumReleaseTargetShift, out var offsets))
-                        continue;
-
-                    var candidate = new ReleaseSmoothingWindow(leg, start, end, channel,
-                        contact.FirstPoint, surface, direction.normalized, offsets);
-                    if (!PreservesReleaseSmoothing(candidate, clip, evaluate, ground))
-                        continue;
-                    for (int frame = start; frame < end; frame++)
-                        _releaseSmoothingWindows.Add(frame, candidate);
+                    targets[frame - start] = leg.CaptureTarget().Position;
                 }
+
+                Vector3 direction = Vector3.ProjectOnPlane(rawEnd - rawStart, Vector3.up);
+                if (!valid || direction.sqrMagnitude < 0.000001f ||
+                    !TryBuildReleaseOffsets(targets, direction.normalized, MaximumReleaseTargetShift, out var offsets))
+                    continue;
+
+                var candidate = new ReleaseSmoothingWindow(leg, start, end, channel,
+                    contact.FirstPoint, surface, direction.normalized, offsets);
+                if (!PreservesReleaseSmoothing(candidate, clip, evaluate, ground))
+                    continue;
+                for (int frame = start; frame < end; frame++)
+                    _releaseSmoothingWindows.Add(frame, candidate);
             }
         }
 

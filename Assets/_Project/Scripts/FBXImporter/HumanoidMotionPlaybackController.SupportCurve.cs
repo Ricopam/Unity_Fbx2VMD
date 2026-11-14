@@ -167,52 +167,57 @@ namespace Fbx2Vmd.FBXImporter
                 originalError += (baseline[index] - source) * (baseline[index] - source);
                 correctedError += (corrected[index] - source) * (corrected[index] - source);
             }
-            if (!math.all(correctedError < originalError) || !PreservesMotion(0, samples.Length)) return false;
+            if (!math.all(correctedError < originalError) ||
+                !PreservesMotion(baseline, corrected, baselineHips, correctedHips, 0, samples.Length)) return false;
             foreach (int boundary in boundaries)
             {
                 if (boundary - 1 < first || boundary + 1 > last) continue;
-                if (!PreservesMotion((boundary - 1 - first) * SupportCurveSamplesPerFrame,
+                if (!PreservesMotion(baseline, corrected, baselineHips, correctedHips,
+                    (boundary - 1 - first) * SupportCurveSamplesPerFrame,
                     (boundary + 1 - first) * SupportCurveSamplesPerFrame + 1)) return false;
             }
 
             PreRollSupportCurve(curve.Start);
             for (int frame = curve.Start + 1; frame <= curve.End; frame++)
             {
-                if (!ReadBoundary(frame - .001f, out double2 beforeBase, out double2 beforeCurve) ||
-                    !ReadBoundary(frame, out double2 atBase, out double2 atCurve) ||
+                if (!ReadSupportBoundary(curve, frame - .001f, out double2 beforeBase, out double2 beforeCurve) ||
+                    !ReadSupportBoundary(curve, frame, out double2 atBase, out double2 atCurve) ||
                     !math.all(math.abs(atCurve - beforeCurve) <= math.abs(atBase - beforeBase) + .01)) return false;
             }
             return true;
+        }
 
-            bool ReadBoundary(float frame, out double2 old, out double2 next)
-            {
-                old = next = default;
-                if (!Seek(frame / ClipFrameRate)) return false;
-                old = _supportCurvePose.ReadKneeAngles();
-                if (!TryApplySupportCurve(curve.GetShiftMm(frame))) return false;
-                next = _supportCurvePose.ReadKneeAngles();
-                _supportCurvePose.Restore();
-                return true;
-            }
+        bool ReadSupportBoundary(HumanoidSupportCurveProblem.Curve curve, float frame,
+            out double2 old, out double2 next)
+        {
+            old = next = default;
+            if (!Seek(frame / ClipFrameRate)) return false;
+            old = _supportCurvePose.ReadKneeAngles();
+            if (!TryApplySupportCurve(curve.GetShiftMm(frame))) return false;
+            next = _supportCurvePose.ReadKneeAngles();
+            _supportCurvePose.Restore();
+            return true;
+        }
 
-            bool PreservesMotion(int from, int to)
+        static bool PreservesMotion(
+            double2[] baseline, double2[] corrected,
+            double3[] baselineHips, double3[] correctedHips, int from, int to)
+        {
+            double2 oldStep = double2.zero, newStep = double2.zero;
+            double2 oldAcceleration = double2.zero, newAcceleration = double2.zero;
+            double oldHipAcceleration = 0, newHipAcceleration = 0;
+            for (int index = from + 1; index < to; index++)
             {
-                double2 oldStep = double2.zero, newStep = double2.zero;
-                double2 oldAcceleration = double2.zero, newAcceleration = double2.zero;
-                double oldHipAcceleration = 0, newHipAcceleration = 0;
-                for (int index = from + 1; index < to; index++)
-                {
-                    oldStep = math.max(oldStep, math.abs(baseline[index] - baseline[index - 1]));
-                    newStep = math.max(newStep, math.abs(corrected[index] - corrected[index - 1]));
-                    if (index <= from + 1) continue;
-                    oldAcceleration = math.max(oldAcceleration, math.abs(baseline[index] - 2 * baseline[index - 1] + baseline[index - 2]));
-                    newAcceleration = math.max(newAcceleration, math.abs(corrected[index] - 2 * corrected[index - 1] + corrected[index - 2]));
-                    oldHipAcceleration = Math.Max(oldHipAcceleration, math.length(baselineHips[index] - 2 * baselineHips[index - 1] + baselineHips[index - 2]));
-                    newHipAcceleration = Math.Max(newHipAcceleration, math.length(correctedHips[index] - 2 * correctedHips[index - 1] + correctedHips[index - 2]));
-                }
-                return math.all(newStep <= oldStep + .0025) && math.all(newAcceleration <= oldAcceleration + .000625) &&
-                    newHipAcceleration <= oldHipAcceleration + .001;
+                oldStep = math.max(oldStep, math.abs(baseline[index] - baseline[index - 1]));
+                newStep = math.max(newStep, math.abs(corrected[index] - corrected[index - 1]));
+                if (index <= from + 1) continue;
+                oldAcceleration = math.max(oldAcceleration, math.abs(baseline[index] - 2 * baseline[index - 1] + baseline[index - 2]));
+                newAcceleration = math.max(newAcceleration, math.abs(corrected[index] - 2 * corrected[index - 1] + corrected[index - 2]));
+                oldHipAcceleration = Math.Max(oldHipAcceleration, math.length(baselineHips[index] - 2 * baselineHips[index - 1] + baselineHips[index - 2]));
+                newHipAcceleration = Math.Max(newHipAcceleration, math.length(correctedHips[index] - 2 * correctedHips[index - 1] + correctedHips[index - 2]));
             }
+            return math.all(newStep <= oldStep + .0025) && math.all(newAcceleration <= oldAcceleration + .000625) &&
+                newHipAcceleration <= oldHipAcceleration + .001;
         }
 
         private void ApplyPreparedSupportCurve(float frame)
