@@ -86,34 +86,8 @@ namespace Fbx2Vmd.FBXImporter
             var leftToes = new Vector3[samples.Count];
             var rightFeet = new Vector3[samples.Count];
             var rightToes = new Vector3[samples.Count];
-            float minLeftFootY = float.MaxValue;
-            float maxLeftFootY = float.MinValue;
-            float minRightFootY = float.MaxValue;
-            float maxRightFootY = float.MinValue;
-            for (int index = 0; index < samples.Count; index++)
-            {
-                HumanoidFootContactSample sample = samples[index];
-                if (!IsFinite(sample.LeftFoot) || !IsFinite(sample.LeftToes) ||
-                    !IsFinite(sample.RightFoot) || !IsFinite(sample.RightToes))
-                {
-                    throw new ArgumentException("접지 의도 표본은 유한한 발 위치만 허용합니다.");
-                }
-
-                leftFeet[index] = sample.LeftFoot;
-                leftToes[index] = sample.LeftToes;
-                rightFeet[index] = sample.RightFoot;
-                rightToes[index] = sample.RightToes;
-                minLeftFootY = Mathf.Min(minLeftFootY, sample.LeftFoot.y);
-                maxLeftFootY = Mathf.Max(maxLeftFootY, sample.LeftFoot.y);
-                minRightFootY = Mathf.Min(minRightFootY, sample.RightFoot.y);
-                maxRightFootY = Mathf.Max(maxRightFootY, sample.RightFoot.y);
-            }
-
-            // 오프라인 분석기처럼 발별 움직임 범위로 판정함. 양발을 합치면
-            // 정지한 두 발의 높이 차이를 동작으로 오인한다.
-            bool hasClipMotion =
-                maxLeftFootY - minLeftFootY >= humanScale * ClipMotionPerHumanScale ||
-                maxRightFootY - minRightFootY >= humanScale * ClipMotionPerHumanScale;
+            bool hasClipMotion = CollectFootTrajectories(
+                samples, humanScale, leftFeet, leftToes, rightFeet, rightToes);
             List<HumanoidFootContactIntent> left = EstimateFoot(
                 leftFeet, leftToes, frameRate, humanScale, true, hasClipMotion,
                 labels?.Left, tuning, out List<Vector2Int> leftUncertain);
@@ -146,7 +120,53 @@ namespace Fbx2Vmd.FBXImporter
                 Mathf.CeilToInt(frameRate * MinimumSupportDurationSeconds));
 
             var classes = new FrameClass[count];
-            for (int index = 0; index < count; index++)
+            ClassifyFrames(
+                feet, toes, frameRate, floorFoot, floorToes,
+                supportHeight, supportSpeed, airborneHeight, airborneSpeed,
+                classes);
+            FrameClass[] preMerge = StabilizeAndMerge(
+                classes, minimumFrames, hasClipMotion);
+
+            // 사람 확정 표식은 자동 정리를 모두 거친 뒤 마지막에 덮어씀.
+            // 병합 판정(preMerge)에도 같은 표식을 입혀 표식 구간이 확신을 깎지 않게 함.
+            if (labels != null)
+            {
+                ApplyHumanLabels(classes, labels);
+                ApplyHumanLabels(preMerge, labels);
+            }
+
+            var intents = new List<HumanoidFootContactIntent>();
+            uncertainSpans = new List<Vector2Int>();
+            foreach (IntRange span in Ranges(classes))
+            {
+                if (span.Classification == FrameClass.Support ||
+                    span.Classification == FrameClass.Slide)
+                {
+                    intents.Add(BuildIntent(feet, toes, preMerge, span,
+                        humanScale, isLeft, labels, tuning));
+                }
+                else if (span.Classification == FrameClass.Uncertain)
+                {
+                    uncertainSpans.Add(new Vector2Int(span.Start, span.End + 1));
+                }
+            }
+
+            return intents;
+        }
+
+        static void ClassifyFrames(
+            Vector3[] feet,
+            Vector3[] toes,
+            float frameRate,
+            float floorFoot,
+            float floorToes,
+            float supportHeight,
+            float supportSpeed,
+            float airborneHeight,
+            float airborneSpeed,
+            FrameClass[] classes)
+        {
+            for (int index = 0; index < classes.Length; index++)
             {
                 // 첫 프레임은 속도가 정의되지 않아 항상 불확실로 둠.
                 if (index == 0)
@@ -155,48 +175,66 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                float footHeight = feet[index].y - floorFoot;
-                float toesHeight = toes[index].y - floorToes;
-                float footSpeed = Vector3.Distance(feet[index - 1], feet[index]) * frameRate;
-                float toesSpeed = Vector3.Distance(toes[index - 1], toes[index]) * frameRate;
-                // 발끝이 실제 지지 기관임. 발끝이 낮고 정지한 동안 발목도
-                // 정지했으면 평지지, 발목이 발끝 위로 들린(피치 간극) 상태는
-                // 발끝 축 롤로 보고 둘 다 지지로 인정함.
-                // 발이 평평한데 발목만 움직이는 끌기·정착은 지지로 보지 않음.
-                bool footPlanted =
-                    footHeight <= supportHeight && footSpeed <= supportSpeed;
-                float segmentLength = Vector3.Distance(feet[index], toes[index]);
-                bool rollEvidence = segmentLength > 0.0001f &&
-                    (feet[index].y - toes[index].y) / segmentLength >=
-                    RollPitchRatio;
-                // 발끝이 바닥에 닿은 채 수평으로 미끄러지는 프레임은 접촉이지만
-                // 고정 지지가 아니므로 별도 Slide로 분류해 핀을 걸지 않음.
-                float toesHorizontalSpeed =
-                    HorizontalDelta(toes[index - 1], toes[index]).magnitude *
-                    frameRate;
-                bool toeSliding =
-                    toesHeight <= supportHeight && toesSpeed <= airborneSpeed &&
-                    toesHorizontalSpeed > supportSpeed;
-                if (toesHeight <= supportHeight && toesSpeed <= supportSpeed &&
-                    (footPlanted || rollEvidence))
-                {
-                    classes[index] = FrameClass.Support;
-                }
-                else if (toeSliding)
-                {
-                    classes[index] = FrameClass.Slide;
-                }
-                else if (footHeight >= airborneHeight && toesHeight >= airborneHeight &&
-                         footSpeed >= airborneSpeed && toesSpeed >= airborneSpeed)
-                {
-                    classes[index] = FrameClass.Airborne;
-                }
-                else
-                {
-                    classes[index] = FrameClass.Uncertain;
-                }
+                classes[index] = ClassifyFrame(
+                    feet, toes, index, frameRate, floorFoot, floorToes,
+                    supportHeight, supportSpeed, airborneHeight, airborneSpeed);
             }
+        }
 
+        static FrameClass ClassifyFrame(
+            Vector3[] feet,
+            Vector3[] toes,
+            int index,
+            float frameRate,
+            float floorFoot,
+            float floorToes,
+            float supportHeight,
+            float supportSpeed,
+            float airborneHeight,
+            float airborneSpeed)
+        {
+            float footHeight = feet[index].y - floorFoot;
+            float toesHeight = toes[index].y - floorToes;
+            float footSpeed = Vector3.Distance(feet[index - 1], feet[index]) * frameRate;
+            float toesSpeed = Vector3.Distance(toes[index - 1], toes[index]) * frameRate;
+            // 발끝이 실제 지지 기관임. 발끝이 낮고 정지한 동안 발목도
+            // 정지했으면 평지지, 발목이 발끝 위로 들린(피치 간극) 상태는
+            // 발끝 축 롤로 보고 둘 다 지지로 인정함.
+            // 발이 평평한데 발목만 움직이는 끌기·정착은 지지로 보지 않음.
+            bool footPlanted =
+                footHeight <= supportHeight && footSpeed <= supportSpeed;
+            float segmentLength = Vector3.Distance(feet[index], toes[index]);
+            bool rollEvidence = segmentLength > 0.0001f &&
+                (feet[index].y - toes[index].y) / segmentLength >=
+                RollPitchRatio;
+            // 발끝이 바닥에 닿은 채 수평으로 미끄러지는 프레임은 접촉이지만
+            // 고정 지지가 아니므로 별도 Slide로 분류해 핀을 걸지 않음.
+            float toesHorizontalSpeed =
+                HorizontalDelta(toes[index - 1], toes[index]).magnitude *
+                frameRate;
+            bool toeSliding =
+                toesHeight <= supportHeight && toesSpeed <= airborneSpeed &&
+                toesHorizontalSpeed > supportSpeed;
+            if (toesHeight <= supportHeight && toesSpeed <= supportSpeed &&
+                (footPlanted || rollEvidence))
+            {
+                return FrameClass.Support;
+            }
+            if (toeSliding)
+            {
+                return FrameClass.Slide;
+            }
+            if (footHeight >= airborneHeight && toesHeight >= airborneHeight &&
+                     footSpeed >= airborneSpeed && toesSpeed >= airborneSpeed)
+            {
+                return FrameClass.Airborne;
+            }
+            return FrameClass.Uncertain;
+        }
+
+        static FrameClass[] StabilizeAndMerge(
+            FrameClass[] classes, int minimumFrames, bool hasClipMotion)
+        {
             bool hasStableFloor = hasClipMotion;
             if (hasStableFloor)
             {
@@ -214,7 +252,7 @@ namespace Fbx2Vmd.FBXImporter
 
             if (!hasStableFloor)
             {
-                for (int index = 0; index < count; index++)
+                for (int index = 0; index < classes.Length; index++)
                 {
                     classes[index] = FrameClass.Uncertain;
                 }
@@ -247,32 +285,66 @@ namespace Fbx2Vmd.FBXImporter
                     }
                 }
             }
+            return preMerge;
+        }
 
-            // 사람 확정 표식은 자동 정리를 모두 거친 뒤 마지막에 덮어씀.
-            // 병합 판정(preMerge)에도 같은 표식을 입혀 표식 구간이 확신을 깎지 않게 함.
-            if (labels != null)
+        static bool CollectFootTrajectories(
+            IReadOnlyList<HumanoidFootContactSample> samples,
+            float humanScale,
+            Vector3[] leftFeet,
+            Vector3[] leftToes,
+            Vector3[] rightFeet,
+            Vector3[] rightToes)
+        {
+            float minLeftFootY = float.MaxValue;
+            float maxLeftFootY = float.MinValue;
+            float minRightFootY = float.MaxValue;
+            float maxRightFootY = float.MinValue;
+            for (int index = 0; index < samples.Count; index++)
             {
-                ApplyHumanLabels(classes, labels);
-                ApplyHumanLabels(preMerge, labels);
+                HumanoidFootContactSample sample = samples[index];
+                if (!IsFinite(sample.LeftFoot) || !IsFinite(sample.LeftToes) ||
+                    !IsFinite(sample.RightFoot) || !IsFinite(sample.RightToes))
+                {
+                    throw new ArgumentException("접지 의도 표본은 유한한 발 위치만 허용합니다.");
+                }
+
+                leftFeet[index] = sample.LeftFoot;
+                leftToes[index] = sample.LeftToes;
+                rightFeet[index] = sample.RightFoot;
+                rightToes[index] = sample.RightToes;
+                minLeftFootY = Mathf.Min(minLeftFootY, sample.LeftFoot.y);
+                maxLeftFootY = Mathf.Max(maxLeftFootY, sample.LeftFoot.y);
+                minRightFootY = Mathf.Min(minRightFootY, sample.RightFoot.y);
+                maxRightFootY = Mathf.Max(maxRightFootY, sample.RightFoot.y);
             }
 
-            var intents = new List<HumanoidFootContactIntent>();
-            uncertainSpans = new List<Vector2Int>();
-            foreach (IntRange span in Ranges(classes))
-            {
-                if (span.Classification == FrameClass.Support ||
-                    span.Classification == FrameClass.Slide)
-                {
-                    intents.Add(BuildIntent(feet, toes, preMerge, span,
-                        humanScale, isLeft, labels, tuning));
-                }
-                else if (span.Classification == FrameClass.Uncertain)
-                {
-                    uncertainSpans.Add(new Vector2Int(span.Start, span.End + 1));
-                }
-            }
+            // 오프라인 분석기처럼 발별 움직임 범위로 판정함. 양발을 합치면
+            // 정지한 두 발의 높이 차이를 동작으로 오인한다.
+            return
+                maxLeftFootY - minLeftFootY >= humanScale * ClipMotionPerHumanScale ||
+                maxRightFootY - minRightFootY >= humanScale * ClipMotionPerHumanScale;
+        }
 
-            return intents;
+        static float MeasureDirectionConsistency(
+            Vector3[] feet, Vector3[] toes, IntRange span,
+            Vector2 net, float netLength)
+        {
+            if (netLength <= 0f) return 0f;
+            Vector2 netDirection = net / netLength;
+            float weighted = 0f;
+            float total = 0f;
+            for (int index = span.Start + 1; index <= span.End; index++)
+            {
+                Vector2 step = HorizontalDelta(
+                    (feet[index - 1] + toes[index - 1]) * 0.5f,
+                    (feet[index] + toes[index]) * 0.5f);
+                float stepLength = step.magnitude;
+                if (stepLength <= 0f) continue;
+                weighted += Vector2.Dot(step / stepLength, netDirection) * stepLength;
+                total += stepLength;
+            }
+            return total > 0f ? weighted / total : 0f;
         }
 
         private static HumanoidFootContactIntent BuildIntent(
@@ -289,24 +361,7 @@ namespace Fbx2Vmd.FBXImporter
             Vector2 net = HorizontalDelta(anchor,
                 (feet[span.End] + toes[span.End]) * 0.5f);
             float netLength = net.magnitude;
-            float consistency = 0f;
-            if (netLength > 0f)
-            {
-                Vector2 netDirection = net / netLength;
-                float weighted = 0f;
-                float total = 0f;
-                for (int index = span.Start + 1; index <= span.End; index++)
-                {
-                    Vector2 step = HorizontalDelta(
-                        (feet[index - 1] + toes[index - 1]) * 0.5f,
-                        (feet[index] + toes[index]) * 0.5f);
-                    float stepLength = step.magnitude;
-                    if (stepLength <= 0f) continue;
-                    weighted += Vector2.Dot(step / stepLength, netDirection) * stepLength;
-                    total += stepLength;
-                }
-                if (total > 0f) consistency = weighted / total;
-            }
+            float consistency = MeasureDirectionConsistency(feet, toes, span, net, netLength);
 
             HumanoidFootContactIntentMode mode =
                 span.Classification == FrameClass.Slide ||
