@@ -502,7 +502,6 @@ namespace Fbx2Vmd.FBXImporter
             return true;
         }
 
-        }
 
         private static bool IsFinite(float value)
         {

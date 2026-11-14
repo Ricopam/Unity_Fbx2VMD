@@ -193,5 +193,6 @@ namespace Fbx2Vmd.FBXImporter
                 desiredEndpointPosition = targetHipsPosition + desiredTargetOffset;
                 desiredEndpointPosition.y = currentTargetEndpointPosition.y;
                 return IsFinite(desiredEndpointPosition);
+            }
     }
 }
