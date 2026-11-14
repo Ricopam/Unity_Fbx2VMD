@@ -164,6 +164,29 @@ namespace Fbx2Vmd.FBXImporter
             HumanoidFootContactSample[] sourceSamples,
             HumanoidFootContactSample[] targetSamples)
         {
+            sourceSamples[frameIndex] = CaptureSourceSample(
+                frameIndex, timeSeconds, sourceReference);
+            evaluateTarget(timeSeconds);
+            _leftBaseRootSpaceFootPositions[frameIndex] =
+                CaptureRootSpacePosition(_leftLeg.CaptureFootPosition());
+            _rightBaseRootSpaceFootPositions[frameIndex] =
+                CaptureRootSpacePosition(_rightLeg.CaptureFootPosition());
+            _leftBaseRootSpaceBendNormals[frameIndex] =
+                CaptureRootSpaceDirection(_leftLeg.CaptureBendNormal());
+            _rightBaseRootSpaceBendNormals[frameIndex] =
+                CaptureRootSpaceDirection(_rightLeg.CaptureBendNormal());
+            targetSamples[frameIndex] = new HumanoidFootContactSample(
+                _leftLeg.CaptureFootPosition(),
+                _leftLeg.CaptureToesPosition(),
+                _rightLeg.CaptureFootPosition(),
+                _rightLeg.CaptureToesPosition());
+        }
+
+        HumanoidFootContactSample CaptureSourceSample(
+            int frameIndex,
+            float timeSeconds,
+            HumanoidPoseReferencePlayer sourceReference)
+        {
             if (!sourceReference.TryEvaluateFootSupportPointsAt(
                     timeSeconds,
                     out Vector3 sourceLeftFoot,
@@ -197,16 +220,7 @@ namespace Fbx2Vmd.FBXImporter
             _sourceHipsPositions[frameIndex] = sourceHipsPosition;
             _sourceHipsRotations[frameIndex] = sourceHipsRotation;
 
-            evaluateTarget(timeSeconds);
-            _leftBaseRootSpaceFootPositions[frameIndex] =
-                CaptureRootSpacePosition(_leftLeg.CaptureFootPosition());
-            _rightBaseRootSpaceFootPositions[frameIndex] =
-                CaptureRootSpacePosition(_rightLeg.CaptureFootPosition());
-            _leftBaseRootSpaceBendNormals[frameIndex] =
-                CaptureRootSpaceDirection(_leftLeg.CaptureBendNormal());
-            _rightBaseRootSpaceBendNormals[frameIndex] =
-                CaptureRootSpaceDirection(_rightLeg.CaptureBendNormal());
-            sourceSamples[frameIndex] = new HumanoidFootContactSample(
+            return new HumanoidFootContactSample(
                 sourceLeftFoot,
                 sourceLeftToes,
                 sourceRightFoot,
@@ -214,11 +228,6 @@ namespace Fbx2Vmd.FBXImporter
                 relativeFootHeights,
                 leftFootFrame,
                 rightFootFrame);
-            targetSamples[frameIndex] = new HumanoidFootContactSample(
-                _leftLeg.CaptureFootPosition(),
-                _leftLeg.CaptureToesPosition(),
-                _rightLeg.CaptureFootPosition(),
-                _rightLeg.CaptureToesPosition());
         }
 
         void BuildPlanAndPublish(
