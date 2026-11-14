@@ -5,7 +5,7 @@ namespace Fbx2Vmd.FBXImporter
     /// <summary>
     /// Editor smoke 진단의 일시 설정, 녹화 override와 완료 알림 상태를 보관함.
     /// </summary>
-    internal sealed class FBXEditorDiagnosticSession
+    internal sealed partial class FBXEditorDiagnosticSession
     {
         internal readonly struct SettingsSnapshot
         {
@@ -31,23 +31,6 @@ namespace Fbx2Vmd.FBXImporter
             internal bool ShowGhostModel { get; }
         }
 
-        internal sealed class Plan
-        {
-            internal float DurationSeconds { get; set; }
-            internal int TargetFrameCount { get; set; }
-            internal float[] SampleTimesOverride { get; set; }
-            internal FBXVmdPipeline.EditorDiagnosticSmokeSegment Segment { get; set; }
-            internal string CurrentFbxFileName { get; set; }
-            internal bool HasCaptureResolutionOverride { get; set; }
-            internal int CaptureWidth { get; set; }
-            internal int CaptureHeight { get; set; }
-            internal float DiagnosticScreenshotPaddingOverride { get; set; } = float.NaN;
-            internal float DiagnosticScreenshotVerticalViewportCenterOverride { get; set; } = float.NaN;
-            internal bool UseKnownReferenceTiming { get; set; }
-            internal bool UseInputBaseName { get; set; }
-            internal float RecordingStartTimeOverrideSeconds { get; set; } = float.NaN;
-            internal float RecordingPlaybackSpeedOverride { get; set; } = float.NaN;
-        }
 
         private SettingsSnapshot _settingsSnapshot;
 
