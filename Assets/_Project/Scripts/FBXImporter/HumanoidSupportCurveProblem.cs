@@ -5,7 +5,7 @@ using Unity.Mathematics;
 
 namespace Fbx2Vmd.FBXImporter
 {
-    internal sealed class HumanoidSupportCurveProblem
+    internal sealed partial class HumanoidSupportCurveProblem
     {
         private const int SamplesPerFrame = 4;
         private const double DegreesPerRadian = 180d / Math.PI;
@@ -193,127 +193,7 @@ namespace Fbx2Vmd.FBXImporter
 
         private HumanoidSupportCurveOptimizer.Evaluation Evaluate(double[] controls, bool derivatives)
         {
-            int frameCount = _samples.Length;
-            int count = controls.Length;
-            int activeCount = _last - _first + 1;
-            var shifts = new double3[frameCount];
-            var angles = new double[frameCount, 2];
-            var cosines = new double[frameCount, 2];
-            var angleGradient = new double3[frameCount, 2];
-            var cosineGradient = new double3[frameCount, 2];
-            var errors = new double[2];
-            double leftSquared = _baselineRms[0] * _baselineRms[0];
-            double rightSquared = _baselineRms[1] * _baselineRms[1];
-            double leftWeight = _balanceAbsoluteErrors ? 2 * leftSquared / (leftSquared + rightSquared) : 1;
-            double rightWeight = 2 - leftWeight;
-            double[] gradient = derivatives ? new double[count] : null;
-            double[,] metric = derivatives ? new double[count, count] : null;
-            double[][] sideGradient = derivatives ? new[] { new double[count], new double[count] } : null;
-            var slack = new List<double>();
-            var jacobian = derivatives ? new List<double[]>() : null;
-            for (int index = 0; index < frameCount; index++)
-            {
-                shifts[index] = ShiftAt(index, controls);
-                for (int side = 0; side < 2; side++)
-                {
-                    var leg = _samples[index].Leg(side);
-                    double3 reach = leg.HipToAnkle + shifts[index];
-                    angles[index, side] = leg.MeasureFlexion(reach, out double cosine);
-                    cosines[index, side] = cosine;
-                    if (derivatives)
-                    {
-                        cosineGradient[index, side] = reach / leg.LengthProduct;
-                        angleGradient[index, side] = -cosineGradient[index, side] *
-                            (DegreesPerRadian / Math.Sqrt(Math.Max(1e-12, 1 - cosine * cosine)));
-                    }
-                    if (index < _first || index > _last) continue;
-
-                    double relative = (angles[index, side] - leg.ReferenceDegrees) / _baselineRms[side];
-                    errors[side] += relative * relative;
-                    if (!derivatives) continue;
-                    var row = new double[count];
-                    Add(row, index, angleGradient[index, side] / _baselineRms[side]);
-                    for (int axis = 0; axis < count; axis++)
-                    {
-                        if (row[axis] == 0) continue;
-                        sideGradient[side][axis] += 2 * relative * row[axis] / activeCount;
-                        double weight = side == 0 ? leftWeight : rightWeight;
-                        for (int column = 0; column <= axis; column++)
-                            metric[axis, column] += weight * row[axis] * row[column] / activeCount;
-                    }
-                }
-            }
-
-            AddAngularConstraints(_stepLimits, 1);
-            AddAngularConstraints(_accelerationLimits, 2);
-            for (int index = 0; index + 2 < frameCount; index++)
-            {
-                double3 acceleration = _samples[index + 2].Hip - 2 * _samples[index + 1].Hip + _samples[index].Hip +
-                    shifts[index + 2] - 2 * shifts[index + 1] + shifts[index];
-                double length = math.length(acceleration);
-                double[] row = MakeRow(_hipLimits[index] - length);
-                if (derivatives)
-                {
-                    double3 normal = -acceleration / Math.Max(1e-12, length);
-                    Add(row, index, normal);
-                    Add(row, index + 1, -2 * normal);
-                    Add(row, index + 2, normal);
-                }
-            }
-            double maximumSquared = MaximumShiftMm * MaximumShiftMm;
-            for (int index = 0; index < frameCount; index++)
-            {
-                double[] row = MakeRow(1 - math.lengthsq(shifts[index]) / maximumSquared);
-                if (derivatives) Add(row, index, -2 * shifts[index] / maximumSquared);
-            }
-            for (int sign = -1; sign <= 1; sign += 2)
-            for (int index = _first; index <= _last; index++)
-            for (int side = 0; side < 2; side++)
-            {
-                double[] row = MakeRow(1 + sign * cosines[index, side]);
-                if (derivatives) Add(row, index, sign * cosineGradient[index, side]);
-            }
-            for (int side = 0; side < 2; side++)
-            {
-                double[] row = MakeRow(1 - errors[side] / activeCount);
-                if (derivatives)
-                    for (int axis = 0; axis < count; axis++) row[axis] = -sideGradient[side][axis];
-            }
-            if (derivatives)
-            {
-                for (int axis = 0; axis < count; axis++)
-                {
-                    gradient[axis] = (leftWeight * sideGradient[0][axis] + rightWeight * sideGradient[1][axis]) * .5;
-                    metric[axis, axis] += 1e-5;
-                }
-            }
-            return new HumanoidSupportCurveOptimizer.Evaluation((leftWeight * errors[0] + rightWeight * errors[1]) / (2 * activeCount),
-                slack.ToArray(), gradient, metric, jacobian?.ToArray());
-
-            void AddAngularConstraints(double[] limits, int order)
-            {
-                for (int sign = -1; sign <= 1; sign += 2)
-                for (int index = 0; index + order < frameCount; index++)
-                for (int side = 0; side < 2; side++)
-                {
-                    double difference = order == 1 ? angles[index + 1, side] - angles[index, side] :
-                        angles[index + 2, side] - 2 * angles[index + 1, side] + angles[index, side];
-                    double[] row = MakeRow(limits[2 * index + side] + sign * difference);
-                    if (!derivatives) continue;
-                    Add(row, index, (order == 1 ? -sign : sign) * angleGradient[index, side]);
-                    Add(row, index + 1, (order == 1 ? sign : -2 * sign) * angleGradient[index + 1, side]);
-                    if (order == 2) Add(row, index + 2, sign * angleGradient[index + 2, side]);
-                }
-            }
-
-            double[] MakeRow(double value)
-            {
-                slack.Add(value);
-                if (!derivatives) return null;
-                var row = new double[count];
-                jacobian.Add(row);
-                return row;
-            }
+            return new EvaluationSession(this, controls, derivatives).Run();
         }
 
         private void Add(double[] row, int index, double3 gradient)
