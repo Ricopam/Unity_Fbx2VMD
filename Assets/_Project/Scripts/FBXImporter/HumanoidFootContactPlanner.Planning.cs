@@ -411,5 +411,153 @@ namespace Fbx2Vmd.FBXImporter
         }
     }
 
+    static ChannelCorrections BuildChannelCorrections(
+        SampleArrays arrays,
+        float normalizedSourceHumanScale,
+        float normalizedTargetHumanScale,
+        Quaternion normalizedRotation,
+        Quaternion targetToSourceRotation,
+        float frameRate,
+        int minimumContactFrames,
+        int releaseFrames,
+        HumanoidFootContactIntentEstimate intents)
+    {
+        var channels = new ChannelCorrections();
+        // 발끝 방향 세그먼트를 먼저 계산해야 핀 보정이 발끝 기준점을 쓸 수 있음.
+        channels.LeftToeSegments = BuildDesiredToeSegments(
+            arrays.SourceLeftFeet,
+            arrays.SourceLeftToes,
+            arrays.TargetLeftFeet,
+            arrays.TargetLeftToes,
+            normalizedSourceHumanScale,
+            normalizedTargetHumanScale,
+            normalizedRotation);
+        channels.RightToeSegments = BuildDesiredToeSegments(
+            arrays.SourceRightFeet,
+            arrays.SourceRightToes,
+            arrays.TargetRightFeet,
+            arrays.TargetRightToes,
+            normalizedSourceHumanScale,
+            normalizedTargetHumanScale,
+            normalizedRotation);
+        channels.LeftCorrections = BuildSideCorrections(
+            arrays.SourceLeft, arrays.TargetLeft,
+            arrays.SourceLeftFeet, arrays.SourceLeftToes,
+            arrays.TargetLeftFeet, arrays.TargetLeftToes,
+            channels.LeftToeSegments, frameRate,
+            normalizedSourceHumanScale, normalizedTargetHumanScale,
+            normalizedRotation, targetToSourceRotation,
+            minimumContactFrames, releaseFrames, intents?.Left,
+            out channels.LeftRunCount);
+        channels.RightCorrections = BuildSideCorrections(
+            arrays.SourceRight, arrays.TargetRight,
+            arrays.SourceRightFeet, arrays.SourceRightToes,
+            arrays.TargetRightFeet, arrays.TargetRightToes,
+            channels.RightToeSegments, frameRate,
+            normalizedSourceHumanScale, normalizedTargetHumanScale,
+            normalizedRotation, targetToSourceRotation,
+            minimumContactFrames, releaseFrames, intents?.Right,
+            out channels.RightRunCount);
+        return channels;
+    }
+
+    static Vector3[] BuildSideCorrections(
+        IReadOnlyList<Vector3> sourcePoints,
+        IReadOnlyList<Vector3> targetPoints,
+        IReadOnlyList<Vector3> sourceFeet,
+        IReadOnlyList<Vector3> sourceToes,
+        IReadOnlyList<Vector3> targetFeet,
+        IReadOnlyList<Vector3> targetToes,
+        Vector3[] toeSegments,
+        float frameRate,
+        float normalizedSourceHumanScale,
+        float normalizedTargetHumanScale,
+        Quaternion normalizedRotation,
+        Quaternion targetToSourceRotation,
+        int minimumContactFrames,
+        int releaseFrames,
+        IReadOnlyList<HumanoidFootContactIntent> intents,
+        out int runCount)
+    {
+        Vector3[] corrections = BuildFootCorrections(
+            sourcePoints,
+            targetPoints,
+            sourceToes,
+            targetFeet,
+            toeSegments,
+            frameRate,
+            normalizedSourceHumanScale,
+            normalizedRotation,
+            minimumContactFrames,
+            releaseFrames,
+            intents,
+            out runCount);
+        ApplySupportHeightCorrections(
+            sourceFeet,
+            sourceToes,
+            targetFeet,
+            targetToes,
+            corrections,
+            normalizedSourceHumanScale,
+            normalizedTargetHumanScale,
+            targetToSourceRotation);
+        return corrections;
+    }
+
+    static SampleArrays CollectSampleArrays(
+        IReadOnlyList<HumanoidFootContactSample> sourceSamples,
+        IReadOnlyList<HumanoidFootContactSample> targetSamples)
+    {
+        var arrays = new SampleArrays
+        {
+            SourceLeft = new Vector3[sourceSamples.Count],
+            SourceRight = new Vector3[sourceSamples.Count],
+            TargetLeft = new Vector3[targetSamples.Count],
+            TargetRight = new Vector3[targetSamples.Count],
+            SourceLeftFeet = new Vector3[sourceSamples.Count],
+            SourceLeftToes = new Vector3[sourceSamples.Count],
+            SourceRightFeet = new Vector3[sourceSamples.Count],
+            SourceRightToes = new Vector3[sourceSamples.Count],
+            TargetLeftFeet = new Vector3[targetSamples.Count],
+            TargetLeftToes = new Vector3[targetSamples.Count],
+            TargetRightFeet = new Vector3[targetSamples.Count],
+            TargetRightToes = new Vector3[targetSamples.Count]
+        };
+        for (int index = 0; index < sourceSamples.Count; index++)
+        {
+            HumanoidFootContactSample source = sourceSamples[index];
+            HumanoidFootContactSample target = targetSamples[index];
+            if (!IsFinite(source.Left) ||
+                !IsFinite(source.Right) ||
+                !IsFinite(target.Left) ||
+                !IsFinite(target.Right) ||
+                !IsFinite(source.LeftFoot) ||
+                !IsFinite(source.LeftToes) ||
+                !IsFinite(source.RightFoot) ||
+                !IsFinite(source.RightToes) ||
+                !IsFinite(target.LeftFoot) ||
+                !IsFinite(target.LeftToes) ||
+                !IsFinite(target.RightFoot) ||
+                !IsFinite(target.RightToes))
+            {
+                throw new ArgumentException("발 접촉 표본은 유한한 값이어야 합니다.");
+            }
+
+            arrays.SourceLeft[index] = source.Left;
+            arrays.SourceRight[index] = source.Right;
+            arrays.TargetLeft[index] = target.Left;
+            arrays.TargetRight[index] = target.Right;
+            arrays.SourceLeftFeet[index] = source.LeftFoot;
+            arrays.SourceLeftToes[index] = source.LeftToes;
+            arrays.SourceRightFeet[index] = source.RightFoot;
+            arrays.SourceRightToes[index] = source.RightToes;
+            arrays.TargetLeftFeet[index] = target.LeftFoot;
+            arrays.TargetLeftToes[index] = target.LeftToes;
+            arrays.TargetRightFeet[index] = target.RightFoot;
+            arrays.TargetRightToes[index] = target.RightToes;
+        }
+        return arrays;
+    }
+
     }
 }
