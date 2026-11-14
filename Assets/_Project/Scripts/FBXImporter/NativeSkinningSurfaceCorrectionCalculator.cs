@@ -132,37 +132,97 @@ namespace Fbx2Vmd.FBXImporter
             int initialSharpFoldCount = activePairIndices.Count;
             if (initialSharpFoldCount == 0)
             {
-                result = new NativeSkinningSurfaceCorrectionResult(
-                    initialVertices,
-                    Array.Empty<int>(),
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0f,
-                    0f,
-                    false,
-                    0f,
-                    0f,
-                    0f,
-                    0f,
-                    0);
+                result = CreateEmptyCorrectionResult(initialVertices);
                 return true;
             }
+            int[] restShapeRecoveryPairIndices = SplitRestShapeRecoveryPairs(
+                baselineVertices,
+                contract,
+                activePairIndices,
+                out int[] sharpFoldPairIndices);
+
+            Vector3[] vertices = RunCorrectionPasses(
+                baselineVertices,
+                initialVertices,
+                contract,
+                configuration,
+                allowsStrainRecovery,
+                restShapeRecoveryPairIndices,
+                sharpFoldPairIndices,
+                out FrameEdge[] frameEdges,
+                out SolverBuffers buffers,
+                timing);
+
+            result = EvaluateTimedResult(
+                baselineVertices,
+                initialVertices,
+                vertices,
+                contract,
+                configuration,
+                allowsStrainRecovery,
+                frameEdges,
+                initialSharpFoldCount,
+                restShapeRecoveryPairIndices,
+                sharpFoldPairIndices,
+                buffers,
+                timing);
+            return true;
+        }
+
+        private static int[] SplitRestShapeRecoveryPairs(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract,
+            HashSet<int> activePairIndices,
+            out int[] sharpFoldPairIndices)
+        {
             int[] restShapeRecoveryPairIndices = activePairIndices
                 .Where(pairIndex => IsRestShapeRecoveryPair(
                     baselineVertices,
                     contract,
                     pairIndex))
                 .ToArray();
-            int[] sharpFoldPairIndices = activePairIndices
+            sharpFoldPairIndices = activePairIndices
                 .Except(restShapeRecoveryPairIndices)
                 .ToArray();
+            return restShapeRecoveryPairIndices;
+        }
 
+        private static NativeSkinningSurfaceCorrectionResult CreateEmptyCorrectionResult(
+            IReadOnlyList<Vector3> initialVertices)
+        {
+            return new NativeSkinningSurfaceCorrectionResult(
+                initialVertices,
+                Array.Empty<int>(),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0f,
+                0f,
+                false,
+                0f,
+                0f,
+                0f,
+                0f,
+                0);
+        }
+
+        private static Vector3[] RunCorrectionPasses(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> initialVertices,
+            NativeSkinningSurfaceContract contract,
+            CorrectionConfiguration configuration,
+            bool allowsStrainRecovery,
+            int[] restShapeRecoveryPairIndices,
+            int[] sharpFoldPairIndices,
+            out FrameEdge[] frameEdges,
+            out SolverBuffers buffers,
+            NativeSkinningSolverTiming timing)
+        {
             Vector3[] vertices = initialVertices.ToArray();
-            FrameEdge[] frameEdges = BuildFrameEdges(baselineVertices, contract);
-            var buffers = new SolverBuffers();
+            frameEdges = BuildFrameEdges(baselineVertices, contract);
+            buffers = new SolverBuffers();
             if (restShapeRecoveryPairIndices.Length > 0)
             {
                 vertices = ApplyCorrectionPass(
@@ -192,8 +252,24 @@ namespace Fbx2Vmd.FBXImporter
                     buffers,
                     timing);
             }
+            return vertices;
+        }
 
-            result = EvaluateResult(
+        private static NativeSkinningSurfaceCorrectionResult EvaluateTimedResult(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> initialVertices,
+            Vector3[] vertices,
+            NativeSkinningSurfaceContract contract,
+            CorrectionConfiguration configuration,
+            bool allowsStrainRecovery,
+            IReadOnlyList<FrameEdge> frameEdges,
+            int initialSharpFoldCount,
+            IReadOnlyList<int> restShapeRecoveryPairIndices,
+            IReadOnlyList<int> sharpFoldPairIndices,
+            SolverBuffers buffers,
+            NativeSkinningSolverTiming timing)
+        {
+            NativeSkinningSurfaceCorrectionResult result = EvaluateResult(
                 baselineVertices,
                 vertices,
                 contract,
@@ -217,7 +293,7 @@ namespace Fbx2Vmd.FBXImporter
             {
                 result = fallbackResult;
             }
-            return true;
+            return result;
         }
 
         private static bool TryCalculateCoupledProjectionFallback(
@@ -253,6 +329,30 @@ namespace Fbx2Vmd.FBXImporter
                     buffers,
                     timing)
                 : initialVertices.ToArray();
+            return TryRunCoupledProjectionRounds(
+                baselineVertices,
+                sharpFoldCorrectedVertices,
+                contract,
+                configuration,
+                frameEdges,
+                initialSharpFoldCount,
+                restShapeRecoveryPairIndices,
+                sharpFoldPairIndices,
+                out result);
+        }
+
+        private static bool TryRunCoupledProjectionRounds(
+            IReadOnlyList<Vector3> baselineVertices,
+            Vector3[] sharpFoldCorrectedVertices,
+            NativeSkinningSurfaceContract contract,
+            CorrectionConfiguration configuration,
+            IReadOnlyList<FrameEdge> frameEdges,
+            int initialSharpFoldCount,
+            IReadOnlyList<int> restShapeRecoveryPairIndices,
+            IReadOnlyList<int> sharpFoldPairIndices,
+            out NativeSkinningSurfaceCorrectionResult result)
+        {
+            result = null;
             Vector3[] projectionStartVertices = sharpFoldCorrectedVertices;
             for (int round = 0; round < CoupledProjectionRoundCount; round++)
             {
@@ -370,32 +470,42 @@ namespace Fbx2Vmd.FBXImporter
                  iteration < configuration.LocalGlobalIterations;
                  iteration++)
             {
-                timing?.AddLgIteration();
-                sectionStamp = NativeSkinningSolverTiming.Stamp();
-                UpdateActiveCorrectionPairs(
-                    baselineVertices,
-                    vertices,
-                    contract,
-                    workset.FacePairIndices,
-                    shouldRecoverRestShape,
-                    activePairIndices);
-                double beforeEnergy = CalculateConstraintEnergy(
-                    baselineVertices,
-                    vertices,
-                    contract,
-                    activePairIndices,
-                    workset.FacePairIndices,
-                    workset.FaceIndices,
-                    workset.Edges,
-                    shouldRecoverRestShape);
-                timing?.AddPairEnergy(sectionStamp);
-                if (beforeEnergy <= 0d)
+                if (!RunCorrectionIteration(
+                        baselineVertices,
+                        ref vertices,
+                        contract,
+                        workset,
+                        activePairIndices,
+                        shouldRecoverRestShape,
+                        allowsStrainRecovery,
+                        configuration,
+                        buffers,
+                        timing,
+                        iteration))
                 {
                     break;
                 }
+            }
+            return vertices;
+        }
 
-                sectionStamp = NativeSkinningSolverTiming.Stamp();
-                BuildDisplacementSystem(
+        // 로컬-글로벌 한 반복: 쌍 갱신 → 시스템 구축 → CG → 투영 → 스텝 수용.
+        // false면 반복 종료(에너지 0·제약 없음·스텝 거부·조기 수렴).
+        private static bool RunCorrectionIteration(
+            IReadOnlyList<Vector3> baselineVertices,
+            ref Vector3[] vertices,
+            NativeSkinningSurfaceContract contract,
+            LocalWorkset workset,
+            HashSet<int> activePairIndices,
+            bool shouldRecoverRestShape,
+            bool allowsStrainRecovery,
+            CorrectionConfiguration configuration,
+            SolverBuffers buffers,
+            NativeSkinningSolverTiming timing,
+            int iteration)
+        {
+            timing?.AddLgIteration();
+            if (!PrepareIterationSystem(
                     baselineVertices,
                     vertices,
                     contract,
@@ -403,105 +513,353 @@ namespace Fbx2Vmd.FBXImporter
                     activePairIndices,
                     shouldRecoverRestShape,
                     buffers,
+                    timing,
+                    out double beforeEnergy,
                     out NativeSkinningMaterialStrainConstraint[]
-                        materialStrainConstraints,
-                    out int activeConstraintCount);
-                timing?.AddBuildSystem(sectionStamp);
-                if (activeConstraintCount == 0)
-                {
-                    break;
-                }
+                        materialStrainConstraints))
+            {
+                return false;
+            }
 
-                sectionStamp = NativeSkinningSolverTiming.Stamp();
-                IReadOnlyList<LocalEdge> cgEdges = shouldRecoverRestShape
-                    ? (IReadOnlyList<LocalEdge>)Array.Empty<LocalEdge>()
-                    : workset.Edges;
-                bool warmStart =
-                    configuration.AllowsWarmStart && iteration > 0;
-                Vector3[] displacement = configuration.AllowsBurst
-                    ? SolveConjugateGradientBurst(
-                        buffers,
-                        cgEdges,
-                        materialStrainConstraints,
-                        workset.ConstrainedVertices.Length,
-                        configuration.ConjugateGradientIterations,
-                        warmStart,
-                        timing)
-                    : SolveConjugateGradient(
-                        buffers,
-                        cgEdges,
-                        materialStrainConstraints,
-                        workset.ConstrainedVertices.Length,
-                        configuration.ConjugateGradientIterations,
-                        warmStart,
-                        timing);
-                timing?.AddCgSolve(sectionStamp);
-                sectionStamp = NativeSkinningSolverTiming.Stamp();
-                LimitDisplacement(
-                    displacement,
-                    workset.ConstrainedVertices.Length,
+            long sectionStamp = NativeSkinningSolverTiming.Stamp();
+            Vector3[] displacement = SolveDisplacementStep(
+                buffers,
+                workset,
+                materialStrainConstraints,
+                shouldRecoverRestShape,
+                configuration,
+                iteration,
+                timing);
+            timing?.AddCgSolve(sectionStamp);
+            sectionStamp = NativeSkinningSolverTiming.Stamp();
+            Vector3[] proposedLocalPositions = ProposeAndProjectLocal(
+                baselineVertices,
+                vertices,
+                displacement,
+                workset,
+                contract,
+                activePairIndices,
+                shouldRecoverRestShape,
+                configuration,
+                buffers);
+            return AcceptIterationStep(
+                baselineVertices,
+                ref vertices,
+                proposedLocalPositions,
+                workset,
+                contract,
+                activePairIndices,
+                beforeEnergy,
+                configuration,
+                shouldRecoverRestShape,
+                allowsStrainRecovery,
+                buffers,
+                timing,
+                sectionStamp);
+        }
+
+        // 스텝 수용 + 조기 수렴 판정. 수용 시 vertices를 갱신하고 계속 여부를 돌려준다.
+        private static bool AcceptIterationStep(
+            IReadOnlyList<Vector3> baselineVertices,
+            ref Vector3[] vertices,
+            Vector3[] proposedLocalPositions,
+            LocalWorkset workset,
+            NativeSkinningSurfaceContract contract,
+            HashSet<int> activePairIndices,
+            double beforeEnergy,
+            CorrectionConfiguration configuration,
+            bool shouldRecoverRestShape,
+            bool allowsStrainRecovery,
+            SolverBuffers buffers,
+            NativeSkinningSolverTiming timing,
+            long sectionStamp)
+        {
+            if (!TryAcceptGlobalStep(
+                    baselineVertices,
                     vertices,
+                    proposedLocalPositions,
+                    workset,
+                    contract,
+                    activePairIndices,
+                    beforeEnergy,
+                    configuration,
+                    shouldRecoverRestShape,
+                    allowsStrainRecovery,
+                    buffers.CandidateFor(vertices),
+                    out Vector3[] acceptedVertices,
+                    out double acceptedEnergy))
+            {
+                timing?.AddProjectAccept(sectionStamp);
+                return false;
+            }
+            timing?.AddProjectAccept(sectionStamp);
+            vertices = acceptedVertices;
+            // 상대 개선폭이 수렴 임계 미만이면 꼬리 반복을 생략한다.
+            return !configuration.AllowsEarlyConvergence ||
+                (beforeEnergy - acceptedEnergy) / beforeEnergy >=
+                EarlyConvergenceRelativeImprovement;
+        }
+
+        private static bool PrepareIterationSystem(
+            IReadOnlyList<Vector3> baselineVertices,
+            Vector3[] vertices,
+            NativeSkinningSurfaceContract contract,
+            LocalWorkset workset,
+            HashSet<int> activePairIndices,
+            bool shouldRecoverRestShape,
+            SolverBuffers buffers,
+            NativeSkinningSolverTiming timing,
+            out double beforeEnergy,
+            out NativeSkinningMaterialStrainConstraint[] materialStrainConstraints)
+        {
+            long sectionStamp = NativeSkinningSolverTiming.Stamp();
+            UpdateActiveCorrectionPairs(
+                baselineVertices,
+                vertices,
+                contract,
+                workset.FacePairIndices,
+                shouldRecoverRestShape,
+                activePairIndices);
+            beforeEnergy = CalculateConstraintEnergy(
+                baselineVertices,
+                vertices,
+                contract,
+                activePairIndices,
+                workset.FacePairIndices,
+                workset.FaceIndices,
+                workset.Edges,
+                shouldRecoverRestShape);
+            timing?.AddPairEnergy(sectionStamp);
+            if (beforeEnergy <= 0d)
+            {
+                materialStrainConstraints = null;
+                return false;
+            }
+
+            sectionStamp = NativeSkinningSolverTiming.Stamp();
+            BuildDisplacementSystem(
+                baselineVertices,
+                vertices,
+                contract,
+                workset,
+                activePairIndices,
+                shouldRecoverRestShape,
+                buffers,
+                out materialStrainConstraints,
+                out int activeConstraintCount);
+            timing?.AddBuildSystem(sectionStamp);
+            return activeConstraintCount > 0;
+        }
+
+        private static Vector3[] SolveDisplacementStep(
+            SolverBuffers buffers,
+            LocalWorkset workset,
+            NativeSkinningMaterialStrainConstraint[] materialStrainConstraints,
+            bool shouldRecoverRestShape,
+            CorrectionConfiguration configuration,
+            int iteration,
+            NativeSkinningSolverTiming timing)
+        {
+            IReadOnlyList<LocalEdge> cgEdges = shouldRecoverRestShape
+                ? (IReadOnlyList<LocalEdge>)Array.Empty<LocalEdge>()
+                : workset.Edges;
+            bool warmStart =
+                configuration.AllowsWarmStart && iteration > 0;
+            return configuration.AllowsBurst
+                ? SolveConjugateGradientBurst(
+                    buffers,
+                    cgEdges,
+                    materialStrainConstraints,
+                    workset.ConstrainedVertices.Length,
+                    configuration.ConjugateGradientIterations,
+                    warmStart,
+                    timing)
+                : SolveConjugateGradient(
+                    buffers,
+                    cgEdges,
+                    materialStrainConstraints,
+                    workset.ConstrainedVertices.Length,
+                    configuration.ConjugateGradientIterations,
+                    warmStart,
+                    timing);
+        }
+
+        private static Vector3[] ProposeAndProjectLocal(
+            IReadOnlyList<Vector3> baselineVertices,
+            Vector3[] vertices,
+            Vector3[] displacement,
+            LocalWorkset workset,
+            NativeSkinningSurfaceContract contract,
+            HashSet<int> activePairIndices,
+            bool shouldRecoverRestShape,
+            CorrectionConfiguration configuration,
+            SolverBuffers buffers)
+        {
+            LimitDisplacement(
+                displacement,
+                workset.ConstrainedVertices.Length,
+                vertices,
+                contract,
+                activePairIndices);
+            Vector3[] proposedLocalPositions = buffers.ProposedLocal;
+            for (int localIndex = 0;
+                 localIndex < workset.ConstrainedVertices.Length;
+                 localIndex++)
+            {
+                proposedLocalPositions[localIndex] =
+                    vertices[workset.ConstrainedVertices[localIndex]] +
+                    displacement[localIndex];
+            }
+            if (shouldRecoverRestShape)
+            {
+                ProjectRestShapeRecoveryConstraints(
+                    baselineVertices,
+                    vertices,
+                    proposedLocalPositions,
+                    workset,
                     contract,
                     activePairIndices);
-                Vector3[] proposedLocalPositions = buffers.ProposedLocal;
-                for (int localIndex = 0;
-                     localIndex < workset.ConstrainedVertices.Length;
-                     localIndex++)
-                {
-                    proposedLocalPositions[localIndex] =
-                        vertices[workset.ConstrainedVertices[localIndex]] +
-                        displacement[localIndex];
-                }
-                if (shouldRecoverRestShape)
-                {
-                    ProjectRestShapeRecoveryConstraints(
-                        baselineVertices,
+            }
+            else
+            {
+                ProjectEdgeLengthBounds(
+                    vertices,
+                    proposedLocalPositions,
+                    workset.ConstrainedVertices,
+                    workset.Edges,
+                    configuration.MaximumEdgeLengthStrain -
+                        EdgeLengthProjectionMargin,
+                    configuration.EdgeLengthProjectionIterations);
+            }
+            return proposedLocalPositions;
+        }
+
+        private static void CountSharpFoldPairs(
+            IReadOnlyList<Vector3> baselineVertices,
+            Vector3[] vertices,
+            NativeSkinningSurfaceContract contract,
+            out int residualSharpFoldCount,
+            out int newSharpFoldCount)
+        {
+            residualSharpFoldCount = 0;
+            newSharpFoldCount = 0;
+            for (int pairIndex = 0; pairIndex < contract.FacePairs.Length; pairIndex++)
+            {
+                NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
+                bool baselineValid = NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
+                    baselineVertices,
+                    pair,
+                    out float baselineAngle);
+                if (!NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
                         vertices,
-                        proposedLocalPositions,
-                        workset,
-                        contract,
-                        activePairIndices);
-                }
-                else
+                        pair,
+                        out float candidateAngle))
                 {
-                    ProjectEdgeLengthBounds(
-                        vertices,
-                        proposedLocalPositions,
-                        workset.ConstrainedVertices,
-                        workset.Edges,
-                        configuration.MaximumEdgeLengthStrain -
-                            EdgeLengthProjectionMargin,
-                        configuration.EdgeLengthProjectionIterations);
+                    continue;
                 }
-                if (!TryAcceptGlobalStep(
-                        baselineVertices,
-                        vertices,
-                        proposedLocalPositions,
-                        workset,
-                        contract,
-                        activePairIndices,
-                        beforeEnergy,
-                        configuration,
-                        shouldRecoverRestShape,
-                        allowsStrainRecovery,
-                        buffers.CandidateFor(vertices),
-                        out Vector3[] acceptedVertices,
-                        out double acceptedEnergy))
+                if (contract.RestAnglesDegrees[pairIndex] <= RestSmoothAngleDegrees &&
+                    candidateAngle > SharpFoldAngleDegrees)
                 {
-                    timing?.AddProjectAccept(sectionStamp);
-                    break;
+                    residualSharpFoldCount++;
                 }
-                timing?.AddProjectAccept(sectionStamp);
-                vertices = acceptedVertices;
-                // 상대 개선폭이 수렴 임계 미만이면 꼬리 반복을 생략한다.
-                if (configuration.AllowsEarlyConvergence &&
-                    (beforeEnergy - acceptedEnergy) / beforeEnergy <
-                    EarlyConvergenceRelativeImprovement)
+                if (baselineValid &&
+                    baselineAngle <= SharpFoldAngleDegrees &&
+                    candidateAngle > SharpFoldAngleDegrees)
                 {
-                    break;
+                    newSharpFoldCount++;
                 }
             }
-            return vertices;
+        }
+
+        private static int[] CollectCorrectedVertexIndices(
+            IReadOnlyList<Vector3> baselineVertices,
+            Vector3[] vertices)
+        {
+            return Enumerable.Range(0, vertices.Length)
+                .Where(index =>
+                    (vertices[index] - baselineVertices[index]).sqrMagnitude >
+                    MinimumStoredCorrectionSquaredMagnitude)
+                .ToArray();
+        }
+
+        private static void MeasureRestShapeQuality(
+            IReadOnlyList<Vector3> baselineVertices,
+            Vector3[] vertices,
+            NativeSkinningSurfaceContract contract,
+            IReadOnlyList<FrameEdge> edges,
+            IReadOnlyList<int> restShapeRecoveryPairIndices,
+            bool usedRestShapeRecovery,
+            out float maximumRestEdgeStrainIncrease,
+            out float minimumRestShapeAngleImprovementDegrees,
+            out float minimumRestEdgeLengthRatioBeforeRecovery,
+            out float minimumRestEdgeLengthRatioAfterRecovery,
+            out int unresolvedRestShapeRecoveryCount)
+        {
+            maximumRestEdgeStrainIncrease = usedRestShapeRecovery
+                ? edges.Max(edge => Mathf.Max(
+                    0f,
+                    NativeSkinningRestShapeRecoveryCalculator
+                        .CalculateStrainIncrease(
+                            edge.BaselineLength,
+                            Vector3.Distance(
+                                vertices[edge.FirstVertex],
+                                vertices[edge.SecondVertex]),
+                            edge.RestLength)))
+                : 0f;
+            minimumRestShapeAngleImprovementDegrees =
+                CalculateMinimumRestShapeAngleImprovement(
+                    baselineVertices,
+                    vertices,
+                    contract,
+                    restShapeRecoveryPairIndices);
+            minimumRestEdgeLengthRatioBeforeRecovery =
+                usedRestShapeRecovery
+                    ? CalculateMinimumRestEdgeLengthRatio(
+                        baselineVertices,
+                        edges)
+                    : 0f;
+            minimumRestEdgeLengthRatioAfterRecovery =
+                usedRestShapeRecovery
+                    ? CalculateMinimumRestEdgeLengthRatio(vertices, edges)
+                    : 0f;
+            unresolvedRestShapeRecoveryCount = restShapeRecoveryPairIndices
+                .Count(pairIndex => IsRestShapeRecoveryPairUnresolved(
+                    vertices,
+                    contract,
+                    pairIndex));
+        }
+
+        private static void CountDegenerateFaces(
+            IReadOnlyList<Vector3> baselineVertices,
+            Vector3[] vertices,
+            NativeSkinningSurfaceContract contract,
+            out int newDegenerateFaceCount,
+            out int reversedFaceCount)
+        {
+            newDegenerateFaceCount = 0;
+            reversedFaceCount = 0;
+            foreach (int faceIndex in contract.AffectedFaceIndices)
+            {
+                bool baselineValid = TryCalculateFaceNormal(
+                    baselineVertices,
+                    contract.Triangles,
+                    faceIndex,
+                    out Vector3 baselineNormal);
+                bool candidateValid = TryCalculateFaceNormal(
+                    vertices,
+                    contract.Triangles,
+                    faceIndex,
+                    out Vector3 candidateNormal);
+                if (baselineValid && !candidateValid)
+                {
+                    newDegenerateFaceCount++;
+                }
+                else if (baselineValid && candidateValid &&
+                         Vector3.Dot(baselineNormal, candidateNormal) < 0f)
+                {
+                    reversedFaceCount++;
+                }
+            }
         }
 
         private static bool HasValidInput(
@@ -539,102 +897,31 @@ namespace Fbx2Vmd.FBXImporter
             int initialSharpFoldCount,
             IReadOnlyList<int> restShapeRecoveryPairIndices)
         {
-            int residualSharpFoldCount = 0;
-            int newSharpFoldCount = 0;
-            for (int pairIndex = 0; pairIndex < contract.FacePairs.Length; pairIndex++)
-            {
-                NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
-                bool baselineValid = NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                    baselineVertices,
-                    pair,
-                    out float baselineAngle);
-                if (!NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                        vertices,
-                        pair,
-                        out float candidateAngle))
-                {
-                    continue;
-                }
-                if (contract.RestAnglesDegrees[pairIndex] <= RestSmoothAngleDegrees &&
-                    candidateAngle > SharpFoldAngleDegrees)
-                {
-                    residualSharpFoldCount++;
-                }
-                if (baselineValid &&
-                    baselineAngle <= SharpFoldAngleDegrees &&
-                    candidateAngle > SharpFoldAngleDegrees)
-                {
-                    newSharpFoldCount++;
-                }
-            }
-
-            int newDegenerateFaceCount = 0;
-            int reversedFaceCount = 0;
-            foreach (int faceIndex in contract.AffectedFaceIndices)
-            {
-                bool baselineValid = TryCalculateFaceNormal(
-                    baselineVertices,
-                    contract.Triangles,
-                    faceIndex,
-                    out Vector3 baselineNormal);
-                bool candidateValid = TryCalculateFaceNormal(
-                    vertices,
-                    contract.Triangles,
-                    faceIndex,
-                    out Vector3 candidateNormal);
-                if (baselineValid && !candidateValid)
-                {
-                    newDegenerateFaceCount++;
-                }
-                else if (baselineValid && candidateValid &&
-                         Vector3.Dot(baselineNormal, candidateNormal) < 0f)
-                {
-                    reversedFaceCount++;
-                }
-            }
+            CountSharpFoldPairs(baselineVertices, vertices, contract,
+                out int residualSharpFoldCount, out int newSharpFoldCount);
+            CountDegenerateFaces(baselineVertices, vertices, contract,
+                out int newDegenerateFaceCount, out int reversedFaceCount);
 
             int[] affectedVertices = contract.AffectedFaceIndices
                 .SelectMany(faceIndex => GetFaceVertices(contract.Triangles, faceIndex))
                 .Distinct()
                 .ToArray();
-            int[] correctedVertexIndices = Enumerable.Range(0, vertices.Length)
-                .Where(index =>
-                    (vertices[index] - baselineVertices[index]).sqrMagnitude >
-                    MinimumStoredCorrectionSquaredMagnitude)
-                .ToArray();
+            int[] correctedVertexIndices = CollectCorrectedVertexIndices(
+                baselineVertices,
+                vertices);
             bool usedRestShapeRecovery = restShapeRecoveryPairIndices.Count > 0;
-            float maximumRestEdgeStrainIncrease = usedRestShapeRecovery
-                ? edges.Max(edge => Mathf.Max(
-                    0f,
-                    NativeSkinningRestShapeRecoveryCalculator
-                        .CalculateStrainIncrease(
-                            edge.BaselineLength,
-                            Vector3.Distance(
-                                vertices[edge.FirstVertex],
-                                vertices[edge.SecondVertex]),
-                            edge.RestLength)))
-                : 0f;
-            float minimumRestShapeAngleImprovementDegrees =
-                CalculateMinimumRestShapeAngleImprovement(
-                    baselineVertices,
-                    vertices,
-                    contract,
-                    restShapeRecoveryPairIndices);
-            float minimumRestEdgeLengthRatioBeforeRecovery =
-                usedRestShapeRecovery
-                    ? CalculateMinimumRestEdgeLengthRatio(
-                        baselineVertices,
-                        edges)
-                    : 0f;
-            float minimumRestEdgeLengthRatioAfterRecovery =
-                usedRestShapeRecovery
-                    ? CalculateMinimumRestEdgeLengthRatio(vertices, edges)
-                    : 0f;
-            int unresolvedRestShapeRecoveryCount = restShapeRecoveryPairIndices
-                .Count(pairIndex => IsRestShapeRecoveryPairUnresolved(
-                    vertices,
-                    contract,
-                    pairIndex));
+            MeasureRestShapeQuality(
+                baselineVertices,
+                vertices,
+                contract,
+                edges,
+                restShapeRecoveryPairIndices,
+                usedRestShapeRecovery,
+                out float maximumRestEdgeStrainIncrease,
+                out float minimumRestShapeAngleImprovementDegrees,
+                out float minimumRestEdgeLengthRatioBeforeRecovery,
+                out float minimumRestEdgeLengthRatioAfterRecovery,
+                out int unresolvedRestShapeRecoveryCount);
             // vertices는 재사용 버퍼를 별칭할 수 있어 fallback 덮어쓰기를 막기 위해 스냅샷한다.
             return new NativeSkinningSurfaceCorrectionResult(
                 (Vector3[])vertices.Clone(),
