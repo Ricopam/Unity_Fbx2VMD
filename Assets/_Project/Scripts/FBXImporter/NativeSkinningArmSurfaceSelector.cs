@@ -133,33 +133,17 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
-            Matrix4x4[] bindPoses = mesh.bindposes;
-            bool hasArmBindPoses = bindPoses.Length == bones.Length &&
-                upperArmIndex >= 0 && handIndex >= 0;
-            // 기본 메시 정점과 팔 본 위치를 같은 바인드 자세 좌표계에서 비교함.
-            Vector3 upperArmPosition = hasArmBindPoses
-                ? bindPoses[upperArmIndex].inverse.MultiplyPoint3x4(Vector3.zero)
-                : renderer.transform.InverseTransformPoint(upperArm.position);
-            Vector3 lowerArmPosition = hasArmBindPoses
-                ? bindPoses[lowerArmIndex].inverse.MultiplyPoint3x4(Vector3.zero)
-                : renderer.transform.InverseTransformPoint(lowerArm.position);
-            Vector3 handPosition = hasArmBindPoses
-                ? bindPoses[handIndex].inverse.MultiplyPoint3x4(Vector3.zero)
-                : renderer.transform.InverseTransformPoint(hand.position);
-            float armChainLength = Vector3.Distance(
-                    upperArmPosition,
-                    lowerArmPosition) +
-                Vector3.Distance(lowerArmPosition, handPosition);
-            Vector3 incomingAxis = lowerArmPosition - upperArmPosition;
-            if (!IsFinite(upperArmPosition) ||
-                !IsFinite(lowerArmPosition) ||
-                !IsFinite(handPosition) ||
-                armChainLength <= Mathf.Epsilon ||
-                incomingAxis.sqrMagnitude <= Mathf.Epsilon)
+            if (!TryResolveArmPositions(
+                    renderer, mesh, bones, upperArm, lowerArm, hand,
+                    upperArmIndex, lowerArmIndex, handIndex,
+                    out Vector3 upperArmPosition,
+                    out Vector3 lowerArmPosition,
+                    out Vector3 handPosition,
+                    out float armChainLength,
+                    out Vector3 incomingAxis))
             {
                 return;
             }
-            incomingAxis.Normalize();
 
             int[] triangles = mesh.triangles;
             BoneWeight[] boneWeights = mesh.boneWeights;
@@ -177,28 +161,29 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             float halfWindow = armChainLength * ElbowWindowToArmLengthRatio;
-            var mixedVertexCountByRoot = new Dictionary<int, int>();
-            for (int vertexIndex = 0; vertexIndex < vertices.Length; vertexIndex++)
-            {
-                float lowerArmWeight = CalculateBoneWeight(
-                    boneWeights[vertexIndex],
-                    lowerArmIndex);
-                if (lowerArmWeight < MinimumMixedLowerArmWeight ||
-                    lowerArmWeight > MaximumMixedLowerArmWeight ||
-                    Mathf.Abs(Vector3.Dot(
-                        vertices[vertexIndex] - lowerArmPosition,
-                        incomingAxis)) > halfWindow)
-                {
-                    continue;
-                }
+            Dictionary<int, int> mixedVertexCountByRoot = CountMixedVerticesByRoot(
+                vertices, boneWeights, lowerArmIndex, lowerArmPosition,
+                incomingAxis, halfWindow, components);
 
-                int root = components.Find(vertexIndex);
-                mixedVertexCountByRoot[root] =
-                    mixedVertexCountByRoot.TryGetValue(root, out int count)
-                        ? count + 1
-                        : 1;
-            }
+            AddComponentSelections(
+                renderer, side, vertices, lowerArmIndex, lowerArmPosition,
+                incomingAxis, halfWindow, armChainLength, components,
+                mixedVertexCountByRoot, selections);
+        }
 
+        static void AddComponentSelections(
+            SkinnedMeshRenderer renderer,
+            NativeSkinningArmSide side,
+            Vector3[] vertices,
+            int lowerArmIndex,
+            Vector3 lowerArmPosition,
+            Vector3 incomingAxis,
+            float halfWindow,
+            float armChainLength,
+            VertexDisjointSet components,
+            Dictionary<int, int> mixedVertexCountByRoot,
+            ICollection<NativeSkinningArmSurfaceSelection> selections)
+        {
             foreach (KeyValuePair<int, int> candidate in mixedVertexCountByRoot
                          .Where(entry => entry.Value >= MinimumMixedVertexCount)
                          .OrderBy(entry => entry.Key))
@@ -225,6 +210,85 @@ namespace Fbx2Vmd.FBXImporter
                     lowerArmIndex,
                     armChainLength));
             }
+        }
+
+        static bool TryResolveArmPositions(
+            SkinnedMeshRenderer renderer,
+            Mesh mesh,
+            Transform[] bones,
+            Transform upperArm,
+            Transform lowerArm,
+            Transform hand,
+            int upperArmIndex,
+            int lowerArmIndex,
+            int handIndex,
+            out Vector3 upperArmPosition,
+            out Vector3 lowerArmPosition,
+            out Vector3 handPosition,
+            out float armChainLength,
+            out Vector3 incomingAxis)
+        {
+            Matrix4x4[] bindPoses = mesh.bindposes;
+            bool hasArmBindPoses = bindPoses.Length == bones.Length &&
+                upperArmIndex >= 0 && handIndex >= 0;
+            // 기본 메시 정점과 팔 본 위치를 같은 바인드 자세 좌표계에서 비교함.
+            upperArmPosition = hasArmBindPoses
+                ? bindPoses[upperArmIndex].inverse.MultiplyPoint3x4(Vector3.zero)
+                : renderer.transform.InverseTransformPoint(upperArm.position);
+            lowerArmPosition = hasArmBindPoses
+                ? bindPoses[lowerArmIndex].inverse.MultiplyPoint3x4(Vector3.zero)
+                : renderer.transform.InverseTransformPoint(lowerArm.position);
+            handPosition = hasArmBindPoses
+                ? bindPoses[handIndex].inverse.MultiplyPoint3x4(Vector3.zero)
+                : renderer.transform.InverseTransformPoint(hand.position);
+            armChainLength = Vector3.Distance(
+                    upperArmPosition,
+                    lowerArmPosition) +
+                Vector3.Distance(lowerArmPosition, handPosition);
+            incomingAxis = lowerArmPosition - upperArmPosition;
+            if (!IsFinite(upperArmPosition) ||
+                !IsFinite(lowerArmPosition) ||
+                !IsFinite(handPosition) ||
+                armChainLength <= Mathf.Epsilon ||
+                incomingAxis.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return false;
+            }
+            incomingAxis.Normalize();
+            return true;
+        }
+
+        static Dictionary<int, int> CountMixedVerticesByRoot(
+            Vector3[] vertices,
+            BoneWeight[] boneWeights,
+            int lowerArmIndex,
+            Vector3 lowerArmPosition,
+            Vector3 incomingAxis,
+            float halfWindow,
+            VertexDisjointSet components)
+        {
+            var mixedVertexCountByRoot = new Dictionary<int, int>();
+            for (int vertexIndex = 0; vertexIndex < vertices.Length; vertexIndex++)
+            {
+                float lowerArmWeight = CalculateBoneWeight(
+                    boneWeights[vertexIndex],
+                    lowerArmIndex);
+                if (lowerArmWeight < MinimumMixedLowerArmWeight ||
+                    lowerArmWeight > MaximumMixedLowerArmWeight ||
+                    Mathf.Abs(Vector3.Dot(
+                        vertices[vertexIndex] - lowerArmPosition,
+                        incomingAxis)) > halfWindow)
+                {
+                    continue;
+                }
+
+                int root = components.Find(vertexIndex);
+                mixedVertexCountByRoot[root] =
+                    mixedVertexCountByRoot.TryGetValue(root, out int count)
+                        ? count + 1
+                        : 1;
+            }
+            return mixedVertexCountByRoot;
         }
 
         private static float CalculateBoneWeight(BoneWeight weight, int boneIndex)
