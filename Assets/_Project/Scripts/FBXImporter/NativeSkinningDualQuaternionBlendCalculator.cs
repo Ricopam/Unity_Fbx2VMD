@@ -141,6 +141,25 @@ namespace Fbx2Vmd.FBXImporter
                 return true;
             }
 
+            return TrySearchAndFinalize(
+                baselineVertices,
+                restVertices,
+                originalVertices,
+                blendContract,
+                candidateVertexIndices,
+                candidateOffsets,
+                out result);
+        }
+
+        static bool TrySearchAndFinalize(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> restVertices,
+            IReadOnlyList<Vector3> originalVertices,
+            NativeSkinningDualQuaternionBlendContract blendContract,
+            List<int> candidateVertexIndices,
+            List<Vector3> candidateOffsets,
+            out NativeSkinningDualQuaternionBlendResult result)
+        {
             Vector3[] candidateVertices = baselineVertices.ToArray();
             if (!NativeSkinningDualQuaternionQualityEvaluator.TryCreate(
                     baselineVertices,
@@ -148,6 +167,7 @@ namespace Fbx2Vmd.FBXImporter
                     blendContract,
                     out NativeSkinningDualQuaternionQualityEvaluator qualityEvaluator))
             {
+                result = null;
                 return false;
             }
             if (!TrySearchBlend(
@@ -246,35 +266,68 @@ namespace Fbx2Vmd.FBXImporter
                     out int newDegenerateFaceCount,
                     out int reversedFaceCount,
                     out int newCollapsedPairCount);
-                if (newDegenerateFaceCount == 0 &&
-                    reversedFaceCount == 0 &&
-                    newCollapsedPairCount == 0 &&
-                    maximumRestEdgeStrainIncrease <=
-                        NativeSkinningRestShapeRecoveryCalculator
-                            .MaximumRestStrainIncrease &&
-                    (originalVertices == null ||
-                     NativeSkinningSurfaceCorrectionCalculator.IsCorrectedFrameWithinStrongQuality(
-                         originalVertices, candidateVertices, blendContract.SurfaceContract)))
-                {
-                    float maximumVertexDisplacement = changedVertexIndices.Count == 0
-                        ? 0f
-                        : changedVertexIndices.Max(vertexIndex => Vector3.Distance(
-                            baselineVertices[vertexIndex],
-                            candidateVertices[vertexIndex]));
-                    result = new NativeSkinningDualQuaternionBlendResult(
+                if (TryAcceptBlend(
+                        originalVertices,
+                        baselineVertices,
+                        blendContract,
                         candidateVertices,
-                        changedVertexIndices.ToArray(),
+                        changedVertexIndices,
                         blend,
-                        maximumVertexDisplacement,
                         maximumRestEdgeStrainIncrease,
                         newDegenerateFaceCount,
-                        reversedFaceCount);
+                        reversedFaceCount,
+                        newCollapsedPairCount,
+                        out result))
+                {
                     foundBlend = true;
                     return true;
                 }
 
                 blend *= 0.5f;
             }
+            return true;
+        }
+
+        static bool TryAcceptBlend(
+            IReadOnlyList<Vector3> originalVertices,
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningDualQuaternionBlendContract blendContract,
+            Vector3[] candidateVertices,
+            List<int> changedVertexIndices,
+            float blend,
+            float maximumRestEdgeStrainIncrease,
+            int newDegenerateFaceCount,
+            int reversedFaceCount,
+            int newCollapsedPairCount,
+            out NativeSkinningDualQuaternionBlendResult result)
+        {
+            result = null;
+            if (newDegenerateFaceCount != 0 ||
+                reversedFaceCount != 0 ||
+                newCollapsedPairCount != 0 ||
+                maximumRestEdgeStrainIncrease >
+                    NativeSkinningRestShapeRecoveryCalculator
+                        .MaximumRestStrainIncrease ||
+                (originalVertices != null &&
+                 !NativeSkinningSurfaceCorrectionCalculator.IsCorrectedFrameWithinStrongQuality(
+                     originalVertices, candidateVertices, blendContract.SurfaceContract)))
+            {
+                return false;
+            }
+
+            float maximumVertexDisplacement = changedVertexIndices.Count == 0
+                ? 0f
+                : changedVertexIndices.Max(vertexIndex => Vector3.Distance(
+                    baselineVertices[vertexIndex],
+                    candidateVertices[vertexIndex]));
+            result = new NativeSkinningDualQuaternionBlendResult(
+                candidateVertices,
+                changedVertexIndices.ToArray(),
+                blend,
+                maximumVertexDisplacement,
+                maximumRestEdgeStrainIncrease,
+                newDegenerateFaceCount,
+                reversedFaceCount);
             return true;
         }
 
