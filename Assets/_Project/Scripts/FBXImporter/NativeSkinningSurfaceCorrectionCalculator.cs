@@ -123,13 +123,10 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            var activePairIndices = new HashSet<int>();
-            UpdateActiveSharpFoldPairs(
+            HashSet<int> activePairIndices = CollectActivePairs(
                 baselineVertices,
                 contract,
-                Enumerable.Range(0, contract.FacePairs.Length),
-                activePairIndices);
-            int initialSharpFoldCount = activePairIndices.Count;
+                out int initialSharpFoldCount);
             if (initialSharpFoldCount == 0)
             {
                 result = CreateEmptyCorrectionResult(initialVertices);
@@ -141,6 +138,31 @@ namespace Fbx2Vmd.FBXImporter
                 activePairIndices,
                 out int[] sharpFoldPairIndices);
 
+            result = RunPassesAndEvaluate(
+                baselineVertices,
+                initialVertices,
+                contract,
+                configuration,
+                allowsStrainRecovery,
+                initialSharpFoldCount,
+                restShapeRecoveryPairIndices,
+                sharpFoldPairIndices,
+                timing);
+            return true;
+        }
+
+        // 패스 실행부터 결과 평가까지의 본 계산 단계.
+        private static NativeSkinningSurfaceCorrectionResult RunPassesAndEvaluate(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> initialVertices,
+            NativeSkinningSurfaceContract contract,
+            CorrectionConfiguration configuration,
+            bool allowsStrainRecovery,
+            int initialSharpFoldCount,
+            int[] restShapeRecoveryPairIndices,
+            int[] sharpFoldPairIndices,
+            NativeSkinningSolverTiming timing)
+        {
             Vector3[] vertices = RunCorrectionPasses(
                 baselineVertices,
                 initialVertices,
@@ -153,7 +175,7 @@ namespace Fbx2Vmd.FBXImporter
                 out SolverBuffers buffers,
                 timing);
 
-            result = EvaluateTimedResult(
+            return EvaluateTimedResult(
                 baselineVertices,
                 initialVertices,
                 vertices,
@@ -166,7 +188,21 @@ namespace Fbx2Vmd.FBXImporter
                 sharpFoldPairIndices,
                 buffers,
                 timing);
-            return true;
+        }
+
+        private static HashSet<int> CollectActivePairs(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract,
+            out int initialSharpFoldCount)
+        {
+            var activePairIndices = new HashSet<int>();
+            UpdateActiveSharpFoldPairs(
+                baselineVertices,
+                contract,
+                Enumerable.Range(0, contract.FacePairs.Length),
+                activePairIndices);
+            initialSharpFoldCount = activePairIndices.Count;
+            return activePairIndices;
         }
 
         private static int[] SplitRestShapeRecoveryPairs(
@@ -521,27 +557,51 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            long sectionStamp = NativeSkinningSolverTiming.Stamp();
-            Vector3[] displacement = SolveDisplacementStep(
-                buffers,
+            return ProposeAndAcceptStep(
+                baselineVertices,
+                ref vertices,
+                contract,
                 workset,
+                activePairIndices,
+                materialStrainConstraints,
+                beforeEnergy,
+                shouldRecoverRestShape,
+                allowsStrainRecovery,
+                configuration,
+                buffers,
+                timing,
+                iteration);
+        }
+
+        // 솔브·제안·수용을 잇는 스텝 실행부.
+        private static bool ProposeAndAcceptStep(
+            IReadOnlyList<Vector3> baselineVertices,
+            ref Vector3[] vertices,
+            NativeSkinningSurfaceContract contract,
+            LocalWorkset workset,
+            HashSet<int> activePairIndices,
+            NativeSkinningMaterialStrainConstraint[] materialStrainConstraints,
+            double beforeEnergy,
+            bool shouldRecoverRestShape,
+            bool allowsStrainRecovery,
+            CorrectionConfiguration configuration,
+            SolverBuffers buffers,
+            NativeSkinningSolverTiming timing,
+            int iteration)
+        {
+            Vector3[] proposedLocalPositions = SolveAndProposeStep(
+                baselineVertices,
+                vertices,
+                contract,
+                workset,
+                activePairIndices,
                 materialStrainConstraints,
                 shouldRecoverRestShape,
                 configuration,
+                buffers,
+                timing,
                 iteration,
-                timing);
-            timing?.AddCgSolve(sectionStamp);
-            sectionStamp = NativeSkinningSolverTiming.Stamp();
-            Vector3[] proposedLocalPositions = ProposeAndProjectLocal(
-                baselineVertices,
-                vertices,
-                displacement,
-                workset,
-                contract,
-                activePairIndices,
-                shouldRecoverRestShape,
-                configuration,
-                buffers);
+                out long sectionStamp);
             return AcceptIterationStep(
                 baselineVertices,
                 ref vertices,
@@ -556,6 +616,44 @@ namespace Fbx2Vmd.FBXImporter
                 buffers,
                 timing,
                 sectionStamp);
+        }
+
+        // 변위 CG 솔브 + 국소 제안/투영 한 단계. 호출부 스탬프는 투영 직전 시각.
+        private static Vector3[] SolveAndProposeStep(
+            IReadOnlyList<Vector3> baselineVertices,
+            Vector3[] vertices,
+            NativeSkinningSurfaceContract contract,
+            LocalWorkset workset,
+            HashSet<int> activePairIndices,
+            NativeSkinningMaterialStrainConstraint[] materialStrainConstraints,
+            bool shouldRecoverRestShape,
+            CorrectionConfiguration configuration,
+            SolverBuffers buffers,
+            NativeSkinningSolverTiming timing,
+            int iteration,
+            out long sectionStamp)
+        {
+            long stamp = NativeSkinningSolverTiming.Stamp();
+            Vector3[] displacement = SolveDisplacementStep(
+                buffers,
+                workset,
+                materialStrainConstraints,
+                shouldRecoverRestShape,
+                configuration,
+                iteration,
+                timing);
+            timing?.AddCgSolve(stamp);
+            sectionStamp = NativeSkinningSolverTiming.Stamp();
+            return ProposeAndProjectLocal(
+                baselineVertices,
+                vertices,
+                displacement,
+                workset,
+                contract,
+                activePairIndices,
+                shouldRecoverRestShape,
+                configuration,
+                buffers);
         }
 
         // 스텝 수용 + 조기 수렴 판정. 수용 시 vertices를 갱신하고 계속 여부를 돌려준다.
