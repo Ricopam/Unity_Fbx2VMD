@@ -54,6 +54,38 @@ namespace Fbx2Vmd.FBXImporter
                 baselineVertices,
                 contract,
                 localFaceIndices);
+            if (!RunProjectionIterations(
+                    baselineVertices,
+                    projectedVertices,
+                    contract,
+                    restShapeRecoveryPairIndices,
+                    localPairIndices,
+                    localFaceIndices,
+                    restStrainEdges,
+                    activeSharpFoldPairIndices,
+                    maximumRestSmoothAngleDegrees,
+                    sharpFoldActivationAngleDegrees,
+                    sharpFoldTargetAngleDegrees))
+            {
+                projectedVertices = null;
+                return false;
+            }
+            return projectedVertices.All(IsFinite);
+        }
+
+        static bool RunProjectionIterations(
+            IReadOnlyList<Vector3> baselineVertices,
+            Vector3[] projectedVertices,
+            NativeSkinningSurfaceContract contract,
+            IReadOnlyList<int> restShapeRecoveryPairIndices,
+            int[] localPairIndices,
+            int[] localFaceIndices,
+            RestStrainEdge[] restStrainEdges,
+            HashSet<int> activeSharpFoldPairIndices,
+            float maximumRestSmoothAngleDegrees,
+            float sharpFoldActivationAngleDegrees,
+            float sharpFoldTargetAngleDegrees)
+        {
             for (int iteration = 0;
                  iteration < ProjectionIterations;
                  iteration++)
@@ -65,7 +97,6 @@ namespace Fbx2Vmd.FBXImporter
                         restShapeRecoveryPairIndices,
                         ref projectedConstraint))
                 {
-                    projectedVertices = null;
                     return false;
                 }
                 ActivateSharpFoldPairs(
@@ -92,7 +123,6 @@ namespace Fbx2Vmd.FBXImporter
                         localFaceIndices,
                         ref projectedConstraint))
                 {
-                    projectedVertices = null;
                     return false;
                 }
                 if (!projectedConstraint)
@@ -100,7 +130,7 @@ namespace Fbx2Vmd.FBXImporter
                     break;
                 }
             }
-            return projectedVertices.All(IsFinite);
+            return true;
         }
 
         private static int[] BuildLocalFaceIndices(
