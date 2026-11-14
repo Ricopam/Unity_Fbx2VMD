@@ -46,6 +46,20 @@ namespace Fbx2Vmd.FBXImporter
                     new NativeArray<Vector3>(Count, Allocator.Temp);
                 var matrixDirection =
                     new NativeArray<Vector3>(Count, Allocator.Temp);
+                InitializeResidual(residual, matrixDirection);
+                ApplyPreconditioner(residual, direction);
+                IterationsRun[0] = RunIterations(
+                    residual, direction, preconditionedResidual, matrixDirection);
+                residual.Dispose();
+                direction.Dispose();
+                preconditionedResidual.Dispose();
+                matrixDirection.Dispose();
+            }
+
+            private void InitializeResidual(
+                NativeArray<Vector3> residual,
+                NativeArray<Vector3> matrixDirection)
+            {
                 if (WarmStart != 0)
                 {
                     ApplyMatrix(Solution, matrixDirection);
@@ -63,7 +77,14 @@ namespace Fbx2Vmd.FBXImporter
                         residual[index] = RightHandSide[index];
                     }
                 }
-                ApplyPreconditioner(residual, direction);
+            }
+
+            private int RunIterations(
+                NativeArray<Vector3> residual,
+                NativeArray<Vector3> direction,
+                NativeArray<Vector3> preconditionedResidual,
+                NativeArray<Vector3> matrixDirection)
+            {
                 double residualDot = Dot(residual, direction);
                 int run = 0;
                 for (int iteration = 0;
@@ -98,11 +119,7 @@ namespace Fbx2Vmd.FBXImporter
                     }
                     residualDot = nextResidualDot;
                 }
-                IterationsRun[0] = run;
-                residual.Dispose();
-                direction.Dispose();
-                preconditionedResidual.Dispose();
-                matrixDirection.Dispose();
+                return run;
             }
 
             private void ApplyMatrix(
@@ -124,6 +141,15 @@ namespace Fbx2Vmd.FBXImporter
                             DisplacementSmoothnessWeight;
                     }
                 }
+                ApplyBendTerms(values, result);
+                ApplyStrainTerms(values, result);
+                ApplyMaterialTerms(values, result);
+            }
+
+            private void ApplyBendTerms(
+                NativeArray<Vector3> values,
+                NativeArray<Vector3> result)
+            {
                 int bendCount = BendIndices.Length / 4;
                 for (int term = 0; term < bendCount; term++)
                 {
@@ -149,6 +175,12 @@ namespace Fbx2Vmd.FBXImporter
                         }
                     }
                 }
+            }
+
+            private void ApplyStrainTerms(
+                NativeArray<Vector3> values,
+                NativeArray<Vector3> result)
+            {
                 for (int term = 0; term < StrainIndices.Length; term++)
                 {
                     int2 indices = StrainIndices[term];
@@ -178,6 +210,12 @@ namespace Fbx2Vmd.FBXImporter
                             projectedDisplacement;
                     }
                 }
+            }
+
+            private void ApplyMaterialTerms(
+                NativeArray<Vector3> values,
+                NativeArray<Vector3> result)
+            {
                 for (int constraint = 0;
                      constraint < MaterialWeights.Length;
                      constraint++)
@@ -250,6 +288,16 @@ namespace Fbx2Vmd.FBXImporter
                         values[edge.FirstLocalIndex] * DisplacementSmoothnessWeight;
                 }
             }
+            ApplyBendingTermsInto(values, bendingLinearizations, result);
+            ApplyStrainTermsInto(values, edgeStrainLinearizations, result);
+            ApplyMaterialTermsInto(values, materialStrainConstraints, result);
+        }
+
+        private static void ApplyBendingTermsInto(
+            IReadOnlyList<Vector3> values,
+            IEnumerable<BendingLinearization> bendingLinearizations,
+            Vector3[] result)
+        {
             foreach (BendingLinearization term in bendingLinearizations)
             {
                 float projectedDisplacement = 0f;
@@ -273,6 +321,13 @@ namespace Fbx2Vmd.FBXImporter
                     }
                 }
             }
+        }
+
+        private static void ApplyStrainTermsInto(
+            IReadOnlyList<Vector3> values,
+            IEnumerable<EdgeStrainLinearization> edgeStrainLinearizations,
+            Vector3[] result)
+        {
             foreach (EdgeStrainLinearization term in edgeStrainLinearizations)
             {
                 float projectedDisplacement = 0f;
@@ -299,6 +354,13 @@ namespace Fbx2Vmd.FBXImporter
                         term.SecondGradient * projectedDisplacement;
                 }
             }
+        }
+
+        private static void ApplyMaterialTermsInto(
+            IReadOnlyList<Vector3> values,
+            IEnumerable<NativeSkinningMaterialStrainConstraint> materialStrainConstraints,
+            Vector3[] result)
+        {
             foreach (NativeSkinningMaterialStrainConstraint constraint in
                      materialStrainConstraints)
             {
@@ -408,61 +470,72 @@ namespace Fbx2Vmd.FBXImporter
                     int edgeIndex = iteration % 2 == 0
                         ? orderedIndex
                         : edges.Count - 1 - orderedIndex;
-                    LocalEdge edge = edges[edgeIndex];
-                    Vector3 first = edge.FirstLocalIndex >= 0
-                        ? proposedLocalPositions[edge.FirstLocalIndex]
-                        : currentVertices[edge.FirstVertex];
-                    Vector3 second = edge.SecondLocalIndex >= 0
-                        ? proposedLocalPositions[edge.SecondLocalIndex]
-                        : currentVertices[edge.SecondVertex];
-                    Vector3 delta = second - first;
-                    float length = delta.magnitude;
-                    if (length <= 0.0000001f)
-                    {
-                        continue;
-                    }
-                    float minimumLength =
-                        edge.BaselineLength * (1f - maximumAbsoluteStrain);
-                    float maximumLength =
-                        edge.BaselineLength * (1f + maximumAbsoluteStrain);
-                    float targetLength = Mathf.Clamp(
-                        length,
-                        minimumLength,
-                        maximumLength);
-                    if (Mathf.Approximately(length, targetLength))
-                    {
-                        continue;
-                    }
-
-                    hasViolation = true;
-                    Vector3 correction = delta * ((length - targetLength) / length);
-                    bool movesFirst = edge.FirstLocalIndex >= 0;
-                    bool movesSecond = edge.SecondLocalIndex >= 0;
-                    float share = movesFirst && movesSecond ? 0.5f : 1f;
-                    if (movesFirst)
-                    {
-                        proposedLocalPositions[edge.FirstLocalIndex] =
-                            ClampDisplacementFromBaseline(
-                                currentVertices[
-                                    constrainedVertices[edge.FirstLocalIndex]],
-                                first + correction * share,
-                                MaximumAbsoluteStep);
-                    }
-                    if (movesSecond)
-                    {
-                        proposedLocalPositions[edge.SecondLocalIndex] =
-                            ClampDisplacementFromBaseline(
-                                currentVertices[
-                                    constrainedVertices[edge.SecondLocalIndex]],
-                                second - correction * share,
-                                MaximumAbsoluteStep);
-                    }
+                    hasViolation |= TryProjectSingleEdgeBound(
+                        currentVertices, proposedLocalPositions, constrainedVertices,
+                        edges[edgeIndex], maximumAbsoluteStrain);
                 }
                 if (!hasViolation)
                 {
                     break;
                 }
             }
+        }
+
+        private static bool TryProjectSingleEdgeBound(
+            IReadOnlyList<Vector3> currentVertices,
+            IList<Vector3> proposedLocalPositions,
+            IReadOnlyList<int> constrainedVertices,
+            LocalEdge edge,
+            float maximumAbsoluteStrain)
+        {
+            Vector3 first = edge.FirstLocalIndex >= 0
+                ? proposedLocalPositions[edge.FirstLocalIndex]
+                : currentVertices[edge.FirstVertex];
+            Vector3 second = edge.SecondLocalIndex >= 0
+                ? proposedLocalPositions[edge.SecondLocalIndex]
+                : currentVertices[edge.SecondVertex];
+            Vector3 delta = second - first;
+            float length = delta.magnitude;
+            if (length <= 0.0000001f)
+            {
+                return false;
+            }
+            float minimumLength =
+                edge.BaselineLength * (1f - maximumAbsoluteStrain);
+            float maximumLength =
+                edge.BaselineLength * (1f + maximumAbsoluteStrain);
+            float targetLength = Mathf.Clamp(
+                length,
+                minimumLength,
+                maximumLength);
+            if (Mathf.Approximately(length, targetLength))
+            {
+                return false;
+            }
+
+            Vector3 correction = delta * ((length - targetLength) / length);
+            bool movesFirst = edge.FirstLocalIndex >= 0;
+            bool movesSecond = edge.SecondLocalIndex >= 0;
+            float share = movesFirst && movesSecond ? 0.5f : 1f;
+            if (movesFirst)
+            {
+                proposedLocalPositions[edge.FirstLocalIndex] =
+                    ClampDisplacementFromBaseline(
+                        currentVertices[
+                            constrainedVertices[edge.FirstLocalIndex]],
+                        first + correction * share,
+                        MaximumAbsoluteStep);
+            }
+            if (movesSecond)
+            {
+                proposedLocalPositions[edge.SecondLocalIndex] =
+                    ClampDisplacementFromBaseline(
+                        currentVertices[
+                            constrainedVertices[edge.SecondLocalIndex]],
+                        second - correction * share,
+                        MaximumAbsoluteStep);
+            }
+            return true;
         }
 
         private static void ProjectRestShapeRecoveryConstraints(
@@ -537,50 +610,80 @@ namespace Fbx2Vmd.FBXImporter
                 float maximumRatio = 1f + maximumAbsoluteStrain;
                 float currentRatio = currentLength / edge.RestLength;
                 float proposedRatio = proposedLength / edge.RestLength;
-                float targetRatio;
-                if (proposedRatio > maximumRatio)
-                {
-                    targetRatio = maximumRatio;
-                }
-                else if (currentRatio >=
-                             maximumRatio - RestShapeActiveSetActivationMargin &&
-                         proposedRatio > currentRatio)
-                {
-                    targetRatio = currentRatio;
-                }
-                else if (proposedRatio < minimumRatio)
-                {
-                    targetRatio = minimumRatio;
-                }
-                else if (currentRatio <=
-                             minimumRatio + RestShapeActiveSetActivationMargin &&
-                         proposedRatio < currentRatio)
-                {
-                    targetRatio = currentRatio;
-                }
-                else
+                if (!TryResolveStrainTargetRatio(
+                        currentRatio, proposedRatio, minimumRatio, maximumRatio,
+                        out float targetRatio))
                 {
                     continue;
                 }
 
-                float lengthCorrection =
-                    proposedLength - targetRatio * edge.RestLength;
-                Vector3 correction = proposedEdge / proposedLength * lengthCorrection;
-                if (canMoveFirst && canMoveSecond)
-                {
-                    correction *= 0.5f;
-                }
-                if (canMoveFirst)
-                {
-                    proposedLocalPositions[edge.FirstLocalIndex] += correction;
-                }
-                if (canMoveSecond)
-                {
-                    proposedLocalPositions[edge.SecondLocalIndex] -= correction;
-                }
+                ApplyStrainCorrection(
+                    edge, proposedEdge, proposedLength, targetRatio,
+                    canMoveFirst, canMoveSecond, proposedLocalPositions);
                 projectionCount++;
             }
             return projectionCount;
+        }
+
+        private static void ApplyStrainCorrection(
+            LocalEdge edge,
+            Vector3 proposedEdge,
+            float proposedLength,
+            float targetRatio,
+            bool canMoveFirst,
+            bool canMoveSecond,
+            IList<Vector3> proposedLocalPositions)
+        {
+            float lengthCorrection =
+                proposedLength - targetRatio * edge.RestLength;
+            Vector3 correction = proposedEdge / proposedLength * lengthCorrection;
+            if (canMoveFirst && canMoveSecond)
+            {
+                correction *= 0.5f;
+            }
+            if (canMoveFirst)
+            {
+                proposedLocalPositions[edge.FirstLocalIndex] += correction;
+            }
+            if (canMoveSecond)
+            {
+                proposedLocalPositions[edge.SecondLocalIndex] -= correction;
+            }
+        }
+
+        private static bool TryResolveStrainTargetRatio(
+            float currentRatio,
+            float proposedRatio,
+            float minimumRatio,
+            float maximumRatio,
+            out float targetRatio)
+        {
+            if (proposedRatio > maximumRatio)
+            {
+                targetRatio = maximumRatio;
+            }
+            else if (currentRatio >=
+                         maximumRatio - RestShapeActiveSetActivationMargin &&
+                     proposedRatio > currentRatio)
+            {
+                targetRatio = currentRatio;
+            }
+            else if (proposedRatio < minimumRatio)
+            {
+                targetRatio = minimumRatio;
+            }
+            else if (currentRatio <=
+                         minimumRatio + RestShapeActiveSetActivationMargin &&
+                     proposedRatio < currentRatio)
+            {
+                targetRatio = currentRatio;
+            }
+            else
+            {
+                targetRatio = 0f;
+                return false;
+            }
+            return true;
         }
 
         private static int ProjectRestShapeDihedralBounds(
@@ -602,78 +705,82 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
-                Vector3 opposite0 = ReadProposedPosition(
-                    pair.FirstOpposite,
-                    currentVertices,
-                    proposedLocalPositions,
-                    localIndexByVertex);
-                Vector3 opposite1 = ReadProposedPosition(
-                    pair.SecondOpposite,
-                    currentVertices,
-                    proposedLocalPositions,
-                    localIndexByVertex);
-                Vector3 edge0 = ReadProposedPosition(
-                    pair.FirstEdge,
-                    currentVertices,
-                    proposedLocalPositions,
-                    localIndexByVertex);
-                Vector3 edge1 = ReadProposedPosition(
-                    pair.SecondEdge,
-                    currentVertices,
-                    proposedLocalPositions,
-                    localIndexByVertex);
-                if (!MeshDihedralConstraintCalculator.TryCalculateCorrections(
-                        opposite0,
-                        opposite1,
-                        edge0,
-                        edge1,
-                        ResolveProjectionAngleDegrees(
-                            baselineVertices,
-                            contract,
-                            pairIndex),
-                        1f,
-                        out Vector3 correction0,
-                        out Vector3 correction1,
-                        out Vector3 correction2,
-                        out Vector3 correction3))
-                {
-                    continue;
-                }
-
-                float maximumCorrectionMagnitude = Mathf.Max(
-                    correction0.magnitude,
-                    correction1.magnitude,
-                    correction2.magnitude,
-                    correction3.magnitude);
-                float correctionScale = maximumCorrectionMagnitude >
-                                        RestShapeMaximumProjectionCorrection
-                    ? RestShapeMaximumProjectionCorrection /
-                      maximumCorrectionMagnitude
-                    : 1f;
-                ApplyProjectionCorrection(
-                    pair.FirstOpposite,
-                    correction0 * correctionScale,
-                    proposedLocalPositions,
-                    localIndexByVertex);
-                ApplyProjectionCorrection(
-                    pair.SecondOpposite,
-                    correction1 * correctionScale,
-                    proposedLocalPositions,
-                    localIndexByVertex);
-                ApplyProjectionCorrection(
-                    pair.FirstEdge,
-                    correction2 * correctionScale,
-                    proposedLocalPositions,
-                    localIndexByVertex);
-                ApplyProjectionCorrection(
-                    pair.SecondEdge,
-                    correction3 * correctionScale,
-                    proposedLocalPositions,
-                    localIndexByVertex);
-                projectionCount++;
+                projectionCount += TryProjectDihedralPair(
+                    baselineVertices, currentVertices, proposedLocalPositions,
+                    localIndexByVertex, contract, pairIndex);
             }
             return projectionCount;
+        }
+
+        private static int TryProjectDihedralPair(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> currentVertices,
+            IList<Vector3> proposedLocalPositions,
+            IReadOnlyList<int> localIndexByVertex,
+            NativeSkinningSurfaceContract contract,
+            int pairIndex)
+        {
+            NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
+            Vector3 opposite0 = ReadProposedPosition(
+                pair.FirstOpposite, currentVertices, proposedLocalPositions, localIndexByVertex);
+            Vector3 opposite1 = ReadProposedPosition(
+                pair.SecondOpposite, currentVertices, proposedLocalPositions, localIndexByVertex);
+            Vector3 edge0 = ReadProposedPosition(
+                pair.FirstEdge, currentVertices, proposedLocalPositions, localIndexByVertex);
+            Vector3 edge1 = ReadProposedPosition(
+                pair.SecondEdge, currentVertices, proposedLocalPositions, localIndexByVertex);
+            if (!MeshDihedralConstraintCalculator.TryCalculateCorrections(
+                    opposite0,
+                    opposite1,
+                    edge0,
+                    edge1,
+                    ResolveProjectionAngleDegrees(
+                        baselineVertices,
+                        contract,
+                        pairIndex),
+                    1f,
+                    out Vector3 correction0,
+                    out Vector3 correction1,
+                    out Vector3 correction2,
+                    out Vector3 correction3))
+            {
+                return 0;
+            }
+
+            float maximumCorrectionMagnitude = Mathf.Max(
+                correction0.magnitude,
+                correction1.magnitude,
+                correction2.magnitude,
+                correction3.magnitude);
+            float correctionScale = maximumCorrectionMagnitude >
+                                    RestShapeMaximumProjectionCorrection
+                ? RestShapeMaximumProjectionCorrection /
+                  maximumCorrectionMagnitude
+                : 1f;
+            ApplyPairCorrections(
+                pair, correction0 * correctionScale, correction1 * correctionScale,
+                correction2 * correctionScale, correction3 * correctionScale,
+                proposedLocalPositions, localIndexByVertex);
+            return 1;
+        }
+
+        private static void ApplyPairCorrections(
+            NativeSkinningFacePair pair,
+            Vector3 correction0,
+            Vector3 correction1,
+            Vector3 correction2,
+            Vector3 correction3,
+            IList<Vector3> proposedLocalPositions,
+            IReadOnlyList<int> localIndexByVertex)
+        {
+            ApplyProjectionCorrection(
+                pair.FirstOpposite, correction0, proposedLocalPositions, localIndexByVertex);
+            ApplyProjectionCorrection(
+                pair.SecondOpposite, correction1, proposedLocalPositions, localIndexByVertex);
+            ApplyProjectionCorrection(
+                pair.FirstEdge, correction2, proposedLocalPositions, localIndexByVertex);
+            ApplyProjectionCorrection(
+                pair.SecondEdge, correction3, proposedLocalPositions, localIndexByVertex);
         }
 
         private static Vector3 ReadProposedPosition(
@@ -737,67 +844,102 @@ namespace Fbx2Vmd.FBXImporter
                 currentVertices.Count);
             for (int attempt = 0; attempt < LineSearchIterations; attempt++)
             {
-                for (int localIndex = 0;
-                     localIndex < workset.ConstrainedVertices.Length;
-                     localIndex++)
-                {
-                    int vertexIndex = workset.ConstrainedVertices[localIndex];
-                    candidate[vertexIndex] = Vector3.LerpUnclamped(
-                        currentVertices[vertexIndex],
-                        proposedLocalPositions[localIndex],
-                        blend);
-                    candidate[vertexIndex] = ClampDisplacementFromBaseline(
-                        baselineVertices[vertexIndex],
-                        candidate[vertexIndex],
-                        contract.ArmChainLength *
-                        configuration.MaximumTotalDisplacementToArmLengthRatio);
-                }
-                bool hasStrainDefect = shouldRecoverRestShape
-                    ? HasRestShapeRecoveryStrainDefect(
-                        baselineVertices,
-                        candidate,
-                        workset.Edges)
-                    : allowsStrainRecovery
-                        ? HasUnrecoveringEdgeStrainDefect(
-                            currentVertices,
-                            candidate,
-                            workset.Edges,
-                            configuration.MaximumEdgeLengthStrain)
-                        : HasEdgeStrainDefect(
-                            candidate,
-                            workset.Edges,
-                            configuration.MaximumEdgeLengthStrain);
-                bool hasRestShapeSharpFoldDefect = shouldRecoverRestShape &&
-                    HasRestShapeSharpFoldDefect(
-                        baselineVertices,
-                        candidate,
-                        contract,
-                        workset.FacePairIndices);
-                double candidateEnergy = CalculateConstraintEnergy(
-                    baselineVertices,
-                    candidate,
-                    contract,
-                    activePairIndices,
-                    workset.FacePairIndices,
-                    workset.FaceIndices,
-                    workset.Edges,
-                    shouldRecoverRestShape);
-                if (!HasOrientationDefect(
-                        baselineVertices,
-                        candidate,
-                        contract,
-                        workset.FaceIndices) &&
-                    !hasStrainDefect &&
-                    !hasRestShapeSharpFoldDefect &&
-                    candidateEnergy < beforeEnergy)
+                BlendCandidate(
+                    baselineVertices, currentVertices, proposedLocalPositions,
+                    workset, contract, configuration, candidate, blend);
+                if (TryEvaluateStepCandidate(
+                        baselineVertices, currentVertices, candidate, workset,
+                        contract, activePairIndices, beforeEnergy, configuration,
+                        shouldRecoverRestShape, allowsStrainRecovery,
+                        out acceptedEnergy))
                 {
                     acceptedVertices = candidate;
-                    acceptedEnergy = candidateEnergy;
                     return true;
                 }
                 blend *= 0.5f;
             }
             return false;
+        }
+
+        private static void BlendCandidate(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> currentVertices,
+            IReadOnlyList<Vector3> proposedLocalPositions,
+            LocalWorkset workset,
+            NativeSkinningSurfaceContract contract,
+            CorrectionConfiguration configuration,
+            Vector3[] candidate,
+            float blend)
+        {
+            for (int localIndex = 0;
+                 localIndex < workset.ConstrainedVertices.Length;
+                 localIndex++)
+            {
+                int vertexIndex = workset.ConstrainedVertices[localIndex];
+                candidate[vertexIndex] = Vector3.LerpUnclamped(
+                    currentVertices[vertexIndex],
+                    proposedLocalPositions[localIndex],
+                    blend);
+                candidate[vertexIndex] = ClampDisplacementFromBaseline(
+                    baselineVertices[vertexIndex],
+                    candidate[vertexIndex],
+                    contract.ArmChainLength *
+                    configuration.MaximumTotalDisplacementToArmLengthRatio);
+            }
+        }
+
+        // 후보의 결함·에너지를 평가해 수용 여부를 판정한다.
+        private static bool TryEvaluateStepCandidate(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> currentVertices,
+            Vector3[] candidate,
+            LocalWorkset workset,
+            NativeSkinningSurfaceContract contract,
+            IReadOnlyCollection<int> activePairIndices,
+            double beforeEnergy,
+            CorrectionConfiguration configuration,
+            bool shouldRecoverRestShape,
+            bool allowsStrainRecovery,
+            out double candidateEnergy)
+        {
+            bool hasStrainDefect = shouldRecoverRestShape
+                ? HasRestShapeRecoveryStrainDefect(
+                    baselineVertices,
+                    candidate,
+                    workset.Edges)
+                : allowsStrainRecovery
+                    ? HasUnrecoveringEdgeStrainDefect(
+                        currentVertices,
+                        candidate,
+                        workset.Edges,
+                        configuration.MaximumEdgeLengthStrain)
+                    : HasEdgeStrainDefect(
+                        candidate,
+                        workset.Edges,
+                        configuration.MaximumEdgeLengthStrain);
+            bool hasRestShapeSharpFoldDefect = shouldRecoverRestShape &&
+                HasRestShapeSharpFoldDefect(
+                    baselineVertices,
+                    candidate,
+                    contract,
+                    workset.FacePairIndices);
+            candidateEnergy = CalculateConstraintEnergy(
+                baselineVertices,
+                candidate,
+                contract,
+                activePairIndices,
+                workset.FacePairIndices,
+                workset.FaceIndices,
+                workset.Edges,
+                shouldRecoverRestShape);
+            return !HasOrientationDefect(
+                    baselineVertices,
+                    candidate,
+                    contract,
+                    workset.FaceIndices) &&
+                !hasStrainDefect &&
+                !hasRestShapeSharpFoldDefect &&
+                candidateEnergy < beforeEnergy;
         }
 
         private static bool HasRestShapeSharpFoldDefect(
@@ -963,34 +1105,52 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                float lowerBlend = 0f;
-                float upperBlend = safeBlend;
-                for (int iteration = 0;
-                     iteration < OrientationSearchIterations;
-                     iteration++)
-                {
-                    float middleBlend = (lowerBlend + upperBlend) * 0.5f;
-                    float signedArea = CalculateBlendedSignedArea(
-                        middleBlend,
-                        firstIndex,
-                        secondIndex,
-                        thirdIndex,
-                        baselineNormal,
-                        currentVertices,
-                        proposedLocalPositions,
-                        localIndexByVertex);
-                    if (signedArea >= minimumSignedArea)
-                    {
-                        lowerBlend = middleBlend;
-                    }
-                    else
-                    {
-                        upperBlend = middleBlend;
-                    }
-                }
-                safeBlend = lowerBlend * OrientationSafetyFactor;
+                safeBlend = SearchSafeBlendForFace(
+                    safeBlend, minimumSignedArea,
+                    firstIndex, secondIndex, thirdIndex, baselineNormal,
+                    currentVertices, proposedLocalPositions, localIndexByVertex) *
+                    OrientationSafetyFactor;
             }
             return safeBlend;
+        }
+
+        private static float SearchSafeBlendForFace(
+            float safeBlend,
+            float minimumSignedArea,
+            int firstIndex,
+            int secondIndex,
+            int thirdIndex,
+            Vector3 baselineNormal,
+            IReadOnlyList<Vector3> currentVertices,
+            IReadOnlyList<Vector3> proposedLocalPositions,
+            IReadOnlyList<int> localIndexByVertex)
+        {
+            float lowerBlend = 0f;
+            float upperBlend = safeBlend;
+            for (int iteration = 0;
+                 iteration < OrientationSearchIterations;
+                 iteration++)
+            {
+                float middleBlend = (lowerBlend + upperBlend) * 0.5f;
+                float signedArea = CalculateBlendedSignedArea(
+                    middleBlend,
+                    firstIndex,
+                    secondIndex,
+                    thirdIndex,
+                    baselineNormal,
+                    currentVertices,
+                    proposedLocalPositions,
+                    localIndexByVertex);
+                if (signedArea >= minimumSignedArea)
+                {
+                    lowerBlend = middleBlend;
+                }
+                else
+                {
+                    upperBlend = middleBlend;
+                }
+            }
+            return lowerBlend;
         }
 
         private static float CalculateBlendedSignedArea(
@@ -1072,6 +1232,22 @@ namespace Fbx2Vmd.FBXImporter
                 return energy;
             }
 
+            energy += CalculateBendingEnergy(
+                baselineVertices, vertices, contract, activePairIndices, facePairIndices);
+            energy += CalculateEdgeStrainEnergy(vertices, edges);
+            energy += CalculateOrientationEnergy(
+                baselineVertices, vertices, contract, faceIndices);
+            return energy;
+        }
+
+        private static double CalculateBendingEnergy(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> vertices,
+            NativeSkinningSurfaceContract contract,
+            IReadOnlyCollection<int> activePairIndices,
+            IEnumerable<int> facePairIndices)
+        {
+            double energy = 0d;
             foreach (int pairIndex in facePairIndices)
             {
                 if (!IsSharpFoldCorrectionEligible(
@@ -1096,6 +1272,14 @@ namespace Fbx2Vmd.FBXImporter
                 energy += 0.5d * BendingWeight *
                     violationRadians * violationRadians;
             }
+            return energy;
+        }
+
+        private static double CalculateEdgeStrainEnergy(
+            IReadOnlyList<Vector3> vertices,
+            IEnumerable<LocalEdge> edges)
+        {
+            double energy = 0d;
             foreach (LocalEdge edge in edges)
             {
                 float edgeLength = Vector3.Distance(
@@ -1108,7 +1292,16 @@ namespace Fbx2Vmd.FBXImporter
                 energy += 0.5d * EdgeStrainBarrierWeight *
                     violation * violation;
             }
+            return energy;
+        }
 
+        private static double CalculateOrientationEnergy(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> vertices,
+            NativeSkinningSurfaceContract contract,
+            IEnumerable<int> faceIndices)
+        {
+            double energy = 0d;
             float minimumNormalMagnitude = Mathf.Sqrt(MinimumNormalSquaredMagnitude);
             foreach (int faceIndex in faceIndices)
             {
@@ -1282,6 +1475,38 @@ namespace Fbx2Vmd.FBXImporter
             int[] localIndexByVertex = buffers.LocalIndexByVertex;
             int[] faceMark = buffers.FaceMark;
             int[] facePairMark = buffers.FacePairMark;
+            ExpandConstrainedVertices(contract, constrainedVertexSet, ringCount, buffers, faceMark);
+            int[] constrainedVertices = AssignLocalIndices(
+                constrainedVertexSet, localIndexByVertex, vertexCount);
+
+            int pairStamp = buffers.NextMarkStamp();
+            MarkByVertex(contract.FacePairIndicesByVertex, constrainedVertices,
+                facePairMark, pairStamp);
+            int[] facePairIndices = CollectMarked(
+                facePairMark, pairStamp, contract.FacePairs.Length);
+
+            int faceStamp = buffers.NextMarkStamp();
+            MarkByVertex(contract.AffectedFaceIndicesByVertex, constrainedVertices,
+                faceMark, faceStamp);
+            int[] faceIndices = CollectMarked(faceMark, faceStamp, faceCount);
+
+            LocalEdge[] edges = BuildLocalEdges(frameEdges, localIndexByVertex);
+            return new LocalWorkset(
+                constrainedVertices,
+                localIndexByVertex,
+                facePairIndices,
+                faceIndices,
+                edges);
+        }
+
+        // 시드 정점에서 ringCount만큼 면 이웃을 확장한다. 스탬프로 중복 순회를 막는다.
+        private static void ExpandConstrainedVertices(
+            NativeSkinningSurfaceContract contract,
+            HashSet<int> constrainedVertexSet,
+            int ringCount,
+            SolverBuffers buffers,
+            int[] faceMark)
+        {
             var frontier = new HashSet<int>(constrainedVertexSet);
             for (int ring = 0; ring < ringCount && frontier.Count > 0; ring++)
             {
@@ -1312,8 +1537,14 @@ namespace Fbx2Vmd.FBXImporter
                 }
                 frontier = nextFrontier;
             }
+        }
 
-            // 멤버십 표시 후 오름차순 스캔 — 정렬된 인덱스와 로컬 인덱스를 동시에 얻는다.
+        // 멤버십 표시 후 오름차순 스캔 — 정렬된 인덱스와 로컬 인덱스를 동시에 얻는다.
+        private static int[] AssignLocalIndices(
+            HashSet<int> constrainedVertexSet,
+            int[] localIndexByVertex,
+            int vertexCount)
+        {
             for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
             {
                 localIndexByVertex[vertexIndex] =
@@ -1330,67 +1561,51 @@ namespace Fbx2Vmd.FBXImporter
                     constrainedCount++;
                 }
             }
+            return constrainedVertices;
+        }
 
-            int pairStamp = buffers.NextMarkStamp();
-            foreach (int vertexIndex in constrainedVertices)
+        private static void MarkByVertex(
+            IReadOnlyList<int>[] indicesByVertex,
+            int[] vertices,
+            int[] marks,
+            int stamp)
+        {
+            foreach (int vertexIndex in vertices)
             {
-                foreach (int pairIndex in
-                         contract.FacePairIndicesByVertex[vertexIndex])
+                foreach (int index in indicesByVertex[vertexIndex])
                 {
-                    facePairMark[pairIndex] = pairStamp;
+                    marks[index] = stamp;
                 }
             }
-            int facePairCount = 0;
-            for (int pairIndex = 0;
-                 pairIndex < contract.FacePairs.Length;
-                 pairIndex++)
-            {
-                if (facePairMark[pairIndex] == pairStamp)
-                {
-                    facePairCount++;
-                }
-            }
-            int[] facePairIndices = new int[facePairCount];
-            int facePairWriteIndex = 0;
-            for (int pairIndex = 0;
-                 pairIndex < contract.FacePairs.Length;
-                 pairIndex++)
-            {
-                if (facePairMark[pairIndex] == pairStamp)
-                {
-                    facePairIndices[facePairWriteIndex] = pairIndex;
-                    facePairWriteIndex++;
-                }
-            }
+        }
 
-            int faceStamp = buffers.NextMarkStamp();
-            foreach (int vertexIndex in constrainedVertices)
+        private static int[] CollectMarked(int[] marks, int stamp, int total)
+        {
+            int markedCount = 0;
+            for (int index = 0; index < total; index++)
             {
-                foreach (int faceIndex in
-                         contract.AffectedFaceIndicesByVertex[vertexIndex])
+                if (marks[index] == stamp)
                 {
-                    faceMark[faceIndex] = faceStamp;
+                    markedCount++;
                 }
             }
-            int markedFaceCount = 0;
-            for (int faceIndex = 0; faceIndex < faceCount; faceIndex++)
+            var indices = new int[markedCount];
+            int writeIndex = 0;
+            for (int index = 0; index < total; index++)
             {
-                if (faceMark[faceIndex] == faceStamp)
+                if (marks[index] == stamp)
                 {
-                    markedFaceCount++;
+                    indices[writeIndex] = index;
+                    writeIndex++;
                 }
             }
-            int[] faceIndices = new int[markedFaceCount];
-            int faceWriteIndex = 0;
-            for (int faceIndex = 0; faceIndex < faceCount; faceIndex++)
-            {
-                if (faceMark[faceIndex] == faceStamp)
-                {
-                    faceIndices[faceWriteIndex] = faceIndex;
-                    faceWriteIndex++;
-                }
-            }
+            return indices;
+        }
 
+        private static LocalEdge[] BuildLocalEdges(
+            IReadOnlyList<FrameEdge> frameEdges,
+            int[] localIndexByVertex)
+        {
             int edgeCount = 0;
             foreach (FrameEdge edge in frameEdges)
             {
@@ -1419,12 +1634,7 @@ namespace Fbx2Vmd.FBXImporter
                     edge.RestLength);
                 edgeWriteIndex++;
             }
-            return new LocalWorkset(
-                constrainedVertices,
-                localIndexByVertex,
-                facePairIndices,
-                faceIndices,
-                edges);
+            return edges;
         }
 
         private static FrameEdge[] BuildFrameEdges(
