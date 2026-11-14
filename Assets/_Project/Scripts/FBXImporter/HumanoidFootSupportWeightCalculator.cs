@@ -89,56 +89,87 @@ namespace Fbx2Vmd.FBXImporter
 
                 // 런 도중의 짧은 공백도 발끝이 지면 높이에 머물면 실제 이륙이 아닌
                 // 속도 지터로 보고 지지를 이어감. 이륙은 반드시 높이 상승을 동반함.
-                if (i < points.Length)
+                if (!TryResumeRun(
+                        points, ref i, frameRate, referenceHeight,
+                        heightTolerance, speedLimit, minimumFrames,
+                        out bool runResumed))
                 {
-                    int resume = i;
-                    bool resumeSupported = false;
-                    while (resume < points.Length && resume - i < minimumFrames &&
-                        points[resume].y <= referenceHeight + heightTolerance * ReleaseThresholdRatio)
-                    {
-                        if (!EvaluateSupport(points, resume, frameRate, referenceHeight,
-                                heightTolerance, speedLimit, ReleaseThresholdRatio,
-                                out resumeSupported))
-                            return false;
-                        if (resumeSupported)
-                            break;
-                        resume++;
-                    }
-                    if (resumeSupported && resume - i < minimumFrames)
-                    {
-                        i = resume - 1;
-                        continue;
-                    }
+                    return false;
+                }
+                if (runResumed)
+                {
+                    continue;
                 }
 
                 if (i - start >= minimumFrames)
                 {
-                    for (int j = start; j < i; j++)
-                    {
-                        // 진입 혼합만 지지 구간 안에 둠. 해제를 구간 안에서 시작하면
-                        // 발이 아직 지면에 붙은 채로 원시 리타깃으로 복귀해 팝이 됨.
-                        float enter = start == 0 ? 1f : (j - start + 1f) / blendFrames;
-                        float weight = Mathf.Clamp01(enter);
-                        float smoothed = weight * weight * (3f - 2f * weight);
-                        if (smoothed > result[j][channel])
-                            result[j][channel] = smoothed;
-                    }
-
-                    // 해제 블렌드는 런 종료 뒤(실제 리프트오프 구간)에 배치해
-                    // 복귀 동작이 발이 뜨는 움직임에 겹치게 함. 뒤따르는 지지 런의
-                    // 진입 혼합과 겹치면 더 큰 값을 유지해 가중치가 움푹 꺼지지 않게 함.
-                    int releaseEnd = Mathf.Min(points.Length, i + Mathf.CeilToInt(blendFrames));
-                    for (int j = i; j < releaseEnd; j++)
-                    {
-                        float tail = Mathf.Clamp01((releaseEnd - j) / blendFrames);
-                        float smoothed = tail * tail * (3f - 2f * tail);
-                        if (smoothed > result[j][channel])
-                            result[j][channel] = smoothed;
-                    }
+                    WriteRunWeights(points, start, i, blendFrames, channel, result);
                 }
                 start = -1;
             }
             return true;
+        }
+
+        static bool TryResumeRun(
+            Vector3[] points, ref int index, float frameRate, float referenceHeight,
+            float heightTolerance, float speedLimit, int minimumFrames,
+            out bool resumed)
+        {
+            resumed = false;
+            if (index >= points.Length)
+            {
+                return true;
+            }
+
+            int resume = index;
+            bool resumeSupported = false;
+            while (resume < points.Length && resume - index < minimumFrames &&
+                points[resume].y <= referenceHeight + heightTolerance * ReleaseThresholdRatio)
+            {
+                if (!EvaluateSupport(points, resume, frameRate, referenceHeight,
+                        heightTolerance, speedLimit, ReleaseThresholdRatio,
+                        out resumeSupported))
+                {
+                    return false;
+                }
+                if (resumeSupported)
+                    break;
+                resume++;
+            }
+            if (resumeSupported && resume - index < minimumFrames)
+            {
+                index = resume - 1;
+                resumed = true;
+            }
+            return true;
+        }
+
+        static void WriteRunWeights(
+            Vector3[] points, int start, int end, float blendFrames,
+            int channel, Vector2[] result)
+        {
+            for (int j = start; j < end; j++)
+            {
+                // 진입 혼합만 지지 구간 안에 둠. 해제를 구간 안에서 시작하면
+                // 발이 아직 지면에 붙은 채로 원시 리타깃으로 복귀해 팝이 됨.
+                float enter = start == 0 ? 1f : (j - start + 1f) / blendFrames;
+                float weight = Mathf.Clamp01(enter);
+                float smoothed = weight * weight * (3f - 2f * weight);
+                if (smoothed > result[j][channel])
+                    result[j][channel] = smoothed;
+            }
+
+            // 해제 블렌드는 런 종료 뒤(실제 리프트오프 구간)에 배치해
+            // 복귀 동작이 발이 뜨는 움직임에 겹치게 함. 뒤따르는 지지 런의
+            // 진입 혼합과 겹치면 더 큰 값을 유지해 가중치가 움푹 꺼지지 않게 함.
+            int releaseEnd = Mathf.Min(points.Length, end + Mathf.CeilToInt(blendFrames));
+            for (int j = end; j < releaseEnd; j++)
+            {
+                float tail = Mathf.Clamp01((releaseEnd - j) / blendFrames);
+                float smoothed = tail * tail * (3f - 2f * tail);
+                if (smoothed > result[j][channel])
+                    result[j][channel] = smoothed;
+            }
         }
 
         // 왕복 움직임의 중앙 차분이 0이 되어도 정지로 오인하지 않도록 양쪽 속도를 확인함.

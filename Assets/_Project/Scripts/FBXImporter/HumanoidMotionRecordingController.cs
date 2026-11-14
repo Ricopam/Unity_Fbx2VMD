@@ -85,14 +85,8 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             // 구간 해석은 어떤 부작용도 일으키기 전에 검증함 — 무효 설정은 재생 상태를 건드리지 않음.
-            _rangeStartSeconds = Mathf.Max(0f, settings.StartTimeSeconds);
-            float clipLengthSeconds = _playbackController.ClipLengthSeconds;
-            _rangeEndSeconds = settings.EndTimeSeconds > 0f
-                ? Mathf.Min(settings.EndTimeSeconds, clipLengthSeconds)
-                : clipLengthSeconds;
-            if (_rangeEndSeconds - _rangeStartSeconds <= 0f)
+            if (!TryResolveRange(settings, out errorMessage))
             {
-                errorMessage = "녹화 구간이 비어 있습니다. 시작/종료 프레임 설정을 확인하세요.";
                 return false;
             }
 
@@ -127,23 +121,45 @@ namespace Fbx2Vmd.FBXImporter
 
             if (_playbackController.Play())
             {
-                _recordingFrameRate = settings.FrameRate;
-                _nextRecordingFrame = 1;
-                _hasReachedLastFrame = false;
-                // 프레임 정확도 우선 녹화 — 재생이 실시간보다 느려 보이는 것은 정상 동작임.
-                Debug.Log(
-                    $"[FBXImport] 영상 녹화 시작됨. fps={settings.FrameRate}, " +
-                    $"구간={_rangeStartSeconds:F2}~{_rangeEndSeconds:F2}s, " +
-                    "프레임 정확도 모드로 재생이 느려 보일 수 있습니다.");
-                // 투명 배경 녹화(MOV/WebM)일 때만 지정된 렌더러를 숨겨 캐릭터만 산출함.
-                SetAlphaHidden(settings.Format.SupportsAlpha());
-                return true;
+                return BeginRecordingPlayback(settings);
             }
 
             _videoRecorder.Stop();
             _playbackController.Stop();
             errorMessage = "영상 녹화 시작 후 FBX 모션을 재생하지 못했습니다.";
             return false;
+        }
+
+        bool TryResolveRange(
+            MotionVideoRecordingSettings settings, out string errorMessage)
+        {
+            _rangeStartSeconds = Mathf.Max(0f, settings.StartTimeSeconds);
+            float clipLengthSeconds = _playbackController.ClipLengthSeconds;
+            _rangeEndSeconds = settings.EndTimeSeconds > 0f
+                ? Mathf.Min(settings.EndTimeSeconds, clipLengthSeconds)
+                : clipLengthSeconds;
+            if (_rangeEndSeconds - _rangeStartSeconds <= 0f)
+            {
+                errorMessage = "녹화 구간이 비어 있습니다. 시작/종료 프레임 설정을 확인하세요.";
+                return false;
+            }
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        bool BeginRecordingPlayback(MotionVideoRecordingSettings settings)
+        {
+            _recordingFrameRate = settings.FrameRate;
+            _nextRecordingFrame = 1;
+            _hasReachedLastFrame = false;
+            // 프레임 정확도 우선 녹화 — 재생이 실시간보다 느려 보이는 것은 정상 동작임.
+            Debug.Log(
+                $"[FBXImport] 영상 녹화 시작됨. fps={settings.FrameRate}, " +
+                $"구간={_rangeStartSeconds:F2}~{_rangeEndSeconds:F2}s, " +
+                "프레임 정확도 모드로 재생이 느려 보일 수 있습니다.");
+            // 투명 배경 녹화(MOV/WebM)일 때만 지정된 렌더러를 숨겨 캐릭터만 산출함.
+            SetAlphaHidden(settings.Format.SupportsAlpha());
+            return true;
         }
 
         internal bool Tick(float simulationDeltaTimeSeconds)

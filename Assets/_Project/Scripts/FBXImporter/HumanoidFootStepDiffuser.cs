@@ -75,6 +75,38 @@ namespace Fbx2Vmd.FBXImporter
             HumanoidGroundResponse groundResponse, HumanoidFootGrounding grounding)
         {
             Vector3 raw = track.Foot.position;
+            if (!UpdateDebt(ref track, dt, raw))
+            {
+                return false;
+            }
+
+            track.Debt = Vector3.MoveTowards(track.Debt, Vector3.zero,
+                DiffuseSpeedMetersPerSecond * dt);
+            Vector3 target = raw + track.Debt;
+            // 앞선 접지 보정을 잔여 이동이 되돌리지 않도록 최종 후보의 밑창을 검사함.
+            if (groundResponse != null)
+            {
+                Physics.SyncTransforms();
+                if (groundResponse.TryConstrainFootTarget(isLeft, target, grounding,
+                        out Vector3 constrained) && (constrained - target).sqrMagnitude > 0f)
+                {
+                    target = constrained;
+                    track.Debt = target - raw;
+                }
+            }
+            if ((target - raw).sqrMagnitude < 0.000000001f)
+            {
+                track.PrevOut = raw;
+                return false;
+            }
+
+            SolveFootIk(ref track, target);
+            track.PrevOut = target;
+            return true;
+        }
+
+        static bool UpdateDebt(ref FootTrack track, float dt, Vector3 raw)
+        {
             float rawDelta = track.HasState
                 ? (raw - track.PrevRaw).magnitude
                 : 0f;
@@ -102,27 +134,11 @@ namespace Fbx2Vmd.FBXImporter
                 track.Debt = Vector3.zero;
                 return false;
             }
+            return true;
+        }
 
-            track.Debt = Vector3.MoveTowards(track.Debt, Vector3.zero,
-                DiffuseSpeedMetersPerSecond * dt);
-            Vector3 target = raw + track.Debt;
-            // 앞선 접지 보정을 잔여 이동이 되돌리지 않도록 최종 후보의 밑창을 검사함.
-            if (groundResponse != null)
-            {
-                Physics.SyncTransforms();
-                if (groundResponse.TryConstrainFootTarget(isLeft, target, grounding,
-                        out Vector3 constrained) && (constrained - target).sqrMagnitude > 0f)
-                {
-                    target = constrained;
-                    track.Debt = target - raw;
-                }
-            }
-            if ((target - raw).sqrMagnitude < 0.000000001f)
-            {
-                track.PrevOut = raw;
-                return false;
-            }
-
+        static void SolveFootIk(ref FootTrack track, Vector3 target)
+        {
             // 상승 클램프와 같은 기준 — 자세 cross가 안정적이면 그 방향이 정답이고
             // 무릎이 거의 펴져 퇴화할 때만 발 우측을 폴백으로 사용함.
             Vector3 bendNormal = Vector3.Cross(
@@ -139,9 +155,6 @@ namespace Fbx2Vmd.FBXImporter
             track.Foot.rotation = footRotation;
             if (track.Toes != null)
                 track.Toes.rotation = toeRotation;
-
-            track.PrevOut = target;
-            return true;
         }
 
         private struct FootTrack
