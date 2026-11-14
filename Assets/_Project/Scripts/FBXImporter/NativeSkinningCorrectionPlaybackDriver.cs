@@ -102,83 +102,7 @@ namespace Fbx2Vmd.FBXImporter
 
         internal NativeSkinningCorrectionPreprocessResult Result { get; private set; }
 
-        internal static bool TryAttach(
-            GameObject host,
-            Animator animator,
-            HumanoidMotionPlaybackController playbackController,
-            out NativeSkinningCorrectionPlaybackDriver driver,
-            out string errorMessage)
-        {
-            driver = null;
-            errorMessage = string.Empty;
-            if (host == null ||
-                animator == null ||
-                playbackController == null ||
-                !playbackController.IsPrepared)
-            {
-                errorMessage = "Native 보정 표시기를 구성할 재생 대상이 없습니다.";
-                return false;
-            }
 
-            try
-            {
-                if (!TryBuildContracts(animator, out List<NativeSkinningSurfaceContract> contracts))
-                {
-                    errorMessage = "팔 표면의 Native 보정 계약을 만들지 못했습니다.";
-                    return false;
-                }
-                if (contracts == null)
-                {
-                    return true;
-                }
-
-                driver = host.GetComponent<NativeSkinningCorrectionPlaybackDriver>();
-                if (driver == null)
-                {
-                    driver = host.AddComponent<NativeSkinningCorrectionPlaybackDriver>();
-                    driver.hideFlags = HideFlags.DontSave;
-                }
-                driver.Configure(animator, playbackController, contracts.ToArray());
-                return true;
-            }
-            catch (Exception exception)
-            {
-                errorMessage =
-                    $"Native 보정 표시기 구성 중 예외가 발생했습니다: {exception.Message}";
-                if (driver != null)
-                {
-                    driver.Release();
-                    driver = null;
-                }
-                return false;
-            }
-        }
-
-        // contracts==null이면 선택 없음(성공), false+비null이면 계약 생성 실패.
-        static bool TryBuildContracts(
-            Animator animator,
-            out List<NativeSkinningSurfaceContract> contracts)
-        {
-            contracts = null;
-            NativeSkinningArmSurfaceSelection[] selections =
-                NativeSkinningArmSurfaceSelector.FindAll(animator);
-            if (selections.Length == 0)
-            {
-                return true;
-            }
-            contracts = new List<NativeSkinningSurfaceContract>(selections.Length);
-            foreach (NativeSkinningArmSurfaceSelection selection in selections)
-            {
-                if (!NativeSkinningSurfaceContractBuilder.TryBuild(
-                        selection,
-                        out NativeSkinningSurfaceContract contract))
-                {
-                    return false;
-                }
-                contracts.Add(contract);
-            }
-            return true;
-        }
 
         internal bool BeginPreparation()
         {
@@ -413,55 +337,6 @@ namespace Fbx2Vmd.FBXImporter
             return true;
         }
 
-        bool CaptureRendererInputs(
-            int frameIndex,
-            System.Diagnostics.Stopwatch stageWatch,
-            bool revalidateLbs,
-            Dictionary<SkinnedMeshRenderer, Vector3[]> baselineVertices,
-            Dictionary<SkinnedMeshRenderer, Matrix4x4[]> skinningMatricesByRenderer)
-        {
-            foreach (SkinnedMeshRenderer renderer in _contracts
-                         .Select(contract => contract.Renderer)
-                         .Distinct())
-            {
-                // 세션 시작 때 쥔 메시와 달라지면 스냅샷과 행렬이 섞여
-                // 조용히 잘못된 베이스라인이 만들어진다 — 캡처에서 차단한다.
-                if (renderer == null || renderer.sharedMesh == null ||
-                    !_sessionMeshes.TryGetValue(renderer, out Mesh sessionMesh) ||
-                    renderer.sharedMesh != sessionMesh)
-                {
-                    Fail("사전 계산 중 Renderer 토폴로지가 변경됐습니다.");
-                    return false;
-                }
-                stageWatch.Restart();
-                if (revalidateLbs ||
-                    _preprocessSession.RequiresBakedBaseline(renderer))
-                {
-                    if (!_bakedMeshes.TryGetValue(renderer, out Mesh bakedMesh))
-                    {
-                        Fail("Native 보정 대상 Renderer가 사라졌습니다.");
-                        return false;
-                    }
-                    renderer.BakeMesh(bakedMesh, false);
-                    baselineVertices[renderer] = bakedMesh.vertices;
-                }
-                _bakeTicks += stageWatch.ElapsedTicks;
-                // LBS 베이스라인과 지연 본 변환의 공통 입력 — 매 프레임 표본화한다.
-                stageWatch.Restart();
-                if (!NativeSkinningBoneTransformSampler.TrySample(
-                        renderer,
-                        out Matrix4x4[] skinningMatrices))
-                {
-                    Fail(
-                        $"Native 보정 준비 중 frame {frameIndex}의 " +
-                        "스키닝 본 자세를 표본화하지 못했습니다.");
-                    return false;
-                }
-                _boneSampleTicks += stageWatch.ElapsedTicks;
-                skinningMatricesByRenderer[renderer] = skinningMatrices;
-            }
-            return true;
-        }
 
         private void CompletePreparation(
             NativeSkinningCorrectionPreprocessResult result)
