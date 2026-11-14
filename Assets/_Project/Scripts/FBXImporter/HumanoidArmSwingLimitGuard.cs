@@ -248,20 +248,8 @@ namespace Fbx2Vmd.FBXImporter
             float forearmStretchBefore = CaptureForearmStretchMuscle(upperBone);
             if (pose.currentDownDot <= maxUpperArmDownDot)
             {
-                bool raisedReachLimited = TryApplyRaisedPoseHorizontalReachLimit(
-                    upper,
-                    lower,
-                    hand,
-                    pose.localHandOffset,
-                    pose.armLength,
-                    pose.currentDownDot,
-                    pose.belowShoulderRatio);
-                RecordArmLimitDiagnostics(
-                    upperBone,
-                    standardLimitApplied: false,
-                    horizontalReachLimited: false,
-                    raisedReachLimited: raisedReachLimited,
-                    forearmStretchBefore: forearmStretchBefore);
+                ApplyRaisedPoseLimit(
+                    upperBone, upper, lower, hand, pose, forearmStretchBefore);
                 return;
             }
 
@@ -288,6 +276,26 @@ namespace Fbx2Vmd.FBXImporter
             ApplyStandardDownLimit(
                 upperBone, upper, lower, hand, pose,
                 fallbackSideSign, forearmStretchBefore, horizontalReachLimited);
+        }
+
+        void ApplyRaisedPoseLimit(
+            HumanBodyBones upperBone, Transform upper, Transform lower,
+            Transform hand, ArmPoseMeasure pose, float forearmStretchBefore)
+        {
+            bool raisedReachLimited = TryApplyRaisedPoseHorizontalReachLimit(
+                upper,
+                lower,
+                hand,
+                pose.localHandOffset,
+                pose.armLength,
+                pose.currentDownDot,
+                pose.belowShoulderRatio);
+            RecordArmLimitDiagnostics(
+                upperBone,
+                standardLimitApplied: false,
+                horizontalReachLimited: false,
+                raisedReachLimited: raisedReachLimited,
+                forearmStretchBefore: forearmStretchBefore);
         }
 
         // 팔 포즈 측정값 묶음 — 제한 판정·적용의 입력.

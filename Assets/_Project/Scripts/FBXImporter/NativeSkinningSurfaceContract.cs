@@ -225,7 +225,33 @@ namespace Fbx2Vmd.FBXImporter
             int[] orderedAffectedFaces = affectedFaces
                 .OrderBy(index => index)
                 .ToArray();
-            contract = new NativeSkinningSurfaceContract(
+            contract = CreateContract(
+                selection,
+                mesh,
+                restVertices,
+                triangles,
+                orderedAffectedFaces,
+                facePairs,
+                restAngles,
+                restShapeRecoveryMaximumCosines,
+                facePairRestLengths,
+                evaluatedVertices);
+            return true;
+        }
+
+        static NativeSkinningSurfaceContract CreateContract(
+            NativeSkinningArmSurfaceSelection selection,
+            Mesh mesh,
+            Vector3[] restVertices,
+            int[] triangles,
+            int[] orderedAffectedFaces,
+            NativeSkinningFacePair[] facePairs,
+            float[] restAngles,
+            float[] restShapeRecoveryMaximumCosines,
+            NativeSkinningFacePairRestLengths[] facePairRestLengths,
+            int[] evaluatedVertices)
+        {
+            return new NativeSkinningSurfaceContract(
                 selection.Renderer,
                 selection.Side,
                 mesh.vertexCount,
@@ -245,7 +271,6 @@ namespace Fbx2Vmd.FBXImporter
                     triangles,
                     orderedAffectedFaces),
                 selection.ArmChainLength);
-            return true;
         }
 
         static bool TryCollectTopology(
