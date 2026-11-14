@@ -132,5 +132,120 @@ namespace Fbx2Vmd.FBXImporter
                 : fallbackNormal;
         }
 
+        struct WorldCorrections
+        {
+            internal Vector3 LeftCorrection;
+            internal Vector3 RightCorrection;
+            internal Vector3 LeftToeDirection;
+            internal Vector3 RightToeDirection;
+            internal Vector3 LeftBendNormal;
+            internal Vector3 RightBendNormal;
+        }
+
+        bool TryResolveWorldCorrections(
+            Vector3 leftRootSpaceCorrection,
+            Vector3 rightRootSpaceCorrection,
+            Vector3 leftRootSpaceToeDirection,
+            Vector3 rightRootSpaceToeDirection,
+            Vector3 leftBaseRootSpacePosition,
+            Vector3 rightBaseRootSpacePosition,
+            Vector3 leftBaseRootSpaceBendNormal,
+            Vector3 rightBaseRootSpaceBendNormal,
+            out WorldCorrections corrections)
+        {
+            Vector3 leftCurrentRootSpacePosition =
+                CaptureRootSpacePosition(_leftLeg.CaptureFootPosition());
+            Vector3 rightCurrentRootSpacePosition =
+                CaptureRootSpacePosition(_rightLeg.CaptureFootPosition());
+            corrections = new WorldCorrections
+            {
+                LeftCorrection = _targetRoot.TransformDirection(
+                    leftBaseRootSpacePosition + leftRootSpaceCorrection -
+                    leftCurrentRootSpacePosition),
+                RightCorrection = _targetRoot.TransformDirection(
+                    rightBaseRootSpacePosition + rightRootSpaceCorrection -
+                    rightCurrentRootSpacePosition),
+                LeftToeDirection =
+                    _targetRoot.TransformDirection(leftRootSpaceToeDirection),
+                RightToeDirection =
+                    _targetRoot.TransformDirection(rightRootSpaceToeDirection),
+                LeftBendNormal = _targetRoot.TransformDirection(
+                    leftBaseRootSpaceBendNormal),
+                RightBendNormal = _targetRoot.TransformDirection(
+                    rightBaseRootSpaceBendNormal)
+            };
+            return IsFinite(corrections.LeftCorrection) &&
+                IsFinite(corrections.RightCorrection) &&
+                IsFinite(corrections.LeftToeDirection) &&
+                IsFinite(corrections.RightToeDirection);
+        }
+
+        private Vector3 CaptureRootSpacePosition(Vector3 worldPosition)
+        {
+            return Quaternion.Inverse(_targetRoot.rotation) *
+                (worldPosition - _targetRoot.position);
+        }
+
+        private Vector3 CaptureRootSpaceDirection(Vector3 worldDirection)
+        {
+            return Quaternion.Inverse(_targetRoot.rotation) * worldDirection;
+        }
+
+        private bool TryEvaluateBaseFootPositions(
+            float timeSeconds,
+            out Vector3 leftRootSpacePosition,
+            out Vector3 rightRootSpacePosition,
+            out Vector3 leftRootSpaceBendNormal,
+            out Vector3 rightRootSpaceBendNormal)
+        {
+            leftRootSpacePosition = Vector3.zero;
+            rightRootSpacePosition = Vector3.zero;
+            leftRootSpaceBendNormal = Vector3.zero;
+            rightRootSpaceBendNormal = Vector3.zero;
+            if (!IsFinite(timeSeconds) ||
+                timeSeconds < 0f ||
+                _frameRate <= 0f ||
+                _leftBaseRootSpaceFootPositions.Length == 0 ||
+                _leftBaseRootSpaceFootPositions.Length !=
+                _rightBaseRootSpaceFootPositions.Length ||
+                _leftBaseRootSpaceBendNormals.Length !=
+                _leftBaseRootSpaceFootPositions.Length ||
+                _rightBaseRootSpaceBendNormals.Length !=
+                _rightBaseRootSpaceFootPositions.Length)
+            {
+                return false;
+            }
+
+            float frame = Mathf.Clamp(
+                timeSeconds * _frameRate,
+                0f,
+                _leftBaseRootSpaceFootPositions.Length - 1);
+            int firstFrame = Mathf.FloorToInt(frame);
+            int secondFrame = Mathf.Min(
+                firstFrame + 1,
+                _leftBaseRootSpaceFootPositions.Length - 1);
+            float interpolation = frame - firstFrame;
+            leftRootSpacePosition = Vector3.LerpUnclamped(
+                _leftBaseRootSpaceFootPositions[firstFrame],
+                _leftBaseRootSpaceFootPositions[secondFrame],
+                interpolation);
+            rightRootSpacePosition = Vector3.LerpUnclamped(
+                _rightBaseRootSpaceFootPositions[firstFrame],
+                _rightBaseRootSpaceFootPositions[secondFrame],
+                interpolation);
+            leftRootSpaceBendNormal = Vector3.LerpUnclamped(
+                _leftBaseRootSpaceBendNormals[firstFrame],
+                _leftBaseRootSpaceBendNormals[secondFrame],
+                interpolation).normalized;
+            rightRootSpaceBendNormal = Vector3.LerpUnclamped(
+                _rightBaseRootSpaceBendNormals[firstFrame],
+                _rightBaseRootSpaceBendNormals[secondFrame],
+                interpolation).normalized;
+            return IsFinite(leftRootSpacePosition) &&
+                IsFinite(rightRootSpacePosition) &&
+                IsFinite(leftRootSpaceBendNormal) &&
+                IsFinite(rightRootSpaceBendNormal);
+        }
+
     }
 }
