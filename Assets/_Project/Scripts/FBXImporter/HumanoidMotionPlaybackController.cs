@@ -492,68 +492,97 @@ namespace Fbx2Vmd.FBXImporter
                     ? "ik_goal_drive" : "ik_goal_abstain";
             // gate는 준비된 매 프레임에서 실행 — weight 감쇠·기권 프레임의 접지 보정
             // 공백을 막고, 주장 프레임에는 드라이버가 gate 결과 위에 오버레이함.
-            bool gateApplied = false;
-            if (_isGroundResponseEnabled &&
-                _footGrounding != null && _footGrounding.IsPrepared)
-            {
-                gateApplied = _footGrounding.TryApply(CurrentTimeSeconds, _groundResponse);
-                LastGroundingGate.evaluation_stage = _footGrounding.EvaluationStage;
-                LastGroundingGate.measured = _footGrounding.EvaluationStage == "gate";
-                LastGroundingGate.raw_pass = _footGrounding.RawGatePass;
-                LastGroundingGate.held_pass = gateApplied;
-                LastGroundingGate.used_physical_reach = _footGrounding.UsedPhysicalReach;
-                LastGroundingGate.pelvis_offset_m = _footGrounding.PelvisOffset;
-                LastGroundingGate.pelvis_maximum_offset_m = _footGrounding.PelvisMaximumOffset;
-                LastGroundingGate.left = _footGrounding.LeftDiagnostic;
-                LastGroundingGate.right = _footGrounding.RightDiagnostic;
-                LastGroundingGate.target_error_m = _footGrounding.MaximumTargetError;
-                LastGroundingGate.sole_clearance_m = _footGrounding.MinimumSoleClearance;
-                LastGroundingGate.supported_contact_error_m =
-                    _footGrounding.MaximumSupportedContactError;
-                LastGroundingGate.supported_contact_count =
-                    _footGrounding.FullySupportedContactCount;
-                if (gateApplied)
-                {
-                    if (goalDriverActive && _footGrounding.RawGatePass)
-                    {
-                        _footGoalDriver.CaptureValidatedSupport(
-                            _footGrounding.LeftDiagnostic.has_ground &&
-                            _footGrounding.LeftDiagnostic.supported_contact_count > 0,
-                            _footGrounding.RightDiagnostic.has_ground &&
-                            _footGrounding.RightDiagnostic.supported_contact_count > 0);
-                    }
-                    LastGroundingStatus = _footGrounding.HasGround
-                        ? HumanoidFootGroundingStatus.Applied : HumanoidFootGroundingStatus.NoGround;
-                    if (!driverClaims)
-                    {
-                        if (goalDriverActive)
-                        {
-                            // gate 적용 프레임도 드라이버 시간·weight는 매 프레임 갱신해
-                            // 다음 pin 진입의 램프와 점프 판정이 끊기지 않게 함.
-                            _footGoalDriver.TryApply(CurrentTimeSeconds, _footGoalAlpha,
-                                leftBendNormal, rightBendNormal,
-                                _isGroundResponseEnabled ? _groundResponse : null);
-                            // 핀 기권 중에도 발 모임 복구가 자세를 바꾸므로 최종 밑창 제약을 다시 적용함.
-                            _groundResponse.Apply(
-                                _footGoalDriver.LastUsedLeftBendNormal,
-                                _footGoalDriver.LastUsedRightBendNormal, _footGrounding);
-                        }
-                        return true;
-                    }
-                }
-                else
-                {
-                    LastGroundingStatus = HumanoidFootGroundingStatus.Fallback;
-                }
-            }
+            bool gateApplied = ApplyGroundingGate(
+                goalDriverActive, driverClaims, leftBendNormal, rightBendNormal,
+                out bool earlyResolved);
+            if (earlyResolved) return true;
             // gate 적용 프레임은 alpha=0과 같이 stabilizer를 건너뜀.
             bool isApplied = !gateApplied && _footContactStabilizer.TryApply(
                 CurrentTimeSeconds,
                 leftBendNormal,
                 rightBendNormal);
+            ApplyGoalDriverOverlay(
+                goalDriverActive, driverClaims, gateApplied, isApplied,
+                leftBendNormal, rightBendNormal);
+            return isApplied || gateApplied;
+        }
+
+        // 게이트 접지 보정 실행 + 진단 스냅샷 갱신. earlyResolved=true면 호출자는 즉시 return true.
+        private bool ApplyGroundingGate(
+            bool goalDriverActive, bool driverClaims,
+            Vector3 leftBendNormal, Vector3 rightBendNormal,
+            out bool earlyResolved)
+        {
+            earlyResolved = false;
+            bool gateApplied = false;
+            if (!_isGroundResponseEnabled ||
+                _footGrounding == null || !_footGrounding.IsPrepared)
+            {
+                return gateApplied;
+            }
+
+            gateApplied = _footGrounding.TryApply(CurrentTimeSeconds, _groundResponse);
+            CaptureGateDiagnostics(gateApplied);
+            if (!gateApplied)
+            {
+                LastGroundingStatus = HumanoidFootGroundingStatus.Fallback;
+                return gateApplied;
+            }
+
+            if (goalDriverActive && _footGrounding.RawGatePass)
+            {
+                _footGoalDriver.CaptureValidatedSupport(
+                    _footGrounding.LeftDiagnostic.has_ground &&
+                    _footGrounding.LeftDiagnostic.supported_contact_count > 0,
+                    _footGrounding.RightDiagnostic.has_ground &&
+                    _footGrounding.RightDiagnostic.supported_contact_count > 0);
+            }
+            LastGroundingStatus = _footGrounding.HasGround
+                ? HumanoidFootGroundingStatus.Applied : HumanoidFootGroundingStatus.NoGround;
+            if (driverClaims) return gateApplied;
             if (goalDriverActive)
             {
-                // pin 프레임만 IK가 목표를 주장하고 기권 구간은 gate/stabilizer 출력이 유지됨.
+                // gate 적용 프레임도 드라이버 시간·weight는 매 프레임 갱신해
+                // 다음 pin 진입의 램프와 점프 판정이 끊기지 않게 함.
+                _footGoalDriver.TryApply(CurrentTimeSeconds, _footGoalAlpha,
+                    leftBendNormal, rightBendNormal,
+                    _isGroundResponseEnabled ? _groundResponse : null);
+                // 핀 기권 중에도 발 모임 복구가 자세를 바꾸므로 최종 밑창 제약을 다시 적용함.
+                _groundResponse.Apply(
+                    _footGoalDriver.LastUsedLeftBendNormal,
+                    _footGoalDriver.LastUsedRightBendNormal, _footGrounding);
+            }
+            earlyResolved = true;
+            return gateApplied;
+        }
+
+        private void CaptureGateDiagnostics(bool gateApplied)
+        {
+            LastGroundingGate.evaluation_stage = _footGrounding.EvaluationStage;
+            LastGroundingGate.measured = _footGrounding.EvaluationStage == "gate";
+            LastGroundingGate.raw_pass = _footGrounding.RawGatePass;
+            LastGroundingGate.held_pass = gateApplied;
+            LastGroundingGate.used_physical_reach = _footGrounding.UsedPhysicalReach;
+            LastGroundingGate.pelvis_offset_m = _footGrounding.PelvisOffset;
+            LastGroundingGate.pelvis_maximum_offset_m = _footGrounding.PelvisMaximumOffset;
+            LastGroundingGate.left = _footGrounding.LeftDiagnostic;
+            LastGroundingGate.right = _footGrounding.RightDiagnostic;
+            LastGroundingGate.target_error_m = _footGrounding.MaximumTargetError;
+            LastGroundingGate.sole_clearance_m = _footGrounding.MinimumSoleClearance;
+            LastGroundingGate.supported_contact_error_m =
+                _footGrounding.MaximumSupportedContactError;
+            LastGroundingGate.supported_contact_count =
+                _footGrounding.FullySupportedContactCount;
+        }
+
+        // 드라이버 오버레이: pin 프레임만 IK가 목표를 주장하고 기권 구간은 gate/stabilizer 출력이 유지됨.
+        private void ApplyGoalDriverOverlay(
+            bool goalDriverActive, bool driverClaims,
+            bool gateApplied, bool isApplied,
+            Vector3 leftBendNormal, Vector3 rightBendNormal)
+        {
+            if (goalDriverActive)
+            {
                 _footGoalDriver.TryApply(CurrentTimeSeconds, _footGoalAlpha,
                     leftBendNormal, rightBendNormal,
                     _isGroundResponseEnabled ? _groundResponse : null);
@@ -598,7 +627,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 _groundResponse.Apply(leftBendNormal, rightBendNormal, _footGrounding);
             }
-            return isApplied || gateApplied;
         }
 
         private void InitializeFootRotationBindings(Animator animator)
