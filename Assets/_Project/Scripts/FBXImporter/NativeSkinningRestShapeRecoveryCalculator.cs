@@ -75,51 +75,59 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                foreach (Vector2 materialDirection in
-                         BuildMaterialDirections(gradient))
-                {
-                    Vector3 baselineDirection = CalculateDirectionalDeformation(
-                        gradient.BaselineFirstColumn,
-                        gradient.BaselineSecondColumn,
-                        materialDirection);
-                    Vector3 currentDirection = CalculateDirectionalDeformation(
-                        gradient.CurrentFirstColumn,
-                        gradient.CurrentSecondColumn,
-                        materialDirection);
-                    float currentStretch = currentDirection.magnitude;
-                    if (currentStretch <= MinimumLength)
-                    {
-                        continue;
-                    }
-
-                    float targetStretch = ClampStretch(
-                        currentStretch,
-                        baselineDirection.magnitude);
-                    if (Mathf.Approximately(currentStretch, targetStretch))
-                    {
-                        continue;
-                    }
-
-                    float firstEdgeCoefficient =
-                        gradient.Inverse00 * materialDirection.x +
-                        gradient.Inverse01 * materialDirection.y;
-                    float secondEdgeCoefficient =
-                        gradient.Inverse10 * materialDirection.x +
-                        gradient.Inverse11 * materialDirection.y;
-                    constraints.Add(new NativeSkinningMaterialStrainConstraint(
-                        localIndices,
-                        new[]
-                        {
-                            -firstEdgeCoefficient - secondEdgeCoefficient,
-                            firstEdgeCoefficient,
-                            secondEdgeCoefficient
-                        },
-                        currentDirection *
-                        (targetStretch / currentStretch - 1f),
-                        gradient.RestArea));
-                }
+                AddDirectionalConstraints(constraints, localIndices, gradient);
             }
             return constraints.ToArray();
+        }
+
+        static void AddDirectionalConstraints(
+            List<NativeSkinningMaterialStrainConstraint> constraints,
+            int[] localIndices,
+            DeformationGradient gradient)
+        {
+            foreach (Vector2 materialDirection in
+                     BuildMaterialDirections(gradient))
+            {
+                Vector3 baselineDirection = CalculateDirectionalDeformation(
+                    gradient.BaselineFirstColumn,
+                    gradient.BaselineSecondColumn,
+                    materialDirection);
+                Vector3 currentDirection = CalculateDirectionalDeformation(
+                    gradient.CurrentFirstColumn,
+                    gradient.CurrentSecondColumn,
+                    materialDirection);
+                float currentStretch = currentDirection.magnitude;
+                if (currentStretch <= MinimumLength)
+                {
+                    continue;
+                }
+
+                float targetStretch = ClampStretch(
+                    currentStretch,
+                    baselineDirection.magnitude);
+                if (Mathf.Approximately(currentStretch, targetStretch))
+                {
+                    continue;
+                }
+
+                float firstEdgeCoefficient =
+                    gradient.Inverse00 * materialDirection.x +
+                    gradient.Inverse01 * materialDirection.y;
+                float secondEdgeCoefficient =
+                    gradient.Inverse10 * materialDirection.x +
+                    gradient.Inverse11 * materialDirection.y;
+                constraints.Add(new NativeSkinningMaterialStrainConstraint(
+                    localIndices,
+                    new[]
+                    {
+                        -firstEdgeCoefficient - secondEdgeCoefficient,
+                        firstEdgeCoefficient,
+                        secondEdgeCoefficient
+                    },
+                    currentDirection *
+                    (targetStretch / currentStretch - 1f),
+                    gradient.RestArea));
+            }
         }
 
         internal static float CalculateStrainIncrease(
@@ -213,6 +221,32 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            gradient = CreateGradient(
+                baselineVertices,
+                currentVertices,
+                first,
+                second,
+                third,
+                restFirstLength,
+                restDoubleArea,
+                restSecondX,
+                restSecondY,
+                determinant);
+            return true;
+        }
+
+        static DeformationGradient CreateGradient(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> currentVertices,
+            int first,
+            int second,
+            int third,
+            float restFirstLength,
+            float restDoubleArea,
+            float restSecondX,
+            float restSecondY,
+            float determinant)
+        {
             float inverse00 = restSecondY / determinant;
             float inverse01 = -restSecondX / determinant;
             const float inverse10 = 0f;
@@ -239,7 +273,7 @@ namespace Fbx2Vmd.FBXImporter
                 inverse11,
                 out Vector3 currentFirstColumn,
                 out Vector3 currentSecondColumn);
-            gradient = new DeformationGradient(
+            return new DeformationGradient(
                 inverse00,
                 inverse01,
                 inverse10,
@@ -251,7 +285,6 @@ namespace Fbx2Vmd.FBXImporter
                 baselineSecondColumn,
                 currentFirstColumn,
                 currentSecondColumn);
-            return true;
         }
 
         private static void BuildGradientColumns(
