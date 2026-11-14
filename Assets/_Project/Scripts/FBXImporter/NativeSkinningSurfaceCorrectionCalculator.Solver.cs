@@ -10,53 +10,6 @@ namespace Fbx2Vmd.FBXImporter
     /// </summary>
     internal static partial class NativeSkinningSurfaceCorrectionCalculator
     {
-        private static void LimitDisplacement(
-            IList<Vector3> displacement,
-            int count,
-            IReadOnlyList<Vector3> vertices,
-            NativeSkinningSurfaceContract contract,
-            IReadOnlyCollection<int> activePairIndices)
-        {
-            float minimumCharacteristicLength = float.PositiveInfinity;
-            foreach (int pairIndex in activePairIndices)
-            {
-                NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
-                if (!NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                        vertices,
-                        pair,
-                        out float angle) ||
-                    angle <= ProjectionAngleDegrees)
-                {
-                    continue;
-                }
-                minimumCharacteristicLength = Mathf.Min(
-                    minimumCharacteristicLength,
-                    CalculateFacePairCharacteristicLength(vertices, pair));
-            }
-            float relativeLimit = float.IsPositiveInfinity(minimumCharacteristicLength)
-                ? MaximumAbsoluteStep
-                : minimumCharacteristicLength * MaximumRelativeStep;
-            float maximumStep = Mathf.Min(MaximumAbsoluteStep, relativeLimit);
-            // 버퍼는 이전 패스의 잔여를 담을 수 있으므로 논리 크기까지만 스캔한다.
-            float requestedStep = 0f;
-            for (int index = 0; index < count; index++)
-            {
-                float magnitude = displacement[index].magnitude;
-                if (magnitude > requestedStep)
-                {
-                    requestedStep = magnitude;
-                }
-            }
-            if (requestedStep <= maximumStep || requestedStep <= 0f)
-            {
-                return;
-            }
-            float scale = maximumStep / requestedStep;
-            for (int index = 0; index < count; index++)
-            {
-                displacement[index] *= scale;
-            }
-        }
 
         private static void UpdateActiveSharpFoldPairs(
             IReadOnlyList<Vector3> vertices,

@@ -550,6 +550,22 @@ namespace Fbx2Vmd.ClothPhysics
             return targetAnimator;
         }
 
+        private void ReapplySpringBackend()
+        {
+            if (SpringHairBackend.ReapplyExisting(transform, springProfile))
+            {
+                lastReport = "본 스프링 에셋 파라미터 재적용 완료";
+                Debug.Log("[CharacterPhysicsSetup] " + lastReport, this);
+            }
+            else
+            {
+                lastReport = SpringHairBackend.Available
+                    ? "재적용할 본 스프링 에셋 생성물이 없습니다. 자동 물리 설정을 먼저 실행하세요."
+                    : "본 스프링 에셋 미설치 — 현재 MC2 경로가 동작 중입니다.";
+                Debug.LogWarning(lastReport, this);
+            }
+        }
+
 #if UNITY_EDITOR
         /// <summary>
         /// 현재 생성된 클로스 파라미터를 캐릭터 전용 프리셋 JSON으로 저장한다.
@@ -597,22 +613,6 @@ namespace Fbx2Vmd.ClothPhysics
         /// 2순위: 프리팹 소스와 같은 폴더의 Avatar
         /// 할당 후 Head 본 해결로 호환성을 검증하고, 실패 시 원복한다.
         /// </summary>
-        private void ReapplySpringBackend()
-        {
-            if (SpringHairBackend.ReapplyExisting(transform, springProfile))
-            {
-                lastReport = "본 스프링 에셋 파라미터 재적용 완료";
-                Debug.Log("[CharacterPhysicsSetup] " + lastReport, this);
-            }
-            else
-            {
-                lastReport = SpringHairBackend.Available
-                    ? "재적용할 본 스프링 에셋 생성물이 없습니다. 자동 물리 설정을 먼저 실행하세요."
-                    : "본 스프링 에셋 미설치 — 현재 MC2 경로가 동작 중입니다.";
-                Debug.LogWarning(lastReport, this);
-            }
-        }
-
         bool TryAssignAvatarFromPrefabSource(Animator animator)
         {
             if (animator.avatar != null)

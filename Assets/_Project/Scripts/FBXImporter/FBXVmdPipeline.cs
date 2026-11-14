@@ -487,5 +487,6 @@ namespace Fbx2Vmd.FBXImporter
                 _poseCorrectionDocument,
                 out errorMessage);
         }
+        #endregion
     }
 }

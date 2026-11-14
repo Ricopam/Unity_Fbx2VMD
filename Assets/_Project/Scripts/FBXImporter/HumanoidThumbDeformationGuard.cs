@@ -149,7 +149,6 @@ namespace Fbx2Vmd.FBXImporter
                 maxSegmentBendAngle, segmentStraightenWeight, suppressPoseShapingWithManualReference);
             RecaptureBaseline();
         }
-        }
 
         private void ConfigureBase(
             Animator animator,

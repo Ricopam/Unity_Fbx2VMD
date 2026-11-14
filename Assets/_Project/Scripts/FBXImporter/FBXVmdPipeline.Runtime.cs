@@ -482,7 +482,6 @@ namespace Fbx2Vmd.FBXImporter
             _activeRetargeter = null;
         }
 
-        #endregion
 
         private EditorManualPoseReferenceOptions CreateEditorManualPoseReferenceOptions()
         {

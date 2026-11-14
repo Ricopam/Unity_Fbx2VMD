@@ -253,7 +253,6 @@ namespace Fbx2Vmd.FBXImporter
                 1f);
             return true;
         }
-        #endregion
 
         #region 파일 처리 로직
         internal async void ProcessFBXAsync(string sourcePath)
@@ -610,5 +609,6 @@ namespace Fbx2Vmd.FBXImporter
             return input;
         }
 #endif
+        #endregion
     }
 }
