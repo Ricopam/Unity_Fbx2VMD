@@ -429,148 +429,40 @@ namespace Fbx2Vmd.FBXImporter
         }
 
         // Common alternative naming found in FBX rigs (Mixamo/Bip/Blender 등)
+        private static readonly Dictionary<string, string[]> AutoMapAlternateNames =
+            new Dictionary<string, string[]>
+        {
+            { "Hips", new[] { "Pelvis", "Hip", "Bip001 Pelvis", "Bip01 Pelvis" } },
+            { "Spine", new[] { "Spine1", "Spine01", "Bip001 Spine", "Bip001 Spine1" } },
+            { "Chest", new[] { "Spine2", "Spine02", "UpperChest", "Bip001 Spine2" } },
+            { "LeftShoulder", new[] { "LeftClavicle", "Clavicle_L", "Shoulder_L", "Bip001 L Clavicle" } },
+            { "RightShoulder", new[] { "RightClavicle", "Clavicle_R", "Shoulder_R", "Bip001 R Clavicle" } },
+            { "LeftUpperArm", new[] { "LeftArm", "UpperArm_L", "Arm_L", "Bip001 L UpperArm" } },
+            { "RightUpperArm", new[] { "RightArm", "UpperArm_R", "Arm_R", "Bip001 R UpperArm" } },
+            { "LeftLowerArm", new[] { "LeftForeArm", "Forearm_L", "LowerArm_L", "Bip001 L Forearm" } },
+            { "RightLowerArm", new[] { "RightForeArm", "Forearm_R", "LowerArm_R", "Bip001 R Forearm" } },
+            { "LeftHand", new[] { "LeftWrist", "Hand_L", "Wrist_L", "Bip001 L Hand" } },
+            { "RightHand", new[] { "RightWrist", "Hand_R", "Wrist_R", "Bip001 R Hand" } },
+            { "LeftUpperLeg", new[] { "LeftUpLeg", "LeftThigh", "UpperLeg_L", "Thigh_L", "Bip001 L Thigh" } },
+            { "RightUpperLeg", new[] { "RightUpLeg", "RightThigh", "UpperLeg_R", "Thigh_R", "Bip001 R Thigh" } },
+            { "LeftLowerLeg", new[] { "LeftLeg", "LeftCalf", "LowerLeg_L", "Calf_L", "Bip001 L Calf" } },
+            { "RightLowerLeg", new[] { "RightLeg", "RightCalf", "LowerLeg_R", "Calf_R", "Bip001 R Calf" } },
+            { "LeftFoot", new[] { "LeftAnkle", "Foot_L", "Ankle_L", "Bip001 L Foot" } },
+            { "RightFoot", new[] { "RightAnkle", "Foot_R", "Ankle_R", "Bip001 R Foot" } },
+            { "LeftToes", new[] { "LeftToe", "Toe_L", "Toes_L", "Bip001 L Toe0" } },
+            { "RightToes", new[] { "RightToe", "Toe_R", "Toes_R", "Bip001 R Toe0" } },
+        };
+
         private static IEnumerable<string> GetAutoMapAlternates(string humanBoneName)
         {
-            switch (humanBoneName)
-            {
-                case "Hips":
-                    yield return "Pelvis";
-                    yield return "Hip";
-                    yield return "Bip001 Pelvis";
-                    yield return "Bip01 Pelvis";
-                    break;
-
-                case "Spine":
-                    yield return "Spine1";
-                    yield return "Spine01";
-                    yield return "Bip001 Spine";
-                    yield return "Bip001 Spine1";
-                    break;
-
-                case "Chest":
-                    yield return "Spine2";
-                    yield return "Spine02";
-                    yield return "UpperChest";
-                    yield return "Bip001 Spine2";
-                    break;
-
-                case "LeftShoulder":
-                    yield return "LeftClavicle";
-                    yield return "Clavicle_L";
-                    yield return "Shoulder_L";
-                    yield return "Bip001 L Clavicle";
-                    break;
-
-                case "RightShoulder":
-                    yield return "RightClavicle";
-                    yield return "Clavicle_R";
-                    yield return "Shoulder_R";
-                    yield return "Bip001 R Clavicle";
-                    break;
-
-                case "LeftUpperArm":
-                    yield return "LeftArm";
-                    yield return "UpperArm_L";
-                    yield return "Arm_L";
-                    yield return "Bip001 L UpperArm";
-                    break;
-
-                case "RightUpperArm":
-                    yield return "RightArm";
-                    yield return "UpperArm_R";
-                    yield return "Arm_R";
-                    yield return "Bip001 R UpperArm";
-                    break;
-
-                case "LeftLowerArm":
-                    yield return "LeftForeArm";
-                    yield return "Forearm_L";
-                    yield return "LowerArm_L";
-                    yield return "Bip001 L Forearm";
-                    break;
-
-                case "RightLowerArm":
-                    yield return "RightForeArm";
-                    yield return "Forearm_R";
-                    yield return "LowerArm_R";
-                    yield return "Bip001 R Forearm";
-                    break;
-
-                case "LeftHand":
-                    yield return "LeftWrist";
-                    yield return "Hand_L";
-                    yield return "Wrist_L";
-                    yield return "Bip001 L Hand";
-                    break;
-
-                case "RightHand":
-                    yield return "RightWrist";
-                    yield return "Hand_R";
-                    yield return "Wrist_R";
-                    yield return "Bip001 R Hand";
-                    break;
-
-                case "LeftUpperLeg":
-                    yield return "LeftUpLeg";
-                    yield return "LeftThigh";
-                    yield return "UpperLeg_L";
-                    yield return "Thigh_L";
-                    yield return "Bip001 L Thigh";
-                    break;
-
-                case "RightUpperLeg":
-                    yield return "RightUpLeg";
-                    yield return "RightThigh";
-                    yield return "UpperLeg_R";
-                    yield return "Thigh_R";
-                    yield return "Bip001 R Thigh";
-                    break;
-
-                case "LeftLowerLeg":
-                    yield return "LeftLeg";
-                    yield return "LeftCalf";
-                    yield return "LowerLeg_L";
-                    yield return "Calf_L";
-                    yield return "Bip001 L Calf";
-                    break;
-
-                case "RightLowerLeg":
-                    yield return "RightLeg";
-                    yield return "RightCalf";
-                    yield return "LowerLeg_R";
-                    yield return "Calf_R";
-                    yield return "Bip001 R Calf";
-                    break;
-
-                case "LeftFoot":
-                    yield return "LeftAnkle";
-                    yield return "Foot_L";
-                    yield return "Ankle_L";
-                    yield return "Bip001 L Foot";
-                    break;
-
-                case "RightFoot":
-                    yield return "RightAnkle";
-                    yield return "Foot_R";
-                    yield return "Ankle_R";
-                    yield return "Bip001 R Foot";
-                    break;
-
-                case "LeftToes":
-                    yield return "LeftToe";
-                    yield return "Toe_L";
-                    yield return "Toes_L";
-                    yield return "Bip001 L Toe0";
-                    break;
-
-                case "RightToes":
-                    yield return "RightToe";
-                    yield return "Toe_R";
-                    yield return "Toes_R";
-                    yield return "Bip001 R Toe0";
-                    break;
-            }
+            string[] alternates;
+            return AutoMapAlternateNames.TryGetValue(humanBoneName, out alternates)
+                ? alternates
+                : EmptyAlternateNames;
         }
+
+        private static readonly string[] EmptyAlternateNames = new string[0];
+
 
         private static bool TryFindUniqueContainsMatch(Transform[] allTransforms, string targetBoneName, out Transform foundBone)
         {
