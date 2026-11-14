@@ -81,25 +81,11 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            float gradientSquaredSum =
-                geometry.gradient0.sqrMagnitude +
-                geometry.gradient1.sqrMagnitude +
-                geometry.gradient2.sqrMagnitude +
-                geometry.gradient3.sqrMagnitude;
-            if (!IsFinite(gradientSquaredSum) ||
-                gradientSquaredSum < MinimumNormalSquaredMagnitude)
+            if (!TrySolveLambda(
+                    geometry, currentAngleRadians, maximumAngleRadians,
+                    stiffness, out float lambda))
             {
                 return false;
-            }
-
-            float lambda =
-                (currentAngleRadians - maximumAngleRadians) /
-                gradientSquaredSum * Mathf.Clamp01(stiffness);
-            if (Vector3.Dot(
-                    Vector3.Cross(geometry.unitNormal0, geometry.unitNormal1),
-                    geometry.sharedEdge) > 0f)
-            {
-                lambda = -lambda;
             }
 
             opposite0Correction = -lambda * geometry.gradient0;
@@ -120,6 +106,34 @@ namespace Fbx2Vmd.FBXImporter
             edge0Correction = Vector3.zero;
             edge1Correction = Vector3.zero;
             return false;
+        }
+
+        static bool TrySolveLambda(
+            DihedralGeometry geometry, float currentAngleRadians,
+            float maximumAngleRadians, float stiffness, out float lambda)
+        {
+            lambda = 0f;
+            float gradientSquaredSum =
+                geometry.gradient0.sqrMagnitude +
+                geometry.gradient1.sqrMagnitude +
+                geometry.gradient2.sqrMagnitude +
+                geometry.gradient3.sqrMagnitude;
+            if (!IsFinite(gradientSquaredSum) ||
+                gradientSquaredSum < MinimumNormalSquaredMagnitude)
+            {
+                return false;
+            }
+
+            lambda =
+                (currentAngleRadians - maximumAngleRadians) /
+                gradientSquaredSum * Mathf.Clamp01(stiffness);
+            if (Vector3.Dot(
+                    Vector3.Cross(geometry.unitNormal0, geometry.unitNormal1),
+                    geometry.sharedEdge) > 0f)
+            {
+                lambda = -lambda;
+            }
+            return true;
         }
 
         // 두 면의 법선·그라디언트를 한 번에 계산하는 중간 기하 묶음.

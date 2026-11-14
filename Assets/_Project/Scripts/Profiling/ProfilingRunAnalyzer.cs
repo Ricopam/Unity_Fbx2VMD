@@ -211,28 +211,8 @@ namespace Fbx2Vmd.Profiling
             }
 
             // 같은 스테이지명의 과거 deltaMs(런별 합산) 중앙값 대비 급증을 감지한다.
-            var historyByStage = new Dictionary<string, List<float>>(StringComparer.Ordinal);
-            foreach (ProfilingRunRecord past in history)
-            {
-                if (past?.stages == null)
-                {
-                    continue;
-                }
-
-                foreach (ProfilingStageSample stage in AggregateStagesByName(past.stages))
-                {
-                    if (SkipInTrend(stage.stage))
-                    {
-                        continue;
-                    }
-                    if (!historyByStage.TryGetValue(stage.stage, out List<float> samples))
-                    {
-                        samples = new List<float>();
-                        historyByStage[stage.stage] = samples;
-                    }
-                    samples.Add(stage.deltaMs);
-                }
-            }
+            Dictionary<string, List<float>> historyByStage =
+                AggregateHistoryByStage(history);
 
             foreach (ProfilingStageSample stage in AggregateStagesByName(current.stages))
             {
@@ -262,6 +242,34 @@ namespace Fbx2Vmd.Profiling
                     });
                 }
             }
+        }
+
+        static Dictionary<string, List<float>> AggregateHistoryByStage(
+            IReadOnlyList<ProfilingRunRecord> history)
+        {
+            var historyByStage = new Dictionary<string, List<float>>(StringComparer.Ordinal);
+            foreach (ProfilingRunRecord past in history)
+            {
+                if (past?.stages == null)
+                {
+                    continue;
+                }
+
+                foreach (ProfilingStageSample stage in AggregateStagesByName(past.stages))
+                {
+                    if (SkipInTrend(stage.stage))
+                    {
+                        continue;
+                    }
+                    if (!historyByStage.TryGetValue(stage.stage, out List<float> samples))
+                    {
+                        samples = new List<float>();
+                        historyByStage[stage.stage] = samples;
+                    }
+                    samples.Add(stage.deltaMs);
+                }
+            }
+            return historyByStage;
         }
 
         private static void AnalyzeFailure(ProfilingRunRecord current, List<ProfilingFinding> findings)

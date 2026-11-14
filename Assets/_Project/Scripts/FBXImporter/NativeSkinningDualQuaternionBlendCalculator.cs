@@ -229,23 +229,15 @@ namespace Fbx2Vmd.FBXImporter
                 }
 
                 changedVertexIndices.Clear();
-                for (int candidateIndex = 0;
-                     candidateIndex < candidateVertexIndices.Count;
-                     candidateIndex++)
+                if (!ApplyBlendCandidates(
+                        baselineVertices,
+                        candidateVertexIndices,
+                        candidateOffsets,
+                        blend,
+                        candidateVertices,
+                        changedVertexIndices))
                 {
-                    int vertexIndex = candidateVertexIndices[candidateIndex];
-                    Vector3 candidate = baselineVertices[vertexIndex] +
-                        candidateOffsets[candidateIndex] * blend;
-                    if (!IsFinite(candidate))
-                    {
-                        return false;
-                    }
-                    candidateVertices[vertexIndex] = candidate;
-                    if ((candidate - baselineVertices[vertexIndex]).sqrMagnitude >
-                        MinimumStoredCorrectionSquaredMagnitude)
-                    {
-                        changedVertexIndices.Add(vertexIndex);
-                    }
+                    return false;
                 }
 
                 qualityEvaluator.Evaluate(
@@ -282,6 +274,35 @@ namespace Fbx2Vmd.FBXImporter
                 }
 
                 blend *= 0.5f;
+            }
+            return true;
+        }
+
+        static bool ApplyBlendCandidates(
+            IReadOnlyList<Vector3> baselineVertices,
+            List<int> candidateVertexIndices,
+            List<Vector3> candidateOffsets,
+            float blend,
+            Vector3[] candidateVertices,
+            List<int> changedVertexIndices)
+        {
+            for (int candidateIndex = 0;
+                 candidateIndex < candidateVertexIndices.Count;
+                 candidateIndex++)
+            {
+                int vertexIndex = candidateVertexIndices[candidateIndex];
+                Vector3 candidate = baselineVertices[vertexIndex] +
+                    candidateOffsets[candidateIndex] * blend;
+                if (!IsFinite(candidate))
+                {
+                    return false;
+                }
+                candidateVertices[vertexIndex] = candidate;
+                if ((candidate - baselineVertices[vertexIndex]).sqrMagnitude >
+                    MinimumStoredCorrectionSquaredMagnitude)
+                {
+                    changedVertexIndices.Add(vertexIndex);
+                }
             }
             return true;
         }

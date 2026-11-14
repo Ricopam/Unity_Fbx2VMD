@@ -141,21 +141,9 @@ public sealed partial class RecordingSetting
             ApplyDiagnosticsToResolvedFBXVmdPipeline(resolvedFBXVmdPipeline);
         }
 
-        Func<string, bool> tryExecuteMotion = resolvedFBXVmdPipeline == null
-            ? null
-            : action => action switch
-            {
-                MainRecordingSettingsCommandEnvelope.PlayImportedMotionAction => resolvedFBXVmdPipeline.TryPlayImportedMotion(),
-                MainRecordingSettingsCommandEnvelope.PauseImportedMotionAction => resolvedFBXVmdPipeline.TryPauseImportedMotion(),
-                MainRecordingSettingsCommandEnvelope.StopImportedMotionAction => resolvedFBXVmdPipeline.TryStopImportedMotion(),
-                MainRecordingSettingsCommandEnvelope.EnableNativeSkinningCorrectionAction => resolvedFBXVmdPipeline.TrySetNativeSkinningCorrectionEnabled(true),
-                MainRecordingSettingsCommandEnvelope.DisableNativeSkinningCorrectionAction => resolvedFBXVmdPipeline.TrySetNativeSkinningCorrectionEnabled(false),
-                _ => false,
-            };
-        if (sharedSettingsMotionCommandProcessor.TryProcess(
-                document, startFbxImport, clearPendingCommandWhenSkipped,
-                resolvedFBXVmdPipeline != null && resolvedFBXVmdPipeline.IsImportedMotionRecording,
-                tryExecuteMotion, PersistConsumedSharedSettingsDocumentQuietly,
+        if (TryProcessMotionCommand(
+                document, resolvedFBXVmdPipeline, startFbxImport,
+                clearPendingCommandWhenSkipped,
                 out MainRecordingSettingsActionResult motionResult))
         {
             return motionResult;
@@ -177,6 +165,31 @@ public sealed partial class RecordingSetting
         }
 
         return MainRecordingSettingsActionResult.Success("공유 설정을 적용했습니다.");
+    }
+
+    bool TryProcessMotionCommand(
+        MainRecordingSettingsDocument document,
+        FBXVmdPipeline resolvedFBXVmdPipeline,
+        bool startFbxImport,
+        bool clearPendingCommandWhenSkipped,
+        out MainRecordingSettingsActionResult motionResult)
+    {
+        Func<string, bool> tryExecuteMotion = resolvedFBXVmdPipeline == null
+            ? null
+            : action => action switch
+            {
+                MainRecordingSettingsCommandEnvelope.PlayImportedMotionAction => resolvedFBXVmdPipeline.TryPlayImportedMotion(),
+                MainRecordingSettingsCommandEnvelope.PauseImportedMotionAction => resolvedFBXVmdPipeline.TryPauseImportedMotion(),
+                MainRecordingSettingsCommandEnvelope.StopImportedMotionAction => resolvedFBXVmdPipeline.TryStopImportedMotion(),
+                MainRecordingSettingsCommandEnvelope.EnableNativeSkinningCorrectionAction => resolvedFBXVmdPipeline.TrySetNativeSkinningCorrectionEnabled(true),
+                MainRecordingSettingsCommandEnvelope.DisableNativeSkinningCorrectionAction => resolvedFBXVmdPipeline.TrySetNativeSkinningCorrectionEnabled(false),
+                _ => false,
+            };
+        return sharedSettingsMotionCommandProcessor.TryProcess(
+            document, startFbxImport, clearPendingCommandWhenSkipped,
+            resolvedFBXVmdPipeline != null && resolvedFBXVmdPipeline.IsImportedMotionRecording,
+            tryExecuteMotion, PersistConsumedSharedSettingsDocumentQuietly,
+            out motionResult);
     }
 
     private void PersistConsumedSharedSettingsDocumentQuietly(MainRecordingSettingsDocument document)
