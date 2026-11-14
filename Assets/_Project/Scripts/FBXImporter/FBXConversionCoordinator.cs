@@ -278,18 +278,7 @@ namespace Fbx2Vmd.FBXImporter
             BipedIK existingBipedIk = targetObject.GetComponent<BipedIK>();
             if (!_pipeline.enableFinalIkFootGroundingExperiment)
             {
-                if (existingGrounder != null)
-                {
-                    existingGrounder.weight = 0f;
-                    existingGrounder.enabled = false;
-                }
-
-                if (existingBipedIk != null)
-                {
-                    existingBipedIk.fixTransforms = false;
-                    existingBipedIk.enabled = false;
-                }
-
+                DisableGroundingExperiment(existingGrounder, existingBipedIk);
                 return;
             }
 
@@ -321,6 +310,34 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             grounder.ik = bipedIk;
+            ConfigureGrounderSolver(grounder);
+
+            if (_pipeline.logFinalIkFootGroundingExperiment)
+            {
+                Debug.Log(
+                    $"[FBXImport] Final IK foot grounding experiment configured: " +
+                    $"weight={grounder.weight:F3}, maxStep={grounder.solver.maxStep:F3}, " +
+                    $"footRadius={grounder.solver.footRadius:F3}");
+            }
+        }
+
+        static void DisableGroundingExperiment(GrounderBipedIK grounder, BipedIK bipedIk)
+        {
+            if (grounder != null)
+            {
+                grounder.weight = 0f;
+                grounder.enabled = false;
+            }
+
+            if (bipedIk != null)
+            {
+                bipedIk.fixTransforms = false;
+                bipedIk.enabled = false;
+            }
+        }
+
+        void ConfigureGrounderSolver(GrounderBipedIK grounder)
+        {
             grounder.weight = Mathf.Clamp(_pipeline.finalIkFootGroundingWeight, 0f, 0.25f);
             grounder.spineBend = 0f;
             grounder.spineSpeed = 0f;
@@ -330,14 +347,6 @@ namespace Fbx2Vmd.FBXImporter
             grounder.solver.footRotationWeight = Mathf.Clamp01(_pipeline.finalIkFootGroundingFootRotationWeight);
             grounder.solver.pelvisDamper = Mathf.Clamp01(_pipeline.finalIkFootGroundingPelvisDamper);
             grounder.enabled = grounder.weight > 0f;
-
-            if (_pipeline.logFinalIkFootGroundingExperiment)
-            {
-                Debug.Log(
-                    $"[FBXImport] Final IK foot grounding experiment configured: " +
-                    $"weight={grounder.weight:F3}, maxStep={grounder.solver.maxStep:F3}, " +
-                    $"footRadius={grounder.solver.footRadius:F3}");
-            }
         }
 
         internal static void RecaptureTargetGuardBaselines(
