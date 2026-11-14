@@ -61,16 +61,9 @@ namespace Fbx2Vmd.FBXImporter
                     if (vertices.Count != weights.Length)
                         return false;
 
-                    for (int i = 0; i < weights.Length; i++)
-                    {
-                        Vector3 world = renderer.transform.TransformPoint(vertices[i]);
-                        if (!IsFinite(world))
-                            return false;
-                        if (world.y < leftSole.y && GetFootWeight(weights[i], bones, left) >= 0.5f)
-                            leftSole = world;
-                        if (world.y < rightSole.y && GetFootWeight(weights[i], bones, right) >= 0.5f)
-                            rightSole = world;
-                    }
+                    if (!AccumulateSoles(renderer, vertices, weights, bones, left, right,
+                            ref leftSole, ref rightSole))
+                        return false;
                 }
                 return IsFinite(leftSole) && IsFinite(rightSole);
             }
@@ -85,6 +78,24 @@ namespace Fbx2Vmd.FBXImporter
                 else
                     Object.DestroyImmediate(baked);
             }
+        }
+
+        static bool AccumulateSoles(
+            SkinnedMeshRenderer renderer, List<Vector3> vertices,
+            BoneWeight[] weights, Transform[] bones, Transform left, Transform right,
+            ref Vector3 leftSole, ref Vector3 rightSole)
+        {
+            for (int i = 0; i < weights.Length; i++)
+            {
+                Vector3 world = renderer.transform.TransformPoint(vertices[i]);
+                if (!IsFinite(world))
+                    return false;
+                if (world.y < leftSole.y && GetFootWeight(weights[i], bones, left) >= 0.5f)
+                    leftSole = world;
+                if (world.y < rightSole.y && GetFootWeight(weights[i], bones, right) >= 0.5f)
+                    rightSole = world;
+            }
+            return true;
         }
 
         private static float GetFootWeight(BoneWeight weight, Transform[] bones, Transform foot)

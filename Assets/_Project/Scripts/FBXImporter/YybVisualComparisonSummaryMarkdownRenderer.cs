@@ -234,6 +234,14 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- Main_Recoding candidate recorded frames: `{diagnostics.candidate_recorded_frame_count}` ({EscapeMarkdown(diagnostics.candidate_recorded_frame_count_role)})");
             builder.AppendLine($"- metric basis: {EscapeMarkdown(diagnostics.frame_quality_metric_basis)}");
             builder.AppendLine();
+            AppendReferenceMp4Diagnostics(builder, diagnostics);
+            AppendCandidateRefDiagnostics(builder, diagnostics, keypointDeltaThreshold);
+        }
+
+        static void AppendReferenceMp4Diagnostics(
+            StringBuilder builder,
+            VisualComparisonFrameRoleDiagnosticsData diagnostics)
+        {
             builder.AppendLine("## Reference MP4 Diagnostics");
             builder.AppendLine();
             builder.AppendLine($"- provenance: `{EscapeMarkdown(diagnostics.reference_mp4_provenance_evidence_path)}` (exists={diagnostics.reference_mp4_provenance_evidence_exists})");
@@ -249,6 +257,13 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- current clip framing basis: {EscapeMarkdown(diagnostics.reference_mp4_current_clip_framing_metric_basis)}");
             builder.AppendLine($"- candidate screenshot framing: index `{EscapeMarkdown(diagnostics.candidate_screenshot_frame_index_path)}` (exists={diagnostics.candidate_screenshot_frame_index_exists}), view `{EscapeMarkdown(diagnostics.candidate_screenshot_frame_metrics_view)}`, samples `{diagnostics.candidate_screenshot_frame_metrics_sample_count}`, nonblank `{diagnostics.candidate_screenshot_nonblank_frame_count}`, avg height `{FormatQualityFloat(diagnostics.candidate_screenshot_avg_bbox_height_ratio)}`, avg width `{FormatQualityFloat(diagnostics.candidate_screenshot_avg_bbox_width_ratio)}`, center X range `{FormatQualityFloat(diagnostics.candidate_screenshot_center_x_range_ratio)}`, max bottom gap `{FormatQualityFloat(diagnostics.candidate_screenshot_max_bottom_gap_ratio)}`, max top gap `{FormatQualityFloat(diagnostics.candidate_screenshot_max_top_gap_ratio)}`, avg bright area `{FormatQualityFloat(diagnostics.candidate_screenshot_avg_bright_area_ratio)}`");
             builder.AppendLine($"- candidate screenshot timing: samples `{diagnostics.candidate_screenshot_time_sample_count}`, first `{FormatQualityFloat(diagnostics.candidate_screenshot_first_sample_seconds)}`, last `{FormatQualityFloat(diagnostics.candidate_screenshot_last_sample_seconds)}`, coverage `{FormatQualityFloat(diagnostics.candidate_screenshot_sample_coverage_ratio)}`, gap `{FormatQualityFloat(diagnostics.candidate_screenshot_sample_gap_seconds)}`, max ref gap `{FormatQualityFloat(diagnostics.candidate_screenshot_max_ref_sample_seconds_gap)}`, avg ref gap `{FormatQualityFloat(diagnostics.candidate_screenshot_avg_ref_sample_seconds_gap)}`");
+        }
+
+        static void AppendCandidateRefDiagnostics(
+            StringBuilder builder,
+            VisualComparisonFrameRoleDiagnosticsData diagnostics,
+            float keypointDeltaThreshold)
+        {
             builder.AppendLine($"- candidate/ref time-matched framing: samples `{diagnostics.candidate_vs_reference_time_matched_sample_count}`, max time gap `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_max_seconds_gap)}`, avg bbox height abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_avg_bbox_height_ratio_abs_delta)}`, max bbox height abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_max_bbox_height_ratio_abs_delta)}`, avg bbox width abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_avg_bbox_width_ratio_abs_delta)}`, max bbox width abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_max_bbox_width_ratio_abs_delta)}`, avg center X abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_avg_center_x_ratio_abs_delta)}`, max bottom gap abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_max_bottom_gap_ratio_abs_delta)}`, avg bright area abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_avg_bright_area_ratio_abs_delta)}`");
             builder.AppendLine($"- candidate/ref time-matched limb bands: samples `{diagnostics.candidate_vs_reference_time_matched_limb_band_sample_count}`, avg upper span abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_avg_upper_limb_span_ratio_abs_delta)}`, max upper span abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_max_upper_limb_span_ratio_abs_delta)}`, avg lower span abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_avg_lower_limb_span_ratio_abs_delta)}`, max lower span abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_max_lower_limb_span_ratio_abs_delta)}`");
             builder.AppendLine($"- candidate/ref time-matched silhouette profile: bands `{diagnostics.candidate_vs_reference_time_matched_silhouette_profile_band_count}`, samples `{diagnostics.candidate_vs_reference_time_matched_silhouette_profile_sample_count}`, avg L1 abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_avg_silhouette_profile_l1_abs_delta)}`, max L1 abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_max_silhouette_profile_l1_abs_delta)}`, max band abs delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_max_silhouette_profile_band_abs_delta)}`");

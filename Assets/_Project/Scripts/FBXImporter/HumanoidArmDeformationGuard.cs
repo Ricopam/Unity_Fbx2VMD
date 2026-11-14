@@ -187,6 +187,15 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
+            ClampMusclesIfEnabled();
+            RestoreHumanoidLocalPositions();
+            RestoreLimbChildLocalPositions();
+            RestoreLimbChildLocalRotations();
+            RestoreLocalScales();
+        }
+
+        void ClampMusclesIfEnabled()
+        {
             int rangeClampCount = clampMusclesToHumanRange
                 ? HumanoidMuscleRangeLimiter.ClampNonFingerMusclesInPlace(_pose.muscles)
                 : 0;
@@ -199,25 +208,21 @@ namespace Fbx2Vmd.FBXImporter
                     clampArmStretchMuscles)
                 : 0;
 
-            if (rangeClampCount > 0 || armClampCount > 0)
+            if (rangeClampCount <= 0 && armClampCount <= 0)
             {
-                _poseHandler.SetHumanPose(ref _pose);
-
-                if (rangeClampCount > 0)
-                {
-                    LogOnce(ref _muscleWarningLogged, $"Humanoid muscle {rangeClampCount}개를 -1~1 범위로 제한했습니다.");
-                }
-
-                if (armClampCount > 0)
-                {
-                    LogOnce(ref _armWarningLogged, $"팔 변형 방지를 위해 arm muscle {armClampCount}개를 제한했습니다.");
-                }
+                return;
             }
 
-            RestoreHumanoidLocalPositions();
-            RestoreLimbChildLocalPositions();
-            RestoreLimbChildLocalRotations();
-            RestoreLocalScales();
+            _poseHandler.SetHumanPose(ref _pose);
+            if (rangeClampCount > 0)
+            {
+                LogOnce(ref _muscleWarningLogged, $"Humanoid muscle {rangeClampCount}개를 -1~1 범위로 제한했습니다.");
+            }
+
+            if (armClampCount > 0)
+            {
+                LogOnce(ref _armWarningLogged, $"팔 변형 방지를 위해 arm muscle {armClampCount}개를 제한했습니다.");
+            }
         }
 
         public void Configure(ArmDeformationSettings settings)
