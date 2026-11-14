@@ -47,6 +47,19 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            FaceReference[] faces =
+                CollectQualityFaces(baselineVertices, blendContract, contract);
+            EdgeReference[] edges =
+                BuildEdgeReferences(baselineVertices, restVertices, blendContract);
+            evaluator = CreateEvaluator(faces, edges, contract, baselineVertices);
+            return true;
+        }
+
+        static FaceReference[] CollectQualityFaces(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningDualQuaternionBlendContract blendContract,
+            NativeSkinningSurfaceContract contract)
+        {
             var faces = new List<FaceReference>();
             foreach (int faceIndex in blendContract.QualityFaceIndices)
             {
@@ -70,8 +83,15 @@ namespace Fbx2Vmd.FBXImporter
                     baselineCross / baselineArea,
                     baselineArea * MinimumSignedAreaRatio));
             }
+            return faces.ToArray();
+        }
 
-            EdgeReference[] edges = blendContract.QualityEdges
+        static EdgeReference[] BuildEdgeReferences(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> restVertices,
+            NativeSkinningDualQuaternionBlendContract blendContract)
+        {
+            return blendContract.QualityEdges
                 .Select(edge => new EdgeReference(
                     edge.First,
                     edge.Second,
@@ -82,15 +102,21 @@ namespace Fbx2Vmd.FBXImporter
                         restVertices[edge.First],
                         restVertices[edge.Second])))
                 .ToArray();
-            evaluator = new NativeSkinningDualQuaternionQualityEvaluator(
-                faces.ToArray(),
+        }
+
+        static NativeSkinningDualQuaternionQualityEvaluator CreateEvaluator(
+            FaceReference[] faces, EdgeReference[] edges,
+            NativeSkinningSurfaceContract contract,
+            IReadOnlyList<Vector3> baselineVertices)
+        {
+            return new NativeSkinningDualQuaternionQualityEvaluator(
+                faces,
                 edges,
                 contract,
                 Enumerable.Range(0, contract.FacePairs.Length)
                     .Where(index => !NativeSkinningSurfaceCorrectionCalculator
                         .IsRestShapeRecoveryPairUnresolved(baselineVertices, contract, index))
                     .ToArray());
-            return true;
         }
 
         internal void Evaluate(

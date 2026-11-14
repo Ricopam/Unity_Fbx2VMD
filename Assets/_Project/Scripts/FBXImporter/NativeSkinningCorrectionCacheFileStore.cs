@@ -105,33 +105,8 @@ namespace Fbx2Vmd.FBXImporter
                     Directory.CreateDirectory(directoryPath);
                 }
 
-                byte[] payload = WritePayload(document);
-                byte[] checksum = BitConverter.GetBytes(
-                    (int)Crc32.Compute(payload));
-                using (var stream = new MemoryStream())
-                {
-                    stream.Write(Magic, 0, Magic.Length);
-                    using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
-                    {
-                        writer.Write(FormatVersion);
-                        writer.Write(keyHash, 0, KeyHashLength);
-                        writer.Write(payload.Length);
-                    }
-                    stream.Write(payload, 0, payload.Length);
-                    stream.Write(checksum, 0, checksum.Length);
-                    temporaryPath =
-                        resolvedPath + ".tmp-" + Guid.NewGuid().ToString("N");
-                    File.WriteAllBytes(temporaryPath, stream.ToArray());
-                }
-
-                if (File.Exists(resolvedPath))
-                {
-                    File.Replace(temporaryPath, resolvedPath, null);
-                }
-                else
-                {
-                    File.Move(temporaryPath, resolvedPath);
-                }
+                WriteCacheFileAtomically(
+                    resolvedPath, keyHash, document, ref temporaryPath);
 
                 errorMessage = string.Empty;
                 return true;
@@ -193,6 +168,40 @@ namespace Fbx2Vmd.FBXImporter
                 errorMessage =
                     $"표면 보정 캐시를 불러오지 못했습니다: {exception.Message}";
                 return false;
+            }
+        }
+
+        static void WriteCacheFileAtomically(
+            string resolvedPath, byte[] keyHash,
+            NativeSkinningCorrectionCacheDocument document,
+            ref string temporaryPath)
+        {
+            byte[] payload = WritePayload(document);
+            byte[] checksum = BitConverter.GetBytes(
+                (int)Crc32.Compute(payload));
+            using (var stream = new MemoryStream())
+            {
+                stream.Write(Magic, 0, Magic.Length);
+                using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
+                {
+                    writer.Write(FormatVersion);
+                    writer.Write(keyHash, 0, KeyHashLength);
+                    writer.Write(payload.Length);
+                }
+                stream.Write(payload, 0, payload.Length);
+                stream.Write(checksum, 0, checksum.Length);
+                temporaryPath =
+                    resolvedPath + ".tmp-" + Guid.NewGuid().ToString("N");
+                File.WriteAllBytes(temporaryPath, stream.ToArray());
+            }
+
+            if (File.Exists(resolvedPath))
+            {
+                File.Replace(temporaryPath, resolvedPath, null);
+            }
+            else
+            {
+                File.Move(temporaryPath, resolvedPath);
             }
         }
 
@@ -324,57 +333,68 @@ namespace Fbx2Vmd.FBXImporter
                      rendererIndex < rendererCount;
                      rendererIndex++)
                 {
-                    var entry =
-                        new NativeSkinningCorrectionCacheRendererEntry
-                        {
-                            RendererPath = reader.ReadString(),
-                            MeshAssetId = reader.ReadString(),
-                            VertexCount = reader.ReadInt32()
-                        };
-                    int frameCount = reader.ReadInt32();
-                    // 프레임 최소 레코드는 FrameIndex+항목 수 8바이트 — 그 이상 선언은 손상.
-                    if (frameCount < 0 ||
-                        frameCount > (stream.Length - stream.Position) / 8)
-                    {
-                        throw new InvalidDataException(
-                            "표면 보정 캐시의 프레임 수가 올바르지 않습니다.");
-                    }
-                    var frames =
-                        new NativeSkinningCorrectionCacheFrameData[
-                            frameCount];
-                    for (int frameIndex = 0; frameIndex < frameCount;
-                         frameIndex++)
-                    {
-                        var frame = new NativeSkinningCorrectionCacheFrameData
-                        {
-                            FrameIndex = reader.ReadInt32()
-                        };
-                        int entryCount = reader.ReadInt32();
-                        // 항목 최소 레코드는 int+Vector3 16바이트 — 그 이상 선언은 손상.
-                        if (entryCount < 0 ||
-                            entryCount > (stream.Length - stream.Position) / 16)
-                        {
-                            throw new InvalidDataException(
-                                "표면 보정 캐시의 보정 항목 수가 올바르지 않습니다.");
-                        }
-                        frame.VertexIndices = new int[entryCount];
-                        frame.Deltas = new Vector3[entryCount];
-                        for (int index = 0; index < entryCount; index++)
-                        {
-                            frame.VertexIndices[index] = reader.ReadInt32();
-                            frame.Deltas[index] = new Vector3(
-                                reader.ReadSingle(),
-                                reader.ReadSingle(),
-                                reader.ReadSingle());
-                        }
-                        frames[frameIndex] = frame;
-                    }
-                    entry.Frames = frames;
-                    renderers[rendererIndex] = entry;
+                    renderers[rendererIndex] = ReadRendererEntry(reader);
                 }
                 document.Renderers = renderers;
                 return document;
             }
+        }
+
+        static NativeSkinningCorrectionCacheRendererEntry ReadRendererEntry(
+            BinaryReader reader)
+        {
+            var entry =
+                new NativeSkinningCorrectionCacheRendererEntry
+                {
+                    RendererPath = reader.ReadString(),
+                    MeshAssetId = reader.ReadString(),
+                    VertexCount = reader.ReadInt32()
+                };
+            int frameCount = reader.ReadInt32();
+            // 프레임 최소 레코드는 FrameIndex+항목 수 8바이트 — 그 이상 선언은 손상.
+            if (frameCount < 0 ||
+                frameCount > (reader.BaseStream.Length - reader.BaseStream.Position) / 8)
+            {
+                throw new InvalidDataException(
+                    "표면 보정 캐시의 프레임 수가 올바르지 않습니다.");
+            }
+            var frames =
+                new NativeSkinningCorrectionCacheFrameData[frameCount];
+            for (int frameIndex = 0; frameIndex < frameCount;
+                 frameIndex++)
+            {
+                frames[frameIndex] = ReadFrameData(reader);
+            }
+            entry.Frames = frames;
+            return entry;
+        }
+
+        static NativeSkinningCorrectionCacheFrameData ReadFrameData(
+            BinaryReader reader)
+        {
+            var frame = new NativeSkinningCorrectionCacheFrameData
+            {
+                FrameIndex = reader.ReadInt32()
+            };
+            int entryCount = reader.ReadInt32();
+            // 항목 최소 레코드는 int+Vector3 16바이트 — 그 이상 선언은 손상.
+            if (entryCount < 0 ||
+                entryCount > (reader.BaseStream.Length - reader.BaseStream.Position) / 16)
+            {
+                throw new InvalidDataException(
+                    "표면 보정 캐시의 보정 항목 수가 올바르지 않습니다.");
+            }
+            frame.VertexIndices = new int[entryCount];
+            frame.Deltas = new Vector3[entryCount];
+            for (int index = 0; index < entryCount; index++)
+            {
+                frame.VertexIndices[index] = reader.ReadInt32();
+                frame.Deltas[index] = new Vector3(
+                    reader.ReadSingle(),
+                    reader.ReadSingle(),
+                    reader.ReadSingle());
+            }
+            return frame;
         }
 
         private static bool TryValidateDocument(
@@ -397,52 +417,11 @@ namespace Fbx2Vmd.FBXImporter
             foreach (NativeSkinningCorrectionCacheRendererEntry entry in
                      document.Renderers)
             {
-                if (entry == null ||
-                    entry.VertexCount <= 0 ||
-                    entry.Frames == null ||
-                    string.IsNullOrWhiteSpace(entry.RendererPath) ||
-                    // 동일 경로의 렌더러 항목이 둘이면 재바인딩이 모호해진다.
-                    !seenPaths.Add(entry.RendererPath))
+                if (!TryValidateEntry(
+                        entry, document.FrameCount, seenPaths,
+                        ref totalEntries, out errorMessage))
                 {
-                    errorMessage =
-                        "표면 보정 캐시의 렌더러 항목이 올바르지 않습니다.";
                     return false;
-                }
-                var seenFrames = new HashSet<int>();
-                foreach (NativeSkinningCorrectionCacheFrameData frame in
-                         entry.Frames)
-                {
-                    if (frame == null ||
-                        frame.FrameIndex < 0 ||
-                        frame.FrameIndex >= document.FrameCount ||
-                        frame.VertexIndices == null ||
-                        frame.Deltas == null ||
-                        frame.VertexIndices.Length != frame.Deltas.Length ||
-                        // 중복 프레임 인덱스는 복원 시 생성자 예외를 만든다.
-                        !seenFrames.Add(frame.FrameIndex))
-                    {
-                        errorMessage =
-                            "표면 보정 캐시의 프레임 데이터가 올바르지 않습니다.";
-                        return false;
-                    }
-                    var seenIndices = new HashSet<int>();
-                    for (int index = 0;
-                         index < frame.VertexIndices.Length;
-                         index++)
-                    {
-                        int vertexIndex = frame.VertexIndices[index];
-                        Vector3 delta = frame.Deltas[index];
-                        if (vertexIndex < 0 ||
-                            vertexIndex >= entry.VertexCount ||
-                            !IsFinite(delta) ||
-                            !seenIndices.Add(vertexIndex))
-                        {
-                            errorMessage =
-                                "표면 보정 캐시의 보정 항목이 올바르지 않습니다.";
-                            return false;
-                        }
-                    }
-                    totalEntries += frame.VertexIndices.Length;
                 }
             }
 
@@ -450,6 +429,64 @@ namespace Fbx2Vmd.FBXImporter
             {
                 errorMessage = "표면 보정 캐시의 보정 항목 수가 일치하지 않습니다.";
                 return false;
+            }
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        static bool TryValidateEntry(
+            NativeSkinningCorrectionCacheRendererEntry entry,
+            int documentFrameCount,
+            HashSet<string> seenPaths,
+            ref int totalEntries,
+            out string errorMessage)
+        {
+            if (entry == null ||
+                entry.VertexCount <= 0 ||
+                entry.Frames == null ||
+                string.IsNullOrWhiteSpace(entry.RendererPath) ||
+                // 동일 경로의 렌더러 항목이 둘이면 재바인딩이 모호해진다.
+                !seenPaths.Add(entry.RendererPath))
+            {
+                errorMessage =
+                    "표면 보정 캐시의 렌더러 항목이 올바르지 않습니다.";
+                return false;
+            }
+            var seenFrames = new HashSet<int>();
+            foreach (NativeSkinningCorrectionCacheFrameData frame in
+                     entry.Frames)
+            {
+                if (frame == null ||
+                    frame.FrameIndex < 0 ||
+                    frame.FrameIndex >= documentFrameCount ||
+                    frame.VertexIndices == null ||
+                    frame.Deltas == null ||
+                    frame.VertexIndices.Length != frame.Deltas.Length ||
+                    // 중복 프레임 인덱스는 복원 시 생성자 예외를 만든다.
+                    !seenFrames.Add(frame.FrameIndex))
+                {
+                    errorMessage =
+                        "표면 보정 캐시의 프레임 데이터가 올바르지 않습니다.";
+                    return false;
+                }
+                var seenIndices = new HashSet<int>();
+                for (int index = 0;
+                     index < frame.VertexIndices.Length;
+                     index++)
+                {
+                    int vertexIndex = frame.VertexIndices[index];
+                    Vector3 delta = frame.Deltas[index];
+                    if (vertexIndex < 0 ||
+                        vertexIndex >= entry.VertexCount ||
+                        !IsFinite(delta) ||
+                        !seenIndices.Add(vertexIndex))
+                    {
+                        errorMessage =
+                            "표면 보정 캐시의 보정 항목이 올바르지 않습니다.";
+                        return false;
+                    }
+                }
+                totalEntries += frame.VertexIndices.Length;
             }
             errorMessage = string.Empty;
             return true;

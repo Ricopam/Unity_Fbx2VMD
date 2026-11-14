@@ -75,23 +75,9 @@ namespace Fbx2Vmd.FBXImporter
                     return false;
                 }
 
-                var segments = new List<string>
-                {
-                    "v" + AlgorithmVersion,
-                    "grounding-release:" + GroundingReleaseVersion,
-                    PoseIdentityPrefix + poseIdentity,
-                    Application.unityVersion,
-                    "motion:" + (motionName ?? string.Empty),
-                    "frames:" + frameCount,
-                    "rate:" + frameRate.ToString("R"),
-                    "clip:" + GetAssetIdentity(motionClip),
-                    "clipFile:" + GetAssetFileHash(motionClip),
-                    "sourceModel:" + GetAssetIdentity(sourceModelAsset),
-                    // 가중치·바인드포즈만 바뀐 재임포트는 정점 수가 같아
-                    // stale 히트가 되므로 소스 파일 내용 해시도 키에 넣는다.
-                    "sourceModelFile:" + GetAssetFileHash(sourceModelAsset),
-                    "avatar:" + GetAssetIdentity(animator.avatar)
-                };
+                var segments = BuildBaseSegments(
+                    poseIdentity, motionName, frameCount, frameRate,
+                    motionClip, sourceModelAsset, animator);
 
                 // 렌더러 — 경로·메시 에셋·정점 내용. 경로 정렬로 순서를 고정한다.
                 RendererIdentity[] identities =
@@ -113,6 +99,48 @@ namespace Fbx2Vmd.FBXImporter
                     $"보정 캐시 키를 계산하지 못했습니다: {exception.Message}";
                 return false;
             }
+        }
+
+        static List<string> BuildBaseSegments(
+            string poseIdentity, string motionName, int frameCount,
+            float frameRate, AnimationClip motionClip,
+            GameObject sourceModelAsset, Animator animator)
+        {
+            return new List<string>
+            {
+                "v" + AlgorithmVersion,
+                "grounding-release:" + GroundingReleaseVersion,
+                PoseIdentityPrefix + poseIdentity,
+                Application.unityVersion,
+                "motion:" + (motionName ?? string.Empty),
+                "frames:" + frameCount,
+                "rate:" + frameRate.ToString("R"),
+                "clip:" + GetAssetIdentity(motionClip),
+                "clipFile:" + GetAssetFileHash(motionClip),
+                "sourceModel:" + GetAssetIdentity(sourceModelAsset),
+                // 가중치·바인드포즈만 바뀐 재임포트는 정점 수가 같아
+                // stale 히트가 되므로 소스 파일 내용 해시도 키에 넣는다.
+                "sourceModelFile:" + GetAssetFileHash(sourceModelAsset),
+                "avatar:" + GetAssetIdentity(animator.avatar)
+            };
+        }
+
+        static RendererIdentity[] CollectRuntimeRendererIdentities(
+            Animator animator, NativeSkinningSurfaceContract[] contracts)
+        {
+            return contracts
+                .Select(contract => contract.Renderer)
+                .Where(renderer => renderer != null)
+                .Distinct()
+                .Select(renderer => BuildIdentity(
+                    animator,
+                    renderer,
+                    GetRuntimeMeshIdentity(renderer.sharedMesh)))
+                .Where(identity => identity.HasValue)
+                .Select(identity => identity.Value)
+                .OrderBy(identity => identity.RendererPath,
+                         StringComparer.Ordinal)
+                .ToArray();
         }
 
         static RendererIdentity[] CollectRendererIdentities(
@@ -199,32 +227,15 @@ namespace Fbx2Vmd.FBXImporter
                         : animator.avatar.name)
                 };
 
-                RendererIdentity[] identities = contracts
-                    .Select(contract => contract.Renderer)
-                    .Where(renderer => renderer != null)
-                    .Distinct()
-                    .Select(renderer => BuildIdentity(
-                        animator,
-                        renderer,
-                        GetRuntimeMeshIdentity(renderer.sharedMesh)))
-                    .Where(identity => identity.HasValue)
-                    .Select(identity => identity.Value)
-                    .OrderBy(identity => identity.RendererPath,
-                             StringComparer.Ordinal)
-                    .ToArray();
+                RendererIdentity[] identities =
+                    CollectRuntimeRendererIdentities(animator, contracts);
                 if (identities.Length == 0)
                 {
                     errorMessage =
                         "보정 캐시 키를 계산할 Renderer가 없습니다.";
                     return false;
                 }
-                foreach (RendererIdentity identity in identities)
-                {
-                    segments.Add("renderer:" + identity.RendererPath);
-                    segments.Add("mesh:" + identity.MeshAssetId);
-                    segments.Add("verts:" + identity.VertexCount);
-                    segments.Add("vhash:" + identity.VertexHash);
-                }
+                AppendRendererSegments(segments, identities);
 
                 keyHash = ComputeKeyHash(segments);
                 return true;
