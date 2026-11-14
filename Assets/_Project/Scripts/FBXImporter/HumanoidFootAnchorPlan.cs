@@ -6,7 +6,7 @@ namespace Fbx2Vmd.FBXImporter
     /// <summary>
     /// 지지점 신원과 공통 이동을 미리 계산하여 탐색 순서와 무관하게 평가함.
     /// </summary>
-    internal sealed class HumanoidFootAnchorPlan
+    internal sealed partial class HumanoidFootAnchorPlan
     {
         // 방출 앵커가 목표에 뒤처진 갭을 비율로 회수하되 절대 상한을 두어
         // 방침 전환·핀 시작 경계에서도 프레임당 이동이 제한된 채 유지되게 함.
@@ -91,216 +91,15 @@ namespace Fbx2Vmd.FBXImporter
                 evaluate == null || frameRate <= 0f || scaleRatio <= 0f ||
                 !HasValidFrames(sourceFrames, localFootFrame, weights.Length) ||
                 (anchorPolicies != null && anchorPolicies.Length != weights.Length)) return false;
-            var result = new HumanoidFootAnchorPlan(weights.Length);
-            var states = new Contact[2];
-            var offsets = new Vector3[2];
-            bool TryUpdateOffset(int channel, int point)
-            {
-                if (sourceFrames == null) return true;
-                if (!sampler.TryGetLocalPoint(point, out Vector3 localPoint)) return false;
-                // 준비한 발 기준축의 원본 단위 offset을 고정하여 회전 기여와 배율을 한 번만 적용함.
-                offsets[channel] = Quaternion.Inverse(localFootFrame.Value) * (localPoint * foot.lossyScale.x / scaleRatio);
-                return true;
-            }
-            Pair pair = null;
-            bool wasOverlapping = false;
-            var emitted = new Vector3[2];
-            var emittedValid = new bool[2];
-            var emittedContact = new Contact[2];
-            var emittedPoint = new[] { -1, -1 };
-            var emittedFrame = new int[2];
-            var emittedWeight = new float[2];
-            for (int frame = 0; frame < weights.Length; frame++)
-            {
-                Vector3 SourcePoint(int channel) => sourceFrames == null ? source[channel][frame] :
-                    source[0][frame] + sourceFrames[frame] * offsets[channel];
-                bool hasSample = false;
-                bool TrySample()
-                {
-                    if (hasSample) return true;
-                    evaluate(Mathf.Min(frame / frameRate, clipLength));
-                    hasSample = sampler.TrySample();
-                    return hasSample;
-                }
-                for (int channel = 0; channel < 2; channel++)
-                {
-                    if (weights[frame][channel] <= 0f) states[channel] = null;
-                    else if (states[channel] == null)
-                    {
-                        if (!TrySample() || !sampler.TrySelectContact(channel == 1, Vector3.up,
-                                out int point, out Vector3 anchor)) return false;
-                        // 짧은 재획득이면 직전 방출 앵커에 정점 간 물리 변위를 더해 시드하여
-                        // 새 정점이 재샘플 위치로 발을 끌어당기는 팝을 방지함.
-                        if (emittedValid[channel] &&
-                            emittedWeight[channel] >= MinReacquireSeedWeight &&
-                            frame - emittedFrame[channel] <= MaxReacquireGapFrames &&
-                            emittedPoint[channel] >= 0 &&
-                            sampler.TryGetLocalPoint(emittedPoint[channel], out Vector3 previousLocal) &&
-                            sampler.TryGetLocalPoint(point, out Vector3 currentLocal))
-                        {
-                            anchor = emitted[channel] + Vector3.ProjectOnPlane(
-                                foot.rotation * ((currentLocal - previousLocal) * foot.lossyScale.x),
-                                Vector3.up);
-                        }
-                        if (!TryUpdateOffset(channel, point)) return false;
-                        states[channel] = new Contact(frame, point, anchor, SourcePoint(channel));
-                    }
-                }
-                for (int channel = 0; channel < 2; channel++)
-                {
-                    states[channel]?.ApplyAnchorPolicy(SourcePoint(channel), sourceRotation,
-                        scaleRatio,
-                        anchorPolicies == null
-                            ? HumanoidFootAnchorPolicy.Free
-                            : anchorPolicies[frame],
-                        pinReleaseSourceDistance);
-                }
-                bool overlapping = states[0] != null && states[1] != null;
-                Vector3 previousPrimaryPoint = Vector3.zero;
-                bool hasPreviousPrimaryPoint = false;
-                if (overlapping && !wasOverlapping)
-                {
-                    if (!TrySample()) return false;
-                    int primary = states[0].StartFrame <= states[1].StartFrame ? 0 : 1;
-                    if (frame > 0 && emittedValid[primary] && emittedContact[primary] == states[primary])
-                    {
-                        evaluate(Mathf.Min((frame - 1) / frameRate, clipLength));
-                        if (sampler.TrySample() &&
-                            sampler.TryGetLocalPoint(states[primary].Point, out Vector3 previousLocalPoint))
-                        {
-                            previousPrimaryPoint = foot.TransformPoint(previousLocalPoint);
-                            hasPreviousPrimaryPoint = true;
-                        }
-                        evaluate(Mathf.Min(frame / frameRate, clipLength));
-                        if (!sampler.TrySample()) return false;
-                    }
-                    Vector3 previousRear = SourcePoint(0), previousFront = SourcePoint(1);
-                    if (!TryCreatePair(foot, sampler, states, source, frame, sourceRotation, out pair))
-                        result.RecordIssue(frame, "공동 접촉 자세 또는 지상 방향을 준비하지 못함");
-                    else
-                    {
-                        for (int channel = 0; channel < 2; channel++)
-                        {
-                            if (!TryUpdateOffset(channel, states[channel].Point)) return false;
-                            // 핀 고정 접촉은 기준점을 현재 원본 위치로 재설정해 앵커가 움직이지 않게 함.
-                            // 비핀 접촉은 점 교체에 따른 기존 앵커 이동을 유지하고 원본 기준점 변경만 상쇄함.
-                            states[channel].SourcePoint = states[channel].Pinned
-                                ? SourcePoint(channel)
-                                : states[channel].SourcePoint + SourcePoint(channel) -
-                                    (channel == 0 ? previousRear : previousFront);
-                        }
-                    }
-                }
-                if (!overlapping) pair = null;
-                wasOverlapping = overlapping;
-                bool canAlign = false;
-                int preservedPrimary = -1;
-                if (pair != null)
-                {
-                    Vector3 direction = Vector3.ProjectOnPlane(sourceRotation * (source[1][frame] - source[0][frame]), Vector3.up);
-                    if (direction.sqrMagnitude >= 0.00000001f)
-                    {
-                        float yaw = Vector3.SignedAngle(pair.SourceDirection, direction, Vector3.up);
-                        Vector3 anchor = states[pair.Primary].GetAnchor(SourcePoint(pair.Primary), sourceRotation, scaleRatio);
-                        HumanoidFootAnchorPolicy primaryPolicy = anchorPolicies == null
-                            ? HumanoidFootAnchorPolicy.Free : anchorPolicies[frame];
-                        if (hasPreviousPrimaryPoint &&
-                            result._frames[pair.Primary][frame - 1].Point != states[pair.Primary].Point &&
-                            sampler.TryGetLocalPoint(states[pair.Primary].Point, out Vector3 currentLocalPoint))
-                        {
-                            Vector3 anchorShift = Vector3.ProjectOnPlane(anchor - emitted[pair.Primary], Vector3.up);
-                            Vector3 pointShift = Vector3.ProjectOnPlane(
-                                foot.TransformPoint(currentLocalPoint) - previousPrimaryPoint, Vector3.up);
-                            // 정점 교체의 실제 이동과 맞는 앵커 이동만 발목 자세 보상으로 허용함.
-                            if (Vector3.Distance(anchorShift, pointShift) <= foot.lossyScale.x * 0.005f)
-                                preservedPrimary = pair.Primary;
-                        }
-                        if (anchorTrackStep > 0f && emittedValid[pair.Primary] &&
-                            emittedContact[pair.Primary] == states[pair.Primary] &&
-                            preservedPrimary != pair.Primary)
-                            anchor = MoveEmittedAnchor(emitted[pair.Primary], anchor, anchorTrackStep);
-                        int secondary = 1 - pair.Primary;
-                        // 보조 접촉은 최종 주 앵커를 기준으로 정렬해 이동 상한에 따른 간격 불일치를 막음.
-                        Vector3 secondaryAnchor = anchor +
-                            Quaternion.AngleAxis(yaw, Vector3.up) * pair.Offset;
-                        // 핀 고정은 원본 추종만 멈추며, 쌍 간격과 양립 불가한 앵커를 그대로 두지 않음.
-                        // 정합 위치로 한 번 접은 뒤 기준점을 현재 원본으로 옮겨 고정 상태를 유지함.
-                        bool secondaryMisaligned = states[secondary].Pinned &&
-                            Vector3.ProjectOnPlane(states[secondary].Anchor - secondaryAnchor,
-                                Vector3.up).magnitude > foot.lossyScale.x * 0.005f;
-                        if (!states[secondary].Pinned || secondaryMisaligned)
-                        {
-                            states[secondary].Anchor = secondaryAnchor;
-                            states[secondary].SourcePoint = SourcePoint(secondary);
-                        }
-                        canAlign = true;
-                    }
-                    else
-                    {
-                        result.RecordIssue(frame, "원본 발 방향의 지상 투영이 소실됨");
-                        pair = null;
-                    }
-                }
-                int secondaryChannel = canAlign ? 1 - pair.Primary : -1;
-                Vector3? secondaryStart = null;
-                for (int channel = 0; channel < 2; channel++)
-                {
-                    if (states[channel] == null)
-                    {
-                        result._frames[channel][frame] = new Frame(-1, Vector3.zero, false);
-                        // 직전 방출 앵커·정점을 유지해 짧은 재획득 시드에 사용함.
-                        continue;
-                    }
-                    HumanoidFootAnchorPolicy policy = anchorPolicies == null
-                        ? HumanoidFootAnchorPolicy.Free
-                        : anchorPolicies[frame];
-                    Vector3 anchor = states[channel].GetAnchor(
-                        SourcePoint(channel), sourceRotation, scaleRatio);
-                    // 정점이 바뀐 프레임은 방출 기준점을 정점 이동량만큼 먼저 옮겨
-                    // 같은 물리 위치끼리 비교하도록 함.
-                    if (emittedValid[channel] && emittedContact[channel] == states[channel] &&
-                        frame > 0 && TrySample() &&
-                        result._frames[channel][frame - 1].Point >= 0 &&
-                        result._frames[channel][frame - 1].Point != states[channel].Point &&
-                        sampler.TryGetLocalPoint(result._frames[channel][frame - 1].Point,
-                            out Vector3 replacedLocal) &&
-                        sampler.TryGetLocalPoint(states[channel].Point, out Vector3 currentLocal))
-                    {
-                        emitted[channel] += Vector3.ProjectOnPlane(
-                            foot.rotation * ((currentLocal - replacedLocal) * foot.lossyScale.x),
-                            Vector3.up);
-                    }
-                    // 방출 앵커는 프레임당 상한+갭 비례 회수로만 움직여 방침 전환·핀 시작
-                    // 경계에서 누적 지연이 한 번에 방출되는 팝을 막음.
-                    // 정점 교체의 실제 이동과 어울리는 앵커 이동은 예외로 둠.
-                    if (anchorTrackStep > 0f && emittedValid[channel] &&
-                        emittedContact[channel] == states[channel] &&
-                        preservedPrimary != channel)
-                    {
-                        if (channel == secondaryChannel) secondaryStart = emitted[channel];
-                        anchor = MoveEmittedAnchor(emitted[channel], anchor, anchorTrackStep);
-                    }
-                    result._frames[channel][frame] =
-                        new Frame(states[channel].Point, anchor, canAlign);
-                    emitted[channel] = anchor;
-                    emittedValid[channel] = true;
-                    emittedContact[channel] = states[channel];
-                    emittedPoint[channel] = states[channel].Point;
-                    emittedFrame[channel] = frame;
-                    emittedWeight[channel] = weights[frame][channel];
-                }
-                if (secondaryChannel >= 0 && anchorTrackStep > 0f)
-                {
-                    Vector3 secondary = ConstrainPairAnchor(emitted[pair.Primary], emitted[secondaryChannel],
-                        pair.Offset.magnitude, secondaryStart, anchorTrackStep * AnchorCatchUpStepFactor);
-                    emitted[secondaryChannel] = secondary;
-                    result._frames[secondaryChannel][frame] =
-                        new Frame(states[secondaryChannel].Point, secondary, true);
-                }
-            }
-            plan = result;
+            var session = new BuildSession(
+                foot, sampler, source, weights, sourceRotation, scaleRatio,
+                frameRate, clipLength, evaluate, sourceFrames, localFootFrame,
+                anchorPolicies, pinReleaseSourceDistance, anchorTrackStep);
+            if (!session.Run()) return false;
+            plan = session.Result;
             return true;
         }
+
 
         private static bool HasValidFrames(Quaternion[] sourceFrames, Quaternion? localFootFrame, int count)
         {
