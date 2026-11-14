@@ -744,89 +744,120 @@ namespace Fbx2Vmd.FBXImporter
         async Task<FBXConversionResult> RunImportAndRetargetAsync(
             FBXConversionRequest request, FBXImportController importController)
         {
+            FBXModelImportResult importResult = await importController.ImportRuntimeModelAsync(
+                request.SourcePath,
+                _pipeline.ShouldRecordVmdAfterImport);
+            if (!importResult.IsSuccess)
             {
-                FBXModelImportResult importResult = await importController.ImportRuntimeModelAsync(
-                    request.SourcePath,
-                    _pipeline.ShouldRecordVmdAfterImport);
-                if (!importResult.IsSuccess)
-                {
-                    _pipeline.FailSession(importResult.ErrorMessage);
-                    return FBXConversionResult.Fail(importResult.ErrorMessage);
-                }
+                _pipeline.FailSession(importResult.ErrorMessage);
+                return FBXConversionResult.Fail(importResult.ErrorMessage);
+            }
 
-                string targetPath = importResult.ControlledImportPath;
-                string outputBaseName = importResult.OutputBaseName;
-                GameObject importedModel = importResult.ImportedModel;
+            string targetPath = importResult.ControlledImportPath;
+            string outputBaseName = importResult.OutputBaseName;
+            GameObject importedModel = importResult.ImportedModel;
 
-                _pipeline.PrepareGhostModel(importedModel);
-
-                if (!importController.TryPrepareRuntimeAnimation(
-                        importedModel,
-                        _pipeline.showRuntimeAnimationLog,
-                        out Dictionary<string, string> boneMapping,
-                        out Animation ghostAnimation,
-                        out AnimationClip targetClip,
-                        out string animationErrorMessage))
-                {
-                    _pipeline.FailSession(animationErrorMessage);
-                    return FBXConversionResult.Fail(animationErrorMessage);
-                }
-
-                GameObject targetObject = _pipeline.targetCharacter;
-                if (!TryResolveTargetAnimator(
-                        targetObject,
-                        out Animator targetAnimator,
-                        out string targetErrorMessage))
-                {
-                    _pipeline.FailSession(targetErrorMessage);
-                    return FBXConversionResult.Fail(targetErrorMessage);
-                }
-
-#if !UNITY_EDITOR
-                if (_pipeline.ShouldUseRuntimeHumanoidPlaybackSession)
-                {
-                    _pipeline.PrepareRuntimeHumanoidPlayback(
-                        targetAnimator,
-                        targetClip,
-                        outputBaseName,
-                        importedModel,
-                        request.SourcePath);
-                    return FBXConversionResult.Succeed(outputBaseName);
-                }
-#endif
-                PrepareRetargetingTarget(
-                    targetObject,
-                    targetAnimator,
-                    importedModel.GetComponent<Animator>(),
-                    _pipeline.ShouldFaceTargetToCameraOnIdle,
-                    _pipeline.disableMmdShoulderPostPoseDuringRetarget,
-                    _pipeline.RestoreIdlePoseBeforeRetargetBaselines);
-
-                PoseSpaceRetargeter retargeter = CreateRetargeter(
+            if (!TryPrepareGhostAnimation(
+                    importController,
                     importedModel,
+                    out Dictionary<string, string> boneMapping,
+                    out Animation ghostAnimation,
+                    out AnimationClip targetClip,
+                    out string animationErrorMessage))
+            {
+                _pipeline.FailSession(animationErrorMessage);
+                return FBXConversionResult.Fail(animationErrorMessage);
+            }
+
+            GameObject targetObject = _pipeline.targetCharacter;
+            if (!TryResolveTargetAnimator(
                     targetObject,
-                    boneMapping,
-                    targetClip);
-                _pipeline.PrepareRetargeterForRecording(
-                    retargeter,
-                    targetObject,
-                    targetAnimator,
-                    targetPath,
-                    request.SourcePath);
+                    out Animator targetAnimator,
+                    out string targetErrorMessage))
+            {
+                _pipeline.FailSession(targetErrorMessage);
+                return FBXConversionResult.Fail(targetErrorMessage);
+            }
+
 #if !UNITY_EDITOR
-                // 빌드에서는 에디터 기준 클립이 없어 임포트된 모델 자체를 포즈 참조로 사용함.
-                retargeter.ConfigureRuntimeHumanoidPoseReference(importedModel, targetClip);
-#endif
-
-                _pipeline.DispatchRecording(
-                    ghostAnimation,
-                    retargeter,
-                    targetObject,
+            if (_pipeline.ShouldUseRuntimeHumanoidPlaybackSession)
+            {
+                _pipeline.PrepareRuntimeHumanoidPlayback(
+                    targetAnimator,
                     targetClip,
-                    outputBaseName);
-
+                    outputBaseName,
+                    importedModel,
+                    request.SourcePath);
                 return FBXConversionResult.Succeed(outputBaseName);
             }
+#endif
+            RunRetargetAndDispatch(
+                request, importedModel, targetObject, targetAnimator,
+                boneMapping, ghostAnimation, targetClip, targetPath,
+                outputBaseName);
+
+            return FBXConversionResult.Succeed(outputBaseName);
+        }
+
+        bool TryPrepareGhostAnimation(
+            FBXImportController importController,
+            GameObject importedModel,
+            out Dictionary<string, string> boneMapping,
+            out Animation ghostAnimation,
+            out AnimationClip targetClip,
+            out string errorMessage)
+        {
+            _pipeline.PrepareGhostModel(importedModel);
+            return importController.TryPrepareRuntimeAnimation(
+                importedModel,
+                _pipeline.showRuntimeAnimationLog,
+                out boneMapping,
+                out ghostAnimation,
+                out targetClip,
+                out errorMessage);
+        }
+
+        void RunRetargetAndDispatch(
+            FBXConversionRequest request,
+            GameObject importedModel,
+            GameObject targetObject,
+            Animator targetAnimator,
+            Dictionary<string, string> boneMapping,
+            Animation ghostAnimation,
+            AnimationClip targetClip,
+            string targetPath,
+            string outputBaseName)
+        {
+            PrepareRetargetingTarget(
+                targetObject,
+                targetAnimator,
+                importedModel.GetComponent<Animator>(),
+                _pipeline.ShouldFaceTargetToCameraOnIdle,
+                _pipeline.disableMmdShoulderPostPoseDuringRetarget,
+                _pipeline.RestoreIdlePoseBeforeRetargetBaselines);
+
+            PoseSpaceRetargeter retargeter = CreateRetargeter(
+                importedModel,
+                targetObject,
+                boneMapping,
+                targetClip);
+            _pipeline.PrepareRetargeterForRecording(
+                retargeter,
+                targetObject,
+                targetAnimator,
+                targetPath,
+                request.SourcePath);
+#if !UNITY_EDITOR
+            // 빌드에서는 에디터 기준 클립이 없어 임포트된 모델 자체를 포즈 참조로 사용함.
+            retargeter.ConfigureRuntimeHumanoidPoseReference(importedModel, targetClip);
+#endif
+
+            _pipeline.DispatchRecording(
+                ghostAnimation,
+                retargeter,
+                targetObject,
+                targetClip,
+                outputBaseName);
         }
     }
 }
