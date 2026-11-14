@@ -235,45 +235,7 @@ namespace Fbx2Vmd.FBXImporter
             return true;
         }
 
-        bool PrepareBakedMeshes()
-        {
-            foreach (SkinnedMeshRenderer renderer in _contracts
-                         .Select(contract => contract.Renderer)
-                         .Distinct())
-            {
-                if (renderer == null || renderer.sharedMesh == null)
-                {
-                    return false;
-                }
-                var bakedMesh = new Mesh
-                {
-                    name = $"{renderer.sharedMesh.name} Native Skinning Preprocess",
-                    hideFlags = HideFlags.HideAndDontSave
-                };
-                _bakedMeshes.Add(renderer, bakedMesh);
-                _sessionMeshes[renderer] = renderer.sharedMesh;
-            }
-            return true;
-        }
 
-        bool CreatePreprocessSession()
-        {
-            return NativeSkinningCorrectionPreprocessor
-                .IsFailureCollectionRequested()
-                ? NativeSkinningCorrectionPreprocessor
-                    .TryCreateFailureCollectingSession(
-                        TotalFrameCount,
-                        _contracts,
-                        ReadFrameVertices,
-                        null,
-                        out _preprocessSession)
-                : NativeSkinningCorrectionPreprocessor.TryCreateSession(
-                        TotalFrameCount,
-                        _contracts,
-                        ReadFrameVertices,
-                        null,
-                        out _preprocessSession);
-        }
 
         internal void CancelPreparation()
         {
@@ -415,62 +377,7 @@ namespace Fbx2Vmd.FBXImporter
             DispatchSolveBatch();
         }
 
-        bool CapturePendingFrames()
-        {
-            int capturedCount = 0;
-            while (_nextCaptureFrame < TotalFrameCount &&
-                   _pendingPreparedFrames.Count < MaxPendingPreparedFrames &&
-                   capturedCount < MaxCapturesPerTick)
-            {
-                if (!CapturePreparedFrame(_nextCaptureFrame))
-                {
-                    return false;
-                }
-                _nextCaptureFrame++;
-                capturedCount++;
-            }
-            return true;
-        }
 
-        void DispatchSolveBatch()
-        {
-            if (_solveTask != null || _pendingPreparedFrames.Count == 0)
-            {
-                return;
-            }
-
-            int batchCount = Math.Min(
-                SolveBatchFrameCount,
-                _pendingPreparedFrames.Count);
-            var batch = new List<NativeSkinningPreparedFrame>(batchCount);
-            for (int index = 0; index < batchCount; index++)
-            {
-                batch.Add(_pendingPreparedFrames.Dequeue());
-            }
-            NativeSkinningCorrectionPreprocessSession session =
-                _preprocessSession;
-            int generation = System.Threading.Volatile.Read(
-                ref _preparationGeneration);
-            _solveTask = Task.Run(() =>
-            {
-                var solveWatch = System.Diagnostics.Stopwatch.StartNew();
-                try
-                {
-                    return session.TryProcessPreparedFrames(batch);
-                }
-                finally
-                {
-                    // 파이프라인이 리셋된 뒤 끝난 버려진 작업은
-                    // 다음 세션의 계측에 합산하지 않는다.
-                    if (System.Threading.Volatile.Read(
-                            ref _preparationGeneration) == generation)
-                    {
-                        System.Threading.Interlocked.Add(
-                            ref _solveTicks, solveWatch.ElapsedTicks);
-                    }
-                }
-            });
-        }
 
         // 프레임 하나의 솔버 입력(스키닝 정점 + 본 변환)을 메인스레드에서 캡처함.
         private bool CapturePreparedFrame(int frameIndex)
