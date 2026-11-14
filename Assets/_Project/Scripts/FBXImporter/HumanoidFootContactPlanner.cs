@@ -615,30 +615,53 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                int runEnd = index - 1;
-                if (runEnd - runStart + 1 >= minimumContactFrames)
-                {
-                    ApplyContactRun(
-                        sourcePoints,
-                        targetPoints,
-                        sourceToes,
-                        toeSegments,
-                        toePivot,
-                        contactFrames,
-                        corrections,
-                        sourceToTargetRotation,
-                        targetToSourceRotation,
-                        runStart,
-                        runEnd,
-                        releaseFrames,
-                        policies,
-                        pinRelease);
-                    runCount++;
-                }
-
+                runCount += TryApplyRun(
+                    sourcePoints, targetPoints, sourceToes, toeSegments,
+                    toePivot, contactFrames, corrections, sourceToTargetRotation,
+                    runStart, index - 1, minimumContactFrames, releaseFrames,
+                    policies, pinRelease);
                 runStart = -1;
             }
             return runCount;
+        }
+
+        static int TryApplyRun(
+            IReadOnlyList<Vector3> sourcePoints,
+            IReadOnlyList<Vector3> targetPoints,
+            IReadOnlyList<Vector3> sourceToes,
+            IReadOnlyList<Vector3> toeSegments,
+            bool[] toePivot,
+            bool[] contactFrames,
+            Vector3[] corrections,
+            Quaternion sourceToTargetRotation,
+            int runStart,
+            int runEnd,
+            int minimumContactFrames,
+            int releaseFrames,
+            HumanoidFootAnchorPolicy[] policies,
+            float pinRelease)
+        {
+            if (runEnd - runStart + 1 < minimumContactFrames)
+            {
+                return 0;
+            }
+
+            ApplyContactRun(
+                sourcePoints,
+                targetPoints,
+                sourceToes,
+                toeSegments,
+                toePivot,
+                contactFrames,
+                corrections,
+                sourceToTargetRotation,
+                Quaternion.Inverse(sourceToTargetRotation),
+                runStart,
+                runEnd,
+                releaseFrames,
+                policies,
+                pinRelease);
+            return 1;
         }
 
         static bool[] ComputeToePivot(
