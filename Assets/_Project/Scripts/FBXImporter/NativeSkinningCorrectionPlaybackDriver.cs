@@ -19,16 +19,8 @@ namespace Fbx2Vmd.FBXImporter
         private NativeSkinningSurfaceContract[] _contracts =
             Array.Empty<NativeSkinningSurfaceContract>();
         private NativeSkinningCorrectionPreprocessSession _preprocessSession;
-        private readonly Dictionary<SkinnedMeshRenderer, Mesh> _bakedMeshes =
-            new Dictionary<SkinnedMeshRenderer, Mesh>();
-        // 준비 시작 시점의 소스 메시 — 캡처 중 토폴로지 교체를 감지한다.
-        private readonly Dictionary<SkinnedMeshRenderer, Mesh> _sessionMeshes =
-            new Dictionary<SkinnedMeshRenderer, Mesh>();
         private readonly List<NativeSkinningCorrectionPresenter> _presenters =
             new List<NativeSkinningCorrectionPresenter>();
-        private Renderer[] _hiddenRenderers = Array.Empty<Renderer>();
-        private bool[] _rendererEnabledStates = Array.Empty<bool>();
-        private bool _hasCapturedRendererStates;
         // 병렬 준비: 메인스레드가 스냅샷을 캡처해 큐에 넣으면 워커 Task가 배치로 계산한다.
         private const int MaxPendingPreparedFrames = 96;
         private const int MaxCapturesPerTick = 32;
@@ -424,36 +416,7 @@ namespace Fbx2Vmd.FBXImporter
             return bakedMesh.vertices;
         }
 
-        private void CaptureAndHideRenderers()
-        {
-            _hiddenRenderers = _animator.GetComponentsInChildren<Renderer>(true);
-            _rendererEnabledStates = _hiddenRenderers
-                .Select(renderer => renderer.enabled)
-                .ToArray();
-            for (int index = 0; index < _hiddenRenderers.Length; index++)
-            {
-                _hiddenRenderers[index].enabled = false;
-            }
-            _hasCapturedRendererStates = true;
-        }
 
-        private void RestoreRendererStates()
-        {
-            if (!_hasCapturedRendererStates)
-            {
-                return;
-            }
-            for (int index = 0; index < _hiddenRenderers.Length; index++)
-            {
-                if (_hiddenRenderers[index] != null)
-                {
-                    _hiddenRenderers[index].enabled = _rendererEnabledStates[index];
-                }
-            }
-            _hiddenRenderers = Array.Empty<Renderer>();
-            _rendererEnabledStates = Array.Empty<bool>();
-            _hasCapturedRendererStates = false;
-        }
 
         private bool Fail(string message)
         {
@@ -497,15 +460,6 @@ namespace Fbx2Vmd.FBXImporter
             System.Threading.Interlocked.Increment(ref _preparationGeneration);
         }
 
-        private void DestroyBakedMeshes()
-        {
-            foreach (Mesh mesh in _bakedMeshes.Values)
-            {
-                DestroyOwnedObject(mesh);
-            }
-            _bakedMeshes.Clear();
-            _sessionMeshes.Clear();
-        }
 
         private void DisposePresenters()
         {

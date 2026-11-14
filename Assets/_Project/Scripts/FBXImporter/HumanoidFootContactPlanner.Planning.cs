@@ -559,5 +559,108 @@ namespace Fbx2Vmd.FBXImporter
         return arrays;
     }
 
+    struct ChannelCorrections
+    {
+        internal Vector3[] LeftCorrections;
+        internal Vector3[] RightCorrections;
+        internal Vector3[] LeftToeSegments;
+        internal Vector3[] RightToeSegments;
+        internal int LeftRunCount;
+        internal int RightRunCount;
+    }
+
+    struct SampleArrays
+    {
+        internal Vector3[] SourceLeft;
+        internal Vector3[] SourceRight;
+        internal Vector3[] TargetLeft;
+        internal Vector3[] TargetRight;
+        internal Vector3[] SourceLeftFeet;
+        internal Vector3[] SourceLeftToes;
+        internal Vector3[] SourceRightFeet;
+        internal Vector3[] SourceRightToes;
+        internal Vector3[] TargetLeftFeet;
+        internal Vector3[] TargetLeftToes;
+        internal Vector3[] TargetRightFeet;
+        internal Vector3[] TargetRightToes;
+    }
+
+    private static void ApplyContactRun(
+        IReadOnlyList<Vector3> sourcePoints,
+        IReadOnlyList<Vector3> targetPoints,
+        IReadOnlyList<Vector3> sourceToes,
+        IReadOnlyList<Vector3> toeSegments,
+        IReadOnlyList<bool> toePivot,
+        IReadOnlyList<bool> contactFrames,
+        Vector3[] corrections,
+        Quaternion sourceToTargetRotation,
+        Quaternion targetToSourceRotation,
+        int runStart,
+        int runEnd,
+        int releaseFrames,
+        HumanoidFootAnchorPolicy[] policies,
+        float pinReleaseDistance)
+    {
+        if (UseOfflineContactSolver)
+        {
+            ApplyContactRunOffline(
+                sourcePoints, targetPoints, contactFrames, corrections,
+                sourceToTargetRotation, targetToSourceRotation,
+                runStart, runEnd, releaseFrames, policies, pinReleaseDistance);
+            return;
+        }
+
+        // 추종 궤적은 항상 발목·발끝 중점 기준(기존 동작과 동일).
+        // 핀은 롤 프레임에서 발끝을 고정점으로 잡되 중점 목표로 환산해
+        // 발목이 심은 발끝 주위를 회전하도록 함. 기준 전환은 핀 경계에서만
+        // 일어나고 모든 전이는 연속으로 유지됨.
+        var run = new OnlineContactRun(
+            sourcePoints, targetPoints, sourceToes, toeSegments, toePivot,
+            corrections, sourceToTargetRotation, targetToSourceRotation,
+            releaseFrames, policies, pinReleaseDistance);
+        run.Run(runStart, runEnd);
+        ApplyReleaseBlend(corrections, contactFrames, runEnd, releaseFrames);
+    }
+
+    private static void ApplyContactRunOffline(
+        IReadOnlyList<Vector3> sourcePoints,
+        IReadOnlyList<Vector3> targetPoints,
+        IReadOnlyList<bool> contactFrames,
+        Vector3[] corrections,
+        Quaternion sourceToTargetRotation,
+        Quaternion targetToSourceRotation,
+        int runStart,
+        int runEnd,
+        int releaseFrames,
+        HumanoidFootAnchorPolicy[] policies,
+        float pinReleaseDistance)
+    {
+        int length = runEnd - runStart + 1;
+        var solved = new Vector3[length];
+        for (int k = 0; k < length; k++)
+        {
+            solved[k] = targetPoints[runStart + k];
+        }
+
+        // 핀 구간마다 원본 기준점을 잡아, 핀 안에서 원본이 실제로 크게 움직이면
+        // 의도 추정 오류로 보고 그 프레임의 핀을 해제(소프트)함.
+        bool[] effectivePinned = ComputeEffectivePinned(
+            length, sourcePoints, runStart, policies, pinReleaseDistance);
+        IterateSolver(
+            solved, length, sourcePoints, runStart,
+            effectivePinned, sourceToTargetRotation);
+
+        for (int k = 0; k < length; k++)
+        {
+            int index = runStart + k;
+            Vector3 rootSpaceCorrection = targetToSourceRotation *
+                (solved[k] - targetPoints[index]);
+            rootSpaceCorrection.y = 0f;
+            corrections[index] = rootSpaceCorrection;
+        }
+
+        ApplyReleaseBlend(corrections, contactFrames, runEnd, releaseFrames);
+    }
+
     }
 }
