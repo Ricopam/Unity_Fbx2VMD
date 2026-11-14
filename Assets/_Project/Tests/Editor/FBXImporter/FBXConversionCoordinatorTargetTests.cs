@@ -770,9 +770,11 @@ namespace Tests.Editor.FBXImporter
             {
                 "_pipeline.BeginConversionSession(",
                 "ImportRuntimeModelAsync(",
+                "TryPrepareGhostAnimation(",
+                "TryResolveTargetAnimator(",
+                "RunRetargetAndDispatch(",
                 "_pipeline.PrepareGhostModel(",
                 "TryPrepareRuntimeAnimation(",
-                "TryResolveTargetAnimator(",
                 "PrepareRetargetingTarget(",
                 "CreateRetargeter(",
                 "_pipeline.PrepareRetargeterForRecording(",

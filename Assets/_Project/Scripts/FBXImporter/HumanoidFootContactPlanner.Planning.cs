@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
 namespace Fbx2Vmd.FBXImporter
 {
     internal static partial class HumanoidFootContactPlanner
