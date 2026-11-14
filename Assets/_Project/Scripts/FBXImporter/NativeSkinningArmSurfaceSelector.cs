@@ -104,17 +104,10 @@ namespace Fbx2Vmd.FBXImporter
             HumanBodyBones handBone,
             ICollection<NativeSkinningArmSurfaceSelection> selections)
         {
-            Mesh mesh = renderer.sharedMesh;
-            if (mesh == null || mesh.vertexCount < 4)
+            if (!TryGetReadableMesh(renderer, out Mesh mesh))
             {
                 return;
             }
-#if !UNITY_EDITOR
-            if (!mesh.isReadable)
-            {
-                return;
-            }
-#endif
 
             Transform[] bones = renderer.bones;
             if (!TryResolveArmBones(
@@ -141,30 +134,58 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
-            int[] triangles = mesh.triangles;
-            BoneWeight[] boneWeights = mesh.boneWeights;
             Vector3[] vertices = mesh.vertices;
-            if (triangles.Length < 3 || boneWeights.Length != vertices.Length)
+            if (!TryBuildVertexComponents(mesh, vertices.Length,
+                    out VertexDisjointSet components))
             {
                 return;
             }
 
-            var components = new VertexDisjointSet(vertices.Length);
-            for (int index = 0; index + 2 < triangles.Length; index += 3)
-            {
-                components.Union(triangles[index], triangles[index + 1]);
-                components.Union(triangles[index + 1], triangles[index + 2]);
-            }
-
             float halfWindow = armChainLength * ElbowWindowToArmLengthRatio;
             Dictionary<int, int> mixedVertexCountByRoot = CountMixedVerticesByRoot(
-                vertices, boneWeights, lowerArmIndex, lowerArmPosition,
+                vertices, mesh.boneWeights, lowerArmIndex, lowerArmPosition,
                 incomingAxis, halfWindow, components);
 
             AddComponentSelections(
                 renderer, side, vertices, lowerArmIndex, lowerArmPosition,
                 incomingAxis, halfWindow, armChainLength, components,
                 mixedVertexCountByRoot, selections);
+        }
+
+        static bool TryGetReadableMesh(SkinnedMeshRenderer renderer, out Mesh mesh)
+        {
+            mesh = renderer.sharedMesh;
+            if (mesh == null || mesh.vertexCount < 4)
+            {
+                return false;
+            }
+#if !UNITY_EDITOR
+            if (!mesh.isReadable)
+            {
+                return false;
+            }
+#endif
+            return true;
+        }
+
+        static bool TryBuildVertexComponents(
+            Mesh mesh, int vertexCount, out VertexDisjointSet components)
+        {
+            components = null;
+            int[] triangles = mesh.triangles;
+            BoneWeight[] boneWeights = mesh.boneWeights;
+            if (triangles.Length < 3 || boneWeights.Length != vertexCount)
+            {
+                return false;
+            }
+
+            components = new VertexDisjointSet(vertexCount);
+            for (int index = 0; index + 2 < triangles.Length; index += 3)
+            {
+                components.Union(triangles[index], triangles[index + 1]);
+                components.Union(triangles[index + 1], triangles[index + 2]);
+            }
+            return true;
         }
 
         static void AddComponentSelections(
