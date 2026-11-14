@@ -104,18 +104,155 @@ namespace Fbx2Vmd.FBXImporter
                 1,
                 Mathf.CeilToInt(frameRate * ReleaseDurationSeconds));
 
-            var sourceLeft = new Vector3[sourceSamples.Count];
-            var sourceRight = new Vector3[sourceSamples.Count];
-            var targetLeft = new Vector3[targetSamples.Count];
-            var targetRight = new Vector3[targetSamples.Count];
-            var sourceLeftFeet = new Vector3[sourceSamples.Count];
-            var sourceLeftToes = new Vector3[sourceSamples.Count];
-            var sourceRightFeet = new Vector3[sourceSamples.Count];
-            var sourceRightToes = new Vector3[sourceSamples.Count];
-            var targetLeftFeet = new Vector3[targetSamples.Count];
-            var targetLeftToes = new Vector3[targetSamples.Count];
-            var targetRightFeet = new Vector3[targetSamples.Count];
-            var targetRightToes = new Vector3[targetSamples.Count];
+            SampleArrays arrays = CollectSampleArrays(sourceSamples, targetSamples);
+            Vector3[] targetLeftFeet = arrays.TargetLeftFeet;
+            Vector3[] targetLeftToes = arrays.TargetLeftToes;
+            Vector3[] targetRightFeet = arrays.TargetRightFeet;
+            Vector3[] targetRightToes = arrays.TargetRightToes;
+
+            Quaternion targetToSourceRotation =
+                Quaternion.Inverse(normalizedRotation);
+            ChannelCorrections channels = BuildChannelCorrections(
+                arrays, normalizedSourceHumanScale, normalizedTargetHumanScale,
+                normalizedRotation, targetToSourceRotation, frameRate,
+                minimumContactFrames, releaseFrames, intents);
+            Vector3[] leftToeDirections = ApplyToeDirections(
+                channels.LeftToeSegments, targetLeftFeet, targetLeftToes,
+                channels.LeftCorrections, targetToSourceRotation);
+            Vector3[] rightToeDirections = ApplyToeDirections(
+                channels.RightToeSegments, targetRightFeet, targetRightToes,
+                channels.RightCorrections, targetToSourceRotation);
+            return new HumanoidFootContactPlan(
+                channels.LeftCorrections,
+                channels.RightCorrections,
+                leftToeDirections,
+                rightToeDirections,
+                frameRate,
+                channels.LeftRunCount,
+                channels.RightRunCount);
+        }
+
+        struct ChannelCorrections
+        {
+            internal Vector3[] LeftCorrections;
+            internal Vector3[] RightCorrections;
+            internal Vector3[] LeftToeSegments;
+            internal Vector3[] RightToeSegments;
+            internal int LeftRunCount;
+            internal int RightRunCount;
+        }
+
+        static ChannelCorrections BuildChannelCorrections(
+            SampleArrays arrays,
+            float normalizedSourceHumanScale,
+            float normalizedTargetHumanScale,
+            Quaternion normalizedRotation,
+            Quaternion targetToSourceRotation,
+            float frameRate,
+            int minimumContactFrames,
+            int releaseFrames,
+            HumanoidFootContactIntentEstimate intents)
+        {
+            var channels = new ChannelCorrections();
+            // 발끝 방향 세그먼트를 먼저 계산해야 핀 보정이 발끝 기준점을 쓸 수 있음.
+            channels.LeftToeSegments = BuildDesiredToeSegments(
+                arrays.SourceLeftFeet,
+                arrays.SourceLeftToes,
+                arrays.TargetLeftFeet,
+                arrays.TargetLeftToes,
+                normalizedSourceHumanScale,
+                normalizedTargetHumanScale,
+                normalizedRotation);
+            channels.RightToeSegments = BuildDesiredToeSegments(
+                arrays.SourceRightFeet,
+                arrays.SourceRightToes,
+                arrays.TargetRightFeet,
+                arrays.TargetRightToes,
+                normalizedSourceHumanScale,
+                normalizedTargetHumanScale,
+                normalizedRotation);
+            channels.LeftCorrections = BuildFootCorrections(
+                arrays.SourceLeft,
+                arrays.TargetLeft,
+                arrays.SourceLeftToes,
+                arrays.TargetLeftFeet,
+                channels.LeftToeSegments,
+                frameRate,
+                normalizedSourceHumanScale,
+                normalizedRotation,
+                minimumContactFrames,
+                releaseFrames,
+                intents?.Left,
+                out channels.LeftRunCount);
+            channels.RightCorrections = BuildFootCorrections(
+                arrays.SourceRight,
+                arrays.TargetRight,
+                arrays.SourceRightToes,
+                arrays.TargetRightFeet,
+                channels.RightToeSegments,
+                frameRate,
+                normalizedSourceHumanScale,
+                normalizedRotation,
+                minimumContactFrames,
+                releaseFrames,
+                intents?.Right,
+                out channels.RightRunCount);
+            ApplySupportHeightCorrections(
+                arrays.SourceLeftFeet,
+                arrays.SourceLeftToes,
+                arrays.TargetLeftFeet,
+                arrays.TargetLeftToes,
+                channels.LeftCorrections,
+                normalizedSourceHumanScale,
+                normalizedTargetHumanScale,
+                targetToSourceRotation);
+            ApplySupportHeightCorrections(
+                arrays.SourceRightFeet,
+                arrays.SourceRightToes,
+                arrays.TargetRightFeet,
+                arrays.TargetRightToes,
+                channels.RightCorrections,
+                normalizedSourceHumanScale,
+                normalizedTargetHumanScale,
+                targetToSourceRotation);
+            return channels;
+        }
+
+        struct SampleArrays
+        {
+            internal Vector3[] SourceLeft;
+            internal Vector3[] SourceRight;
+            internal Vector3[] TargetLeft;
+            internal Vector3[] TargetRight;
+            internal Vector3[] SourceLeftFeet;
+            internal Vector3[] SourceLeftToes;
+            internal Vector3[] SourceRightFeet;
+            internal Vector3[] SourceRightToes;
+            internal Vector3[] TargetLeftFeet;
+            internal Vector3[] TargetLeftToes;
+            internal Vector3[] TargetRightFeet;
+            internal Vector3[] TargetRightToes;
+        }
+
+        static SampleArrays CollectSampleArrays(
+            IReadOnlyList<HumanoidFootContactSample> sourceSamples,
+            IReadOnlyList<HumanoidFootContactSample> targetSamples)
+        {
+            var arrays = new SampleArrays
+            {
+                SourceLeft = new Vector3[sourceSamples.Count],
+                SourceRight = new Vector3[sourceSamples.Count],
+                TargetLeft = new Vector3[targetSamples.Count],
+                TargetRight = new Vector3[targetSamples.Count],
+                SourceLeftFeet = new Vector3[sourceSamples.Count],
+                SourceLeftToes = new Vector3[sourceSamples.Count],
+                SourceRightFeet = new Vector3[sourceSamples.Count],
+                SourceRightToes = new Vector3[sourceSamples.Count],
+                TargetLeftFeet = new Vector3[targetSamples.Count],
+                TargetLeftToes = new Vector3[targetSamples.Count],
+                TargetRightFeet = new Vector3[targetSamples.Count],
+                TargetRightToes = new Vector3[targetSamples.Count]
+            };
             for (int index = 0; index < sourceSamples.Count; index++)
             {
                 HumanoidFootContactSample source = sourceSamples[index];
@@ -136,115 +273,44 @@ namespace Fbx2Vmd.FBXImporter
                     throw new ArgumentException("발 접촉 표본은 유한한 값이어야 합니다.");
                 }
 
-                sourceLeft[index] = source.Left;
-                sourceRight[index] = source.Right;
-                targetLeft[index] = target.Left;
-                targetRight[index] = target.Right;
-                sourceLeftFeet[index] = source.LeftFoot;
-                sourceLeftToes[index] = source.LeftToes;
-                sourceRightFeet[index] = source.RightFoot;
-                sourceRightToes[index] = source.RightToes;
-                targetLeftFeet[index] = target.LeftFoot;
-                targetLeftToes[index] = target.LeftToes;
-                targetRightFeet[index] = target.RightFoot;
-                targetRightToes[index] = target.RightToes;
+                arrays.SourceLeft[index] = source.Left;
+                arrays.SourceRight[index] = source.Right;
+                arrays.TargetLeft[index] = target.Left;
+                arrays.TargetRight[index] = target.Right;
+                arrays.SourceLeftFeet[index] = source.LeftFoot;
+                arrays.SourceLeftToes[index] = source.LeftToes;
+                arrays.SourceRightFeet[index] = source.RightFoot;
+                arrays.SourceRightToes[index] = source.RightToes;
+                arrays.TargetLeftFeet[index] = target.LeftFoot;
+                arrays.TargetLeftToes[index] = target.LeftToes;
+                arrays.TargetRightFeet[index] = target.RightFoot;
+                arrays.TargetRightToes[index] = target.RightToes;
             }
+            return arrays;
+        }
 
-            Quaternion targetToSourceRotation =
-                Quaternion.Inverse(normalizedRotation);
-            // 발끝 방향 세그먼트를 먼저 계산해야 핀 보정이 발끝 기준점을 쓸 수 있음.
-            Vector3[] leftToeSegments = BuildDesiredToeSegments(
-                sourceLeftFeet,
-                sourceLeftToes,
-                targetLeftFeet,
-                targetLeftToes,
-                normalizedSourceHumanScale,
-                normalizedTargetHumanScale,
-                normalizedRotation);
-            Vector3[] rightToeSegments = BuildDesiredToeSegments(
-                sourceRightFeet,
-                sourceRightToes,
-                targetRightFeet,
-                targetRightToes,
-                normalizedSourceHumanScale,
-                normalizedTargetHumanScale,
-                normalizedRotation);
-            Vector3[] leftCorrections = BuildFootCorrections(
-                sourceLeft,
-                targetLeft,
-                sourceLeftToes,
-                targetLeftFeet,
-                leftToeSegments,
-                frameRate,
-                normalizedSourceHumanScale,
-                normalizedRotation,
-                minimumContactFrames,
-                releaseFrames,
-                intents?.Left,
-                out int leftRunCount);
-            Vector3[] rightCorrections = BuildFootCorrections(
-                sourceRight,
-                targetRight,
-                sourceRightToes,
-                targetRightFeet,
-                rightToeSegments,
-                frameRate,
-                normalizedSourceHumanScale,
-                normalizedRotation,
-                minimumContactFrames,
-                releaseFrames,
-                intents?.Right,
-                out int rightRunCount);
-            ApplySupportHeightCorrections(
-                sourceLeftFeet,
-                sourceLeftToes,
-                targetLeftFeet,
-                targetLeftToes,
-                leftCorrections,
-                normalizedSourceHumanScale,
-                normalizedTargetHumanScale,
-                targetToSourceRotation);
-            ApplySupportHeightCorrections(
-                sourceRightFeet,
-                sourceRightToes,
-                targetRightFeet,
-                targetRightToes,
-                rightCorrections,
-                normalizedSourceHumanScale,
-                normalizedTargetHumanScale,
-                targetToSourceRotation);
-            var leftToeDirections = new Vector3[leftToeSegments.Length];
-            var rightToeDirections = new Vector3[rightToeSegments.Length];
-            for (int index = 0; index < leftToeSegments.Length; index++)
+        static Vector3[] ApplyToeDirections(
+            Vector3[] toeSegments,
+            Vector3[] targetFeet,
+            Vector3[] targetToes,
+            Vector3[] corrections,
+            Quaternion targetToSourceRotation)
+        {
+            var toeDirections = new Vector3[toeSegments.Length];
+            for (int index = 0; index < toeSegments.Length; index++)
             {
-                leftToeDirections[index] =
-                    targetToSourceRotation * leftToeSegments[index];
+                toeDirections[index] =
+                    targetToSourceRotation * toeSegments[index];
                 // 발끝 방향 보정은 발목 축 회전으로 적용돼 발끝이 수평 이동하고
                 // 그 절반만큼 접촉 중점이 밀림. 모든 프레임에서 발목 보정에
                 // 회전 유발 수평 이동의 절반을 빼 "중점 = 기준 중점 + 보정"
                 // 불변식을 지킴. 방향 델타가 0이면 보상도 0이라 게이트 불필요.
-                leftCorrections[index] += ToeRotationMidpointCompensation(
-                    targetLeftToes[index] - targetLeftFeet[index],
-                    leftToeSegments[index],
+                corrections[index] += ToeRotationMidpointCompensation(
+                    targetToes[index] - targetFeet[index],
+                    toeSegments[index],
                     targetToSourceRotation);
             }
-            for (int index = 0; index < rightToeSegments.Length; index++)
-            {
-                rightToeDirections[index] =
-                    targetToSourceRotation * rightToeSegments[index];
-                rightCorrections[index] += ToeRotationMidpointCompensation(
-                    targetRightToes[index] - targetRightFeet[index],
-                    rightToeSegments[index],
-                    targetToSourceRotation);
-            }
-            return new HumanoidFootContactPlan(
-                leftCorrections,
-                rightCorrections,
-                leftToeDirections,
-                rightToeDirections,
-                frameRate,
-                leftRunCount,
-                rightRunCount);
+            return toeDirections;
         }
 
         // 발끝 세그먼트(발목→발끝 벡터)의 목표 형태를 대상 공간에 계산함.
