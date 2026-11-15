@@ -50,20 +50,26 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                builder.AppendLine(
-                    $"| {EscapeMarkdown(result.jobDisplayName)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeight(result.ShouldUseManualAnimatorFootLocalRotationReference, result.manualAnimatorFootLocalRotationReferenceWeight)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeight(result.ShouldUseManualAnimatorFullBodyPoseReference, result.manualAnimatorFullBodyPoseReferenceWeight)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeight(result.ShouldUseManualAnimatorBodyRotationReference, result.manualAnimatorBodyRotationReferenceWeight)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCap(result.ShouldUseManualAnimatorLowerBodySegmentDirectionReference, result.manualAnimatorLowerBodySegmentDirectionReferenceWeight, result.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCap(result.ShouldUseManualAnimatorFootHipsAlignedResidualYawReference, result.manualAnimatorFootHipsAlignedResidualYawReferenceWeight, result.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCapScaleBlendGate(result.usePostSetHumanPoseRightEndpointPositionReference, result.postSetHumanPoseRightEndpointPositionReferenceWeight, result.postSetHumanPoseRightEndpointPositionReferenceMaxOffset, result.postSetHumanPoseRightEndpointPositionReferencePositiveZScale, result.postSetHumanPoseRightEndpointPositionReferenceToesBlendWeight, result.postSetHumanPoseRightEndpointPositionReferenceFrameGateStart, result.postSetHumanPoseRightEndpointPositionReferenceFrameGateEnd)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCapScaleBlendGate(result.usePreSetHumanPoseRightEndpointPositionReference, result.preSetHumanPoseRightEndpointPositionReferenceWeight, result.preSetHumanPoseRightEndpointPositionReferenceMaxOffset, result.preSetHumanPoseRightEndpointPositionReferencePositiveZScale, result.preSetHumanPoseRightEndpointPositionReferenceToesBlendWeight, result.preSetHumanPoseRightEndpointPositionReferenceFrameGateStart, result.preSetHumanPoseRightEndpointPositionReferenceFrameGateEnd)} | " +
-                    $"{FormatEvaluatorXzReferenceSettings(result)} | " +
-                    $"{FormatArmSwingSettings(result)} | " +
-                    $"{result.enableYybArmSleeveAnchorCorrection} | " +
-                    $"{result.enableYybArmVisualTwistCorrection} |");
+                builder.AppendLine(FormatEffectiveSettingsRow(result));
             }
+        }
+
+        private static string FormatEffectiveSettingsRow(
+            YybVisualComparisonCaptureResultData result)
+        {
+            return
+                $"| {EscapeMarkdown(result.jobDisplayName)} | " +
+                $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeight(result.ShouldUseManualAnimatorFootLocalRotationReference, result.manualAnimatorFootLocalRotationReferenceWeight)} | " +
+                $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeight(result.ShouldUseManualAnimatorFullBodyPoseReference, result.manualAnimatorFullBodyPoseReferenceWeight)} | " +
+                $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeight(result.ShouldUseManualAnimatorBodyRotationReference, result.manualAnimatorBodyRotationReferenceWeight)} | " +
+                $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCap(result.ShouldUseManualAnimatorLowerBodySegmentDirectionReference, result.manualAnimatorLowerBodySegmentDirectionReferenceWeight, result.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle)} | " +
+                $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCap(result.ShouldUseManualAnimatorFootHipsAlignedResidualYawReference, result.manualAnimatorFootHipsAlignedResidualYawReferenceWeight, result.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle)} | " +
+                $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCapScaleBlendGate(result.usePostSetHumanPoseRightEndpointPositionReference, result.postSetHumanPoseRightEndpointPositionReferenceWeight, result.postSetHumanPoseRightEndpointPositionReferenceMaxOffset, result.postSetHumanPoseRightEndpointPositionReferencePositiveZScale, result.postSetHumanPoseRightEndpointPositionReferenceToesBlendWeight, result.postSetHumanPoseRightEndpointPositionReferenceFrameGateStart, result.postSetHumanPoseRightEndpointPositionReferenceFrameGateEnd)} | " +
+                $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCapScaleBlendGate(result.usePreSetHumanPoseRightEndpointPositionReference, result.preSetHumanPoseRightEndpointPositionReferenceWeight, result.preSetHumanPoseRightEndpointPositionReferenceMaxOffset, result.preSetHumanPoseRightEndpointPositionReferencePositiveZScale, result.preSetHumanPoseRightEndpointPositionReferenceToesBlendWeight, result.preSetHumanPoseRightEndpointPositionReferenceFrameGateStart, result.preSetHumanPoseRightEndpointPositionReferenceFrameGateEnd)} | " +
+                $"{FormatEvaluatorXzReferenceSettings(result)} | " +
+                $"{FormatArmSwingSettings(result)} | " +
+                $"{result.enableYybArmSleeveAnchorCorrection} | " +
+                $"{result.enableYybArmVisualTwistCorrection} |";
         }
 
         private static bool HasEffectiveSettings(
