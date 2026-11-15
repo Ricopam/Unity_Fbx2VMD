@@ -111,39 +111,51 @@ namespace Fbx2Vmd.FBXImporter
         {
             result = null;
             if (!HasValidInput(
-                    baselineVertices,
-                    initialVertices,
-                    contract,
-                    shouldValidateVertices))
+                    baselineVertices, initialVertices,
+                    contract, shouldValidateVertices))
             {
                 return false;
             }
+            if (!TryResolvePairSets(
+                    baselineVertices, initialVertices, contract,
+                    out int initialSharpFoldCount,
+                    out int[] restShapeRecoveryPairIndices,
+                    out int[] sharpFoldPairIndices,
+                    ref result))
+            {
+                return true;
+            }
+            result = RunPassesAndEvaluate(
+                baselineVertices, initialVertices, contract, configuration,
+                allowsStrainRecovery, initialSharpFoldCount,
+                restShapeRecoveryPairIndices, sharpFoldPairIndices, timing);
+            return true;
+        }
 
+        // 활성 쌍을 수집하고 폴드 없음이면 빈 결과로 종료한다.
+        private static bool TryResolvePairSets(
+            IReadOnlyList<Vector3> baselineVertices,
+            IReadOnlyList<Vector3> initialVertices,
+            NativeSkinningSurfaceContract contract,
+            out int initialSharpFoldCount,
+            out int[] restShapeRecoveryPairIndices,
+            out int[] sharpFoldPairIndices,
+            ref NativeSkinningSurfaceCorrectionResult result)
+        {
             HashSet<int> activePairIndices = CollectActivePairs(
                 baselineVertices,
                 contract,
-                out int initialSharpFoldCount);
+                out initialSharpFoldCount);
             if (initialSharpFoldCount == 0)
             {
                 result = CreateEmptyCorrectionResult(initialVertices);
-                return true;
+                return false;
             }
-            int[] restShapeRecoveryPairIndices = SplitRestShapeRecoveryPairs(
+            restShapeRecoveryPairIndices = SplitRestShapeRecoveryPairs(
                 baselineVertices,
                 contract,
                 activePairIndices,
-                out int[] sharpFoldPairIndices);
-
-            result = RunPassesAndEvaluate(
-                baselineVertices,
-                initialVertices,
-                contract,
-                configuration,
-                allowsStrainRecovery,
-                initialSharpFoldCount,
-                restShapeRecoveryPairIndices,
-                sharpFoldPairIndices,
-                timing);
+                out sharpFoldPairIndices);
             return true;
         }
 
@@ -255,499 +267,59 @@ namespace Fbx2Vmd.FBXImporter
             Vector3[] vertices = initialVertices.ToArray();
             frameEdges = BuildFrameEdges(baselineVertices, contract);
             buffers = new SolverBuffers();
-            if (restShapeRecoveryPairIndices.Length > 0)
-            {
-                vertices = ApplyCorrectionPass(
-                    baselineVertices,
-                    vertices,
-                    contract,
-                    configuration,
-                    restShapeRecoveryPairIndices,
-                    true,
-                    allowsStrainRecovery,
-                    frameEdges,
-                    buffers,
-                    timing);
-            }
-            if (sharpFoldPairIndices.Length > 0)
-            {
-                vertices = ApplyCorrectionPass(
-                    baselineVertices,
-                    vertices,
-                    contract,
-                    configuration,
-                    sharpFoldPairIndices,
-                    false,
-                    allowsStrainRecovery ||
-                    restShapeRecoveryPairIndices.Length > 0,
-                    frameEdges,
-                    buffers,
-                    timing);
-            }
+            vertices = ApplyPassForPairs(
+                baselineVertices,
+                vertices,
+                contract,
+                configuration,
+                restShapeRecoveryPairIndices,
+                true,
+                allowsStrainRecovery,
+                frameEdges,
+                buffers,
+                timing);
+            vertices = ApplyPassForPairs(
+                baselineVertices,
+                vertices,
+                contract,
+                configuration,
+                sharpFoldPairIndices,
+                false,
+                allowsStrainRecovery ||
+                restShapeRecoveryPairIndices.Length > 0,
+                frameEdges,
+                buffers,
+                timing);
             return vertices;
         }
 
-        private static NativeSkinningSurfaceCorrectionResult EvaluateTimedResult(
+        private static Vector3[] ApplyPassForPairs(
             IReadOnlyList<Vector3> baselineVertices,
-            IReadOnlyList<Vector3> initialVertices,
             Vector3[] vertices,
             NativeSkinningSurfaceContract contract,
             CorrectionConfiguration configuration,
+            int[] pairIndices,
+            bool isRestShapeRecovery,
             bool allowsStrainRecovery,
-            IReadOnlyList<FrameEdge> frameEdges,
-            int initialSharpFoldCount,
-            IReadOnlyList<int> restShapeRecoveryPairIndices,
-            IReadOnlyList<int> sharpFoldPairIndices,
+            FrameEdge[] frameEdges,
             SolverBuffers buffers,
             NativeSkinningSolverTiming timing)
         {
-            NativeSkinningSurfaceCorrectionResult result = EvaluateResult(
+            if (pairIndices.Length == 0)
+            {
+                return vertices;
+            }
+            return ApplyCorrectionPass(
                 baselineVertices,
                 vertices,
-                contract,
-                frameEdges,
-                initialSharpFoldCount,
-                restShapeRecoveryPairIndices);
-            if (!IsWithinQuality(result, contract, configuration) &&
-                TryCalculateCoupledProjectionFallback(
-                    baselineVertices,
-                    initialVertices,
-                    contract,
-                    configuration,
-                    allowsStrainRecovery,
-                    frameEdges,
-                    initialSharpFoldCount,
-                    restShapeRecoveryPairIndices,
-                    sharpFoldPairIndices,
-                    buffers,
-                    timing,
-                    out NativeSkinningSurfaceCorrectionResult fallbackResult))
-            {
-                result = fallbackResult;
-            }
-            return result;
-        }
-
-        private static bool TryCalculateCoupledProjectionFallback(
-            IReadOnlyList<Vector3> baselineVertices,
-            IReadOnlyList<Vector3> initialVertices,
-            NativeSkinningSurfaceContract contract,
-            CorrectionConfiguration configuration,
-            bool allowsStrainRecovery,
-            IReadOnlyList<FrameEdge> frameEdges,
-            int initialSharpFoldCount,
-            IReadOnlyList<int> restShapeRecoveryPairIndices,
-            IReadOnlyList<int> sharpFoldPairIndices,
-            SolverBuffers buffers,
-            NativeSkinningSolverTiming timing,
-            out NativeSkinningSurfaceCorrectionResult result)
-        {
-            result = null;
-            if (restShapeRecoveryPairIndices.Count == 0)
-            {
-                return false;
-            }
-
-            Vector3[] sharpFoldCorrectedVertices = sharpFoldPairIndices.Count > 0
-                ? ApplyCorrectionPass(
-                    baselineVertices,
-                    initialVertices.ToArray(),
-                    contract,
-                    configuration,
-                    sharpFoldPairIndices,
-                    false,
-                    allowsStrainRecovery,
-                    frameEdges,
-                    buffers,
-                    timing)
-                : initialVertices.ToArray();
-            return TryRunCoupledProjectionRounds(
-                baselineVertices,
-                sharpFoldCorrectedVertices,
                 contract,
                 configuration,
+                pairIndices,
+                isRestShapeRecovery,
+                allowsStrainRecovery,
                 frameEdges,
-                initialSharpFoldCount,
-                restShapeRecoveryPairIndices,
-                sharpFoldPairIndices,
-                out result);
-        }
-
-        private static bool TryRunCoupledProjectionRounds(
-            IReadOnlyList<Vector3> baselineVertices,
-            Vector3[] sharpFoldCorrectedVertices,
-            NativeSkinningSurfaceContract contract,
-            CorrectionConfiguration configuration,
-            IReadOnlyList<FrameEdge> frameEdges,
-            int initialSharpFoldCount,
-            IReadOnlyList<int> restShapeRecoveryPairIndices,
-            IReadOnlyList<int> sharpFoldPairIndices,
-            out NativeSkinningSurfaceCorrectionResult result)
-        {
-            result = null;
-            Vector3[] projectionStartVertices = sharpFoldCorrectedVertices;
-            for (int round = 0; round < CoupledProjectionRoundCount; round++)
-            {
-                if (!NativeSkinningCoupledDihedralProjectionCalculator.TryProject(
-                        baselineVertices,
-                        projectionStartVertices,
-                        contract,
-                        restShapeRecoveryPairIndices,
-                        sharpFoldPairIndices,
-                        RestSmoothAngleDegrees,
-                        SharpFoldAngleDegrees,
-                        ProjectionAngleDegrees,
-                        out Vector3[] projectedVertices))
-                {
-                    return false;
-                }
-
-                result = EvaluateResult(
-                    baselineVertices,
-                    projectedVertices,
-                    contract,
-                    frameEdges,
-                    initialSharpFoldCount,
-                    restShapeRecoveryPairIndices);
-                if (IsWithinQuality(result, contract, configuration))
-                {
-                    return true;
-                }
-                if (TryFindQualityPreservingCoupledBlend(
-                        baselineVertices,
-                        projectionStartVertices,
-                        projectedVertices,
-                        contract,
-                        configuration,
-                        frameEdges,
-                        initialSharpFoldCount,
-                        restShapeRecoveryPairIndices,
-                        out result))
-                {
-                    return true;
-                }
-                projectionStartVertices = projectedVertices;
-            }
-            return false;
-        }
-
-        private static bool TryFindQualityPreservingCoupledBlend(
-            IReadOnlyList<Vector3> baselineVertices,
-            IReadOnlyList<Vector3> projectionStartVertices,
-            IReadOnlyList<Vector3> projectedVertices,
-            NativeSkinningSurfaceContract contract,
-            CorrectionConfiguration configuration,
-            IReadOnlyList<FrameEdge> frameEdges,
-            int initialSharpFoldCount,
-            IReadOnlyList<int> restShapeRecoveryPairIndices,
-            out NativeSkinningSurfaceCorrectionResult result)
-        {
-            result = null;
-            var blendedVertices = new Vector3[baselineVertices.Count];
-            for (int step = CoupledBlendSearchStepCount - 1; step > 0; step--)
-            {
-                float blend = step / (float)CoupledBlendSearchStepCount;
-                for (int vertexIndex = 0;
-                     vertexIndex < blendedVertices.Length;
-                     vertexIndex++)
-                {
-                    blendedVertices[vertexIndex] = Vector3.Lerp(
-                        projectionStartVertices[vertexIndex],
-                        projectedVertices[vertexIndex],
-                        blend);
-                }
-
-                NativeSkinningSurfaceCorrectionResult candidate = EvaluateResult(
-                    baselineVertices,
-                    blendedVertices,
-                    contract,
-                    frameEdges,
-                    initialSharpFoldCount,
-                    restShapeRecoveryPairIndices);
-                if (IsWithinQuality(candidate, contract, configuration))
-                {
-                    result = candidate;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-
-        private static void CountSharpFoldPairs(
-            IReadOnlyList<Vector3> baselineVertices,
-            Vector3[] vertices,
-            NativeSkinningSurfaceContract contract,
-            out int residualSharpFoldCount,
-            out int newSharpFoldCount)
-        {
-            residualSharpFoldCount = 0;
-            newSharpFoldCount = 0;
-            for (int pairIndex = 0; pairIndex < contract.FacePairs.Length; pairIndex++)
-            {
-                NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
-                bool baselineValid = NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                    baselineVertices,
-                    pair,
-                    out float baselineAngle);
-                if (!NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                        vertices,
-                        pair,
-                        out float candidateAngle))
-                {
-                    continue;
-                }
-                if (contract.RestAnglesDegrees[pairIndex] <= RestSmoothAngleDegrees &&
-                    candidateAngle > SharpFoldAngleDegrees)
-                {
-                    residualSharpFoldCount++;
-                }
-                if (baselineValid &&
-                    baselineAngle <= SharpFoldAngleDegrees &&
-                    candidateAngle > SharpFoldAngleDegrees)
-                {
-                    newSharpFoldCount++;
-                }
-            }
-        }
-
-        private static int[] CollectCorrectedVertexIndices(
-            IReadOnlyList<Vector3> baselineVertices,
-            Vector3[] vertices)
-        {
-            return Enumerable.Range(0, vertices.Length)
-                .Where(index =>
-                    (vertices[index] - baselineVertices[index]).sqrMagnitude >
-                    MinimumStoredCorrectionSquaredMagnitude)
-                .ToArray();
-        }
-
-        private static void MeasureRestShapeQuality(
-            IReadOnlyList<Vector3> baselineVertices,
-            Vector3[] vertices,
-            NativeSkinningSurfaceContract contract,
-            IReadOnlyList<FrameEdge> edges,
-            IReadOnlyList<int> restShapeRecoveryPairIndices,
-            bool usedRestShapeRecovery,
-            out float maximumRestEdgeStrainIncrease,
-            out float minimumRestShapeAngleImprovementDegrees,
-            out float minimumRestEdgeLengthRatioBeforeRecovery,
-            out float minimumRestEdgeLengthRatioAfterRecovery,
-            out int unresolvedRestShapeRecoveryCount)
-        {
-            maximumRestEdgeStrainIncrease = usedRestShapeRecovery
-                ? edges.Max(edge => Mathf.Max(
-                    0f,
-                    NativeSkinningRestShapeRecoveryCalculator
-                        .CalculateStrainIncrease(
-                            edge.BaselineLength,
-                            Vector3.Distance(
-                                vertices[edge.FirstVertex],
-                                vertices[edge.SecondVertex]),
-                            edge.RestLength)))
-                : 0f;
-            minimumRestShapeAngleImprovementDegrees =
-                CalculateMinimumRestShapeAngleImprovement(
-                    baselineVertices,
-                    vertices,
-                    contract,
-                    restShapeRecoveryPairIndices);
-            minimumRestEdgeLengthRatioBeforeRecovery =
-                usedRestShapeRecovery
-                    ? CalculateMinimumRestEdgeLengthRatio(
-                        baselineVertices,
-                        edges)
-                    : 0f;
-            minimumRestEdgeLengthRatioAfterRecovery =
-                usedRestShapeRecovery
-                    ? CalculateMinimumRestEdgeLengthRatio(vertices, edges)
-                    : 0f;
-            unresolvedRestShapeRecoveryCount = restShapeRecoveryPairIndices
-                .Count(pairIndex => IsRestShapeRecoveryPairUnresolved(
-                    vertices,
-                    contract,
-                    pairIndex));
-        }
-
-        private static void CountDegenerateFaces(
-            IReadOnlyList<Vector3> baselineVertices,
-            Vector3[] vertices,
-            NativeSkinningSurfaceContract contract,
-            out int newDegenerateFaceCount,
-            out int reversedFaceCount)
-        {
-            newDegenerateFaceCount = 0;
-            reversedFaceCount = 0;
-            foreach (int faceIndex in contract.AffectedFaceIndices)
-            {
-                bool baselineValid = TryCalculateFaceNormal(
-                    baselineVertices,
-                    contract.Triangles,
-                    faceIndex,
-                    out Vector3 baselineNormal);
-                bool candidateValid = TryCalculateFaceNormal(
-                    vertices,
-                    contract.Triangles,
-                    faceIndex,
-                    out Vector3 candidateNormal);
-                if (baselineValid && !candidateValid)
-                {
-                    newDegenerateFaceCount++;
-                }
-                else if (baselineValid && candidateValid &&
-                         Vector3.Dot(baselineNormal, candidateNormal) < 0f)
-                {
-                    reversedFaceCount++;
-                }
-            }
-        }
-
-        private static bool HasValidInput(
-            IReadOnlyList<Vector3> baselineVertices,
-            IReadOnlyList<Vector3> initialVertices,
-            NativeSkinningSurfaceContract contract,
-            bool shouldValidateVertices)
-        {
-            return baselineVertices != null &&
-                   initialVertices != null &&
-                   contract != null &&
-                   baselineVertices.Count == contract.VertexCount &&
-                   initialVertices.Count == contract.VertexCount &&
-                   contract.RestVertices != null &&
-                   contract.RestVertices.Length == contract.VertexCount &&
-                   contract.FacePairs.Length > 0 &&
-                   contract.RestShapeRecoveryMaximumCosines != null &&
-                   contract.RestShapeRecoveryMaximumCosines.Length ==
-                       contract.FacePairs.Length &&
-                   contract.FacePairRestLengths != null &&
-                   contract.FacePairRestLengths.Length == contract.FacePairs.Length &&
-                   contract.AffectedFaceIndices.Length > 0 &&
-                   contract.ArmChainLength > 0f &&
-                   (!shouldValidateVertices ||
-                    AreVerticesFinite(baselineVertices) &&
-                    (ReferenceEquals(baselineVertices, initialVertices) ||
-                     AreVerticesFinite(initialVertices)));
-        }
-
-        private static NativeSkinningSurfaceCorrectionResult EvaluateResult(
-            IReadOnlyList<Vector3> baselineVertices,
-            Vector3[] vertices,
-            NativeSkinningSurfaceContract contract,
-            IReadOnlyList<FrameEdge> edges,
-            int initialSharpFoldCount,
-            IReadOnlyList<int> restShapeRecoveryPairIndices)
-        {
-            CountSharpFoldPairs(baselineVertices, vertices, contract,
-                out int residualSharpFoldCount, out int newSharpFoldCount);
-            CountDegenerateFaces(baselineVertices, vertices, contract,
-                out int newDegenerateFaceCount, out int reversedFaceCount);
-
-            int[] affectedVertices = contract.AffectedFaceIndices
-                .SelectMany(faceIndex => GetFaceVertices(contract.Triangles, faceIndex))
-                .Distinct()
-                .ToArray();
-            int[] correctedVertexIndices = CollectCorrectedVertexIndices(
-                baselineVertices,
-                vertices);
-            bool usedRestShapeRecovery = restShapeRecoveryPairIndices.Count > 0;
-            MeasureRestShapeQuality(
-                baselineVertices,
-                vertices,
-                contract,
-                edges,
-                restShapeRecoveryPairIndices,
-                usedRestShapeRecovery,
-                out float maximumRestEdgeStrainIncrease,
-                out float minimumRestShapeAngleImprovementDegrees,
-                out float minimumRestEdgeLengthRatioBeforeRecovery,
-                out float minimumRestEdgeLengthRatioAfterRecovery,
-                out int unresolvedRestShapeRecoveryCount);
-            // vertices는 재사용 버퍼를 별칭할 수 있어 fallback 덮어쓰기를 막기 위해 스냅샷한다.
-            return new NativeSkinningSurfaceCorrectionResult(
-                (Vector3[])vertices.Clone(),
-                correctedVertexIndices,
-                initialSharpFoldCount,
-                residualSharpFoldCount,
-                newSharpFoldCount,
-                newDegenerateFaceCount,
-                reversedFaceCount,
-                affectedVertices.Max(index => Vector3.Distance(
-                    vertices[index],
-                    baselineVertices[index])),
-                edges.Max(edge => Mathf.Abs(
-                    Vector3.Distance(
-                        vertices[edge.FirstVertex],
-                        vertices[edge.SecondVertex]) /
-                    edge.BaselineLength - 1f)),
-                usedRestShapeRecovery,
-                maximumRestEdgeStrainIncrease,
-                minimumRestShapeAngleImprovementDegrees,
-                minimumRestEdgeLengthRatioBeforeRecovery,
-                minimumRestEdgeLengthRatioAfterRecovery,
-                unresolvedRestShapeRecoveryCount);
-        }
-
-        internal static bool IsRestShapeRecoveryPairUnresolved(
-            IReadOnlyList<Vector3> vertices,
-            NativeSkinningSurfaceContract contract,
-            int pairIndex)
-        {
-            NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
-            return !NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                       vertices,
-                       pair,
-                       out float angleDegrees) ||
-                   NativeSkinningRestShapeCollapseDetector.IsSeverelyCollapsed(
-                       vertices,
-                       pair,
-                       contract.FacePairRestLengths[pairIndex],
-                       contract.RestAnglesDegrees[pairIndex],
-                       angleDegrees);
-        }
-
-        private static float CalculateMinimumRestEdgeLengthRatio(
-            IReadOnlyList<Vector3> vertices,
-            IReadOnlyList<FrameEdge> edges)
-        {
-            return edges.Min(edge =>
-                Vector3.Distance(
-                    vertices[edge.FirstVertex],
-                    vertices[edge.SecondVertex]) /
-                edge.RestLength);
-        }
-
-        private static float CalculateMinimumRestShapeAngleImprovement(
-            IReadOnlyList<Vector3> baselineVertices,
-            IReadOnlyList<Vector3> correctedVertices,
-            NativeSkinningSurfaceContract contract,
-            IReadOnlyList<int> recoveryPairIndices)
-        {
-            if (recoveryPairIndices.Count == 0)
-            {
-                return 0f;
-            }
-
-            float minimumImprovement = float.PositiveInfinity;
-            foreach (int pairIndex in recoveryPairIndices)
-            {
-                NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
-                if (!NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                        baselineVertices,
-                        pair,
-                        out float baselineAngleDegrees) ||
-                    !NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                        correctedVertices,
-                        pair,
-                        out float correctedAngleDegrees))
-                {
-                    return float.NegativeInfinity;
-                }
-
-                minimumImprovement = Mathf.Min(
-                    minimumImprovement,
-                    baselineAngleDegrees - correctedAngleDegrees);
-            }
-            return minimumImprovement;
+                buffers,
+                timing);
         }
 
     }
