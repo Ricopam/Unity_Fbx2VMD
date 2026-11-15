@@ -13,16 +13,10 @@ namespace Fbx2Vmd.FBXImporter
             _supportCurvePose?.Restore();
             _footGrounding?.RestoreAppliedPose();
             RestoreFootRotationBindings();
-            Vector3 leftBendNormal, rightBendNormal;
-            using (PerfScope.Measure("PlaybackController.PoseSample"))
+            if (!TrySamplePoseAndBendNormals(
+                    out Vector3 leftBendNormal, out Vector3 rightBendNormal))
             {
-                _player.EvaluateAt(CurrentTimeSeconds);
-                if (!TryCaptureFootBendNormals(
-                        out leftBendNormal,
-                        out rightBendNormal))
-                {
-                    return false;
-                }
+                return false;
             }
 
             if (!TryApplyArmDirectionCorrection())
@@ -44,6 +38,17 @@ namespace Fbx2Vmd.FBXImporter
                 return TryApplyFootContactStabilization(
                     leftBendNormal,
                     rightBendNormal);
+            }
+        }
+
+        private bool TrySamplePoseAndBendNormals(
+            out Vector3 leftBendNormal, out Vector3 rightBendNormal)
+        {
+            using (PerfScope.Measure("PlaybackController.PoseSample"))
+            {
+                _player.EvaluateAt(CurrentTimeSeconds);
+                return TryCaptureFootBendNormals(
+                    out leftBendNormal, out rightBendNormal);
             }
         }
 
