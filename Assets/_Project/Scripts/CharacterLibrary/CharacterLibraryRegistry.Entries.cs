@@ -17,11 +17,8 @@ namespace Fbx2Vmd.CharacterLibrary
             var result = new RegisterResult();
             ReloadIfExternallyChanged();
 
-            if (!TryNormalizeAndValidate(sourcePath, out string normalizedPath, result))
-            {
-                return result;
-            }
-            if (!TryReadUniqueContent(
+            if (!TryNormalizeAndValidate(sourcePath, out string normalizedPath, result) ||
+                !TryReadUniqueContent(
                     normalizedPath, out long fileSize, out string lastWriteTimeUtc,
                     out string contentHash, result))
             {
