@@ -183,7 +183,6 @@ namespace Fbx2Vmd.ClothPhysics
             {
                 TryCopyBlendShape(mesh, newMesh, s, used, remap, vcnt, ncnt);
             }
-            }
         }
 
         // 원본 메시 클론에서 스커트 삼각형 제거 (토폴로지 유지)
@@ -223,23 +222,11 @@ namespace Fbx2Vmd.ClothPhysics
         static void TryCopyBlendShape(
             Mesh mesh, Mesh newMesh, int s, bool[] used, int[] remap, int vcnt, int ncnt)
         {
-            int frames = mesh.GetBlendShapeFrameCount(s);
-            var fdv = new Vector3[frames][];
-            var fdn = new Vector3[frames][];
-            var fdt = new Vector3[frames][];
-            bool hasDelta = false;
-            for (int f = 0; f < frames; f++)
-            {
-                fdv[f] = new Vector3[vcnt];
-                fdn[f] = new Vector3[vcnt];
-                fdt[f] = new Vector3[vcnt];
-                mesh.GetBlendShapeFrameVertices(s, f, fdv[f], fdn[f], fdt[f]);
-                if (!hasDelta)
-                    for (int v = 0; v < vcnt; v++)
-                        if (used[v] && fdv[f][v] != Vector3.zero) { hasDelta = true; break; }
-            }
+            (Vector3[] fdv, Vector3[] fdn, Vector3[] fdt, bool hasDelta) =
+                ReadShapeFrames(mesh, s, used, vcnt);
             if (!hasDelta)
                 return;
+            int frames = fdv.Length;
             string shapeName = mesh.GetBlendShapeName(s);
             for (int f = 0; f < frames; f++)
             {
@@ -255,6 +242,27 @@ namespace Fbx2Vmd.ClothPhysics
                 newMesh.AddBlendShapeFrame(
                     shapeName, mesh.GetBlendShapeFrameWeight(s, f), ndv, ndn, ndt);
             }
+        }
+
+        static (Vector3[] fdv, Vector3[] fdn, Vector3[] fdt, bool hasDelta) ReadShapeFrames(
+            Mesh mesh, int s, bool[] used, int vcnt)
+        {
+            int frames = mesh.GetBlendShapeFrameCount(s);
+            var fdv = new Vector3[frames][];
+            var fdn = new Vector3[frames][];
+            var fdt = new Vector3[frames][];
+            bool hasDelta = false;
+            for (int f = 0; f < frames; f++)
+            {
+                fdv[f] = new Vector3[vcnt];
+                fdn[f] = new Vector3[vcnt];
+                fdt[f] = new Vector3[vcnt];
+                mesh.GetBlendShapeFrameVertices(s, f, fdv[f], fdn[f], fdt[f]);
+                if (!hasDelta)
+                    for (int v = 0; v < vcnt; v++)
+                        if (used[v] && fdv[f][v] != Vector3.zero) { hasDelta = true; break; }
+            }
+            return (fdv, fdn, fdt, hasDelta);
         }
 
         static void CopyVertexChannel(

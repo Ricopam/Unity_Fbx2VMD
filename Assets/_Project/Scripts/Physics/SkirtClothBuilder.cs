@@ -120,8 +120,6 @@ namespace Fbx2Vmd.ClothPhysics
             out int fixedCount,
             out int moveCount)
         {
-            fixedCount = 0;
-            moveCount = 0;
             var mesh = smr.sharedMesh;
             int vcnt = mesh.vertexCount;
             var attrs = new VertexAttribute[vcnt]; // 기본값 = Invalid (Flag 없음)
@@ -140,6 +138,23 @@ namespace Fbx2Vmd.ClothPhysics
             if (bonesPerVertex.Length != vcnt)
                 return attrs;
 
+            ClassifyVerticesBySkirtWeight(
+                attrs, vcnt, bonesPerVertex, allWeights, boneDepthByIndex,
+                skirtWeightThreshold, fixedChainDepth,
+                out fixedCount, out moveCount);
+            return attrs;
+        }
+
+        static void ClassifyVerticesBySkirtWeight(
+            VertexAttribute[] attrs, int vcnt,
+            NativeArray<byte> bonesPerVertex,
+            NativeArray<BoneWeight1> allWeights,
+            Dictionary<int, int> boneDepthByIndex,
+            float skirtWeightThreshold, int fixedChainDepth,
+            out int fixedCount, out int moveCount)
+        {
+            fixedCount = 0;
+            moveCount = 0;
             int wi = 0;
             for (int v = 0; v < vcnt; v++)
             {
@@ -154,7 +169,6 @@ namespace Fbx2Vmd.ClothPhysics
                 }
                 // 임계 미만 → Invalid 유지 (스커트 아님 — 본래 스키닝 유지)
             }
-            return attrs;
         }
 
         static (float skirtWeight, int bestDepth) MeasureSkirtInfluence(

@@ -60,18 +60,8 @@ namespace Fbx2Vmd.ClothPhysics
         {
             foreach (var smr in renderers)
             {
-                if (smr == null)
+                if (!IsUsableSkirtRenderer(smr, result))
                     continue;
-                if (smr.sharedMesh == null)
-                {
-                    result.warnings.Add($"{smr.name}: sharedMesh 없음 — 메시 소스(FBX/PMX) 미포함 에셋, MeshCloth 불가");
-                    continue;
-                }
-                if (!smr.sharedMesh.isReadable)
-                {
-                    result.warnings.Add($"{smr.name}: 메시 Read/Write 비활성 — 임포터 설정에서 Read/Write Enabled 필요");
-                    continue;
-                }
                 var attrs = BuildVertexAttributes(
                     smr, skirtBoneDepths, skirtWeightThreshold, fixedChainDepth,
                     out int fc, out int mc);
@@ -93,6 +83,23 @@ namespace Fbx2Vmd.ClothPhysics
                 result.fixedVertexCount += fc;
                 result.moveVertexCount += mc;
             }
+        }
+
+        static bool IsUsableSkirtRenderer(SkinnedMeshRenderer smr, Result result)
+        {
+            if (smr == null)
+                return false;
+            if (smr.sharedMesh == null)
+            {
+                result.warnings.Add($"{smr.name}: sharedMesh 없음 — 메시 소스(FBX/PMX) 미포함 에셋, MeshCloth 불가");
+                return false;
+            }
+            if (!smr.sharedMesh.isReadable)
+            {
+                result.warnings.Add($"{smr.name}: 메시 Read/Write 비활성 — 임포터 설정에서 Read/Write Enabled 필요");
+                return false;
+            }
+            return true;
         }
 
         static bool TryCollectExtractedInput(
