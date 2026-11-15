@@ -216,15 +216,10 @@ namespace Fbx2Vmd.FBXImporter
             out NativeSkinningSurfaceCorrectionResult result)
         {
             result = null;
-            var activePairs = new HashSet<int>();
-            UpdateActiveSharpFoldPairs(
-                baselineVertices, contract,
-                Enumerable.Range(0, contract.FacePairs.Length), activePairs);
-            FrameEdge[] edges = BuildFrameEdges(baselineVertices, contract);
             var buffers = new SolverBuffers();
-            LocalWorkset workset = BuildLocalWorkset(
-                baselineVertices, contract, activePairs,
-                StrongWideConfiguration.WorksetRingCount, edges, buffers);
+            LocalWorkset workset = BuildHeadroomWorkset(
+                baselineVertices, contract, buffers,
+                out FrameEdge[] edges);
             Vector3[] vertices = headroom.CorrectedVertices.ToArray();
             var localPositions = new Vector3[workset.ConstrainedVertices.Length];
             for (int round = 0; round < HeadroomStrainProjectionRoundCount; round++)
@@ -248,6 +243,21 @@ namespace Fbx2Vmd.FBXImporter
                 vertices = projected;
             }
             return false;
+        }
+
+        private static LocalWorkset BuildHeadroomWorkset(
+            IReadOnlyList<Vector3> baselineVertices,
+            NativeSkinningSurfaceContract contract, SolverBuffers buffers,
+            out FrameEdge[] edges)
+        {
+            var activePairs = new HashSet<int>();
+            UpdateActiveSharpFoldPairs(
+                baselineVertices, contract,
+                Enumerable.Range(0, contract.FacePairs.Length), activePairs);
+            edges = BuildFrameEdges(baselineVertices, contract);
+            return BuildLocalWorkset(
+                baselineVertices, contract, activePairs,
+                StrongWideConfiguration.WorksetRingCount, edges, buffers);
         }
 
         // 중간 접힘은 내부 초기값에만 허용하고 원본 기준 strict로 재검증함.
