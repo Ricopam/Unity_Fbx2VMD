@@ -206,10 +206,12 @@ namespace Fbx2Vmd.FBXImporter
                 AddEdgeFace(edgeFaces, new NativeSkinningEdgeKey(third, first), faceIndex);
             }
 
+            // 람다는 out 파라미터를 캡처할 수 없으므로 로컬 별칭으로 필터링한다.
+            HashSet<int> affectedFaceSet = affectedFaces;
             facePairs = edgeFaces
                 .Where(entry => entry.Value.Count == 2 &&
-                    (affectedFaces.Contains(entry.Value[0]) ||
-                     affectedFaces.Contains(entry.Value[1])))
+                    (affectedFaceSet.Contains(entry.Value[0]) ||
+                     affectedFaceSet.Contains(entry.Value[1])))
                 .Select(entry => CreateFacePair(
                     triangles,
                     entry.Key,

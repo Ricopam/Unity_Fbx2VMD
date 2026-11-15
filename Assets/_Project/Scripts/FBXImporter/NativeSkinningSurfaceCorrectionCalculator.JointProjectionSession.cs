@@ -239,6 +239,9 @@ namespace Fbx2Vmd.FBXImporter
             private void MeasureEdgeBounds(double3[] movement, bool linearize,
                 ref int rowIndex, ref double minimum)
             {
+                // 지역 함수는 ref 파라미터를 캡처할 수 없으므로 로컬에 누적한 뒤 되돌린다.
+                int localRowIndex = rowIndex;
+                double localMinimum = minimum;
                 foreach (LocalEdge edge in edges)
                 {
                     double3 difference = Position(edge.SecondVertex, movement) - Position(edge.FirstVertex, movement);
@@ -249,7 +252,7 @@ namespace Fbx2Vmd.FBXImporter
 
                     void AddEdgeRow(double value, double3 gradient)
                     {
-                        JointProjectionRow row = BeginRow(value, movement, linearize, ref rowIndex, ref minimum);
+                        JointProjectionRow row = BeginRow(value, movement, linearize, ref localRowIndex, ref localMinimum);
                         if (linearize)
                         {
                             row.Add(local[edge.FirstVertex], -gradient);
@@ -258,6 +261,8 @@ namespace Fbx2Vmd.FBXImporter
                         }
                     }
                 }
+                rowIndex = localRowIndex;
+                minimum = localMinimum;
             }
 
             private void MeasurePairAngles(double3[] movement, bool linearize,
