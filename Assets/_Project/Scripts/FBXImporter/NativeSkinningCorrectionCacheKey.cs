@@ -140,24 +140,6 @@ namespace Fbx2Vmd.FBXImporter
             };
         }
 
-        static RendererIdentity[] CollectRuntimeRendererIdentities(
-            Animator animator, NativeSkinningSurfaceContract[] contracts)
-        {
-            return contracts
-                .Select(contract => contract.Renderer)
-                .Where(renderer => renderer != null)
-                .Distinct()
-                .Select(renderer => BuildIdentity(
-                    animator,
-                    renderer,
-                    GetRuntimeMeshIdentity(renderer.sharedMesh)))
-                .Where(identity => identity.HasValue)
-                .Select(identity => identity.Value)
-                .OrderBy(identity => identity.RendererPath,
-                         StringComparer.Ordinal)
-                .ToArray();
-        }
-
         static RendererIdentity[] CollectRendererIdentities(
             Animator animator, NativeSkinningSurfaceContract[] contracts)
         {
@@ -176,6 +158,27 @@ namespace Fbx2Vmd.FBXImporter
                 .ToArray();
         }
 
+#endif
+
+        // 런타임 키 경로가 호출 — 에디터 전용 자산이 아니므로 UNITY_EDITOR 가드 밖에 둠.
+        static RendererIdentity[] CollectRuntimeRendererIdentities(
+            Animator animator, NativeSkinningSurfaceContract[] contracts)
+        {
+            return contracts
+                .Select(contract => contract.Renderer)
+                .Where(renderer => renderer != null)
+                .Distinct()
+                .Select(renderer => BuildIdentity(
+                    animator,
+                    renderer,
+                    GetRuntimeMeshIdentity(renderer.sharedMesh)))
+                .Where(identity => identity.HasValue)
+                .Select(identity => identity.Value)
+                .OrderBy(identity => identity.RendererPath,
+                         StringComparer.Ordinal)
+                .ToArray();
+        }
+
         static void AppendRendererSegments(
             List<string> segments, RendererIdentity[] identities)
         {
@@ -187,7 +190,6 @@ namespace Fbx2Vmd.FBXImporter
                 segments.Add("vhash:" + identity.VertexHash);
             }
         }
-#endif
 
         /// <summary>
         /// 빌드 환경용 캐시 키 — 에셋 식별자 대신 소스 FBX 파일 경로+내용 해시를
