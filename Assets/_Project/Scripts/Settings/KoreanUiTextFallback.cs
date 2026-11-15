@@ -16,8 +16,7 @@ namespace Fbx2Vmd.Settings
                 return;
             }
 
-            if (!KoreanUiFontResolver.ContainsKorean(label.text) ||
-                KoreanUiFontResolver.SupportsText(label.font, label.text))
+            if (!KoreanUiFontResolver.ContainsKorean(label.text) || KoreanUiFontResolver.SupportsText(label.font, label.text))
             {
                 RestoreTmpLabel(label);
                 return;
@@ -28,8 +27,7 @@ namespace Fbx2Vmd.Settings
                 return;
             }
 
-            if (!KoreanUiFontResolver.TryGetTmpFont(out TMP_FontAsset koreanFont) ||
-                !KoreanUiFontResolver.SupportsText(koreanFont, label.text))
+            if (!KoreanUiFontResolver.TryGetTmpFont(out TMP_FontAsset koreanFont) || !KoreanUiFontResolver.SupportsText(koreanFont, label.text))
             {
                 if (!warnedMissingKoreanUiFont)
                 {
@@ -79,36 +77,26 @@ namespace Fbx2Vmd.Settings
         {
             if (!KoreanUiFontResolver.TryGetLegacyFont(out Font legacyFont))
             {
-                return false;
-            }
-
+                return false; }
             Transform existing = label.transform.Find(FallbackObjectName);
             GameObject fallbackObject = existing != null
-                ? existing.gameObject
-                : new GameObject(FallbackObjectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+                ? existing.gameObject : new GameObject(FallbackObjectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
             fallbackObject.transform.SetParent(label.transform, false);
-
             RectTransform fallbackRect = fallbackObject.GetComponent<RectTransform>();
             fallbackRect.anchorMin = Vector2.zero;
             fallbackRect.anchorMax = Vector2.one;
             fallbackRect.offsetMin = Vector2.zero;
             fallbackRect.offsetMax = Vector2.zero;
             fallbackRect.localScale = Vector3.one;
-
             Text fallbackText = fallbackObject.GetComponent<Text>();
             fallbackText.text = label.text;
             fallbackText.font = legacyFont;
             fallbackText.fontSize = Mathf.Max(1, Mathf.RoundToInt(label.fontSize));
             fallbackText.resizeTextForBestFit = label.enableAutoSizing;
-            fallbackText.resizeTextMinSize = Mathf.Max(
-                1,
-                Mathf.RoundToInt(label.fontSizeMin));
-            fallbackText.resizeTextMaxSize = Mathf.Max(
-                fallbackText.resizeTextMinSize,
-                Mathf.RoundToInt(label.fontSizeMax));
+            fallbackText.resizeTextMinSize = Mathf.Max( 1, Mathf.RoundToInt(label.fontSizeMin));
+            fallbackText.resizeTextMaxSize = Mathf.Max( fallbackText.resizeTextMinSize, Mathf.RoundToInt(label.fontSizeMax));
             fallbackText.fontStyle = (label.fontStyle & FontStyles.Bold) == FontStyles.Bold
-                ? FontStyle.Bold
-                : FontStyle.Normal;
+                ? FontStyle.Bold : FontStyle.Normal;
             fallbackText.alignment = ConvertToLegacyAlignment(label.alignment);
             fallbackText.color = label.color;
             fallbackText.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -116,10 +104,8 @@ namespace Fbx2Vmd.Settings
             fallbackText.raycastTarget = false;
             fallbackText.supportRichText = true;
             fallbackText.enabled = true;
-
             label.enabled = false;
-            return true;
-        }
+            return true; }
 
         private static TextAnchor ConvertToLegacyAlignment(TextAlignmentOptions alignment)
         {

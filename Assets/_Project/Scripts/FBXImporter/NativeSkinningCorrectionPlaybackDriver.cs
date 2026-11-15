@@ -35,18 +35,6 @@ namespace Fbx2Vmd.FBXImporter
         // 준비 병목 분해 계측 — 완료/실패 시 [NativePrepTiming] 로그로 남긴다.
         private readonly System.Diagnostics.Stopwatch _prepWallWatch =
             new System.Diagnostics.Stopwatch();
-        private long _seekTicks;
-        private long _bakeTicks;
-        private long _boneSampleTicks;
-        private long _solveTicks;
-        private int _solverIdleTicks;
-        private int _solverBackloggedTicks;
-        // 디스크 캐시 — 식별자가 주입되지 않으면(테스트 등) 비활성.
-        private string _cacheMotionName = string.Empty;
-        private byte[] _cacheKeyHash;
-        private bool _resultFromCache;
-        // 빌드에서는 에셋 식별자가 없어 소스 FBX 경로가 캐시 키 입력이 된다.
-        private string _runtimeCacheSourcePath = string.Empty;
 #if UNITY_EDITOR
         private AnimationClip _cacheMotionClip;
         private GameObject _cacheSourceModelAsset;
@@ -93,64 +81,47 @@ namespace Fbx2Vmd.FBXImporter
 
         internal NativeSkinningCorrectionPreprocessResult Result { get; private set; }
 
-
-
         internal bool BeginPreparation()
         {
             using var perfScope = PerfScope.Measure("NativeSkinningCorrectionPlaybackDriver.BeginPreparation");
             if (!IsConfigured || IsPreparing)
             {
-                return false;
-            }
+                return false; }
             if (IsReady)
             {
-                return true;
-            }
+                return true; }
             // 완료 직후 틱이 소비하기 전에 재요청되면 완료 처리부터 수행해 재계산을 막는다.
             if (_preprocessSession != null)
             {
                 if (_preprocessSession.IsFaulted)
                 {
-                    return Fail(_preprocessSession.FailureMessage);
-                }
+                    return Fail(_preprocessSession.FailureMessage); }
                 if (!_preprocessSession.IsComplete)
                 {
-                    return false;
-                }
+                    return false; }
                 CompletePreparation(_preprocessSession.Result);
-                return IsReady;
-            }
-
+                return IsReady; }
             ResetTransientState();
             // 디스크 캐시 히트 시 캡처·솔버를 전부 건너뛰고 결과만 복원한다.
             _prepWallWatch.Restart();
-            if (TryRestoreResultFromCache(
-                    out NativeSkinningCorrectionPreprocessResult cachedResult))
+            if (TryRestoreResultFromCache( out NativeSkinningCorrectionPreprocessResult cachedResult))
             {
                 CompletePreparation(cachedResult);
-                return IsReady;
-            }
+                return IsReady; }
             _prepWallWatch.Reset();
             if (!PrepareBakedMeshes())
             {
-                return Fail("Native 보정 대상 Renderer가 사라졌습니다.");
-            }
-
+                return Fail("Native 보정 대상 Renderer가 사라졌습니다."); }
             if (!CreatePreprocessSession())
             {
-                return Fail("Native 보정 사전 계산 session을 만들지 못했습니다.");
-            }
-
+                return Fail("Native 보정 사전 계산 session을 만들지 못했습니다."); }
             _prepWallWatch.Restart();
             _seekTicks = _bakeTicks = _boneSampleTicks = _solveTicks = 0;
             _solverIdleTicks = _solverBackloggedTicks = 0;
             CaptureAndHideRenderers();
             IsFaulted = false;
             FailureMessage = string.Empty;
-            return true;
-        }
-
-
+            return true; }
 
         internal void CancelPreparation()
         {
@@ -264,35 +235,24 @@ namespace Fbx2Vmd.FBXImporter
             if (_preprocessSession.IsFaulted)
             {
                 Fail(_preprocessSession.FailureMessage);
-                return;
-            }
+                return; }
             if (_preprocessSession.IsComplete)
             {
                 CompletePreparation(_preprocessSession.Result);
-                return;
-            }
-
+                return; }
             // 큐가 비고 솔버도 없으면 캡처가, 큐가 차 있으면 솔버가 병목이다.
             if (_solveTask == null && _pendingPreparedFrames.Count == 0)
             {
-                _solverIdleTicks++;
-            }
+                _solverIdleTicks++; }
             if (_pendingPreparedFrames.Count >= MaxPendingPreparedFrames)
             {
-                _solverBackloggedTicks++;
-            }
-
+                _solverBackloggedTicks++; }
             // Seek + Bake + 본 변환은 Unity API라 메인스레드에서만 가능 — 틱당 상한까지 캡처.
             if (!CapturePendingFrames())
             {
-                return;
-            }
-
+                return; }
             // 대기 중인 스냅샷을 배치로 워커 솔버에 넘긴다.
-            DispatchSolveBatch();
-        }
-
-
+            DispatchSolveBatch(); }
 
         // 프레임 하나의 솔버 입력(스키닝 정점 + 본 변환)을 메인스레드에서 캡처함.
         private bool CapturePreparedFrame(int frameIndex)
@@ -304,7 +264,6 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
             _seekTicks += stageWatch.ElapsedTicks;
-
             var baselineVertices =
                 new Dictionary<SkinnedMeshRenderer, Vector3[]>();
             var skinningMatricesByRenderer = new Dictionary<
@@ -321,13 +280,8 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-            _pendingPreparedFrames.Enqueue(new NativeSkinningPreparedFrame(
-                frameIndex,
-                baselineVertices,
-                skinningMatricesByRenderer));
-            return true;
-        }
-
+            _pendingPreparedFrames.Enqueue(new NativeSkinningPreparedFrame( frameIndex, baselineVertices, skinningMatricesByRenderer));
+            return true; }
 
         private void CompletePreparation(
             NativeSkinningCorrectionPreprocessResult result)
@@ -338,24 +292,14 @@ namespace Fbx2Vmd.FBXImporter
             DestroyBakedMeshes();
             _preprocessSession = null;
             Result = result;
-
             if (result != null && result.CollectedFailureCount > 0)
             {
-                Debug.LogWarning(
-                    "[NativePrepDump] 수집 모드 결과가 부분 보정입니다. " +
-                    $"건너뛴 실패 {result.CollectedFailureCount}건 — " +
-                    "native-prep-failures-*.log를 확인하세요.",
-                    this);
+                Debug.LogWarning( "[NativePrepDump] 수집 모드 결과가 부분 보정입니다. " + $"건너뛴 실패 {result.CollectedFailureCount}건 — " + "native-prep-failures-*.log를 확인하세요.", this);
             }
-
             try
             {
-                foreach (NativeSkinningRendererCorrection correction in
-                         result.RendererCorrections)
-                {
-                    _presenters.Add(new NativeSkinningCorrectionPresenter(
-                        correction.Renderer,
-                        correction.Cache));
+                foreach (NativeSkinningRendererCorrection correction in result.RendererCorrections) {
+                    _presenters.Add(new NativeSkinningCorrectionPresenter( correction.Renderer, correction.Cache));
                 }
                 IsReady = true;
                 TrySaveResultToCache(result);
@@ -366,9 +310,7 @@ namespace Fbx2Vmd.FBXImporter
             }
             catch (Exception exception)
             {
-                Fail($"Native 보정 표시 준비 중 예외가 발생했습니다: {exception.Message}");
-            }
-        }
+                Fail($"Native 보정 표시 준비 중 예외가 발생했습니다: {exception.Message}"); } }
 
         // 준비 병목 분해를 한 줄 로그로 남긴다 — 캡처(메인)와 솔버(워커)를 구분하는 게 목적.
         private void LogPrepTimingSummary(
@@ -415,8 +357,6 @@ namespace Fbx2Vmd.FBXImporter
             return bakedMesh.vertices;
         }
 
-
-
         private bool Fail(string message)
         {
             LogPrepTimingSummary(_preprocessSession);
@@ -459,35 +399,5 @@ namespace Fbx2Vmd.FBXImporter
             System.Threading.Interlocked.Increment(ref _preparationGeneration);
         }
 
-
-        private void DisposePresenters()
-        {
-            foreach (NativeSkinningCorrectionPresenter presenter in _presenters)
-            {
-                presenter.Dispose();
-            }
-            _presenters.Clear();
-        }
-
-        private void OnDestroy()
-        {
-            Release();
-        }
-
-        private static void DestroyOwnedObject(UnityEngine.Object target)
-        {
-            if (target == null)
-            {
-                return;
-            }
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                DestroyImmediate(target);
-                return;
-            }
-#endif
-            Destroy(target);
-        }
     }
 }

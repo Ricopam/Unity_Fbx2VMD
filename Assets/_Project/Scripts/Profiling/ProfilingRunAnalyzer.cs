@@ -59,33 +59,25 @@ namespace Fbx2Vmd.Profiling
                 {
                     if (s == null)
                     {
-                        continue;
-                    }
+                        continue; }
                     string key = s.stage ?? string.Empty;
                     if (!byStage.TryGetValue(key, out ProfilingStageSample agg))
                     {
                         agg = new ProfilingStageSample
                         {
                             // 손상된 리포트의 null 스테이지명도 정규화해 호출측 딕셔너리 키 사용을 보장한다.
-                            stage = key,
-                            sinceRunStartMs = s.sinceRunStartMs,
-                        };
+                            stage = key, sinceRunStartMs = s.sinceRunStartMs, };
                         byStage[key] = agg;
-                        order.Add(key);
-                    }
+                        order.Add(key); }
                     agg.message = s.message;
                     agg.deltaMs += s.deltaMs;
                     agg.gcDeltaBytes += s.gcDeltaBytes;
-                    agg.calls += Math.Max(1, s.calls);
-                }
-            }
+                    agg.calls += Math.Max(1, s.calls); } }
             var result = new List<ProfilingStageSample>(order.Count);
             foreach (string key in order)
             {
-                result.Add(byStage[key]);
-            }
-            return result;
-        }
+                result.Add(byStage[key]); }
+            return result; }
 
         public static bool IsInteractiveStage(string stage)
         {
@@ -109,39 +101,19 @@ namespace Fbx2Vmd.Profiling
         private static readonly Dictionary<string, string[]> StageScopeCandidates =
             new Dictionary<string, string[]>(StringComparer.Ordinal)
             {
-                ["Selected"] = new[] { "FBXImportController.CopyToControlledImportFolder" },
-                ["Copied"] = new[] { "FBXImportController.ConfigureEditorImportSettingsIfNeeded" },
-                ["LoadingFbx"] = new[]
+                ["Selected"] = new[] { "FBXImportController.CopyToControlledImportFolder" }, ["Copied"] = new[] { "FBXImportController.ConfigureEditorImportSettingsIfNeeded" }, ["LoadingFbx"] = new[]
                 {
-                    "FBXImportController.ImportModelAsync (Assimp 네이티브 임포트)",
-                    "FBXImportController.ExtractPrimaryClip",
-                    "RuntimeHumanoidReferencePoseApplier.TryApply",
-                    "FBXImportController.LoadBoneMappingRuntime",
-                    "HumanoidAvatarBuilder.SetupHumanoid",
-                },
-                ["AvatarReady"] = new[]
+                    "FBXImportController.ImportModelAsync (Assimp 네이티브 임포트)", "FBXImportController.ExtractPrimaryClip", "RuntimeHumanoidReferencePoseApplier.TryApply",
+                    "FBXImportController.LoadBoneMappingRuntime", "HumanoidAvatarBuilder.SetupHumanoid", }, ["AvatarReady"] = new[]
                 {
-                    "FBXVmdPipeline 재생 준비 경로",
-                    "NativeSkinningCorrectionPlaybackDriver.BeginPreparation",
-                    "HumanoidMotionPlaybackController 클립 준비",
-                },
-                ["Ready"] = new[]
+                    "FBXVmdPipeline 재생 준비 경로", "NativeSkinningCorrectionPlaybackDriver.BeginPreparation", "HumanoidMotionPlaybackController 클립 준비", }, ["Ready"] = new[]
                 {
-                    "FBXVmdPipeline.TryStartImportedMotionPlaybackNow",
-                    "FBXVmdPipeline.TryStartImportedMotionRecordingNow",
-                    "NativeSkinningCorrectionPlaybackDriver.BeginPreparation",
-                },
+                    "FBXVmdPipeline.TryStartImportedMotionPlaybackNow", "FBXVmdPipeline.TryStartImportedMotionRecordingNow", "NativeSkinningCorrectionPlaybackDriver.BeginPreparation", },
                 ["Retargeting"] = new[]
                 {
-                    "FBXVmdPipeline.TickNativeSkinningCorrectionPreparation",
-                    "HumanoidMotionRecordingController.Tick",
-                    "HumanoidMotionPlaybackController.Tick",
-                },
-                ["Recording"] = new[]
+                    "FBXVmdPipeline.TickNativeSkinningCorrectionPreparation", "HumanoidMotionRecordingController.Tick", "HumanoidMotionPlaybackController.Tick", }, ["Recording"] = new[]
                 {
-                    "VMDRecordingController 녹화 루프",
-                    "HumanoidMotionRecordingController.Tick",
-                },
+                    "VMDRecordingController 녹화 루프", "HumanoidMotionRecordingController.Tick", },
             };
 
         private static readonly string[] FrameSpikeScopes = new[]
@@ -209,40 +181,26 @@ namespace Fbx2Vmd.Profiling
             {
                 return;
             }
-
             // 같은 스테이지명의 과거 deltaMs(런별 합산) 중앙값 대비 급증을 감지한다.
-            Dictionary<string, List<float>> historyByStage =
-                AggregateHistoryByStage(history);
-
+            Dictionary<string, List<float>> historyByStage = AggregateHistoryByStage(history);
             foreach (ProfilingStageSample stage in AggregateStagesByName(current.stages))
             {
                 if (SkipInTrend(stage.stage))
                 {
                     continue;
                 }
-                if (!historyByStage.TryGetValue(stage.stage, out List<float> samples) ||
-                    samples.Count < t.trendMinHistory)
+                if (!historyByStage.TryGetValue(stage.stage, out List<float> samples) || samples.Count < t.trendMinHistory)
                 {
                     continue;
                 }
-
                 float median = Median(samples);
-                bool regressed =
-                    stage.deltaMs > median * t.trendRegressionFactor &&
-                    stage.deltaMs - median >= t.trendRegressionMinDeltaMs;
+                bool regressed = stage.deltaMs > median * t.trendRegressionFactor && stage.deltaMs - median >= t.trendRegressionMinDeltaMs;
                 if (regressed)
                 {
-                    findings.Add(new ProfilingFinding
-                    {
-                        kind = KindTrendRegression,
-                        severity = SeverityWarning,
-                        stage = stage.stage,
-                        detail = $"트렌드 회귀: {stage.stage} {stage.deltaMs:F0}ms > 과거 중앙값 {median:F0}ms x {t.trendRegressionFactor:F1} (표본 {samples.Count}회)",
-                        suggestedScopes = ScopesFor(stage.stage),
-                    });
-                }
-            }
-        }
+                    findings.Add(new ProfilingFinding {
+                        kind = KindTrendRegression, severity = SeverityWarning, stage = stage.stage,
+                        detail = $"트렌드 회귀: {stage.stage} {stage.deltaMs:F0}ms > 과거 중앙값 {median:F0}ms x {t.trendRegressionFactor:F1} (표본 {samples.Count}회)", suggestedScopes = ScopesFor(stage.stage),
+                    }); } } }
 
         static Dictionary<string, List<float>> AggregateHistoryByStage(
             IReadOnlyList<ProfilingRunRecord> history)
@@ -386,16 +344,12 @@ namespace Fbx2Vmd.Profiling
             var stats = new FrameRangeStats();
             if (samples == null || samples.Length == 0)
             {
-                return stats;
-            }
-
+                return stats; }
             int start = Math.Max(0, Math.Min(startInclusive, endExclusive));
             int end = Math.Min(samples.Length, Math.Max(startInclusive, endExclusive));
             if (start >= end)
             {
-                return stats;
-            }
-
+                return stats; }
             float sum = 0f;
             stats.minMs = float.MaxValue;
             stats.maxMs = float.MinValue;
@@ -406,14 +360,11 @@ namespace Fbx2Vmd.Profiling
                 sorted[i - start] = v;
                 sum += v;
                 stats.minMs = Math.Min(stats.minMs, v);
-                stats.maxMs = Math.Max(stats.maxMs, v);
-            }
+                stats.maxMs = Math.Max(stats.maxMs, v); }
             stats.count = end - start;
             stats.meanMs = sum / stats.count;
             Array.Sort(sorted);
-            stats.p95Ms = sorted[Math.Clamp(
-                (int)Math.Ceiling(sorted.Length * 0.95) - 1, 0, sorted.Length - 1)];
-            return stats;
-        }
+            stats.p95Ms = sorted[Math.Clamp( (int)Math.Ceiling(sorted.Length * 0.95) - 1, 0, sorted.Length - 1)];
+            return stats; }
     }
 }

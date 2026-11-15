@@ -18,45 +18,24 @@ namespace Fbx2Vmd.FBXImporter
             CorrectionConfiguration configuration,
             bool shouldRecoverRestShape,
             bool allowsStrainRecovery,
-            Vector3[] candidate,
-            out Vector3[] acceptedVertices,
-            out double acceptedEnergy)
+            Vector3[] candidate, out Vector3[] acceptedVertices, out double acceptedEnergy)
         {
             acceptedVertices = null;
             acceptedEnergy = 0d;
-            float blend = CalculateOrientationSafeBlend(
-                baselineVertices,
-                currentVertices,
-                proposedLocalPositions,
-                workset.LocalIndexByVertex,
-                contract,
-                workset.FaceIndices);
+            float blend = CalculateOrientationSafeBlend( baselineVertices, currentVertices, proposedLocalPositions, workset.LocalIndexByVertex, contract, workset.FaceIndices);
             if (blend <= 0f)
             {
-                return false;
-            }
-            Array.Copy(
-                (Vector3[])currentVertices,
-                candidate,
-                currentVertices.Count);
+                return false; }
+            Array.Copy( (Vector3[])currentVertices, candidate, currentVertices.Count);
             for (int attempt = 0; attempt < LineSearchIterations; attempt++)
             {
-                BlendCandidate(
-                    baselineVertices, currentVertices, proposedLocalPositions,
-                    workset, contract, configuration, candidate, blend);
-                if (TryEvaluateStepCandidate(
-                        baselineVertices, currentVertices, candidate, workset,
-                        contract, activePairIndices, beforeEnergy, configuration,
-                        shouldRecoverRestShape, allowsStrainRecovery,
-                        out acceptedEnergy))
+                BlendCandidate( baselineVertices, currentVertices, proposedLocalPositions, workset, contract, configuration, candidate, blend);
+                if (TryEvaluateStepCandidate( baselineVertices, currentVertices, candidate, workset, contract, activePairIndices, beforeEnergy, configuration, shouldRecoverRestShape, allowsStrainRecovery, out acceptedEnergy))
                 {
                     acceptedVertices = candidate;
-                    return true;
-                }
-                blend *= 0.5f;
-            }
-            return false;
-        }
+                    return true; }
+                blend *= 0.5f; }
+            return false; }
 
         private static void BlendCandidate(
             IReadOnlyList<Vector3> baselineVertices,
@@ -100,43 +79,13 @@ namespace Fbx2Vmd.FBXImporter
             out double candidateEnergy)
         {
             bool hasStrainDefect = shouldRecoverRestShape
-                ? HasRestShapeRecoveryStrainDefect(
-                    baselineVertices,
-                    candidate,
-                    workset.Edges)
+                ? HasRestShapeRecoveryStrainDefect( baselineVertices, candidate, workset.Edges)
                 : allowsStrainRecovery
-                    ? HasUnrecoveringEdgeStrainDefect(
-                        currentVertices,
-                        candidate,
-                        workset.Edges,
-                        configuration.MaximumEdgeLengthStrain)
-                    : HasEdgeStrainDefect(
-                        candidate,
-                        workset.Edges,
-                        configuration.MaximumEdgeLengthStrain);
-            bool hasRestShapeSharpFoldDefect = shouldRecoverRestShape &&
-                HasRestShapeSharpFoldDefect(
-                    baselineVertices,
-                    candidate,
-                    contract,
-                    workset.FacePairIndices);
-            candidateEnergy = CalculateConstraintEnergy(
-                baselineVertices,
-                candidate,
-                contract,
-                activePairIndices,
-                workset.FacePairIndices,
-                workset.FaceIndices,
-                workset.Edges,
-                shouldRecoverRestShape);
-            return !HasOrientationDefect(
-                    baselineVertices,
-                    candidate,
-                    contract,
-                    workset.FaceIndices) &&
-                !hasStrainDefect &&
-                !hasRestShapeSharpFoldDefect &&
-                candidateEnergy < beforeEnergy;
+                    ? HasUnrecoveringEdgeStrainDefect( currentVertices, candidate, workset.Edges, configuration.MaximumEdgeLengthStrain)
+                    : HasEdgeStrainDefect( candidate, workset.Edges, configuration.MaximumEdgeLengthStrain);
+            bool hasRestShapeSharpFoldDefect = shouldRecoverRestShape && HasRestShapeSharpFoldDefect( baselineVertices, candidate, contract, workset.FacePairIndices);
+            candidateEnergy = CalculateConstraintEnergy( baselineVertices, candidate, contract, activePairIndices, workset.FacePairIndices, workset.FaceIndices, workset.Edges, shouldRecoverRestShape);
+            return !HasOrientationDefect( baselineVertices, candidate, contract, workset.FaceIndices) && !hasStrainDefect && !hasRestShapeSharpFoldDefect && candidateEnergy < beforeEnergy;
         }
 
         private static bool HasRestShapeSharpFoldDefect(
@@ -151,7 +100,6 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     continue;
                 }
-
                 NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
                 if (NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
                         baselineVertices,
@@ -167,8 +115,7 @@ namespace Fbx2Vmd.FBXImporter
                     return true;
                 }
             }
-            return false;
-        }
+            return false; }
 
         private static bool HasRestShapeRecoveryStrainDefect(
             IReadOnlyList<Vector3> baselineVertices,
@@ -265,8 +212,7 @@ namespace Fbx2Vmd.FBXImporter
             IReadOnlyList<Vector3> currentVertices,
             IReadOnlyList<Vector3> proposedLocalPositions,
             IReadOnlyList<int> localIndexByVertex,
-            NativeSkinningSurfaceContract contract,
-            IEnumerable<int> faceIndices)
+            NativeSkinningSurfaceContract contract, IEnumerable<int> faceIndices)
         {
             float safeBlend = 1f;
             float minimumNormalMagnitude = Mathf.Sqrt(MinimumNormalSquaredMagnitude);
@@ -276,40 +222,19 @@ namespace Fbx2Vmd.FBXImporter
                 int firstIndex = contract.Triangles[offset];
                 int secondIndex = contract.Triangles[offset + 1];
                 int thirdIndex = contract.Triangles[offset + 2];
-                Vector3 baselineCross = Vector3.Cross(
-                    baselineVertices[secondIndex] - baselineVertices[firstIndex],
-                    baselineVertices[thirdIndex] - baselineVertices[firstIndex]);
+                Vector3 baselineCross = Vector3.Cross( baselineVertices[secondIndex] - baselineVertices[firstIndex], baselineVertices[thirdIndex] - baselineVertices[firstIndex]);
                 float baselineArea = baselineCross.magnitude;
                 if (baselineArea < minimumNormalMagnitude)
                 {
-                    continue;
-                }
+                    continue; }
                 Vector3 baselineNormal = baselineCross / baselineArea;
-                float minimumSignedArea = Mathf.Max(
-                    minimumNormalMagnitude,
-                    baselineArea * MinimumSignedAreaRatio);
-                float candidateSignedArea = CalculateBlendedSignedArea(
-                    safeBlend,
-                    firstIndex,
-                    secondIndex,
-                    thirdIndex,
-                    baselineNormal,
-                    currentVertices,
-                    proposedLocalPositions,
-                    localIndexByVertex);
+                float minimumSignedArea = Mathf.Max( minimumNormalMagnitude, baselineArea * MinimumSignedAreaRatio);
+                float candidateSignedArea = CalculateBlendedSignedArea( safeBlend, firstIndex, secondIndex, thirdIndex, baselineNormal, currentVertices, proposedLocalPositions, localIndexByVertex);
                 if (candidateSignedArea >= minimumSignedArea)
                 {
-                    continue;
-                }
-
-                safeBlend = SearchSafeBlendForFace(
-                    safeBlend, minimumSignedArea,
-                    firstIndex, secondIndex, thirdIndex, baselineNormal,
-                    currentVertices, proposedLocalPositions, localIndexByVertex) *
-                    OrientationSafetyFactor;
-            }
-            return safeBlend;
-        }
+                    continue; }
+                safeBlend = SearchSafeBlendForFace( safeBlend, minimumSignedArea, firstIndex, secondIndex, thirdIndex, baselineNormal, currentVertices, proposedLocalPositions, localIndexByVertex) * OrientationSafetyFactor; }
+            return safeBlend; }
 
         private static float SearchSafeBlendForFace(
             float safeBlend,
@@ -332,23 +257,13 @@ namespace Fbx2Vmd.FBXImporter
                 float signedArea = CalculateBlendedSignedArea(
                     middleBlend,
                     firstIndex,
-                    secondIndex,
-                    thirdIndex,
-                    baselineNormal,
-                    currentVertices,
-                    proposedLocalPositions,
-                    localIndexByVertex);
+                    secondIndex, thirdIndex, baselineNormal, currentVertices, proposedLocalPositions, localIndexByVertex);
                 if (signedArea >= minimumSignedArea)
                 {
-                    lowerBlend = middleBlend;
-                }
-                else
+                    lowerBlend = middleBlend; } else
                 {
-                    upperBlend = middleBlend;
-                }
-            }
-            return lowerBlend;
-        }
+                    upperBlend = middleBlend; } }
+            return lowerBlend; }
 
         private static float CalculateBlendedSignedArea(
             float blend,
@@ -376,12 +291,8 @@ namespace Fbx2Vmd.FBXImporter
                 blend,
                 thirdIndex,
                 currentVertices,
-                proposedLocalPositions,
-                localIndexByVertex);
-            return Vector3.Dot(
-                Vector3.Cross(second - first, third - first),
-                baselineNormal);
-        }
+                proposedLocalPositions, localIndexByVertex);
+            return Vector3.Dot( Vector3.Cross(second - first, third - first), baselineNormal); }
 
         private static Vector3 ReadBlendedPosition(
             float blend,
@@ -421,21 +332,12 @@ namespace Fbx2Vmd.FBXImporter
                     float edgeLength = Vector3.Distance(
                         vertices[edge.FirstVertex],
                         vertices[edge.SecondVertex]);
-                    energy += NativeSkinningRestShapeRecoveryCalculator
-                        .CalculateSquaredStrainEnergy(
-                            edgeLength,
-                            edge.RestLength);
-                }
-                return energy;
-            }
-
-            energy += CalculateBendingEnergy(
-                baselineVertices, vertices, contract, activePairIndices, facePairIndices);
+                    energy += NativeSkinningRestShapeRecoveryCalculator .CalculateSquaredStrainEnergy( edgeLength, edge.RestLength); }
+                return energy; }
+            energy += CalculateBendingEnergy( baselineVertices, vertices, contract, activePairIndices, facePairIndices);
             energy += CalculateEdgeStrainEnergy(vertices, edges);
-            energy += CalculateOrientationEnergy(
-                baselineVertices, vertices, contract, faceIndices);
-            return energy;
-        }
+            energy += CalculateOrientationEnergy( baselineVertices, vertices, contract, faceIndices);
+            return energy; }
 
         private static double CalculateBendingEnergy(
             IReadOnlyList<Vector3> baselineVertices,
@@ -461,16 +363,10 @@ namespace Fbx2Vmd.FBXImporter
                 float targetAngle = activePairIndices.Contains(pairIndex)
                     ? ResolveProjectionAngleDegrees(
                         baselineVertices,
-                        contract,
-                        pairIndex)
-                    : SharpFoldAngleDegrees;
-                float violationRadians =
-                    Mathf.Max(0f, angle - targetAngle) * Mathf.Deg2Rad;
-                energy += 0.5d * BendingWeight *
-                    violationRadians * violationRadians;
-            }
-            return energy;
-        }
+                        contract, pairIndex) : SharpFoldAngleDegrees;
+                float violationRadians = Mathf.Max(0f, angle - targetAngle) * Mathf.Deg2Rad;
+                energy += 0.5d * BendingWeight * violationRadians * violationRadians; }
+            return energy; }
 
         private static double CalculateEdgeStrainEnergy(
             IReadOnlyList<Vector3> vertices,
@@ -515,18 +411,10 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
                 Vector3 baselineNormal = baselineCross / baselineArea;
-                float signedArea = Vector3.Dot(
-                    Vector3.Cross(
-                        vertices[secondIndex] - vertices[firstIndex],
-                        vertices[thirdIndex] - vertices[firstIndex]),
-                    baselineNormal);
+                float signedArea = Vector3.Dot( Vector3.Cross( vertices[secondIndex] - vertices[firstIndex], vertices[thirdIndex] - vertices[firstIndex]), baselineNormal);
                 float activationArea = baselineArea * OrientationActivationRatio;
-                float violation = Mathf.Max(
-                    0f,
-                    (activationArea - signedArea) / activationArea);
-                energy += 0.5d * OrientationBarrierWeight * violation * violation;
-            }
-            return energy;
-        }
+                float violation = Mathf.Max( 0f, (activationArea - signedArea) / activationArea);
+                energy += 0.5d * OrientationBarrierWeight * violation * violation; }
+            return energy; }
     }
 }

@@ -70,50 +70,34 @@ namespace Fbx2Vmd.FBXImporter
         {
             if (string.IsNullOrWhiteSpace(fbxDirectory) || string.IsNullOrWhiteSpace(textureReference))
             {
-                return string.Empty;
-            }
-
+                return string.Empty; }
             string sourceDirectory = GetFullPath(fbxDirectory);
             if (string.IsNullOrEmpty(sourceDirectory) || ContainsParentTraversal(textureReference))
             {
-                return string.Empty;
-            }
-
+                return string.Empty; }
             if (Path.IsPathRooted(textureReference))
             {
                 string rootedCandidate = GetFullPath(textureReference);
                 return IsInsideDirectory(sourceDirectory, rootedCandidate) && File.Exists(rootedCandidate)
-                    ? rootedCandidate
-                    : string.Empty;
-            }
-
+                    ? rootedCandidate : string.Empty; }
             string normalizedReference = NormalizeSeparators(textureReference);
             string relativeCandidate = GetFullPath(Path.Combine(sourceDirectory, normalizedReference));
             if (IsInsideDirectory(sourceDirectory, relativeCandidate) && File.Exists(relativeCandidate))
             {
-                return relativeCandidate;
-            }
-
+                return relativeCandidate; }
             string textureFileName = Path.GetFileName(normalizedReference);
             if (string.IsNullOrWhiteSpace(textureFileName))
             {
-                return string.Empty;
-            }
-
+                return string.Empty; }
             foreach (string candidateDirectory in TextureCandidateDirectories)
             {
                 string directory = string.IsNullOrEmpty(candidateDirectory)
-                    ? sourceDirectory
-                    : Path.Combine(sourceDirectory, candidateDirectory);
+                    ? sourceDirectory : Path.Combine(sourceDirectory, candidateDirectory);
                 string candidate = FindFileByName(directory, textureFileName);
                 if (!string.IsNullOrEmpty(candidate))
                 {
-                    return candidate;
-                }
-            }
-
-            return string.Empty;
-        }
+                    return candidate; } }
+            return string.Empty; }
 
         private static string FindFileByName(string directory, string textureFileName)
         {

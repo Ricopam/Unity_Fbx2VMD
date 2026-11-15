@@ -67,25 +67,19 @@ namespace Fbx2Vmd.FBXImporter
             try
             {
                 // 비영속 클립(런타임 생성 등)은 파일 해시를 잡을 수 없어 캐시 비활성.
-                if (motionClip != null &&
-                    string.IsNullOrEmpty(AssetDatabase.GetAssetPath(motionClip)))
+                if (motionClip != null && string.IsNullOrEmpty(AssetDatabase.GetAssetPath(motionClip)))
                 {
-                    errorMessage =
-                        "모션 클립이 에셋이 아니라 보정 캐시를 사용할 수 없습니다.";
+                    errorMessage = "모션 클립이 에셋이 아니라 보정 캐시를 사용할 수 없습니다.";
                     return false;
                 }
 
-                var segments = BuildBaseSegments(
-                    poseIdentity, motionName, frameCount, frameRate,
-                    motionClip, sourceModelAsset, animator);
+                var segments = BuildBaseSegments( poseIdentity, motionName, frameCount, frameRate, motionClip, sourceModelAsset, animator);
 
                 // 렌더러 — 경로·메시 에셋·정점 내용. 경로 정렬로 순서를 고정한다.
-                RendererIdentity[] identities =
-                    CollectRendererIdentities(animator, contracts);
+                RendererIdentity[] identities = CollectRendererIdentities(animator, contracts);
                 if (identities.Length == 0)
                 {
-                    errorMessage =
-                        "보정 캐시 키를 계산할 Renderer가 없습니다.";
+                    errorMessage = "보정 캐시 키를 계산할 Renderer가 없습니다.";
                     return false;
                 }
                 AppendRendererSegments(segments, identities);
@@ -95,8 +89,7 @@ namespace Fbx2Vmd.FBXImporter
             }
             catch (Exception exception)
             {
-                errorMessage =
-                    $"보정 캐시 키를 계산하지 못했습니다: {exception.Message}";
+                errorMessage = $"보정 캐시 키를 계산하지 못했습니다: {exception.Message}";
                 return false;
             }
         }
@@ -178,75 +171,34 @@ namespace Fbx2Vmd.FBXImporter
         /// 빌드 환경용 캐시 키 — 에셋 식별자 대신 소스 FBX 파일 경로+내용 해시를
         /// 모션·소스 모델 식별자로 쓰고, 메시는 정점 내용 해시로 식별한다.
         /// </summary>
-        internal static bool TryComputeRuntime(
-            string sourceFilePath,
-            string motionName,
-            int frameCount,
-            float frameRate,
-            Animator animator,
-            NativeSkinningSurfaceContract[] contracts,
-            string poseIdentity,
-            out byte[] keyHash,
-            out string errorMessage)
+        internal static bool TryComputeRuntime( string sourceFilePath, string motionName, int frameCount, float frameRate, Animator animator, NativeSkinningSurfaceContract[] contracts, string poseIdentity, out byte[] keyHash, out string errorMessage)
         {
             keyHash = null;
             errorMessage = string.Empty;
-            if (string.IsNullOrEmpty(sourceFilePath) ||
-                animator == null ||
-                contracts == null ||
-                contracts.Length == 0)
+            if (string.IsNullOrEmpty(sourceFilePath) || animator == null || contracts == null || contracts.Length == 0)
             {
                 errorMessage = "보정 캐시 키를 계산할 대상이 없습니다.";
-                return false;
-            }
-
+                return false; }
             try
             {
                 string sourceFileHash = ComputeFileHash(sourceFilePath);
                 if (string.IsNullOrEmpty(sourceFileHash))
                 {
-                    errorMessage =
-                        "소스 FBX 파일을 읽을 수 없어 보정 캐시를 사용할 수 없습니다.";
-                    return false;
-                }
-
-                var segments = new List<string>
-                {
-                    "v" + AlgorithmVersion,
-                    "grounding-release:" + GroundingReleaseVersion,
-                    PoseIdentityPrefix + poseIdentity,
-                    Application.unityVersion,
-                    "runtime",
-                    "motion:" + (motionName ?? string.Empty),
-                    "frames:" + frameCount,
-                    "rate:" + frameRate.ToString("R"),
-                    "sourceFile:" + Path.GetFullPath(sourceFilePath),
-                    "sourceFileHash:" + sourceFileHash,
-                    "avatar:" + (animator.avatar == null
-                        ? string.Empty
-                        : animator.avatar.name)
-                };
-
-                RendererIdentity[] identities =
-                    CollectRuntimeRendererIdentities(animator, contracts);
+                    errorMessage = "소스 FBX 파일을 읽을 수 없어 보정 캐시를 사용할 수 없습니다.";
+                    return false; }
+                var segments = new List<string> {
+                    "v" + AlgorithmVersion, "grounding-release:" + GroundingReleaseVersion, PoseIdentityPrefix + poseIdentity, Application.unityVersion, "runtime", "motion:" + (motionName ?? string.Empty), "frames:" + frameCount, "rate:" + frameRate.ToString("R"), "sourceFile:" + Path.GetFullPath(sourceFilePath), "sourceFileHash:" + sourceFileHash, "avatar:" + (animator.avatar == null ? string.Empty : animator.avatar.name) };
+                RendererIdentity[] identities = CollectRuntimeRendererIdentities(animator, contracts);
                 if (identities.Length == 0)
                 {
-                    errorMessage =
-                        "보정 캐시 키를 계산할 Renderer가 없습니다.";
-                    return false;
-                }
+                    errorMessage = "보정 캐시 키를 계산할 Renderer가 없습니다.";
+                    return false; }
                 AppendRendererSegments(segments, identities);
-
                 keyHash = ComputeKeyHash(segments);
-                return true;
-            }
-            catch (Exception exception)
+                return true; } catch (Exception exception)
             {
-                errorMessage =
-                    $"보정 캐시 키를 계산하지 못했습니다: {exception.Message}";
-                return false;
-            }
-        }
+                errorMessage = $"보정 캐시 키를 계산하지 못했습니다: {exception.Message}";
+                return false; } }
 
         private static byte[] ComputeKeyHash(List<string> segments)
         {
@@ -393,9 +345,6 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     return Convert.ToBase64String(
                         hash.ComputeHash(stream.GetBuffer(), 0,
-                            (int)stream.Length));
-                }
-            }
-        }
+                            (int)stream.Length)); } } }
     }
 }

@@ -8,53 +8,31 @@ namespace Fbx2Vmd.FBXImporter
             FBXVmdPipeline pipeline,
             bool enabled,
             float weight,
-            float maxDownDot,
-            float minHandHorizontalRatio,
-            float maxHandBelowShoulderRatio,
-            float horizontalReachLimitWeight,
-            float maxHandHorizontalReachRatio,
-            float horizontalReachMaxHandBelowShoulderRatio,
-            float horizontalReachMinElbowAngleAfterApply,
-            float raisedPoseHorizontalReachLimitWeight,
-            float raisedPoseMinUpperArmDownDot,
-            float raisedPoseMaxHandBelowShoulderRatio,
-            float raisedPoseMaxHandHorizontalReachRatio)
+            float maxDownDot, float minHandHorizontalRatio, float maxHandBelowShoulderRatio, float horizontalReachLimitWeight, float maxHandHorizontalReachRatio, float horizontalReachMaxHandBelowShoulderRatio, float horizontalReachMinElbowAngleAfterApply, float raisedPoseHorizontalReachLimitWeight, float raisedPoseMinUpperArmDownDot, float raisedPoseMaxHandBelowShoulderRatio, float raisedPoseMaxHandHorizontalReachRatio)
         {
             if (pipeline == null)
             {
-                return false;
-            }
-
+                return false; }
             pipeline.enableYybArmSwingLimitCorrection = enabled;
             pipeline.YybArmSwingLimitWeight = enabled ? Mathf.Clamp01(weight) : 0f;
             pipeline.YybArmSwingMaxDownDot = Mathf.Clamp01(maxDownDot);
             pipeline.YybArmSwingMinHandHorizontalRatio = Mathf.Clamp(minHandHorizontalRatio, 0f, 1.5f);
             pipeline.YybArmSwingMaxHandBelowShoulderRatio = Mathf.Clamp(maxHandBelowShoulderRatio, 0f, 1.5f);
             pipeline.YybArmSwingHorizontalReachLimitWeight = enabled
-                ? Mathf.Clamp01(horizontalReachLimitWeight)
-                : 0f;
+                ? Mathf.Clamp01(horizontalReachLimitWeight) : 0f;
             pipeline.YybArmSwingMaxHandHorizontalReachRatio = enabled
-                ? Mathf.Clamp(maxHandHorizontalReachRatio, 0f, 1.5f)
-                : 0f;
+                ? Mathf.Clamp(maxHandHorizontalReachRatio, 0f, 1.5f) : 0f;
             pipeline.YybArmSwingHorizontalReachMaxHandBelowShoulderRatio = enabled
-                ? Mathf.Clamp(horizontalReachMaxHandBelowShoulderRatio, 0f, 1.5f)
-                : 0f;
+                ? Mathf.Clamp(horizontalReachMaxHandBelowShoulderRatio, 0f, 1.5f) : 0f;
             pipeline.YybArmSwingHorizontalReachMinElbowAngleAfterApply = enabled
-                ? Mathf.Clamp(horizontalReachMinElbowAngleAfterApply, 0f, 180f)
-                : 0f;
+                ? Mathf.Clamp(horizontalReachMinElbowAngleAfterApply, 0f, 180f) : 0f;
             pipeline.YybArmSwingRaisedPoseHorizontalReachLimitWeight = enabled
-                ? Mathf.Clamp01(raisedPoseHorizontalReachLimitWeight)
-                : 0f;
+                ? Mathf.Clamp01(raisedPoseHorizontalReachLimitWeight) : 0f;
             pipeline.YybArmSwingRaisedPoseMinUpperArmDownDot = Mathf.Clamp01(raisedPoseMinUpperArmDownDot);
-            pipeline.YybArmSwingRaisedPoseMaxHandBelowShoulderRatio = Mathf.Clamp(
-                raisedPoseMaxHandBelowShoulderRatio,
-                0f,
-                1.5f);
+            pipeline.YybArmSwingRaisedPoseMaxHandBelowShoulderRatio = Mathf.Clamp( raisedPoseMaxHandBelowShoulderRatio, 0f, 1.5f);
             pipeline.YybArmSwingRaisedPoseMaxHandHorizontalReachRatio = enabled
-                ? Mathf.Clamp(raisedPoseMaxHandHorizontalReachRatio, 0f, 1.5f)
-                : 0f;
-            return true;
-        }
+                ? Mathf.Clamp(raisedPoseMaxHandHorizontalReachRatio, 0f, 1.5f) : 0f;
+            return true; }
 
         internal static bool ApplyDirection(
             FBXVmdPipeline pipeline,

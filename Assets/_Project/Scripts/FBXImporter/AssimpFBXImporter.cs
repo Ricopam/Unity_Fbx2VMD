@@ -16,15 +16,6 @@ namespace Fbx2Vmd.FBXImporter
         private const float FBX_TO_UNITY_UNIT_SCALE = 0.01f;
         #endregion
 
-        #region Private 필드
-        // 노드 이름으로 Transform을 찾기 위한 맵 (본 할당용)
-        private Dictionary<string, Transform> _nodeMap = new Dictionary<string, Transform>();
-        
-        private string _sourceDirectory = string.Empty;
-
-        // 생성된 AnimationClip 저장 (외부 접근용)
-        private AnimationClip[] _animationClips;
-        #endregion
 
         public bool ImportScaleCurves { get; set; } = false;
         public bool ImportNonRootPositionCurves { get; set; } = false;

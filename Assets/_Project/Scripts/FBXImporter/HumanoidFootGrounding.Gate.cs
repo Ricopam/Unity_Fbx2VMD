@@ -37,37 +37,27 @@ namespace Fbx2Vmd.FBXImporter
             // 캡처처럼 같은 시각을 재평가하는 경로는 첫 판정을 재사용해
             // 한 프레임이 스트릭을 두 번 올리지 않게 한다.
             if (timeSeconds == _lastGateTimeSeconds) return _lastGateDecision;
-            bool jumped = _frameRate > 0f &&
-                Mathf.Abs(timeSeconds - _lastGateTimeSeconds) > 1.5f / _frameRate;
+            bool jumped = _frameRate > 0f && Mathf.Abs(timeSeconds - _lastGateTimeSeconds) > 1.5f / _frameRate;
             _lastGateTimeSeconds = timeSeconds;
             bool decision;
             if (jumped || !HasGround)
             {
                 _gateHoldsFallback = !gatePass;
                 _gateOppositeStreak = 0;
-                decision = gatePass;
-            }
-            else if (gatePass == !_gateHoldsFallback)
+                decision = gatePass; } else if (gatePass == !_gateHoldsFallback)
             {
                 _gateOppositeStreak = 0;
-                decision = gatePass;
-            }
-            else
+                decision = gatePass; } else
             {
                 _gateOppositeStreak++;
                 if (_gateOppositeStreak < GateTransitionFrames)
                 {
-                    decision = !_gateHoldsFallback;
-                }
-                else
+                    decision = !_gateHoldsFallback; } else
                 {
                     _gateHoldsFallback = !_gateHoldsFallback;
                     _gateOppositeStreak = 0;
-                    decision = gatePass;
-                }
-            }
+                    decision = gatePass; } }
             _lastGateDecision = decision;
-            return decision;
-        }
+            return decision; }
     }
 }

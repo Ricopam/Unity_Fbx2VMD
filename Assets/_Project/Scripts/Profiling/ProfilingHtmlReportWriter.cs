@@ -80,56 +80,41 @@ namespace Fbx2Vmd.Profiling
 
         private static void AppendRun(StringBuilder sb, ProfilingRunRecord run)
         {
-            string outcomeClass = run.outcome == "Success" ? "ok"
-                : run.outcome == "Failed" || run.outcome == "Cancelled" ? "fail" : "other";
+            string outcomeClass = run.outcome == "Success" ? "ok" : run.outcome == "Failed" || run.outcome == "Cancelled" ? "fail" : "other";
             sb.Append("<div class=\"run\"><div class=\"head\">");
             sb.Append(Escape(string.IsNullOrEmpty(run.label) ? "(이름 없음)" : run.label));
-            sb.Append("<span class=\"badge ").Append(outcomeClass).Append("\">")
-                .Append(Escape(run.outcome ?? string.Empty)).Append("</span>");
+            sb.Append("<span class=\"badge ").Append(outcomeClass).Append("\">") .Append(Escape(run.outcome ?? string.Empty)).Append("</span>");
             sb.Append(" <span class=\"mono\">").Append(F(run.totalMs)).Append("ms</span></div>");
             sb.Append("<div class=\"meta\">");
             sb.Append(Escape(run.startedUtc ?? string.Empty)).Append(" | Unity ").Append(Escape(run.unityVersion ?? string.Empty));
             sb.Append(" | ").Append(Escape(run.deviceModel ?? string.Empty));
             if (!string.IsNullOrEmpty(run.revision))
             {
-                sb.Append(" | rev=").Append(Escape(run.revision));
-            }
+                sb.Append(" | rev=").Append(Escape(run.revision)); }
             if (run.sampledFrameCount > 0)
             {
-                sb.Append(" | 프레임 ").Append(run.sampledFrameCount).Append("개, 평균 ")
-                    .Append(F(run.sampledFrameSumMs / run.sampledFrameCount)).Append("ms, 최대 ")
-                    .Append(F(run.sampledFrameMaxMs)).Append("ms");
+                sb.Append(" | 프레임 ").Append(run.sampledFrameCount).Append("개, 평균 ") .Append(F(run.sampledFrameSumMs / run.sampledFrameCount)).Append("ms, 최대 ") .Append(F(run.sampledFrameMaxMs)).Append("ms");
                 if (run.frameP50Ms > 0f)
                 {
-                    sb.Append(", p50 ").Append(F(run.frameP50Ms)).Append("/p95 ")
-                        .Append(F(run.frameP95Ms)).Append("/p99 ").Append(F(run.frameP99Ms)).Append("ms");
-                }
-            }
+                    sb.Append(", p50 ").Append(F(run.frameP50Ms)).Append("/p95 ") .Append(F(run.frameP95Ms)).Append("/p99 ").Append(F(run.frameP99Ms)).Append("ms"); } }
             if (run.gcReservedBytes > 0 || run.systemUsedBytes > 0)
             {
-                sb.Append(" | 메모리 피크 GC ").Append(F(run.gcReservedBytes / (1024f * 1024f)))
-                    .Append("MB / System ").Append(F(run.systemUsedBytes / (1024f * 1024f))).Append("MB");
-            }
+                sb.Append(" | 메모리 피크 GC ").Append(F(run.gcReservedBytes / (1024f * 1024f))) .Append("MB / System ").Append(F(run.systemUsedBytes / (1024f * 1024f))).Append("MB"); }
             // 미기록(-1) 필드는 표시하지 않는다.
             if (run.inputBytes >= 0)
             {
-                sb.Append(" | 입력 ").Append(F(run.inputBytes / (1024f * 1024f))).Append("MB");
-            }
+                sb.Append(" | 입력 ").Append(F(run.inputBytes / (1024f * 1024f))).Append("MB"); }
             if (run.clipLengthSec >= 0f)
             {
-                sb.Append(" | 클립 ").Append(F(run.clipLengthSec)).Append("초");
-            }
+                sb.Append(" | 클립 ").Append(F(run.clipLengthSec)).Append("초"); }
             if (run.boneCount >= 0)
             {
-                sb.Append(" | 본 ").Append(run.boneCount).Append("개");
-            }
+                sb.Append(" | 본 ").Append(run.boneCount).Append("개"); }
             sb.Append("</div>");
-
             AppendFindings(sb, run);
             AppendStageTable(sb, run);
             AppendMetricTable(sb, run);
-            sb.Append("</div>");
-        }
+            sb.Append("</div>"); }
 
         private static void AppendFindings(StringBuilder sb, ProfilingRunRecord run)
         {
@@ -161,13 +146,11 @@ namespace Fbx2Vmd.Profiling
             {
                 return;
             }
-
             float maxDelta = 0f;
             foreach (ProfilingStageSample s in stages)
             {
                 maxDelta = Mathf.Max(maxDelta, s.deltaMs);
             }
-
             sb.Append("<table><tr><th>스테이지</th><th>Δms</th><th>호출</th><th>누적ms</th><th>ΔGC(KB)</th><th>비중</th><th>메시지</th></tr>");
             foreach (ProfilingStageSample s in stages)
             {

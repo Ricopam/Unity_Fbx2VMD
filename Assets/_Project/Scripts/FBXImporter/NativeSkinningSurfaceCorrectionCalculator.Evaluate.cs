@@ -33,19 +33,12 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     continue;
                 }
-                if (contract.RestAnglesDegrees[pairIndex] <= RestSmoothAngleDegrees &&
-                    candidateAngle > SharpFoldAngleDegrees)
+                if (contract.RestAnglesDegrees[pairIndex] <= RestSmoothAngleDegrees && candidateAngle > SharpFoldAngleDegrees)
                 {
-                    residualSharpFoldCount++;
-                }
-                if (baselineValid &&
-                    baselineAngle <= SharpFoldAngleDegrees &&
-                    candidateAngle > SharpFoldAngleDegrees)
+                    residualSharpFoldCount++; }
+                if (baselineValid && baselineAngle <= SharpFoldAngleDegrees && candidateAngle > SharpFoldAngleDegrees)
                 {
-                    newSharpFoldCount++;
-                }
-            }
-        }
+                    newSharpFoldCount++; } } }
 
         private static int[] CollectCorrectedVertexIndices(
             IReadOnlyList<Vector3> baselineVertices,
@@ -82,20 +75,10 @@ namespace Fbx2Vmd.FBXImporter
                     restShapeRecoveryPairIndices);
             minimumRestEdgeLengthRatioBeforeRecovery =
                 usedRestShapeRecovery
-                    ? CalculateMinimumRestEdgeLengthRatio(
-                        baselineVertices,
-                        edges)
-                    : 0f;
-            minimumRestEdgeLengthRatioAfterRecovery =
-                usedRestShapeRecovery
-                    ? CalculateMinimumRestEdgeLengthRatio(vertices, edges)
-                    : 0f;
-            unresolvedRestShapeRecoveryCount = restShapeRecoveryPairIndices
-                .Count(pairIndex => IsRestShapeRecoveryPairUnresolved(
-                    vertices,
-                    contract,
-                    pairIndex));
-        }
+                    ? CalculateMinimumRestEdgeLengthRatio( baselineVertices, edges) : 0f;
+            minimumRestEdgeLengthRatioAfterRecovery = usedRestShapeRecovery
+                    ? CalculateMinimumRestEdgeLengthRatio(vertices, edges) : 0f;
+            unresolvedRestShapeRecoveryCount = restShapeRecoveryPairIndices .Count(pairIndex => IsRestShapeRecoveryPairUnresolved( vertices, contract, pairIndex)); }
 
         private static float CalculateEdgeStrainIncrease(FrameEdge edge, Vector3[] vertices)
         {
@@ -134,13 +117,9 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     newDegenerateFaceCount++;
                 }
-                else if (baselineValid && candidateValid &&
-                         Vector3.Dot(baselineNormal, candidateNormal) < 0f)
+                else if (baselineValid && candidateValid && Vector3.Dot(baselineNormal, candidateNormal) < 0f)
                 {
-                    reversedFaceCount++;
-                }
-            }
-        }
+                    reversedFaceCount++; } } }
 
         private static bool HasValidInput(
             IReadOnlyList<Vector3> baselineVertices,
@@ -181,7 +160,6 @@ namespace Fbx2Vmd.FBXImporter
                 out int residualSharpFoldCount, out int newSharpFoldCount);
             CountDegenerateFaces(baselineVertices, vertices, contract,
                 out int newDegenerateFaceCount, out int reversedFaceCount);
-
             int[] affectedVertices = CollectAffectedVertices(contract);
             int[] correctedVertexIndices = CollectCorrectedVertexIndices(
                 baselineVertices,
@@ -197,16 +175,7 @@ namespace Fbx2Vmd.FBXImporter
                 out int unresolvedRestShapeRecoveryCount);
             // vertices는 재사용 버퍼를 별칭할 수 있어 fallback 덮어쓰기를 막기 위해 스냅샷한다.
             return CreateEvaluatedResult(
-                baselineVertices, vertices, contract, edges,
-                initialSharpFoldCount, residualSharpFoldCount,
-                newSharpFoldCount, newDegenerateFaceCount, reversedFaceCount,
-                affectedVertices, correctedVertexIndices, usedRestShapeRecovery,
-                maximumRestEdgeStrainIncrease,
-                minimumRestShapeAngleImprovementDegrees,
-                minimumRestEdgeLengthRatioBeforeRecovery,
-                minimumRestEdgeLengthRatioAfterRecovery,
-                unresolvedRestShapeRecoveryCount);
-        }
+                baselineVertices, vertices, contract, edges, initialSharpFoldCount, residualSharpFoldCount, newSharpFoldCount, newDegenerateFaceCount, reversedFaceCount, affectedVertices, correctedVertexIndices, usedRestShapeRecovery, maximumRestEdgeStrainIncrease, minimumRestShapeAngleImprovementDegrees, minimumRestEdgeLengthRatioBeforeRecovery, minimumRestEdgeLengthRatioAfterRecovery, unresolvedRestShapeRecoveryCount); }
 
         private static int[] CollectAffectedVertices(NativeSkinningSurfaceContract contract)
         {
@@ -243,21 +212,7 @@ namespace Fbx2Vmd.FBXImporter
                 newSharpFoldCount,
                 newDegenerateFaceCount,
                 reversedFaceCount,
-                affectedVertices.Max(index => Vector3.Distance(
-                    vertices[index],
-                    baselineVertices[index])),
-                edges.Max(edge => Mathf.Abs(
-                    Vector3.Distance(
-                        vertices[edge.FirstVertex],
-                        vertices[edge.SecondVertex]) /
-                    edge.BaselineLength - 1f)),
-                usedRestShapeRecovery,
-                maximumRestEdgeStrainIncrease,
-                minimumRestShapeAngleImprovementDegrees,
-                minimumRestEdgeLengthRatioBeforeRecovery,
-                minimumRestEdgeLengthRatioAfterRecovery,
-                unresolvedRestShapeRecoveryCount);
-        }
+                affectedVertices.Max(index => Vector3.Distance( vertices[index], baselineVertices[index])), edges.Max(edge => Mathf.Abs( Vector3.Distance( vertices[edge.FirstVertex], vertices[edge.SecondVertex]) / edge.BaselineLength - 1f)), usedRestShapeRecovery, maximumRestEdgeStrainIncrease, minimumRestShapeAngleImprovementDegrees, minimumRestEdgeLengthRatioBeforeRecovery, minimumRestEdgeLengthRatioAfterRecovery, unresolvedRestShapeRecoveryCount); }
 
         internal static bool IsRestShapeRecoveryPairUnresolved(
             IReadOnlyList<Vector3> vertices,
@@ -298,7 +253,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return 0f;
             }
-
             float minimumImprovement = float.PositiveInfinity;
             foreach (int pairIndex in recoveryPairIndices)
             {
@@ -314,12 +268,8 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     return float.NegativeInfinity;
                 }
-
                 minimumImprovement = Mathf.Min(
-                    minimumImprovement,
-                    baselineAngleDegrees - correctedAngleDegrees);
-            }
-            return minimumImprovement;
-        }
+                    minimumImprovement, baselineAngleDegrees - correctedAngleDegrees); }
+            return minimumImprovement; }
     }
 }

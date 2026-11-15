@@ -34,6 +34,16 @@ namespace Fbx2Vmd.FBXImporter
             internal string DebugSolveInputs { get; private set; }
             internal bool DebugSolveSucceeded { get; private set; }
             internal float DebugTargetError { get; private set; }
+
+            private Quaternion _supportedFrame;
+            internal float SupportWeight { get; private set; }
+            internal Vector3 EffectiveGoal { get; private set; }
+            private Quaternion _effectiveFrame;
+            internal bool[] Pin = Array.Empty<bool>();
+            internal bool[] Grounded = Array.Empty<bool>();
+
+            private HumanoidFootRotationBinding _binding;
+
         }
     }
 }

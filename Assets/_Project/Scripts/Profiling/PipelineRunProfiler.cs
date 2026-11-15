@@ -86,8 +86,7 @@ namespace Fbx2Vmd.Profiling
             // 누적 시각을 구간 끝으로 갱신하고 소요·GC를 합산한다.
             int stageCount = _current.stages.Count;
             ProfilingStageSample last = stageCount > 0 ? _current.stages[stageCount - 1] : null;
-            if (!isTerminal && last != null &&
-                string.Equals(last.stage, stage ?? string.Empty, StringComparison.Ordinal))
+            if (!isTerminal && last != null && string.Equals(last.stage, stage ?? string.Empty, StringComparison.Ordinal))
             {
                 last.message = message ?? string.Empty;
                 last.deltaMs += nowMs - _lastStageMarkMs;
@@ -97,14 +96,8 @@ namespace Fbx2Vmd.Profiling
             }
             else
             {
-                _current.stages.Add(new ProfilingStageSample
-                {
-                    stage = stage ?? string.Empty,
-                    message = message ?? string.Empty,
-                    sinceRunStartMs = nowMs,
-                    deltaMs = nowMs - _lastStageMarkMs,
-                    gcDeltaBytes = nowGc - _lastStageGcBytes,
-                    calls = 1,
+                _current.stages.Add(new ProfilingStageSample {
+                    stage = stage ?? string.Empty, message = message ?? string.Empty, sinceRunStartMs = nowMs, deltaMs = nowMs - _lastStageMarkMs, gcDeltaBytes = nowGc - _lastStageGcBytes, calls = 1,
                 });
             }
             _lastStageMarkMs = nowMs;
@@ -183,49 +176,33 @@ namespace Fbx2Vmd.Profiling
         {
             if (_current == null)
             {
-                return;
-            }
-
+                return; }
             _current.endedUtc = DateTime.UtcNow.ToString("o");
             _current.outcome = outcome ?? string.Empty;
             _current.totalMs = (float)_runWatch.Elapsed.TotalMilliseconds;
             _current.totalGcAllocBytes = GC.GetAllocatedBytesForCurrentThread() - _runStartGcBytes;
             long totalAllocEnd = CaptureTotalAllocatedBytes();
-            _current.totalAllocAllThreadsBytes =
-                _runStartTotalAllocBytes < 0 || totalAllocEnd < 0
-                    ? -1
-                    : totalAllocEnd - _runStartTotalAllocBytes;
+            _current.totalAllocAllThreadsBytes = _runStartTotalAllocBytes < 0 || totalAllocEnd < 0
+                    ? -1 : totalAllocEnd - _runStartTotalAllocBytes;
             CaptureMemoryCounters(_current);
             ComputeFramePercentiles(_current);
             _current.frameSamplesMs = _frameSamples.ToArray();
-
             try
             {
-                _current.analysis = ProfilingRunAnalyzer.Analyze(
-                    _current, LoadHistory(_current), ProfilingAnalysisThresholds.Load());
-            }
-            catch (Exception e)
+                _current.analysis = ProfilingRunAnalyzer.Analyze( _current, LoadHistory(_current), ProfilingAnalysisThresholds.Load()); } catch (Exception e)
             {
-                Debug.LogWarning($"[Profiling] 런 분석 실패(기록은 계속): {e.Message}");
-            }
-
+                Debug.LogWarning($"[Profiling] 런 분석 실패(기록은 계속): {e.Message}"); }
             try
             {
                 LastWrittenReportPath = string.Empty;
                 LastWrittenReportPath = ProfilingReportWriter.Write(_current);
-                Debug.Log($"[Profiling] 런 기록 저장: {LastWrittenReportPath} " +
-                          $"(total={_current.totalMs:F1}ms, stages={_current.stages.Count})");
-            }
-            catch (Exception e)
+                Debug.Log($"[Profiling] 런 기록 저장: {LastWrittenReportPath} " + $"(total={_current.totalMs:F1}ms, stages={_current.stages.Count})"); } catch (Exception e)
             {
-                Debug.LogWarning($"[Profiling] 런 기록 저장 실패: {e.Message}");
-            }
-
+                Debug.LogWarning($"[Profiling] 런 기록 저장 실패: {e.Message}"); }
             _current = null;
             _metricIndex.Clear();
             _frameSamples.Clear();
-            DisposeMemoryRecorders();
-        }
+            DisposeMemoryRecorders(); }
 
         // Unity 2022의 .NET Standard 2.1 BCL에는 GC.GetTotalAllocatedBytes가 없어
         // 직접 호출하면 컴파일이 안 된다. 런타임에 있을 때만 리플렉션으로 호출하고

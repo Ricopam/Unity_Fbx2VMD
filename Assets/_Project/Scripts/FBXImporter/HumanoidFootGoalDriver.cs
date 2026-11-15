@@ -44,11 +44,6 @@ namespace Fbx2Vmd.FBXImporter
         // goal 복원용 소스 골반 궤적 — rootSpace 베이크와 같은 프레임.
         private IReadOnlyList<Vector3> _sourceHipsPositions;
         private IReadOnlyList<Quaternion> _sourceHipsRotations;
-        // 지면 높이 두 벌 — 소스 월드값은 게이트 증거용, 골반 상대값은 goal 스냅용.
-        private float[] _leftFloorWorldY = Array.Empty<float>();
-        private float[] _rightFloorWorldY = Array.Empty<float>();
-        private float[] _leftFloorRootSpaceY = Array.Empty<float>();
-        private float[] _rightFloorRootSpaceY = Array.Empty<float>();
         private readonly LegDrive _left = new LegDrive();
         private readonly LegDrive _right = new LegDrive();
         private float _lastTimeSeconds = float.NaN;

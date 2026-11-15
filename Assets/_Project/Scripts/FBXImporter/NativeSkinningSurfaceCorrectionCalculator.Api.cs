@@ -154,8 +154,8 @@ namespace Fbx2Vmd.FBXImporter
         // 축소 재시도·헤드룸·체인 재투입 단계. headroom은 후속 블렌드/복원 단계가 쓰므로 반환한다.
         // 후보 계산 → 품질 게이트 통과 시 채택의 공통 패턴.
         private static bool TryAdoptCandidate(
-            NativeSkinningSolverConfiguration candidateConfig,
-            NativeSkinningSolverConfiguration qualityConfig,
+            CorrectionConfiguration candidateConfig,
+            CorrectionConfiguration qualityConfig,
             IReadOnlyList<Vector3> baselineVertices,
             IReadOnlyList<Vector3> sourceVertices,
             NativeSkinningSurfaceContract contract,

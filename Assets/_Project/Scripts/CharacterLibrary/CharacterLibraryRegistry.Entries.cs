@@ -174,14 +174,6 @@ namespace Fbx2Vmd.CharacterLibrary
             return entry;
         }
 
-        private static bool IsSupportedCharacterFile(string extension)
-        {
-            return
-                string.Equals(extension, ".vrm", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(extension, ".fbx", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(extension, ".pmx", StringComparison.OrdinalIgnoreCase);
-        }
-
         private bool TryApplyRelink(
             CharacterLibraryEntry entry,
             string normalizedPath,
@@ -233,33 +225,6 @@ namespace Fbx2Vmd.CharacterLibrary
 
             ApplyFileStatToEntry(
                 entry, fileSize, lastWriteTimeUtc, contentHash);
-        }
-
-        private static void ApplyFileStatToEntry(
-            CharacterLibraryEntry entry,
-            long fileSize,
-            string lastWriteTimeUtc,
-            string contentHash)
-        {
-            // 내용 해시가 바뀐 경우만 Changed로 표시한다(mtime만 바뀐 터치는 무시).
-            bool contentChanged = !string.Equals(
-                entry.contentHash, contentHash, StringComparison.Ordinal);
-
-            entry.fileSize = fileSize;
-            entry.lastWriteTimeUtc = lastWriteTimeUtc;
-
-            if (contentChanged)
-            {
-                entry.contentHash = contentHash;
-                entry.status = CharacterLibraryEntryStatus.Changed;
-            }
-            else if (entry.status == CharacterLibraryEntryStatus.Missing ||
-                     entry.status == CharacterLibraryEntryStatus.Error)
-            {
-                // 파일이 정상으로 읽히면 Missing/Error를 해소한다.
-                entry.status = CharacterLibraryEntryStatus.Ready;
-                entry.lastError = string.Empty;
-            }
         }
 
         /// <summary>
@@ -338,7 +303,6 @@ namespace Fbx2Vmd.CharacterLibrary
                 Path.GetExtension(entry.sourcePath),
                 StringComparison.OrdinalIgnoreCase);
         }
-
 
         // 재연결은 같은 파일의 위치만 바꾸므로 확장자가 달라지면
         // 로더 분기(spec)가 어긋난다. 형식 변경은 새 등록으로 처리한다.
@@ -433,10 +397,6 @@ namespace Fbx2Vmd.CharacterLibrary
                     $"{presetFile} ({error.Message})");
             }
         }
-
-
-
-
 
         /// <summary>
         /// 활성 캐릭터 기록을 지운다. 씬 캐릭터로 복원할 때 호출해

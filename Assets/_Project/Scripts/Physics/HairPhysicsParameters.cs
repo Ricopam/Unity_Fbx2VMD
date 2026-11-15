@@ -261,30 +261,21 @@ namespace Fbx2Vmd.ClothPhysics
         /// 이후 ApplyXxx가 덮어쓰므로 의도된 델타만 남는다.
         /// spring.enabled면 마지막에 Boing 식 프로파일이 결과를 덮어쓴다.
         /// </summary>
-        public static void Apply(HairPart part, ClothSerializeData sdata, float torsoLength,
-            Transform headBone, bool isLong, in HairTuning tuning, bool usePresetBaseline,
-            in HairSpringProfile spring = default)
+        public static void Apply(HairPart part, ClothSerializeData sdata, float torsoLength, Transform headBone, bool isLong, in HairTuning tuning, bool usePresetBaseline, in HairSpringProfile spring = default)
         {
             float unit = Mathf.Max(torsoLength, 0.1f) / 0.6f;
-            if (usePresetBaseline)
-                ClothPresetLibrary.TryImport(sdata, PresetName(part, isLong),
-                    tuning.characterPresetKey, CharacterPhysicsSetup.ClothNamePrefix + part);
+            if (usePresetBaseline) ClothPresetLibrary.TryImport(sdata, PresetName(part, isLong), tuning.characterPresetKey, CharacterPhysicsSetup.ClothNamePrefix + part);
             switch (part)
             {
                 case HairPart.Front:
-                case HairPart.Ahoge:
-                    ApplyFrontHair(sdata, unit, headBone);
+                case HairPart.Ahoge: ApplyFrontHair(sdata, unit, headBone);
                     break;
-                case HairPart.Accessory:
-                    ApplyAccessory(sdata, unit);
+                case HairPart.Accessory: ApplyAccessory(sdata, unit);
                     break;
-                default:
-                    if (isLong)
+                default: if (isLong)
                         ApplyLongHair(sdata, unit);
-                    else
-                        ApplyShortHair(sdata, unit);
-                    break;
-            }
+                    else ApplyShortHair(sdata, unit);
+                    break; }
             ApplyTuning(sdata, tuning, unit);
             // Boing 식 프로파일이 켜져 있으면 위 결과를 스프링 의미론으로 덮어쓴다.
             if (spring.enabled)
@@ -298,10 +289,7 @@ namespace Fbx2Vmd.ClothPhysics
                     ApplyGarmentDamping(sdata);
                     float inv = 1f / Mathf.Max(tuning.sway, 0.05f);
                     ScaleCurve(sdata.damping, inv * tuning.dampingScale, 1f);
-                    ScaleCurveTip(sdata.damping, tuning.tipDampingScale);
-                }
-            }
-        }
+                    ScaleCurveTip(sdata.damping, tuning.tipDampingScale); } } }
 
         /// <summary>부위에 대응하는 공식 프리셋 이름 (Resources/PhysicsPresets 기준).</summary>
         static string PresetName(HairPart part, bool isLong)
@@ -331,28 +319,21 @@ namespace Fbx2Vmd.ClothPhysics
             ScaleCurve(s.radius, t.radiusScale, 0.5f);
             s.inertiaConstraint.worldInertia =
                 Mathf.Clamp01(s.inertiaConstraint.worldInertia * t.inertiaScale);
-            s.inertiaConstraint.localInertia =
-                Mathf.Clamp01(s.inertiaConstraint.localInertia * t.inertiaScale);
+            s.inertiaConstraint.localInertia = Mathf.Clamp01(s.inertiaConstraint.localInertia * t.inertiaScale);
             // 끝단 커브 조정 — 프로급 실루엣은 깊이별 강성 차이에서 나온다
             ScaleCurveTip(s.angleRestorationConstraint.stiffness, t.tipStiffnessScale);
             ScaleCurveTip(s.damping, t.tipDampingScale);
             s.animationPoseRatio = Mathf.Clamp01(t.animationPoseRatio);
-            if (t.overrideDepthInertia)
-                s.inertiaConstraint.depthInertia = Mathf.Clamp01(t.depthInertia);
+            if (t.overrideDepthInertia) s.inertiaConstraint.depthInertia = Mathf.Clamp01(t.depthInertia);
             // 자기 충돌 — BoneCloth는 Edge-Edge 조합으로 같은 클로스 내 체인 엉킴을 막는다
             // (MC2 베타 기능, 부하 높음). 두께는 쌍방 합산이라 절반 수준으로 잡는다.
             var self = s.selfCollisionConstraint;
             if (t.useSelfCollision)
             {
                 self.selfMode = SelfCollisionConstraint.SelfCollisionMode.FullMesh;
-                self.surfaceThickness.SetValue(
-                    0.005f * unit * Mathf.Max(t.selfCollisionScale, 0.1f));
-            }
-            else
+                self.surfaceThickness.SetValue( 0.005f * unit * Mathf.Max(t.selfCollisionScale, 0.1f)); } else
             {
-                self.selfMode = SelfCollisionConstraint.SelfCollisionMode.None;
-            }
-        }
+                self.selfMode = SelfCollisionConstraint.SelfCollisionMode.None; } }
 
         /// <summary>
         /// 커브의 끝단(깊이 1.0)만 배율한다 — 키의 time이 깊이(0=루트, 1=끝).

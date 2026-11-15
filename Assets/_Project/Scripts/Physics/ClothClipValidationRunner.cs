@@ -16,7 +16,7 @@ namespace Fbx2Vmd.ClothPhysics
     /// 대표 동작군(아이들/걷기/회전/팔 휘두름/굽힘/점프/고속회전/탐색)을
     /// clips 목록에 넣고 플레이 모드에서 ContextMenu로 실행한다.
     /// </summary>
-    public class ClothClipValidationRunner : MonoBehaviour
+    public partial class ClothClipValidationRunner : MonoBehaviour
     {
         [Header("대상")]
         [Tooltip("비워두면 같은 오브젝트의 CharacterPhysicsSetup 사용")]
@@ -44,21 +44,6 @@ namespace Fbx2Vmd.ClothPhysics
         /// <summary>현재 측정 중인 클립명 — 중단 로그의 진단용</summary>
         [System.NonSerialized] public string currentClip;
 
-        [System.Serializable]
-        public class ClipResult
-        {
-            public string clip;
-            public int sampledFrames;
-            public float worstExcessPenetrationMm;
-            public int warningFrames;
-            public int suspectedStuckBones;
-            public float baselineWorstMm;
-            public int validCloths;
-            public float avgFrameMs;
-            public string golden;
-        }
-        [System.Serializable]
-        public class Report { public string character; public List<ClipResult> clips = new List<ClipResult>(); }
 
         [ContextMenu("클립 배치 검증 실행")]
         public void RunAll()

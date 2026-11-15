@@ -54,7 +54,6 @@ namespace Fbx2Vmd.FBXImporter
                 !HumanoidLegBendCalibration.TryCapture(animator,
                     out Vector3 leftNormal, out Vector3 rightNormal))
                 return false;
-
             SkinnedMeshRenderer[] renderers = animator.GetComponentsInChildren<SkinnedMeshRenderer>(true);
             Leg left = null;
             Leg right = null;
@@ -83,10 +82,8 @@ namespace Fbx2Vmd.FBXImporter
             IsPrepared = false;
             _touchdownWindows.Clear();
             _releaseSmoothingWindows.Clear();
-            if (samples == null || samples.Count < 2 || clip == null || evaluateReference == null ||
-                sourceHumanScale <= 0f || float.IsNaN(sourceHumanScale) || float.IsInfinity(sourceHumanScale))
+            if (samples == null || samples.Count < 2 || clip == null || evaluateReference == null || sourceHumanScale <= 0f || float.IsNaN(sourceHumanScale) || float.IsInfinity(sourceHumanScale))
                 return false;
-
             _frameRate = HumanoidMotionFrameCalculator.NormalizeFrameRate(clip.frameRate);
             _sourceScaleRatio = _humanScale / sourceHumanScale;
             // 새 접촉 계획의 첫 프레임이 이전 클립의 마지막 게이트 판정을 재사용하지 않게 보류 상태를 초기화함.
@@ -96,22 +93,16 @@ namespace Fbx2Vmd.FBXImporter
             _lastGateDecision = false;
             try
             {
-                IsPrepared = _left.TryBuildContacts(samples, true, sourceHumanScale,
-                    _frameRate, clip.length, evaluateReference, _sourceToTargetRotation, _sourceScaleRatio,
-                    intents?.Left) &&
-                    _right.TryBuildContacts(samples, false, sourceHumanScale,
-                    _frameRate, clip.length, evaluateReference, _sourceToTargetRotation, _sourceScaleRatio,
-                    intents?.Right);
+                IsPrepared = _left.TryBuildContacts(samples, true, sourceHumanScale, _frameRate, clip.length, evaluateReference, _sourceToTargetRotation, _sourceScaleRatio, intents?.Left) &&
+                    _right.TryBuildContacts(samples, false, sourceHumanScale, _frameRate, clip.length, evaluateReference, _sourceToTargetRotation, _sourceScaleRatio, intents?.Right);
                 if (IsPrepared && UnresolvedSupportPairCount > 0)
-                    Debug.LogWarning($"공동 지지 계획 미해결 {UnresolvedSupportPairCount}건. " +
-                        $"왼발: {_left.FirstPlanIssue}, 오른발: {_right.FirstPlanIssue}. 해당 구간은 개별 목표를 유지함.");
+                    Debug.LogWarning($"공동 지지 계획 미해결 {UnresolvedSupportPairCount}건. " + $"왼발: {_left.FirstPlanIssue}, 오른발: {_right.FirstPlanIssue}. 해당 구간은 개별 목표를 유지함.");
                 return IsPrepared;
             }
             finally
             {
                 evaluateReference(0f);
-            }
-        }
+            } }
 
         // 이전 접지의 골반 이동과 회전을 원본 평가 전에 해제하여 누적·정지 잔류를 막음.
         internal void RestoreAppliedPose()
@@ -135,50 +126,27 @@ namespace Fbx2Vmd.FBXImporter
             touchdownRejected = false;
             baselinePose = default;
             ResetEvaluationState();
-            if (!IsPrepared || _hips == null || ground == null ||
-                float.IsNaN(timeSeconds) || float.IsInfinity(timeSeconds) || timeSeconds < 0f)
-                return false;
-
-            if (!CapturePoseAndSolveTargets(timeSeconds, ground,
-                    out float frame, out float offset, out Vector2 footOffsets))
-                return false;
-
+            if (!IsPrepared || _hips == null || ground == null || float.IsNaN(timeSeconds) || float.IsInfinity(timeSeconds) || timeSeconds < 0f) return false;
+            if (!CapturePoseAndSolveTargets(timeSeconds, ground, out float frame, out float offset, out Vector2 footOffsets)) return false;
             bool isApplied = false;
             try
             {
                 Leg.TargetState leftTarget = _left.CaptureTarget();
                 Leg.TargetState rightTarget = _right.CaptureTarget();
-                if (!TrySolveGroundPose(offset, footOffsets, out Vector2 clearance))
-                    return false;
-
+                if (!TrySolveGroundPose(offset, footOffsets, out Vector2 clearance)) return false;
                 if (RawGatePass && !SuppressReleaseCorrection)
                 {
-                    bool? shiftResult = TryApplyReleaseShift(frame, timeSeconds, ground,
-                        leftTarget, rightTarget, offset, footOffsets, clearance,
-                        applyHold, ref baselinePose);
+                    bool? shiftResult = TryApplyReleaseShift(frame, timeSeconds, ground, leftTarget, rightTarget, offset, footOffsets, clearance, applyHold, ref baselinePose);
                     if (shiftResult.HasValue)
                     {
                         isApplied = shiftResult.Value;
-                        return isApplied;
-                    }
-                }
-
+                        return isApplied; } }
                 if (!applyHold) baselinePose = ReadTouchdownPose();
-                if (RawGatePass && !SuppressReleaseCorrection &&
-                    !TryApplyContactWindows(window, releaseTrial, frame, ground,
-                        leftTarget, rightTarget, offset, footOffsets, clearance,
-                        applyHold, ref touchdownRejected))
-                    return false;
-
+                if (RawGatePass && !SuppressReleaseCorrection && !TryApplyContactWindows(window, releaseTrial, frame, ground, leftTarget, rightTarget, offset, footOffsets, clearance, applyHold, ref touchdownRejected)) return false;
                 isApplied = applyHold ? ApplyGateHold(RawGatePass, timeSeconds) : RawGatePass;
-                return isApplied;
-            }
-            finally
+                return isApplied; } finally
             {
-                if (!isApplied)
-                    RestoreAppliedPose();
-            }
-        }
+                if (!isApplied) RestoreAppliedPose(); } }
 
         private bool CapturePoseAndSolveTargets(float timeSeconds,
             HumanoidGroundResponse ground,
@@ -212,10 +180,8 @@ namespace Fbx2Vmd.FBXImporter
             bool applyHold, ref TouchdownPose baselinePose)
         {
             float contactLimit = _humanScale * SoleClearancePerHumanScale;
-            bool shiftLeft = _left.TryGetReleaseTarget(frame, ground, leftTarget.Position,
-                clearance.x, contactLimit, out Vector3 leftRelease);
-            bool shiftRight = _right.TryGetReleaseTarget(frame, ground, rightTarget.Position,
-                clearance.y, contactLimit, out Vector3 rightRelease);
+            bool shiftLeft = _left.TryGetReleaseTarget(frame, ground, leftTarget.Position, clearance.x, contactLimit, out Vector3 leftRelease);
+            bool shiftRight = _right.TryGetReleaseTarget(frame, ground, rightTarget.Position, clearance.y, contactLimit, out Vector3 rightRelease);
             if (!shiftLeft && !shiftRight)
                 return null;
             // 기존 접촉 상태가 달라지면 원래 목표를 다시 풀어 게이트 결과를 보존함.
@@ -223,25 +189,18 @@ namespace Fbx2Vmd.FBXImporter
             RestoreAppliedPose();
             _left.RestoreTarget(leftTarget);
             _right.RestoreTarget(rightTarget);
-            if ((!shiftLeft || _left.TrySetReleaseTarget(leftRelease)) &&
-                (!shiftRight || _right.TrySetReleaseTarget(rightRelease)) &&
-                TryResolveReach(out float releaseOffset, out Vector2 releaseFootOffsets) &&
-                TrySolveGroundPose(releaseOffset, releaseFootOffsets, out Vector2 releaseClearance) &&
-                RawGatePass &&
-                (releaseClearance.x <= contactLimit) == (clearance.x <= contactLimit) &&
-                (releaseClearance.y <= contactLimit) == (clearance.y <= contactLimit))
+            if ((!shiftLeft || _left.TrySetReleaseTarget(leftRelease)) && (!shiftRight || _right.TrySetReleaseTarget(rightRelease)) &&
+                TryResolveReach(out float releaseOffset, out Vector2 releaseFootOffsets) && TrySolveGroundPose(releaseOffset, releaseFootOffsets, out Vector2 releaseClearance) && RawGatePass &&
+                (releaseClearance.x <= contactLimit) == (clearance.x <= contactLimit) && (releaseClearance.y <= contactLimit) == (clearance.y <= contactLimit))
             {
                 if (!applyHold) baselinePose = ReadTouchdownPose();
-                return !applyHold || ApplyGateHold(true, timeSeconds);
-            }
-
+                return !applyHold || ApplyGateHold(true, timeSeconds); }
             RestoreAppliedPose();
             _left.RestoreTarget(leftTarget);
             _right.RestoreTarget(rightTarget);
             UsedPhysicalReach = baselineUsedPhysicalReach;
             if (!TrySolveGroundPose(offset, footOffsets, out _)) return false;
-            return null;
-        }
+            return null; }
 
         private bool TryApplyContactWindows(TouchdownWindow window,
             ReleaseSmoothingWindow releaseTrial, float frame,

@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Fbx2Vmd.FBXImporter
 {
 
-    internal sealed class NativeSkinningSurfaceContract
+    internal sealed partial class NativeSkinningSurfaceContract
     {
         internal NativeSkinningSurfaceContract(
             SkinnedMeshRenderer renderer,
@@ -19,12 +19,7 @@ namespace Fbx2Vmd.FBXImporter
             float[] restAnglesDegrees,
             float[] restShapeRecoveryMaximumCosines,
             NativeSkinningFacePairRestLengths[] facePairRestLengths,
-            int[] evaluatedVertexIndices,
-            int connectedVertexCount,
-            int lowerArmBoneIndex,
-            int[][] facePairIndicesByVertex,
-            int[][] affectedFaceIndicesByVertex,
-            float armChainLength)
+            int[] evaluatedVertexIndices, int connectedVertexCount, int lowerArmBoneIndex, int[][] facePairIndicesByVertex, int[][] affectedFaceIndicesByVertex, float armChainLength)
         {
             Renderer = renderer;
             Side = side;
@@ -34,16 +29,14 @@ namespace Fbx2Vmd.FBXImporter
             AffectedFaceIndices = affectedFaceIndices;
             FacePairs = facePairs;
             RestAnglesDegrees = restAnglesDegrees;
-            RestShapeRecoveryMaximumCosines =
-                restShapeRecoveryMaximumCosines;
+            RestShapeRecoveryMaximumCosines = restShapeRecoveryMaximumCosines;
             FacePairRestLengths = facePairRestLengths;
             EvaluatedVertexIndices = evaluatedVertexIndices;
             ConnectedVertexCount = connectedVertexCount;
             LowerArmBoneIndex = lowerArmBoneIndex;
             FacePairIndicesByVertex = facePairIndicesByVertex;
             AffectedFaceIndicesByVertex = affectedFaceIndicesByVertex;
-            ArmChainLength = armChainLength;
-        }
+            ArmChainLength = armChainLength; }
 
         internal SkinnedMeshRenderer Renderer { get; }
 
@@ -65,23 +58,6 @@ namespace Fbx2Vmd.FBXImporter
 
         internal NativeSkinningFacePairRestLengths[] FacePairRestLengths { get; }
 
-        internal int[] EvaluatedVertexIndices { get; }
-
-        internal int ConnectedVertexCount { get; }
-
-        internal int LowerArmBoneIndex { get; }
-
-        internal int[][] FacePairIndicesByVertex { get; }
-
-        internal int[][] AffectedFaceIndicesByVertex { get; }
-
-        internal float ArmChainLength { get; }
-
-        internal int AffectedFaceCount => AffectedFaceIndices.Length;
-
-        internal int FacePairCount => FacePairs.Length;
-
-        internal int EvaluatedVertexCount => EvaluatedVertexIndices.Length;
     }
 
     /// <summary>
@@ -96,56 +72,29 @@ namespace Fbx2Vmd.FBXImporter
             out NativeSkinningSurfaceContract contract)
         {
             contract = null;
-            if (selection == null ||
-                selection.Renderer == null ||
-                selection.Renderer.sharedMesh == null)
+            if (selection == null || selection.Renderer == null || selection.Renderer.sharedMesh == null)
             {
                 return false;
             }
-
             Mesh mesh = selection.Renderer.sharedMesh;
             Vector3[] restVertices = mesh.vertices;
             int[] triangles = mesh.triangles;
             int[] evaluatedVertices = selection.EvaluatedVertexIndices.ToArray();
-            if (restVertices.Length != mesh.vertexCount ||
-                triangles.Length < 3 ||
-                evaluatedVertices.Length < 4 ||
-                selection.ConnectedVertexCount < evaluatedVertices.Length ||
+            if (restVertices.Length != mesh.vertexCount || triangles.Length < 3 || evaluatedVertices.Length < 4 || selection.ConnectedVertexCount < evaluatedVertices.Length ||
                 evaluatedVertices.Any(index => index < 0 || index >= mesh.vertexCount))
             {
                 return false;
             }
-
             var evaluatedVertexSet = new HashSet<int>(evaluatedVertices);
-            if (!TryCollectTopology(
-                    triangles, evaluatedVertexSet,
-                    out HashSet<int> affectedFaces,
-                    out NativeSkinningFacePair[] facePairs))
+            if (!TryCollectTopology( triangles, evaluatedVertexSet, out HashSet<int> affectedFaces, out NativeSkinningFacePair[] facePairs))
             {
                 return false;
             }
-
-            BuildRestGeometry(
-                restVertices, facePairs,
-                out float[] restAngles,
-                out float[] restShapeRecoveryMaximumCosines,
-                out NativeSkinningFacePairRestLengths[] facePairRestLengths);
+            BuildRestGeometry( restVertices, facePairs, out float[] restAngles, out float[] restShapeRecoveryMaximumCosines, out NativeSkinningFacePairRestLengths[] facePairRestLengths);
             int[] orderedAffectedFaces = affectedFaces
-                .OrderBy(index => index)
-                .ToArray();
-            contract = CreateContract(
-                selection,
-                mesh,
-                restVertices,
-                triangles,
-                orderedAffectedFaces,
-                facePairs,
-                restAngles,
-                restShapeRecoveryMaximumCosines,
-                facePairRestLengths,
-                evaluatedVertices);
-            return true;
-        }
+                .OrderBy(index => index) .ToArray();
+            contract = CreateContract( selection, mesh, restVertices, triangles, orderedAffectedFaces, facePairs, restAngles, restShapeRecoveryMaximumCosines, facePairRestLengths, evaluatedVertices);
+            return true; }
 
         static NativeSkinningSurfaceContract CreateContract(
             NativeSkinningArmSurfaceSelection selection,
@@ -174,13 +123,7 @@ namespace Fbx2Vmd.FBXImporter
                 selection.ConnectedVertexCount,
                 selection.LowerArmBoneIndex,
                 BuildFacePairIndicesByVertex(mesh.vertexCount, facePairs),
-                BuildFaceIndicesByVertex(
-                    mesh.vertexCount,
-                    triangles,
-                    orderedAffectedFaces),
-                selection.ArmChainLength);
-        }
-
+                BuildFaceIndicesByVertex( mesh.vertexCount, triangles, orderedAffectedFaces), selection.ArmChainLength); }
         static bool TryCollectTopology(
             int[] triangles, HashSet<int> evaluatedVertexSet,
             out HashSet<int> affectedFaces,
@@ -195,9 +138,7 @@ namespace Fbx2Vmd.FBXImporter
                 int first = triangles[offset];
                 int second = triangles[offset + 1];
                 int third = triangles[offset + 2];
-                if (evaluatedVertexSet.Contains(first) ||
-                    evaluatedVertexSet.Contains(second) ||
-                    evaluatedVertexSet.Contains(third))
+                if (evaluatedVertexSet.Contains(first) || evaluatedVertexSet.Contains(second) || evaluatedVertexSet.Contains(third))
                 {
                     affectedFaces.Add(faceIndex);
                 }
@@ -205,21 +146,12 @@ namespace Fbx2Vmd.FBXImporter
                 AddEdgeFace(edgeFaces, new NativeSkinningEdgeKey(second, third), faceIndex);
                 AddEdgeFace(edgeFaces, new NativeSkinningEdgeKey(third, first), faceIndex);
             }
-
             // 람다는 out 파라미터를 캡처할 수 없으므로 로컬 별칭으로 필터링한다.
             HashSet<int> affectedFaceSet = affectedFaces;
             facePairs = edgeFaces
-                .Where(entry => entry.Value.Count == 2 &&
-                    (affectedFaceSet.Contains(entry.Value[0]) ||
-                     affectedFaceSet.Contains(entry.Value[1])))
-                .Select(entry => CreateFacePair(
-                    triangles,
-                    entry.Key,
-                    entry.Value[0],
-                    entry.Value[1]))
-                .ToArray();
-            return facePairs.Length != 0;
-        }
+                .Where(entry => entry.Value.Count == 2 && (affectedFaceSet.Contains(entry.Value[0]) || affectedFaceSet.Contains(entry.Value[1])))
+                .Select(entry => CreateFacePair( triangles, entry.Key, entry.Value[0], entry.Value[1])) .ToArray();
+            return facePairs.Length != 0; }
 
         static void BuildRestGeometry(
             Vector3[] restVertices, NativeSkinningFacePair[] facePairs,
@@ -359,17 +291,9 @@ namespace Fbx2Vmd.FBXImporter
                 secondFace,
                 firstOpposite,
                 secondOpposite,
-                firstEdge,
-                secondEdge);
-        }
+                firstEdge, secondEdge); }
 
-        private static bool TryFindOrientedEdge(
-            IReadOnlyList<int> triangles,
-            int faceIndex,
-            NativeSkinningEdgeKey edge,
-            out int opposite,
-            out int firstEdge,
-            out int secondEdge)
+        private static bool TryFindOrientedEdge( IReadOnlyList<int> triangles, int faceIndex, NativeSkinningEdgeKey edge, out int opposite, out int firstEdge, out int secondEdge)
         {
             int offset = faceIndex * 3;
             int first = triangles[offset];
@@ -380,28 +304,23 @@ namespace Fbx2Vmd.FBXImporter
                 opposite = third;
                 firstEdge = first;
                 secondEdge = second;
-                return true;
-            }
+                return true; }
             if (edge.Equals(new NativeSkinningEdgeKey(second, third)))
             {
                 opposite = first;
                 firstEdge = second;
                 secondEdge = third;
-                return true;
-            }
+                return true; }
             if (edge.Equals(new NativeSkinningEdgeKey(third, first)))
             {
                 opposite = second;
                 firstEdge = third;
                 secondEdge = first;
-                return true;
-            }
-
+                return true; }
             opposite = -1;
             firstEdge = -1;
             secondEdge = -1;
-            return false;
-        }
+            return false; }
 
         private static int FindOppositeVertex(
             IReadOnlyList<int> triangles,

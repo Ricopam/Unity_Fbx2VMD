@@ -263,30 +263,17 @@ namespace Fbx2Vmd.ClothPhysics
             SetFieldObj(chainType, chain, "LooseRoot", false);
             SetFieldObj(chainType, chain, "ParamsOverride", sharedParams);
             // Boing CurveType은 enum 순서가 같으므로 int 캐스팅이 통한다
-            SetFieldObj(chainType, chain, "AnimationBlendCurveType",
-                Enum.ToObject(chainType.GetField("AnimationBlendCurveType").FieldType,
-                    (int)spec.animationBlend.type));
-            SetFieldObj(chainType, chain, "AnimationBlendCustomCurve",
-                SafeCurve(spec.animationBlend));
-            SetFieldObj(chainType, chain, "PoseStiffnessCurveType",
-                Enum.ToObject(chainType.GetField("PoseStiffnessCurveType").FieldType,
-                    (int)spec.poseStiffness.type));
-            SetFieldObj(chainType, chain, "PoseStiffnessCustomCurve",
-                SafeCurve(spec.poseStiffness));
+            SetFieldObj(chainType, chain, "AnimationBlendCurveType", Enum.ToObject(chainType.GetField("AnimationBlendCurveType").FieldType, (int)spec.animationBlend.type));
+            SetFieldObj(chainType, chain, "AnimationBlendCustomCurve", SafeCurve(spec.animationBlend));
+            SetFieldObj(chainType, chain, "PoseStiffnessCurveType", Enum.ToObject(chainType.GetField("PoseStiffnessCurveType").FieldType, (int)spec.poseStiffness.type));
+            SetFieldObj(chainType, chain, "PoseStiffnessCustomCurve", SafeCurve(spec.poseStiffness));
             SetFieldObj(chainType, chain, "MaxBendAngleCap", spec.maxBendAngleDeg);
-            SetFieldObj(chainType, chain, "BendAngleCapCurveType",
-                Enum.ToObject(chainType.GetField("BendAngleCapCurveType").FieldType,
-                    (int)spec.bendAngleCap.type));
-            SetFieldObj(chainType, chain, "BendAngleCapCustomCurve",
-                SafeCurve(spec.bendAngleCap));
+            SetFieldObj(chainType, chain, "BendAngleCapCurveType", Enum.ToObject(chainType.GetField("BendAngleCapCurveType").FieldType, (int)spec.bendAngleCap.type));
+            SetFieldObj(chainType, chain, "BendAngleCapCustomCurve", SafeCurve(spec.bendAngleCap));
             SetFieldObj(chainType, chain, "MaxCollisionRadius", spec.maxCollisionRadius);
-            SetFieldObj(chainType, chain, "CollisionRadiusCurveType",
-                Enum.ToObject(chainType.GetField("CollisionRadiusCurveType").FieldType,
-                    (int)spec.collisionRadius.type));
-            SetFieldObj(chainType, chain, "CollisionRadiusCustomCurve",
-                SafeCurve(spec.collisionRadius));
-            SetFieldObj(chainType, chain, "EnableInterChainCollision",
-                spec.interChainCollision);
+            SetFieldObj(chainType, chain, "CollisionRadiusCurveType", Enum.ToObject(chainType.GetField("CollisionRadiusCurveType").FieldType, (int)spec.collisionRadius.type));
+            SetFieldObj(chainType, chain, "CollisionRadiusCustomCurve", SafeCurve(spec.collisionRadius));
+            SetFieldObj(chainType, chain, "EnableInterChainCollision", spec.interChainCollision);
             SetFieldObj(chainType, chain, "Gravity", Vector3.down * spec.gravity);
         }
 

@@ -29,8 +29,7 @@ namespace Fbx2Vmd.ClothPhysics
 
         static void Flatten(object obj, string prefix, SortedDictionary<string, string> map, int depth)
         {
-            if (obj == null || depth > 8)
-                return;
+            if (obj == null || depth > 8) return;
             var type = obj.GetType();
             foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
@@ -40,36 +39,25 @@ namespace Fbx2Vmd.ClothPhysics
                 if (v == null)
                 {
                     map[key] = "null";
-                    continue;
-                }
+                    continue; }
                 if (ft == typeof(string))
                 {
                     map[key] = "\"" + v + "\"";
-                    continue;
-                }
+                    continue; }
                 if (ft.IsPrimitive || ft.IsEnum || ft == typeof(decimal))
                 {
-                    map[key] = System.Convert.ToString(v,
-                        System.Globalization.CultureInfo.InvariantCulture);
-                    continue;
-                }
+                    map[key] = System.Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture);
+                    continue; }
                 // AnimationCurve는 공개 필드가 없는 래퍼라 재귀로는 아무것도
                 // 잡히지 않는다 — 깊이 커브 튜닝 값이므로 키·탄젠트까지 직렬화한다
                 if (v is AnimationCurve ac)
                 {
                     map[key] = SerializeCurve(ac);
-                    continue;
-                }
+                    continue; }
                 // 참조·컬렉션은 구조 데이터 — 파라미터 스냅샷에서 제외
-                if (typeof(UnityEngine.Object).IsAssignableFrom(ft) ||
-                    typeof(System.Collections.IList).IsAssignableFrom(ft) ||
-                    typeof(System.Collections.IDictionary).IsAssignableFrom(ft) ||
-                    ft.IsSubclassOf(typeof(System.Delegate)))
-                    continue;
+                if (typeof(UnityEngine.Object).IsAssignableFrom(ft) || typeof(System.Collections.IList).IsAssignableFrom(ft) || typeof(System.Collections.IDictionary).IsAssignableFrom(ft) || ft.IsSubclassOf(typeof(System.Delegate))) continue;
                 // 값형/설정 블록 — 재귀 평탄화로 필드 단위 diff를 확보한다
-                Flatten(v, key, map, depth + 1);
-            }
-        }
+                Flatten(v, key, map, depth + 1); } }
 
         /// <summary>
         /// AnimationCurve를 랩 모드 + 키(시간/값/탄젠트/가중치/모드) 목록으로

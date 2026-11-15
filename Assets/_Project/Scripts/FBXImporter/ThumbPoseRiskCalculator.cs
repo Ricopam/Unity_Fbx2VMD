@@ -118,32 +118,16 @@ namespace Fbx2Vmd.FBXImporter
 
             if (IsFinite(currentDistance) && IsFinite(initialDistance))
             {
-                helperDistanceRisk = CalculateAboveThreshold(
-                    Mathf.Abs(currentDistance - initialDistance),
-                    HelperDistanceDeltaWarning,
-                    HelperDistanceDeltaFullRisk);
+                helperDistanceRisk = CalculateAboveThreshold( Mathf.Abs(currentDistance - initialDistance), HelperDistanceDeltaWarning, HelperDistanceDeltaFullRisk);
             }
 
             if (IsFinite(rotationDelta))
             {
-                helperRotationRisk = CalculateAboveThreshold(
-                    rotationDelta,
-                    HelperRotationWarning,
-                    HelperRotationFullRisk);
-                webbingRisk = FindMaximumFinite(
-                    spreadRisk,
-                    projectionRisk,
-                    helperDistanceRisk,
-                    CalculateAboveThreshold(
-                        rotationDelta,
-                        WebbingRotationWarning,
-                        WebbingRotationFullRisk));
+                helperRotationRisk = CalculateAboveThreshold( rotationDelta, HelperRotationWarning, HelperRotationFullRisk);
+                webbingRisk = FindMaximumFinite( spreadRisk, projectionRisk, helperDistanceRisk, CalculateAboveThreshold( rotationDelta, WebbingRotationWarning, WebbingRotationFullRisk));
             }
 
-            return !float.IsNaN(FindMaximumFinite(
-                helperDistanceRisk,
-                helperRotationRisk,
-                webbingRisk));
+            return !float.IsNaN(FindMaximumFinite( helperDistanceRisk, helperRotationRisk, webbingRisk));
         }
 
         private static bool IsFinite(float value)

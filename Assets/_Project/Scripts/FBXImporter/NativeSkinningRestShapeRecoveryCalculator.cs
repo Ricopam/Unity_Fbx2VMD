@@ -4,29 +4,6 @@ using UnityEngine;
 
 namespace Fbx2Vmd.FBXImporter
 {
-    internal readonly struct NativeSkinningMaterialStrainConstraint
-    {
-        internal NativeSkinningMaterialStrainConstraint(
-            int[] localIndices,
-            float[] coefficients,
-            Vector3 projectedDelta,
-            float weight)
-        {
-            LocalIndices = localIndices;
-            Coefficients = coefficients;
-            ProjectedDelta = projectedDelta;
-            Weight = weight;
-        }
-
-        internal int[] LocalIndices { get; }
-
-        internal float[] Coefficients { get; }
-
-        internal Vector3 ProjectedDelta { get; }
-
-        internal float Weight { get; }
-    }
-
     /// <summary>
     /// 휴식 삼각형의 재질 좌표계를 기준으로 심한 스키닝 압축 복원 제약을 계산함.
     /// </summary>
@@ -51,25 +28,11 @@ namespace Fbx2Vmd.FBXImporter
                 int first = triangles[offset];
                 int second = triangles[offset + 1];
                 int third = triangles[offset + 2];
-                OrderByLongestRestEdge(
-                    restVertices,
-                    ref first,
-                    ref second,
-                    ref third);
-                int[] localIndices =
-                {
-                    localIndexByVertex[first],
-                    localIndexByVertex[second],
-                    localIndexByVertex[third]
+                OrderByLongestRestEdge( restVertices, ref first, ref second, ref third);
+                int[] localIndices = {
+                    localIndexByVertex[first], localIndexByVertex[second], localIndexByVertex[third]
                 };
-                if (localIndices.Any(localIndex => localIndex < 0) ||
-                    !TryBuildDeformationGradient(
-                        restVertices,
-                        baselineVertices,
-                        currentVertices,
-                        first,
-                        second,
-                        third,
+                if (localIndices.Any(localIndex => localIndex < 0) || !TryBuildDeformationGradient( restVertices, baselineVertices, currentVertices, first, second, third,
                         out DeformationGradient gradient))
                 {
                     continue;
@@ -88,45 +51,27 @@ namespace Fbx2Vmd.FBXImporter
             foreach (Vector2 materialDirection in
                      BuildMaterialDirections(gradient))
             {
-                Vector3 baselineDirection = CalculateDirectionalDeformation(
-                    gradient.BaselineFirstColumn,
-                    gradient.BaselineSecondColumn,
-                    materialDirection);
-                Vector3 currentDirection = CalculateDirectionalDeformation(
-                    gradient.CurrentFirstColumn,
-                    gradient.CurrentSecondColumn,
-                    materialDirection);
+                Vector3 baselineDirection = CalculateDirectionalDeformation( gradient.BaselineFirstColumn, gradient.BaselineSecondColumn, materialDirection);
+                Vector3 currentDirection = CalculateDirectionalDeformation( gradient.CurrentFirstColumn, gradient.CurrentSecondColumn, materialDirection);
                 float currentStretch = currentDirection.magnitude;
                 if (currentStretch <= MinimumLength)
                 {
                     continue;
                 }
 
-                float targetStretch = ClampStretch(
-                    currentStretch,
-                    baselineDirection.magnitude);
+                float targetStretch = ClampStretch( currentStretch, baselineDirection.magnitude);
                 if (Mathf.Approximately(currentStretch, targetStretch))
                 {
                     continue;
                 }
 
-                float firstEdgeCoefficient =
-                    gradient.Inverse00 * materialDirection.x +
-                    gradient.Inverse01 * materialDirection.y;
-                float secondEdgeCoefficient =
-                    gradient.Inverse10 * materialDirection.x +
-                    gradient.Inverse11 * materialDirection.y;
-                constraints.Add(new NativeSkinningMaterialStrainConstraint(
-                    localIndices,
-                    new[]
+                float firstEdgeCoefficient = gradient.Inverse00 * materialDirection.x + gradient.Inverse01 * materialDirection.y;
+                float secondEdgeCoefficient = gradient.Inverse10 * materialDirection.x + gradient.Inverse11 * materialDirection.y;
+                constraints.Add(new NativeSkinningMaterialStrainConstraint( localIndices, new[]
                     {
-                        -firstEdgeCoefficient - secondEdgeCoefficient,
-                        firstEdgeCoefficient,
-                        secondEdgeCoefficient
-                    },
-                    currentDirection *
-                    (targetStretch / currentStretch - 1f),
-                    gradient.RestArea));
+                        -firstEdgeCoefficient - secondEdgeCoefficient, firstEdgeCoefficient, secondEdgeCoefficient
+                    }, currentDirection *
+                    (targetStretch / currentStretch - 1f), gradient.RestArea));
             }
         }
 
@@ -202,8 +147,7 @@ namespace Fbx2Vmd.FBXImporter
             Vector3 restNormal = Vector3.Cross(restFirstEdge, restSecondEdge);
             float restFirstLength = restFirstEdge.magnitude;
             float restDoubleArea = restNormal.magnitude;
-            if (restFirstLength <= MinimumLength ||
-                restDoubleArea <= MinimumLength)
+            if (restFirstLength <= MinimumLength || restDoubleArea <= MinimumLength)
             {
                 gradient = default;
                 return false;
@@ -221,17 +165,7 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            gradient = CreateGradient(
-                baselineVertices,
-                currentVertices,
-                first,
-                second,
-                third,
-                restFirstLength,
-                restDoubleArea,
-                restSecondX,
-                restSecondY,
-                determinant);
+            gradient = CreateGradient( baselineVertices, currentVertices, first, second, third, restFirstLength, restDoubleArea, restSecondX, restSecondY, determinant);
             return true;
         }
 
@@ -251,40 +185,10 @@ namespace Fbx2Vmd.FBXImporter
             float inverse01 = -restSecondX / determinant;
             const float inverse10 = 0f;
             float inverse11 = restFirstLength / determinant;
-            BuildGradientColumns(
-                baselineVertices,
-                first,
-                second,
-                third,
-                inverse00,
-                inverse01,
-                inverse10,
-                inverse11,
-                out Vector3 baselineFirstColumn,
-                out Vector3 baselineSecondColumn);
-            BuildGradientColumns(
-                currentVertices,
-                first,
-                second,
-                third,
-                inverse00,
-                inverse01,
-                inverse10,
-                inverse11,
-                out Vector3 currentFirstColumn,
-                out Vector3 currentSecondColumn);
-            return new DeformationGradient(
-                inverse00,
-                inverse01,
-                inverse10,
-                inverse11,
-                restDoubleArea * 0.5f,
-                restFirstLength,
-                new Vector2(restSecondX, restSecondY),
-                baselineFirstColumn,
-                baselineSecondColumn,
-                currentFirstColumn,
-                currentSecondColumn);
+            BuildGradientColumns( baselineVertices, first, second, third, inverse00, inverse01, inverse10, inverse11, out Vector3 baselineFirstColumn, out Vector3 baselineSecondColumn);
+            BuildGradientColumns( currentVertices, first, second, third, inverse00, inverse01, inverse10, inverse11, out Vector3 currentFirstColumn, out Vector3 currentSecondColumn);
+            return new DeformationGradient( inverse00, inverse01, inverse10, inverse11, restDoubleArea * 0.5f, restFirstLength, new Vector2(restSecondX, restSecondY), baselineFirstColumn,
+                baselineSecondColumn, currentFirstColumn, currentSecondColumn);
         }
 
         private static void BuildGradientColumns(

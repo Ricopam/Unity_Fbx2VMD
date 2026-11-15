@@ -23,14 +23,6 @@ namespace Fbx2Vmd.FBXImporter
             internal float SourceSolveWeight { get; set; }
             internal bool HasValidatedSupport { get; private set; }
             internal Vector3 SupportedPosition { get; private set; }
-            private Quaternion _supportedFrame;
-            internal float SupportWeight { get; private set; }
-            internal Vector3 EffectiveGoal { get; private set; }
-            private Quaternion _effectiveFrame;
-            internal bool[] Pin = Array.Empty<bool>();
-            internal bool[] Grounded = Array.Empty<bool>();
-
-            private HumanoidFootRotationBinding _binding;
             internal void CaptureValidatedSupport(bool supported)
             {
                 HasValidatedSupport = false;
@@ -98,28 +90,20 @@ namespace Fbx2Vmd.FBXImporter
             {
                 Clear();
                 IsLeft = isLeft;
-                Upper = animator.GetBoneTransform(
-                    isLeft ? HumanBodyBones.LeftUpperLeg : HumanBodyBones.RightUpperLeg);
-                Lower = animator.GetBoneTransform(
-                    isLeft ? HumanBodyBones.LeftLowerLeg : HumanBodyBones.RightLowerLeg);
-                Foot = animator.GetBoneTransform(
-                    isLeft ? HumanBodyBones.LeftFoot : HumanBodyBones.RightFoot);
-                Transform toes = animator.GetBoneTransform(
-                    isLeft ? HumanBodyBones.LeftToes : HumanBodyBones.RightToes);
-                if (Upper == null || Lower == null || Foot == null ||
-                    !Lower.IsChildOf(Upper) || !Foot.IsChildOf(Lower))
+                Upper = animator.GetBoneTransform( isLeft ? HumanBodyBones.LeftUpperLeg : HumanBodyBones.RightUpperLeg);
+                Lower = animator.GetBoneTransform( isLeft ? HumanBodyBones.LeftLowerLeg : HumanBodyBones.RightLowerLeg);
+                Foot = animator.GetBoneTransform( isLeft ? HumanBodyBones.LeftFoot : HumanBodyBones.RightFoot);
+                Transform toes = animator.GetBoneTransform( isLeft ? HumanBodyBones.LeftToes : HumanBodyBones.RightToes);
+                if (Upper == null || Lower == null || Foot == null || !Lower.IsChildOf(Upper) || !Foot.IsChildOf(Lower))
                 {
                     return false;
                 }
                 UpperLength = Vector3.Distance(Upper.position, Lower.position);
                 LowerLength = Vector3.Distance(Lower.position, Foot.position);
-                _stableNormalSquaredThreshold =
-                    UpperLength * LowerLength * MinimumStableBendSine;
+                _stableNormalSquaredThreshold = UpperLength * LowerLength * MinimumStableBendSine;
                 _stableNormalSquaredThreshold *= _stableNormalSquaredThreshold;
-                HumanoidFootRotationBinding.TryCreate(Foot, toes, animator.transform.up,
-                    out _binding);
-                _lastBendNormal = Vector3.Cross(
-                    Lower.position - Upper.position, Foot.position - Lower.position);
+                HumanoidFootRotationBinding.TryCreate(Foot, toes, animator.transform.up, out _binding);
+                _lastBendNormal = Vector3.Cross( Lower.position - Upper.position, Foot.position - Lower.position);
                 if (!IsStableBendNormal(_lastBendNormal))
                 {
                     _lastBendNormal = animator.transform.right;
@@ -128,8 +112,7 @@ namespace Fbx2Vmd.FBXImporter
                 return UpperLength > 0f && LowerLength > 0f;
             }
 
-            internal void UpdateWeights(float alpha, bool pinned,
-                bool reset, float dt)
+            internal void UpdateWeights(float alpha, bool pinned, bool reset, float dt)
             {
                 float target = alpha * (pinned ? 1f : 0f);
                 if (reset)
@@ -142,16 +125,14 @@ namespace Fbx2Vmd.FBXImporter
                     // 새 위치의 골반 계산·해제 블렌드로 번지지 않게 함.
                     _pinAnchorValid = false;
                     _pinReleased = false;
-                    return;
-                }
+                    return; }
                 if (dt <= 0f)
                 {
                     // 같은 시각 재평가(Seek 동일 시각·자세 복원 재적용) — 경과 시간이
                     // 없으므로 상태를 유지해 멱등 재적용이 되게 함. 여기서 스냅하면
                     // 핀 앵커 파괴·weight 급변으로 재평가마다 발이 점프함
                     // (gate의 ApplyGateHold도 같은 규약으로 멱등 처리함).
-                    return;
-                }
+                    return; }
                 // 선형 전이 — 프레임당 변화량이 일정해 해제·진입 시의 자세 갭
                 // 노출 스텝이 갭/전이 프레임 수로 상한 아래에 머묾.
                 Weight = Mathf.MoveTowards(Weight, target, PinWeightChangePerSecond * dt);
@@ -164,10 +145,7 @@ namespace Fbx2Vmd.FBXImporter
                     // 핀 에피소드 종료 — weight 소실 후 TrySolve가 다시 안 불려도
                     // 앵커가 남아 다음 재진입의 골반 계산을 오염하지 않게 함.
                     _pinAnchorValid = false;
-                    _pinReleased = false;
-                }
-            }
-
+                    _pinReleased = false; } }
 
             internal void Clear()
             {

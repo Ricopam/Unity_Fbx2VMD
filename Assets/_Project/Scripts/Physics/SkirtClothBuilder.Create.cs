@@ -165,12 +165,7 @@ namespace Fbx2Vmd.ClothPhysics
         /// 스커트 공통 시뮬레이션 파라미터 — MeshCloth·BoneCloth 루프 경로가 공유한다.
         /// 공식 Skirt 프리셋을 베이스라인으로 두고 프로젝트 관리 필드를 덮어쓴다.
         /// </summary>
-        internal static void ApplySimParams(
-            ClothSerializeData sdata,
-            List<ColliderComponent> colliders,
-            bool useBackstop,
-            float backstopDistance,
-            in SkirtTuning tuning)
+        internal static void ApplySimParams( ClothSerializeData sdata, List<ColliderComponent> colliders, bool useBackstop, float backstopDistance, in SkirtTuning tuning)
         {
             // 공식 MeshCloth_Skirt 프리셋 + 런타임 예제 파라미터
             sdata.updateMode = ClothUpdateMode.AnimatorLinkage;
@@ -179,7 +174,6 @@ namespace Fbx2Vmd.ClothPhysics
             sdata.damping.SetValue(0.1f);
             sdata.radius.SetValue(0.02f);
             sdata.stablizationTimeAfterReset = 0.1f;
-
             var inertia = sdata.inertiaConstraint;
             inertia.movementInertiaSmoothing = 0.4f;
             inertia.movementSpeedLimit.SetValue(true, 5.0f);
@@ -193,15 +187,12 @@ namespace Fbx2Vmd.ClothPhysics
             inertia.teleportMode = InertiaConstraint.TeleportMode.Keep;
             inertia.teleportDistance = 0.5f;
             inertia.teleportRotation = 90.0f;
-
             sdata.tetherConstraint.distanceCompression = 0.3f;
             sdata.distanceConstraint.stiffness.SetValue(1.0f, 1.0f, 0.5f, true);
             sdata.triangleBendingConstraint.stiffness = 1.0f; // MeshCloth 사실상 필수
-
             ApplyAngleConstraints(sdata, tuning);
             ApplyMotionParams(sdata, useBackstop, backstopDistance);
-            ApplyColliderAndSpringParams(sdata, colliders);
-        }
+            ApplyColliderAndSpringParams(sdata, colliders); }
 
         static void ApplyAngleConstraints(ClothSerializeData sdata, in SkirtTuning tuning)
         {

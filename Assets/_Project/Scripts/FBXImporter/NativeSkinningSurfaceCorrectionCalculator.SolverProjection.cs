@@ -53,14 +53,9 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-            float minimumLength =
-                edge.BaselineLength * (1f - maximumAbsoluteStrain);
-            float maximumLength =
-                edge.BaselineLength * (1f + maximumAbsoluteStrain);
-            float targetLength = Mathf.Clamp(
-                length,
-                minimumLength,
-                maximumLength);
+            float minimumLength = edge.BaselineLength * (1f - maximumAbsoluteStrain);
+            float maximumLength = edge.BaselineLength * (1f + maximumAbsoluteStrain);
+            float targetLength = Mathf.Clamp( length, minimumLength, maximumLength);
             if (Mathf.Approximately(length, targetLength))
             {
                 return false;
@@ -72,20 +67,12 @@ namespace Fbx2Vmd.FBXImporter
             float share = movesFirst && movesSecond ? 0.5f : 1f;
             if (movesFirst)
             {
-                proposedLocalPositions[edge.FirstLocalIndex] =
-                    ClampDisplacementFromBaseline(
-                        currentVertices[
-                            constrainedVertices[edge.FirstLocalIndex]],
-                        first + correction * share,
+                proposedLocalPositions[edge.FirstLocalIndex] = ClampDisplacementFromBaseline( currentVertices[ constrainedVertices[edge.FirstLocalIndex]], first + correction * share,
                         MaximumAbsoluteStep);
             }
             if (movesSecond)
             {
-                proposedLocalPositions[edge.SecondLocalIndex] =
-                    ClampDisplacementFromBaseline(
-                        currentVertices[
-                            constrainedVertices[edge.SecondLocalIndex]],
-                        second - correction * share,
+                proposedLocalPositions[edge.SecondLocalIndex] = ClampDisplacementFromBaseline( currentVertices[ constrainedVertices[edge.SecondLocalIndex]], second - correction * share,
                         MaximumAbsoluteStep);
             }
             return true;
@@ -133,48 +120,30 @@ namespace Fbx2Vmd.FBXImporter
                 bool canMoveSecond = edge.SecondLocalIndex >= 0;
                 if (!canMoveFirst && !canMoveSecond)
                 {
-                    continue;
-                }
-
-                Vector3 currentEdge =
-                    currentVertices[edge.SecondVertex] -
-                    currentVertices[edge.FirstVertex];
+                    continue; }
+                Vector3 currentEdge = currentVertices[edge.SecondVertex] - currentVertices[edge.FirstVertex];
                 Vector3 proposedFirst = canMoveFirst
-                    ? proposedLocalPositions[edge.FirstLocalIndex]
-                    : currentVertices[edge.FirstVertex];
+                    ? proposedLocalPositions[edge.FirstLocalIndex] : currentVertices[edge.FirstVertex];
                 Vector3 proposedSecond = canMoveSecond
-                    ? proposedLocalPositions[edge.SecondLocalIndex]
-                    : currentVertices[edge.SecondVertex];
+                    ? proposedLocalPositions[edge.SecondLocalIndex] : currentVertices[edge.SecondVertex];
                 Vector3 proposedEdge = proposedSecond - proposedFirst;
                 float currentLength = currentEdge.magnitude;
                 float proposedLength = proposedEdge.magnitude;
-                if (currentLength <= 0.00000001f ||
-                    proposedLength <= 0.00000001f)
+                if (currentLength <= 0.00000001f || proposedLength <= 0.00000001f)
                 {
-                    continue;
-                }
-
+                    continue; }
                 float baselineRatio = edge.BaselineLength / edge.RestLength;
                 // 계산용 스키닝과 재생 정점의 반올림 차이로 경계를 넘지 않도록 출력 여유를 남김.
-                float maximumAbsoluteStrain = Mathf.Abs(baselineRatio - 1f) +
-                    NativeSkinningRestShapeRecoveryCalculator
-                        .MaximumRestStrainIncrease - EdgeLengthProjectionMargin;
+                float maximumAbsoluteStrain = Mathf.Abs(baselineRatio - 1f) + NativeSkinningRestShapeRecoveryCalculator .MaximumRestStrainIncrease - EdgeLengthProjectionMargin;
                 float minimumRatio = Mathf.Max(0f, 1f - maximumAbsoluteStrain);
                 float maximumRatio = 1f + maximumAbsoluteStrain;
                 float currentRatio = currentLength / edge.RestLength;
                 float proposedRatio = proposedLength / edge.RestLength;
-                if (!TryResolveStrainTargetRatio(
-                        currentRatio, proposedRatio, minimumRatio, maximumRatio,
-                        out float targetRatio))
+                if (!TryResolveStrainTargetRatio( currentRatio, proposedRatio, minimumRatio, maximumRatio, out float targetRatio))
                 {
-                    continue;
-                }
-
-                ApplyStrainCorrection(
-                    edge, proposedEdge, proposedLength, targetRatio,
-                    canMoveFirst, canMoveSecond, proposedLocalPositions);
-                projectionCount++;
-            }
+                    continue; }
+                ApplyStrainCorrection( edge, proposedEdge, proposedLength, targetRatio, canMoveFirst, canMoveSecond, proposedLocalPositions);
+                projectionCount++; }
             return projectionCount;
         }
 
@@ -225,19 +194,13 @@ namespace Fbx2Vmd.FBXImporter
             {
                 targetRatio = minimumRatio;
             }
-            else if (currentRatio <=
-                         minimumRatio + RestShapeActiveSetActivationMargin &&
-                     proposedRatio < currentRatio)
+            else if (currentRatio <= minimumRatio + RestShapeActiveSetActivationMargin && proposedRatio < currentRatio)
             {
-                targetRatio = currentRatio;
-            }
-            else
+                targetRatio = currentRatio; } else
             {
                 targetRatio = 0f;
-                return false;
-            }
-            return true;
-        }
+                return false; }
+            return true; }
 
         private static int ProjectRestShapeDihedralBounds(
             IReadOnlyList<Vector3> baselineVertices,
@@ -274,45 +237,22 @@ namespace Fbx2Vmd.FBXImporter
             int pairIndex)
         {
             NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
-            Vector3 opposite0 = ReadProposedPosition(
-                pair.FirstOpposite, currentVertices, proposedLocalPositions, localIndexByVertex);
-            Vector3 opposite1 = ReadProposedPosition(
-                pair.SecondOpposite, currentVertices, proposedLocalPositions, localIndexByVertex);
-            Vector3 edge0 = ReadProposedPosition(
-                pair.FirstEdge, currentVertices, proposedLocalPositions, localIndexByVertex);
-            Vector3 edge1 = ReadProposedPosition(
-                pair.SecondEdge, currentVertices, proposedLocalPositions, localIndexByVertex);
-            if (!MeshDihedralConstraintCalculator.TryCalculateCorrections(
-                    opposite0,
-                    opposite1,
-                    edge0,
-                    edge1,
-                    ResolveProjectionAngleDegrees(
-                        baselineVertices,
-                        contract,
-                        pairIndex),
-                    1f,
-                    out Vector3 correction0,
-                    out Vector3 correction1,
-                    out Vector3 correction2,
-                    out Vector3 correction3))
+            Vector3 opposite0 = ReadProposedPosition( pair.FirstOpposite, currentVertices, proposedLocalPositions, localIndexByVertex);
+            Vector3 opposite1 = ReadProposedPosition( pair.SecondOpposite, currentVertices, proposedLocalPositions, localIndexByVertex);
+            Vector3 edge0 = ReadProposedPosition( pair.FirstEdge, currentVertices, proposedLocalPositions, localIndexByVertex);
+            Vector3 edge1 = ReadProposedPosition( pair.SecondEdge, currentVertices, proposedLocalPositions, localIndexByVertex);
+            if (!MeshDihedralConstraintCalculator.TryCalculateCorrections( opposite0, opposite1, edge0, edge1, ResolveProjectionAngleDegrees( baselineVertices, contract, pairIndex), 1f,
+                    out Vector3 correction0, out Vector3 correction1, out Vector3 correction2, out Vector3 correction3))
             {
                 return 0;
             }
-
-            float maximumCorrectionMagnitude = Mathf.Max(
-                correction0.magnitude,
-                correction1.magnitude,
-                correction2.magnitude,
-                correction3.magnitude);
+            float maximumCorrectionMagnitude = Mathf.Max( correction0.magnitude, correction1.magnitude, correction2.magnitude, correction3.magnitude);
             float correctionScale = maximumCorrectionMagnitude >
                                     RestShapeMaximumProjectionCorrection
                 ? RestShapeMaximumProjectionCorrection /
                   maximumCorrectionMagnitude
                 : 1f;
-            ApplyPairCorrections(
-                pair, correction0 * correctionScale, correction1 * correctionScale,
-                correction2 * correctionScale, correction3 * correctionScale,
+            ApplyPairCorrections( pair, correction0 * correctionScale, correction1 * correctionScale, correction2 * correctionScale, correction3 * correctionScale,
                 proposedLocalPositions, localIndexByVertex);
             return 1;
         }

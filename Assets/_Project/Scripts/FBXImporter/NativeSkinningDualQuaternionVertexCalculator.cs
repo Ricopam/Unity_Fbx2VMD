@@ -32,107 +32,54 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
-            var result = new NativeSkinningDualQuaternionTransform[
-                skinningMatrices.Count];
+            var result = new NativeSkinningDualQuaternionTransform[ skinningMatrices.Count];
             for (int boneIndex = 0; boneIndex < skinningMatrices.Count; boneIndex++)
             {
                 Matrix4x4 matrix = skinningMatrices[boneIndex];
                 Quaternion rotation = matrix.rotation;
-                float magnitude = Mathf.Sqrt(
-                    rotation.x * rotation.x +
-                    rotation.y * rotation.y +
-                    rotation.z * rotation.z +
-                    rotation.w * rotation.w);
+                float magnitude = Mathf.Sqrt( rotation.x * rotation.x + rotation.y * rotation.y + rotation.z * rotation.z + rotation.w * rotation.w);
                 if (magnitude <= MinimumMagnitude || !IsFinite(magnitude))
                 {
                     return false;
                 }
-                rotation = new Quaternion(
-                    rotation.x / magnitude,
-                    rotation.y / magnitude,
-                    rotation.z / magnitude,
-                    rotation.w / magnitude);
+                rotation = new Quaternion( rotation.x / magnitude, rotation.y / magnitude, rotation.z / magnitude, rotation.w / magnitude);
                 Vector3 translation = matrix.GetColumn(3);
                 if (!IsFinite(translation))
                 {
-                    return false;
-                }
-                Quaternion dual = Multiply(
-                    new Quaternion(
-                        translation.x,
-                        translation.y,
-                        translation.z,
-                        0f),
-                    rotation);
-                result[boneIndex] = new NativeSkinningDualQuaternionTransform(
-                    ToVector4(rotation),
-                    ToVector4(dual) * 0.5f);
-            }
-
+                    return false; }
+                Quaternion dual = Multiply( new Quaternion( translation.x, translation.y, translation.z, 0f), rotation);
+                result[boneIndex] = new NativeSkinningDualQuaternionTransform( ToVector4(rotation), ToVector4(dual) * 0.5f); }
             transforms = result;
-            return true;
-        }
+            return true; }
 
         internal static bool TryTransformVertex(
             Vector3 restVertex,
-            BoneWeight weights,
-            IReadOnlyList<NativeSkinningDualQuaternionTransform> transforms,
-            out Vector3 transformedVertex)
+            BoneWeight weights, IReadOnlyList<NativeSkinningDualQuaternionTransform> transforms, out Vector3 transformedVertex)
         {
             Vector4 referenceReal = Vector4.zero;
             Vector4 realSum = Vector4.zero;
             Vector4 dualSum = Vector4.zero;
             bool hasReference = false;
-            int[] boneIndices =
-            {
-                weights.boneIndex0,
-                weights.boneIndex1,
-                weights.boneIndex2,
-                weights.boneIndex3
-            };
-            float[] boneWeights =
-            {
-                weights.weight0,
-                weights.weight1,
-                weights.weight2,
-                weights.weight3
-            };
+            int[] boneIndices = {
+                weights.boneIndex0, weights.boneIndex1, weights.boneIndex2, weights.boneIndex3 };
+            float[] boneWeights = {
+                weights.weight0, weights.weight1, weights.weight2, weights.weight3 };
             for (int slot = 0; slot < boneIndices.Length; slot++)
             {
-                Accumulate(
-                    boneIndices[slot],
-                    boneWeights[slot],
-                    transforms,
-                    ref referenceReal,
-                    ref hasReference,
-                    ref realSum,
-                    ref dualSum);
-            }
-
+                Accumulate( boneIndices[slot], boneWeights[slot], transforms, ref referenceReal, ref hasReference, ref realSum, ref dualSum); }
             float magnitude = Mathf.Sqrt(Vector4.Dot(realSum, realSum));
-            if (!hasReference ||
-                magnitude <= MinimumMagnitude ||
-                !IsFinite(magnitude))
+            if (!hasReference || magnitude <= MinimumMagnitude || !IsFinite(magnitude))
             {
                 transformedVertex = restVertex;
-                return false;
-            }
-
+                return false; }
             Vector4 real = realSum / magnitude;
             Vector4 dual = dualSum / magnitude;
             dual -= real * Vector4.Dot(real, dual);
             Quaternion rotation = ToQuaternion(real);
-            Quaternion translationQuaternion = Multiply(
-                ToQuaternion(dual),
-                new Quaternion(-rotation.x, -rotation.y, -rotation.z, rotation.w));
-            Vector3 translation = new Vector3(
-                translationQuaternion.x,
-                translationQuaternion.y,
-                translationQuaternion.z) * 2f;
+            Quaternion translationQuaternion = Multiply( ToQuaternion(dual), new Quaternion(-rotation.x, -rotation.y, -rotation.z, rotation.w));
+            Vector3 translation = new Vector3( translationQuaternion.x, translationQuaternion.y, translationQuaternion.z) * 2f;
             transformedVertex = rotation * restVertex + translation;
-            return IsFinite(transformedVertex);
-        }
+            return IsFinite(transformedVertex); }
 
         private static void Accumulate(
             int boneIndex,
@@ -150,7 +97,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return;
             }
-
             NativeSkinningDualQuaternionTransform transform = transforms[boneIndex];
             if (!hasReference)
             {

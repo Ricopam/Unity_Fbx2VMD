@@ -38,11 +38,7 @@ namespace Fbx2Vmd.Retargeting
             out float targetHeight)
         {
             targetHeight = baseTargetHeight;
-            if (!IsFinite(baseTargetHeight) ||
-                !IsFinite(referenceCurrentLowestFootY) ||
-                !IsFinite(referenceRestLowestFootY) ||
-                !IsFinite(weight) ||
-                !IsFinite(maxLift))
+            if (!IsFinite(baseTargetHeight) || !IsFinite(referenceCurrentLowestFootY) || !IsFinite(referenceRestLowestFootY) || !IsFinite(weight) || !IsFinite(maxLift))
             {
                 return false;
             }
@@ -145,30 +141,49 @@ namespace Fbx2Vmd.Retargeting
         }
 
         public static bool TryCalculateFootLockCorrection(
-            float bottomY,
-            Vector3 footPosition,
-            float targetHeight,
-            bool locked,
-            Vector3 lockPosition,
-            out bool nextLocked,
-            out Vector3 nextLockPosition,
-            out Vector3 correction)
+            float bottomY, Vector3 footPosition, float targetHeight, bool locked,
+            Vector3 lockPosition, out bool nextLocked,
+            out Vector3 nextLockPosition, out Vector3 correction)
         {
-            const float contactHeight = 0.08f;
-            const float releaseHeight = 0.14f;
             const float resetDistance = 0.25f;
 
             nextLocked = locked;
             nextLockPosition = lockPosition;
             correction = Vector3.zero;
 
-            if (!IsFinite(bottomY))
+            if (!TryResolveLockAnchor(
+                    bottomY, targetHeight, locked, lockPosition,
+                    ref footPosition, ref nextLocked, ref nextLockPosition))
+            {
+                return false;
+            }
+
+            correction = lockPosition - footPosition;
+            correction.y = 0f;
+            if (!IsFinite(correction))
             {
                 nextLocked = false;
                 return false;
             }
 
-            if (bottomY > targetHeight + releaseHeight)
+            if (correction.magnitude > resetDistance)
+            {
+                nextLockPosition = footPosition;
+                correction = Vector3.zero;
+            }
+
+            return true;
+        }
+
+        // 접지 높이·유한성·재잠금 조건을 검증하고 잠금 기준점을 결정함.
+        private static bool TryResolveLockAnchor(
+            float bottomY, float targetHeight, bool locked, Vector3 lockPosition,
+            ref Vector3 footPosition, ref bool nextLocked, ref Vector3 nextLockPosition)
+        {
+            const float contactHeight = 0.08f;
+            const float releaseHeight = 0.14f;
+
+            if (!IsFinite(bottomY) || bottomY > targetHeight + releaseHeight)
             {
                 nextLocked = false;
                 return false;
@@ -186,20 +201,6 @@ namespace Fbx2Vmd.Retargeting
                 nextLockPosition = footPosition;
                 nextLocked = bottomY <= targetHeight + contactHeight;
                 return false;
-            }
-
-            correction = lockPosition - footPosition;
-            correction.y = 0f;
-            if (!IsFinite(correction))
-            {
-                nextLocked = false;
-                return false;
-            }
-
-            if (correction.magnitude > resetDistance)
-            {
-                nextLockPosition = footPosition;
-                correction = Vector3.zero;
             }
 
             return true;
@@ -242,85 +243,108 @@ namespace Fbx2Vmd.Retargeting
         /// 수직 보정량에 사각 구간, 평활화와 최대 이동량 제한을 적용함.
         /// </summary>
         public static float CalculateVerticalStep(
-            float currentY,
-            float adjustment,
-            bool wasGroundingInitialized,
-            bool smoothGrounding,
-            float groundingSmoothing,
-            float maxGroundingVerticalStepPerFrame,
-            float groundingDeadZone,
-            float previousGroundingVerticalStep,
-            float groundingDirectionReversalStepScale,
-            out bool skippedByDeadZone,
-            out bool smoothed,
-            out bool clamped)
+            float currentY, float adjustment, bool wasGroundingInitialized,
+            bool smoothGrounding, float groundingSmoothing,
+            float maxGroundingVerticalStepPerFrame, float groundingDeadZone,
+            float previousGroundingVerticalStep, float groundingDirectionReversalStepScale,
+            out bool skippedByDeadZone, out bool smoothed, out bool clamped)
         {
-            skippedByDeadZone = false;
-            smoothed = false;
-            clamped = false;
+            skippedByDeadZone = false; smoothed = false; clamped = false;
 
             float deadZone = Mathf.Max(0f, groundingDeadZone);
-            if (wasGroundingInitialized && Mathf.Abs(adjustment) <= deadZone)
+            float effectiveAdjustment = ApplyDeadZone(
+                adjustment, deadZone, wasGroundingInitialized, ref skippedByDeadZone);
+            if (skippedByDeadZone)
             {
-                skippedByDeadZone = true;
                 return 0f;
             }
 
-            float effectiveAdjustment = adjustment;
+            float desiredY = currentY + effectiveAdjustment;
+            float nextY = wasGroundingInitialized
+                ? ApplySmoothingAndClamp(
+                    currentY, desiredY, smoothGrounding, groundingSmoothing,
+                    maxGroundingVerticalStepPerFrame, previousGroundingVerticalStep,
+                    groundingDirectionReversalStepScale, ref smoothed, ref clamped)
+                : desiredY;
+            return nextY - currentY;
+        }
+
+        // 사각 구간만큼 보정량을 줄이거나 구간 이내면 스킵함.
+        private static float ApplyDeadZone(
+            float adjustment, float deadZone, bool wasGroundingInitialized, ref bool skipped)
+        {
+            if (wasGroundingInitialized && Mathf.Abs(adjustment) <= deadZone)
+            {
+                skipped = true;
+                return 0f;
+            }
+
             if (wasGroundingInitialized && deadZone > 0f)
             {
-                effectiveAdjustment = Mathf.Sign(adjustment) * Mathf.Max(0f, Mathf.Abs(adjustment) - deadZone);
+                return Mathf.Sign(adjustment) * Mathf.Max(0f, Mathf.Abs(adjustment) - deadZone);
             }
 
-            float desiredY = currentY + effectiveAdjustment;
+            return adjustment;
+        }
+
+        // 평활화 후 방향 반전 여부를 반영해 프레임 이동량을 제한함.
+        private static float ApplySmoothingAndClamp(
+            float currentY, float desiredY, bool smoothGrounding, float groundingSmoothing,
+            float maxGroundingVerticalStepPerFrame, float previousGroundingVerticalStep,
+            float groundingDirectionReversalStepScale, ref bool smoothed, ref bool clamped)
+        {
             float nextY = desiredY;
-            if (wasGroundingInitialized && smoothGrounding)
+            if (!smoothGrounding)
             {
-                float smoothing = Mathf.Clamp01(groundingSmoothing);
-                if (smoothing < 1f)
-                {
-                    nextY = Mathf.Lerp(currentY, desiredY, smoothing);
-                    smoothed = true;
-                }
-
-                float maxStep = Mathf.Max(0.001f, maxGroundingVerticalStepPerFrame);
-                float verticalStep = nextY - currentY;
-                if (IsDirectionReversal(verticalStep, previousGroundingVerticalStep))
-                {
-                    maxStep = Mathf.Max(0.001f, maxStep * groundingDirectionReversalStepScale);
-                }
-
-                if (Mathf.Abs(verticalStep) > maxStep)
-                {
-                    nextY = currentY + Mathf.Sign(verticalStep) * maxStep;
-                    clamped = true;
-                }
+                return nextY;
             }
 
-            return nextY - currentY;
+            float smoothing = Mathf.Clamp01(groundingSmoothing);
+            if (smoothing < 1f)
+            {
+                nextY = Mathf.Lerp(currentY, desiredY, smoothing);
+                smoothed = true;
+            }
+
+            float maxStep = Mathf.Max(0.001f, maxGroundingVerticalStepPerFrame);
+            float verticalStep = nextY - currentY;
+            if (IsDirectionReversal(verticalStep, previousGroundingVerticalStep))
+            {
+                maxStep = Mathf.Max(0.001f, maxStep * groundingDirectionReversalStepScale);
+            }
+
+            if (Mathf.Abs(verticalStep) > maxStep)
+            {
+                nextY = currentY + Mathf.Sign(verticalStep) * maxStep;
+                clamped = true;
+            }
+
+            return nextY;
         }
 
         /// <summary>
         /// 최종 시각 접지 잔차에 초기화, 평활화와 프레임 이동 제한을 적용함.
         /// </summary>
         public static float CalculateLateVisualGroundingStep(
-            float residual,
-            bool smoothLateVisualGroundingCorrection,
-            bool lateVisualGroundingInitialized,
-            float lateVisualGroundingSnapThreshold,
-            float lateVisualGroundingSmoothing,
-            float maxLateVisualGroundingStepPerFrame)
+            float residual, bool smoothLateVisualGroundingCorrection,
+            bool lateVisualGroundingInitialized, float lateVisualGroundingSnapThreshold,
+            float lateVisualGroundingSmoothing, float maxLateVisualGroundingStepPerFrame)
         {
-            if (!smoothLateVisualGroundingCorrection)
+            if (!smoothLateVisualGroundingCorrection || !lateVisualGroundingInitialized)
             {
                 return residual;
             }
 
-            if (!lateVisualGroundingInitialized)
-            {
-                return residual;
-            }
+            return ApplyLateVisualStep(
+                residual, lateVisualGroundingSnapThreshold,
+                lateVisualGroundingSmoothing, maxLateVisualGroundingStepPerFrame);
+        }
 
+        // 스냅 문턱·평활화·프레임 이동 제한을 순서대로 적용해 스텝을 산출함.
+        private static float ApplyLateVisualStep(
+            float residual, float lateVisualGroundingSnapThreshold,
+            float lateVisualGroundingSmoothing, float maxLateVisualGroundingStepPerFrame)
+        {
             float snapThreshold = Mathf.Max(0.005f, lateVisualGroundingSnapThreshold);
             if (residual > 0.0001f && residual <= snapThreshold)
             {
@@ -354,17 +378,10 @@ namespace Fbx2Vmd.Retargeting
         /// <summary>
         /// 최종 시각 접지 잔차가 적용 가능한 범위인지 판정함.
         /// </summary>
-        public static bool TryCalculateLateVisualGroundingEffectiveResidual(
-            float residual,
-            bool smoothLateVisualGroundingCorrection,
-            float groundingDeadZone,
-            float maxLateVisualGroundingCorrection,
-            out float effectiveResidual,
-            out bool exceededMaxCorrection)
+        public static bool TryCalculateLateVisualGroundingEffectiveResidual( float residual, bool smoothLateVisualGroundingCorrection, float groundingDeadZone, float maxLateVisualGroundingCorrection, out float effectiveResidual, out bool exceededMaxCorrection)
         {
             effectiveResidual = 0f;
             exceededMaxCorrection = false;
-
             bool isPenetrationResidual = residual > 0.0001f;
             bool isFloatingResidual = residual < -0.0001f;
             bool isVisualFloorResidual = isPenetrationResidual || isFloatingResidual;
@@ -372,16 +389,12 @@ namespace Fbx2Vmd.Retargeting
             float skipDeadZone = isVisualFloorResidual ? 0.001f : deadZone;
             if (Mathf.Abs(residual) <= skipDeadZone)
             {
-                return false;
-            }
-
+                return false; }
             float maxCorrection = Mathf.Max(0.001f, maxLateVisualGroundingCorrection);
             if (Mathf.Abs(residual) > maxCorrection)
             {
                 exceededMaxCorrection = true;
-                return false;
-            }
-
+                return false; }
             effectiveResidual = residual;
             if (smoothLateVisualGroundingCorrection && deadZone > 0f && !isVisualFloorResidual)
             {
@@ -389,12 +402,8 @@ namespace Fbx2Vmd.Retargeting
                 if (Mathf.Abs(effectiveResidual) <= 0.0001f)
                 {
                     effectiveResidual = 0f;
-                    return false;
-                }
-            }
-
-            return true;
-        }
+                    return false; } }
+            return true; }
 
         /// <summary>
         /// 현재 접지 이동과 반대 방향인 최종 시각 보정을 건너뛸지 판정함.

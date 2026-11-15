@@ -17,9 +17,7 @@ namespace Fbx2Vmd.FBXImporter
         {
             if (root == null)
             {
-                return 0;
-            }
-
+                return 0; }
             var cache = converted ?? new Dictionary<Material, Material>();
             int slotCount = 0;
             foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
@@ -31,33 +29,21 @@ namespace Fbx2Vmd.FBXImporter
                     Material source = slots[i];
                     if (source == null || IsToonMaterial(source))
                     {
-                        continue;
-                    }
-
+                        continue; }
                     if (!cache.TryGetValue(source, out Material toon))
                     {
                         toon = CreateToonVariant(source);
                         if (toon == null)
                         {
-                            continue;
-                        }
-
-                        cache[source] = toon;
-                    }
-
+                            continue; }
+                        cache[source] = toon; }
                     slots[i] = toon;
                     changed = true;
-                    slotCount++;
-                }
-
+                    slotCount++; }
                 if (changed)
                 {
-                    renderer.sharedMaterials = slots;
-                }
-            }
-
-            return slotCount;
-        }
+                    renderer.sharedMaterials = slots; } }
+            return slotCount; }
 
         /// <summary>
         /// 원본 머티리얼 하나를 툰 프리셋 복제본으로 변환한다.
@@ -67,40 +53,26 @@ namespace Fbx2Vmd.FBXImporter
         {
             if (source == null || IsToonMaterial(source))
             {
-                return null;
-            }
-
+                return null; }
             ToonMaterialRole surface = ResolveSurface(source);
-            ToonMaterialRole role =
-                ToonMaterialRoleResolver.ResolveCharacterRole(source.name) ?? surface;
+            ToonMaterialRole role = ToonMaterialRoleResolver.ResolveCharacterRole(source.name) ?? surface;
             // 알파가 있는 피부·눈 슬롯은 불투명 템플릿에 올리면 알파가 유실된다.
-            if (surface != ToonMaterialRole.Opaque &&
-                (role == ToonMaterialRole.Skin || role == ToonMaterialRole.Eye))
+            if (surface != ToonMaterialRole.Opaque && (role == ToonMaterialRole.Skin || role == ToonMaterialRole.Eye))
             {
-                role = surface;
-            }
-
+                role = surface; }
             if (!ToonMaterialLibrary.TryInstantiate(role, surface, out Material toon))
             {
-                return null;
-            }
-
+                return null; }
             toon.name = source.name;
             if (source.HasProperty("_MainTex") && source.mainTexture != null)
             {
-                toon.mainTexture = source.mainTexture;
-            }
-
+                toon.mainTexture = source.mainTexture; }
             if (source.HasProperty("_Color") && toon.HasProperty("_Color"))
             {
-                toon.color = source.color;
-            }
-
+                toon.color = source.color; }
             // 소스 셰이더별 파라미터(음영색·아웃라인색 등)를 있으면 이식한다.
             ToonSourcePropertyMapper.Apply(source, toon);
-
-            return toon;
-        }
+            return toon; }
 
         public static bool IsToonMaterial(Material material)
         {

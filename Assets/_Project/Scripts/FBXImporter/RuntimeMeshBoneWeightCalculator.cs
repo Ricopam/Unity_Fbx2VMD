@@ -8,15 +8,11 @@ namespace Fbx2Vmd.FBXImporter
 
         internal static void Add(
             ref BoneWeight boneWeight,
-            ref int count,
-            int boneIndex,
-            float weight)
+            ref int count, int boneIndex, float weight)
         {
             if (weight <= 0f)
             {
-                return;
-            }
-
+                return; }
             if (count < MaximumBoneWeightCount)
             {
                 switch (count)
@@ -36,12 +32,8 @@ namespace Fbx2Vmd.FBXImporter
                     case 3:
                         boneWeight.boneIndex3 = boneIndex;
                         boneWeight.weight3 = weight;
-                        break;
-                }
-            }
-
-            count++;
-        }
+                        break; } }
+            count++; }
 
         internal static void Normalize(BoneWeight[] weights)
         {

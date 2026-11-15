@@ -157,14 +157,8 @@ namespace Fbx2Vmd.FBXImporter
         {
             if (thumbTransform != null && targetAnimator != null)
             {
-                float leftDistance = GetThumbSideReferenceDistance(
-                    thumbTransform,
-                    targetAnimator.GetBoneTransform(HumanBodyBones.LeftHand),
-                    GetMappedThumbProximal(false));
-                float rightDistance = GetThumbSideReferenceDistance(
-                    thumbTransform,
-                    targetAnimator.GetBoneTransform(HumanBodyBones.RightHand),
-                    GetMappedThumbProximal(true));
+                float leftDistance = GetThumbSideReferenceDistance( thumbTransform, targetAnimator.GetBoneTransform(HumanBodyBones.LeftHand), GetMappedThumbProximal(false));
+                float rightDistance = GetThumbSideReferenceDistance( thumbTransform, targetAnimator.GetBoneTransform(HumanBodyBones.RightHand), GetMappedThumbProximal(true));
                 if (IsFinite(leftDistance) || IsFinite(rightDistance))
                 {
                     if (!IsFinite(leftDistance))

@@ -14,29 +14,19 @@ namespace Fbx2Vmd.FBXImporter
             out Quaternion nextParentWorldRotation)
         {
             nextParentWorldRotation = currentParentWorldRotation;
-            if (!IsFinite(referenceSegmentDirection) ||
-                !IsFinite(currentSegmentDirection) ||
-                !IsFinite(currentParentWorldRotation) ||
-                !TryNormalize(referenceSegmentDirection, out Vector3 referenceDirection) ||
-                !TryNormalize(currentSegmentDirection, out Vector3 currentDirection))
+            if (!IsFinite(referenceSegmentDirection) || !IsFinite(currentSegmentDirection) || !IsFinite(currentParentWorldRotation) ||
+                !TryNormalize(referenceSegmentDirection, out Vector3 referenceDirection) || !TryNormalize(currentSegmentDirection, out Vector3 currentDirection))
             {
                 return false;
             }
 
-            if (!TryBuildCorrection(
-                    referenceDirection,
-                    currentDirection,
-                    maxAngleDegrees,
-                    correctionAxisXzScale,
-                    weight,
-                    out Quaternion correction))
+            if (!TryBuildCorrection( referenceDirection, currentDirection, maxAngleDegrees, correctionAxisXzScale, weight, out Quaternion correction))
             {
                 return false;
             }
 
             nextParentWorldRotation = correction * currentParentWorldRotation;
-            if (!IsFinite(nextParentWorldRotation) ||
-                Quaternion.Angle(currentParentWorldRotation, nextParentWorldRotation) <= 0.001f)
+            if (!IsFinite(nextParentWorldRotation) || Quaternion.Angle(currentParentWorldRotation, nextParentWorldRotation) <= 0.001f)
             {
                 nextParentWorldRotation = currentParentWorldRotation;
                 return false;
@@ -259,10 +249,7 @@ namespace Fbx2Vmd.FBXImporter
             out Vector3 nextPosition)
         {
             nextPosition = currentFootPosition;
-            if (!IsFinite(referenceFootPosition) ||
-                !IsFinite(referenceHipsPosition) ||
-                !IsFinite(currentFootPosition) ||
-                !IsFinite(targetHipsPosition))
+            if (!IsFinite(referenceFootPosition) || !IsFinite(referenceHipsPosition) || !IsFinite(currentFootPosition) || !IsFinite(targetHipsPosition))
             {
                 return false;
             }

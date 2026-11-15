@@ -92,7 +92,6 @@ namespace Fbx2Vmd.FBXImporter
             meritWeight = 0;
             int count = sample.Gradient.Length;
             if (!TryFactor(sample.Metric, count, out double[,] lower)) return false;
-
             double[] desired = Solve(lower, sample.Gradient, false);
             meritWeight = 8 * Math.Max(1e-6, Norm(desired));
             double extent = Norm(Solve(lower, desired, true));
@@ -110,7 +109,6 @@ namespace Fbx2Vmd.FBXImporter
                 double length = Norm(normal);
                 rowNorm[row] = length;
                 if (!(length > 1e-12 && sample.Slack[row] < radius * length)) continue;
-
                 double distance = sample.Slack[row] / length;
                 double augmentedLength = Math.Sqrt(1 + RecoveryWeight * RecoveryWeight);
                 var augmented = new double[count + 1];
@@ -118,9 +116,7 @@ namespace Fbx2Vmd.FBXImporter
                 augmented[count] = RecoveryWeight / augmentedLength;
                 normals.Add(augmented);
                 offsets.Add(distance / augmentedLength);
-                recovery = Math.Max(recovery, -distance / RecoveryWeight);
-            }
-
+                recovery = Math.Max(recovery, -distance / RecoveryWeight); }
             var vertical = new double[count + 1];
             vertical[count] = 1;
             normals.Add(vertical);
@@ -130,11 +126,9 @@ namespace Fbx2Vmd.FBXImporter
             target[count] = -8 * Math.Max(1e-6, radius);
             var feasible = new double[count + 1];
             feasible[count] = recovery;
-            if (!HumanoidSupportConstraintProjection.TryProject(target, normals.ToArray(), offsets.ToArray(), feasible, out double[] projected))
-                return false;
+            if (!HumanoidSupportConstraintProjection.TryProject(target, normals.ToArray(), offsets.ToArray(), feasible, out double[] projected)) return false;
             direction = Solve(lower, projected, true);
-            return true;
-        }
+            return true; }
 
         private static bool TryFactor(double[,] matrix, int count, out double[,] lower)
         {

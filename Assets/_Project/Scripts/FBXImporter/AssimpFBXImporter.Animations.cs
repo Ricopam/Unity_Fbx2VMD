@@ -102,23 +102,17 @@ namespace Fbx2Vmd.FBXImporter
                     : Path.GetFileName(relativePath);
                 if (ImportNonRootPositionCurves ||
                     RuntimeAnimationPositionCurvePolicy.ShouldImport(
-                        relativePath,
-                        positionCurveNodeName))
+                        relativePath, positionCurveNodeName))
                 {
-                    SetPositionCurves(clip, relativePath, channel.PositionKeys, timeScale);
-                }
-            }
+                    SetPositionCurves(clip, relativePath, channel.PositionKeys, timeScale); } }
             // 회전 애니메이션
             if (channel.HasRotationKeys)
             {
-                SetRotationCurves(clip, relativePath, channel.RotationKeys, timeScale);
-            }
+                SetRotationCurves(clip, relativePath, channel.RotationKeys, timeScale); }
             // 스케일 애니메이션
             if (channel.HasScalingKeys && ImportScaleCurves)
             {
-                SetScaleCurves(clip, relativePath, channel.ScalingKeys, timeScale);
-            }
-        }
+                SetScaleCurves(clip, relativePath, channel.ScalingKeys, timeScale); } }
 
         private void SetPositionCurves(
             AnimationClip clip, string relativePath, List<VectorKey> positionKeys, float timeScale)

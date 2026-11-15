@@ -45,13 +45,11 @@ namespace Fbx2Vmd.FBXImporter
             {
                 normalizedFileName += ".fbx";
             }
-
             string controlledPath = Path.Combine(controlledImportDirectory, normalizedFileName);
             if (fileExists(controlledPath))
             {
                 return controlledPath;
             }
-
             string projectFallbackPath = Path.Combine(
                 dataPath,
                 "_Project",
@@ -59,11 +57,8 @@ namespace Fbx2Vmd.FBXImporter
                 normalizedFileName);
             if (fileExists(projectFallbackPath))
             {
-                return projectFallbackPath;
-            }
-
-            return controlledPath;
-        }
+                return projectFallbackPath; }
+            return controlledPath; }
 
         internal static string BuildOutputBaseName(
             string outputBaseName,
@@ -202,59 +197,30 @@ namespace Fbx2Vmd.FBXImporter
             string outputBaseName,
             float clipLengthSeconds,
             float requestedDurationSeconds,
-            int requestedTargetFrameCount,
-            float recordingFrameRate,
-            bool useKnownReferenceTiming,
-            out float recordingLengthSeconds,
-            out int targetFrameCount,
-            out float playbackSpeed)
+            int requestedTargetFrameCount, float recordingFrameRate, bool useKnownReferenceTiming, out float recordingLengthSeconds, out int targetFrameCount, out float playbackSpeed)
         {
             recordingLengthSeconds = requestedDurationSeconds;
             targetFrameCount = requestedTargetFrameCount;
             playbackSpeed = 1f;
-
             if (!useKnownReferenceTiming)
             {
-                return false;
-            }
-
-            if (requestedDurationSeconds <= 0f ||
-                float.IsNaN(requestedDurationSeconds) ||
-                float.IsInfinity(requestedDurationSeconds) ||
-                requestedTargetFrameCount <= 0 ||
-                recordingFrameRate <= 0f ||
-                float.IsNaN(recordingFrameRate) ||
-                float.IsInfinity(recordingFrameRate))
+                return false; }
+            if (requestedDurationSeconds <= 0f || float.IsNaN(requestedDurationSeconds) || float.IsInfinity(requestedDurationSeconds) || requestedTargetFrameCount <= 0 || recordingFrameRate <= 0f || float.IsNaN(recordingFrameRate) || float.IsInfinity(recordingFrameRate))
             {
-                return false;
-            }
-
-            if (!VMDRecordingController.TryBuildKnownMmdReferenceRecordingPlan(
-                    outputBaseName,
-                    clipLengthSeconds,
-                    recordingFrameRate,
-                    out float referenceRecordingLengthSeconds,
-                    out int referenceTargetFrameCount,
-                    out float referencePlaybackSpeed))
+                return false; }
+            if (!VMDRecordingController.TryBuildKnownMmdReferenceRecordingPlan( outputBaseName, clipLengthSeconds, recordingFrameRate, out float referenceRecordingLengthSeconds, out int referenceTargetFrameCount, out float referencePlaybackSpeed))
             {
-                return false;
-            }
-
+                return false; }
             float frameToleranceSeconds = 0.5f / recordingFrameRate;
-            bool coversFullReferenceDuration =
-                requestedDurationSeconds + frameToleranceSeconds >= referenceRecordingLengthSeconds;
+            bool coversFullReferenceDuration = requestedDurationSeconds + frameToleranceSeconds >= referenceRecordingLengthSeconds;
             bool coversFullReferenceFrames = requestedTargetFrameCount >= referenceTargetFrameCount;
-
             if (!coversFullReferenceDuration || !coversFullReferenceFrames)
             {
-                return false;
-            }
-
+                return false; }
             recordingLengthSeconds = referenceRecordingLengthSeconds;
             targetFrameCount = referenceTargetFrameCount;
             playbackSpeed = referencePlaybackSpeed;
-            return true;
-        }
+            return true; }
 
         internal static bool ShouldUseKnownReferenceTiming(
             string outputBaseName,
@@ -267,36 +233,21 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return true;
             }
-
-            if (requestedDurationSeconds <= 0f ||
-                float.IsNaN(requestedDurationSeconds) ||
-                float.IsInfinity(requestedDurationSeconds) ||
-                requestedTargetFrameCount <= 0 ||
-                recordingFrameRate <= 0f ||
-                float.IsNaN(recordingFrameRate) ||
-                float.IsInfinity(recordingFrameRate))
+            if (requestedDurationSeconds <= 0f || float.IsNaN(requestedDurationSeconds) || float.IsInfinity(requestedDurationSeconds) || requestedTargetFrameCount <= 0 || recordingFrameRate <= 0f ||
+                float.IsNaN(recordingFrameRate) || float.IsInfinity(recordingFrameRate))
             {
                 return false;
             }
-
-            string cleanBaseName = Path.GetFileNameWithoutExtension(
-                outputBaseName ?? string.Empty);
-            if (!string.Equals(
-                    cleanBaseName,
-                    VMDOutputNamePolicy.SatisfactionReferenceBaseName,
-                    StringComparison.OrdinalIgnoreCase))
+            string cleanBaseName = Path.GetFileNameWithoutExtension( outputBaseName ?? string.Empty);
+            if (!string.Equals( cleanBaseName, VMDOutputNamePolicy.SatisfactionReferenceBaseName, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
-
-            int referenceFrameCount =
-                VMDOutputNamePolicy.SatisfactionReferenceMaxMmdFrame + 1;
+            int referenceFrameCount = VMDOutputNamePolicy.SatisfactionReferenceMaxMmdFrame + 1;
             float referenceDurationSeconds = referenceFrameCount / recordingFrameRate;
             float frameToleranceSeconds = 0.5f / recordingFrameRate;
-            bool coversFullReferenceDuration =
-                requestedDurationSeconds + frameToleranceSeconds >= referenceDurationSeconds;
+            bool coversFullReferenceDuration = requestedDurationSeconds + frameToleranceSeconds >= referenceDurationSeconds;
             bool coversFullReferenceFrames = requestedTargetFrameCount >= referenceFrameCount;
-
             return coversFullReferenceDuration && coversFullReferenceFrames;
         }
     }

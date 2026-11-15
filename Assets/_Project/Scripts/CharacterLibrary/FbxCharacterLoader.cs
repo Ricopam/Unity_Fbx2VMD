@@ -30,27 +30,25 @@ namespace Fbx2Vmd.CharacterLibrary
                 return result;
             }
 #if UNITY_EDITOR
+            return LoadEditorInstance(sourcePath, entryId, result);
+#else
+            result.error = "FBX 캐릭터 로드는 Unity 에디터에서만 지원됩니다.";
+            return result;
+#endif
+        }
+
+#if UNITY_EDITOR
+        // 에디터 전용 — 임포트·인스턴스화·정리를 수행하고 실패 시 루트를 파괴함.
+        private static CharacterLoader.Result LoadEditorInstance(
+            string sourcePath, string entryId, CharacterLoader.Result result)
+        {
             GameObject root = null;
             try
             {
-                string assetPath = ImportToControlledFolder(sourcePath, entryId);
-                GameObject prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
-                if (prefab == null)
+                root = CreateInactiveInstance(sourcePath, entryId, out string loadError);
+                if (root == null)
                 {
-                    result.error = $"FBX 프리팹을 읽을 수 없습니다: {assetPath}";
-                    return result;
-                }
-
-                root = Object.Instantiate(prefab);
-                // 커밋 전까지 화면에 보이지 않게 한다.
-                root.SetActive(false);
-
-                Animator animator = root.GetComponent<Animator>();
-                if (animator == null || animator.avatar == null ||
-                    !animator.avatar.isValid || !animator.avatar.isHuman)
-                {
-                    result.error = "유효한 Humanoid Avatar가 없어 리타게팅 대상으로 사용할 수 없습니다.";
-                    DestroyRoot(root);
+                    result.error = loadError;
                     return result;
                 }
 
@@ -64,11 +62,8 @@ namespace Fbx2Vmd.CharacterLibrary
                 catch (Exception destroyError) { Debug.LogException(destroyError); }
                 return result;
             }
-#else
-            result.error = "FBX 캐릭터 로드는 Unity 에디터에서만 지원됩니다.";
-            return result;
-#endif
         }
+#endif
 
 #if UNITY_EDITOR
         /// <summary>
@@ -76,53 +71,85 @@ namespace Fbx2Vmd.CharacterLibrary
         /// Humanoid로 임포트한 뒤 asset 경로를 돌려준다.
         /// Resources 하위가 아니므로 플레이어 빌드 번들에 포함되지 않는다.
         /// </summary>
+        // 임포트된 프리팹의 비활성 인스턴스를 만들고 Humanoid 유효성을 검증함.
+        private static GameObject CreateInactiveInstance(
+            string sourcePath, string entryId, out string error)
+        {
+            string assetPath = ImportToControlledFolder(sourcePath, entryId);
+            GameObject prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+            if (prefab == null)
+            {
+                error = $"FBX 프리팹을 읽을 수 없습니다: {assetPath}";
+                return null;
+            }
+
+            GameObject root = Object.Instantiate(prefab);
+            // 커밋 전까지 화면에 보이지 않게 한다.
+            root.SetActive(false);
+
+            Animator animator = root.GetComponent<Animator>();
+            if (animator == null || animator.avatar == null || !animator.avatar.isValid || !animator.avatar.isHuman)
+            {
+                error = "유효한 Humanoid Avatar가 없어 리타게팅 대상으로 사용할 수 없습니다.";
+                DestroyRoot(root);
+                return null;
+            }
+
+            error = null;
+            return root;
+        }
+
         private static string ImportToControlledFolder(string sourcePath, string entryId)
         {
             // entryId는 public API 입력이므로 경로 이탈 문자를 차단한다.
             string folderName = string.IsNullOrEmpty(entryId)
                 ? "_unassigned"
                 : Path.GetFileName(entryId);
-            string targetDir = Path.Combine(
-                Application.dataPath, IMPORTED_CHARACTERS_FOLDER, folderName);
+            string targetDir = Path.Combine( Application.dataPath, IMPORTED_CHARACTERS_FOLDER, folderName);
             Directory.CreateDirectory(targetDir);
 
             string safeFileName = FBXImportController.SanitizeFileName(Path.GetFileName(sourcePath));
             string targetPath;
-            if (string.Equals(
-                    Path.GetExtension(sourcePath), ".pmx", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals( Path.GetExtension(sourcePath), ".pmx", StringComparison.OrdinalIgnoreCase))
             {
-                // PMX는 Unity가 직접 임포트하지 못하므로 벤더된 pmx2fbx로
-                // 관리 폴더에 FBX를 생성하고 그 결과물을 임포트한다.
-                string baseName = Path.GetFileNameWithoutExtension(safeFileName);
-                if (string.IsNullOrEmpty(baseName))
-                {
-                    throw new InvalidOperationException("PMX 파일 이름이 비어 있습니다.");
-                }
-                ConvertPmxToFbx(sourcePath, Path.Combine(targetDir, baseName));
-                CopyPmxTextures(sourcePath, targetDir);
-                targetPath = Path.Combine(targetDir, baseName + ".fbx");
+                targetPath = PreparePmxTarget(sourcePath, targetDir, safeFileName);
             }
             else
             {
                 targetPath = Path.Combine(targetDir, safeFileName);
-                if (!string.Equals(
-                        Path.GetFullPath(sourcePath), Path.GetFullPath(targetPath),
-                        StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals( Path.GetFullPath(sourcePath), Path.GetFullPath(targetPath), StringComparison.OrdinalIgnoreCase))
                 {
                     File.Copy(sourcePath, targetPath, true);
                 }
             }
 
+            return ImportAndEnsureHumanoid(targetPath, folderName);
+        }
+
+        // PMX는 Unity가 직접 임포트하지 못하므로 벤더된 pmx2fbx로
+        // 관리 폴더에 FBX를 생성하고 그 결과물을 임포트한다.
+        private static string PreparePmxTarget(string sourcePath, string targetDir, string safeFileName)
+        {
+            string baseName = Path.GetFileNameWithoutExtension(safeFileName);
+            if (string.IsNullOrEmpty(baseName))
+            {
+                throw new InvalidOperationException("PMX 파일 이름이 비어 있습니다.");
+            }
+            ConvertPmxToFbx(sourcePath, Path.Combine(targetDir, baseName));
+            CopyPmxTextures(sourcePath, targetDir);
+            return Path.Combine(targetDir, baseName + ".fbx");
+        }
+
+        // 생성된 파일을 임포트하고 Humanoid 아바타 보장 훅을 호출함.
+        private static string ImportAndEnsureHumanoid(string targetPath, string folderName)
+        {
             if (!File.Exists(targetPath))
             {
-                throw new FileNotFoundException(
-                    $"변환된 모델 파일을 찾을 수 없습니다: {targetPath}");
+                throw new FileNotFoundException( $"변환된 모델 파일을 찾을 수 없습니다: {targetPath}");
             }
 
-            string relativePath = "Assets/" + IMPORTED_CHARACTERS_FOLDER + "/" +
-                                  folderName + "/" + Path.GetFileName(targetPath);
-            UnityEditor.AssetDatabase.ImportAsset(
-                relativePath, UnityEditor.ImportAssetOptions.ForceUpdate);
+            string relativePath = "Assets/" + IMPORTED_CHARACTERS_FOLDER + "/" + folderName + "/" + Path.GetFileName(targetPath);
+            UnityEditor.AssetDatabase.ImportAsset( relativePath, UnityEditor.ImportAssetOptions.ForceUpdate);
             CharacterLibraryEditorHooks.EnsureHumanoidAvatar?.Invoke(relativePath);
             return relativePath;
         }
@@ -133,25 +160,29 @@ namespace Fbx2Vmd.CharacterLibrary
         /// </summary>
         private static void ConvertPmxToFbx(string pmxPath, string outputBase)
         {
-            string converterDir = Path.Combine(
-                Application.dataPath, "MMD4Mecanim", "Editor", "PMX2FBX");
+            string converterDir = Path.Combine( Application.dataPath, "MMD4Mecanim", "Editor", "PMX2FBX");
             string converterExe = Path.Combine(converterDir, "pmx2fbx.exe");
             if (!File.Exists(converterExe))
             {
-                throw new FileNotFoundException(
-                    $"PMX 변환기가 없습니다: {converterExe}");
+                throw new FileNotFoundException( $"PMX 변환기가 없습니다: {converterExe}");
             }
 
             var start = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = converterExe,
-                Arguments = $"-i \"{pmxPath}\" -o \"{outputBase}\"",
-                WorkingDirectory = converterDir,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
+                FileName = converterExe, Arguments = $"-i \"{pmxPath}\" -o \"{outputBase}\"", WorkingDirectory = converterDir, UseShellExecute = false, CreateNoWindow = true,
+                RedirectStandardOutput = true, RedirectStandardError = true, };
+            RunPmxConverter(start);
+
+            string generated = outputBase + ".fbx";
+            if (!File.Exists(generated))
+            {
+                throw new FileNotFoundException( $"PMX 변환 결과가 없습니다: {generated}");
+            }
+        }
+
+        // 외부 변환기 프로세스를 실행하고 종료 코드·시간 초과를 검사함.
+        private static void RunPmxConverter(System.Diagnostics.ProcessStartInfo start)
+        {
             using (var process = System.Diagnostics.Process.Start(start))
             {
                 // 변환기는 대량의 진행 출력을 내니 비동기로 비워 버퍼 데드락을 막는다.
@@ -164,16 +195,8 @@ namespace Fbx2Vmd.CharacterLibrary
                 }
                 if (process.ExitCode != 0)
                 {
-                    throw new InvalidOperationException(
-                        $"PMX 변환 실패(exit {process.ExitCode}): {stderrReader.Result}");
+                    throw new InvalidOperationException( $"PMX 변환 실패(exit {process.ExitCode}): {stderrReader.Result}");
                 }
-            }
-
-            string generated = outputBase + ".fbx";
-            if (!File.Exists(generated))
-            {
-                throw new FileNotFoundException(
-                    $"PMX 변환 결과가 없습니다: {generated}");
             }
         }
 
@@ -187,18 +210,21 @@ namespace Fbx2Vmd.CharacterLibrary
         {
             const int MaxDepth = 4;
             const int MaxFiles = 512;
-
             string sourceDir = Path.GetDirectoryName(Path.GetFullPath(pmxPath));
             if (string.IsNullOrEmpty(sourceDir) || !Directory.Exists(sourceDir))
             {
-                return;
-            }
+                return; }
             var textureExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds", ".gif",
-                ".spa", ".sph", ".toon",
-            };
+            { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds", ".gif", ".spa", ".sph", ".toon", };
             string targetFull = Path.GetFullPath(targetDir);
+            WalkTextureDirectories(sourceDir, targetFull, textureExts, MaxDepth, MaxFiles);
+        }
+
+        // 소스 디렉터리를 너비 우선으로 순회하며 텍스처를 복사함.
+        private static void WalkTextureDirectories(
+            string sourceDir, string targetFull, HashSet<string> textureExts,
+            int maxDepth, int maxFiles)
+        {
             var pending = new Stack<KeyValuePair<string, int>>();
             pending.Push(new KeyValuePair<string, int>(sourceDir, 0));
             int copied = 0;
@@ -206,37 +232,25 @@ namespace Fbx2Vmd.CharacterLibrary
             while (pending.Count > 0)
             {
                 KeyValuePair<string, int> item = pending.Pop();
-                if (item.Value > MaxDepth)
+                if (item.Value > maxDepth)
                 {
                     depthSkipped = true;
-                    continue;
-                }
-
+                    continue; }
                 if (!TryListTextureDirectory(item.Key, out string[] files, out string[] subdirs))
                 {
-                    continue;
-                }
-
-                if (!CopyTextureFiles(files, sourceDir, targetFull, textureExts, ref copied, MaxFiles))
+                    continue; }
+                if (!CopyTextureFiles(files, sourceDir, targetFull, textureExts, ref copied, maxFiles))
                 {
-                    return;
-                }
-
+                    return; }
                 foreach (string sub in subdirs)
                 {
                     var info = new DirectoryInfo(sub);
                     if (ShouldDescendInto(info, targetFull))
                     {
-                        pending.Push(new KeyValuePair<string, int>(sub, item.Value + 1));
-                    }
-                }
-            }
+                        pending.Push(new KeyValuePair<string, int>(sub, item.Value + 1)); } } }
             if (depthSkipped)
             {
-                Debug.LogWarning(
-                    $"PMX 텍스처 탐색 깊이 상한({MaxDepth})을 넘는 폴더를 건너뛰었습니다: {sourceDir}");
-            }
-        }
+                Debug.LogWarning( $"PMX 텍스처 탐색 깊이 상한({maxDepth})을 넘는 폴더를 건너뛰었습니다: {sourceDir}"); } }
 
         static bool TryListTextureDirectory(string dir, out string[] files, out string[] subdirs)
         {
@@ -281,10 +295,8 @@ namespace Fbx2Vmd.CharacterLibrary
                 catch (Exception exception)
                 {
                     Debug.LogWarning($"PMX 텍스처 복사를 건너뜁니다: {file} ({exception.Message})");
-                }
-            }
-            return true;
-        }
+                } }
+            return true; }
 
         static bool ShouldDescendInto(DirectoryInfo info, string targetFull)
         {

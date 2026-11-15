@@ -95,9 +95,7 @@ namespace Fbx2Vmd.FBXImporter
             AnimationState state = GetState();
             if (state == null)
             {
-                return false;
-            }
-
+                return false; }
             float length = Mathf.Max(0f, state.length);
             float currentTime = Mathf.Clamp(state.time, 0f, length);
             if (!_hasPreviousTime)
@@ -105,21 +103,15 @@ namespace Fbx2Vmd.FBXImporter
                 _previousTime = currentTime;
                 _hasPreviousTime = true;
                 _lastStep = 0f;
-                return false;
-            }
-
+                return false; }
             ApplyManualTimeIfNeeded(state, length, deltaTime, isPlaying, ref currentTime);
-
             float maxStep = 1f / Mathf.Clamp(frameRate, 15f, 120f);
             ApplyEndWrapClampIfNeeded(state, length, maxStep, ref currentTime);
-
             if (currentTime + 0.0001f < _previousTime)
             {
                 _previousTime = currentTime;
                 _lastStep = 0f;
-                return true;
-            }
-
+                return true; }
             float step = currentTime - _previousTime;
             _lastStep = step;
             _maxStep = Mathf.Max(_maxStep, step);
@@ -133,13 +125,9 @@ namespace Fbx2Vmd.FBXImporter
                     currentTime = Mathf.Min(_previousTime + maxStep, length);
                     state.time = currentTime;
                     _animation.Sample();
-                    _lastStep = currentTime - _previousTime;
-                }
-            }
-
+                    _lastStep = currentTime - _previousTime; } }
             _previousTime = currentTime;
-            return false;
-        }
+            return false; }
 
         void ApplyManualTimeIfNeeded(
             AnimationState state, float length, float deltaTime,
@@ -237,7 +225,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 _ghostAnimator.enabled = _ghostAnimatorWasEnabled;
             }
-
             _animation = null;
             _ghostAnimator = null;
             _addedAnimationComponent = false;
@@ -306,7 +293,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             float effectivePlaybackSpeed = Mathf.Approximately(playbackSpeed, 0f)
                 ? 1f
                 : Mathf.Abs(playbackSpeed);
@@ -315,10 +301,8 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             manualAnimationTime = Mathf.Min(previousTime + manualStep, length);
-            return true;
-        }
+            return true; }
 
         private static bool TryClampLegacyAnimationEndWrap(
             float currentTime,

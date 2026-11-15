@@ -53,7 +53,6 @@ namespace Fbx2Vmd.Settings
                 view.RebindCallbacks(importButton);
                 return view;
             }
-
             Button template = importButton ?? ResolveImportButton();
             if (template == null)
             {
@@ -61,7 +60,6 @@ namespace Fbx2Vmd.Settings
                     $"[FBXImport] 재생 제어를 만들 {ImportButtonName}을 찾지 못했습니다.");
                 return null;
             }
-
             view = pipeline.gameObject.AddComponent<HumanoidMotionPlaybackControlsView>();
             view.Build(pipeline, template);
             return view;
@@ -87,9 +85,7 @@ namespace Fbx2Vmd.Settings
         private void Build(FBXVmdPipeline pipeline, Button template)
         {
             Bind(pipeline);
-            _legacyRecordButton = FindButton(
-                template.transform.parent,
-                LegacyRecordButtonName);
+            _legacyRecordButton = FindButton( template.transform.parent, LegacyRecordButtonName);
             if (_legacyRecordButton != null)
             {
                 _wasLegacyRecordButtonActive = _legacyRecordButton.gameObject.activeSelf;
@@ -98,29 +94,10 @@ namespace Fbx2Vmd.Settings
 
             // 조작 버튼은 우하단에 위에서 아래로 쌓고, 타임라인은 좌하단에 둬
             // 상단·중앙의 캐릭터 표시 영역과 겹치지 않게 함.
-            _recordButton = CreateControlButton(
-                template,
-                RecordButtonName,
-                "녹화",
-                ControlBottomMargin + ButtonVerticalSpacing * 2f,
-                HandleRecordClick);
-            _playPauseButton = CreateControlButton(
-                template,
-                PlayPauseButtonName,
-                "재생",
-                ControlBottomMargin + ButtonVerticalSpacing,
-                HandlePlayPauseClick);
-            _stopButton = CreateControlButton(
-                template,
-                StopButtonName,
-                "정지",
-                ControlBottomMargin,
-                HandleStopClick);
-            _timelineSlider = CreateTimelineSlider(
-                template,
-                HandleTimelineValueChanged,
-                out _timelineLabel,
-                out _legacyTimelineLabel);
+            _recordButton = CreateControlButton( template, RecordButtonName, "녹화", ControlBottomMargin + ButtonVerticalSpacing * 2f, HandleRecordClick);
+            _playPauseButton = CreateControlButton( template, PlayPauseButtonName, "재생", ControlBottomMargin + ButtonVerticalSpacing, HandlePlayPauseClick);
+            _stopButton = CreateControlButton( template, StopButtonName, "정지", ControlBottomMargin, HandleStopClick);
+            _timelineSlider = CreateTimelineSlider( template, HandleTimelineValueChanged, out _timelineLabel, out _legacyTimelineLabel);
             Refresh();
         }
 
@@ -134,40 +111,29 @@ namespace Fbx2Vmd.Settings
             Transform parent = importButton != null
                 ? importButton.transform.parent
                 : _playPauseButton != null
-                    ? _playPauseButton.transform.parent
-                    : ResolveImportButton()?.transform.parent;
+                    ? _playPauseButton.transform.parent : ResolveImportButton()?.transform.parent;
             _playPauseButton ??= FindButton(parent, PlayPauseButtonName);
             _recordButton ??= FindButton(parent, RecordButtonName);
             _stopButton ??= FindButton(parent, StopButtonName);
             _timelineSlider ??= FindSlider(parent, TimelineSliderName);
             ResolveTimelineLabel();
-
             if (_playPauseButton != null)
             {
                 _playPauseButton.onClick = new Button.ButtonClickedEvent();
-                _playPauseButton.onClick.AddListener(HandlePlayPauseClick);
-            }
-
+                _playPauseButton.onClick.AddListener(HandlePlayPauseClick); }
             if (_stopButton != null)
             {
                 _stopButton.onClick = new Button.ButtonClickedEvent();
-                _stopButton.onClick.AddListener(HandleStopClick);
-            }
-
+                _stopButton.onClick.AddListener(HandleStopClick); }
             if (_recordButton != null)
             {
                 _recordButton.onClick = new Button.ButtonClickedEvent();
-                _recordButton.onClick.AddListener(HandleRecordClick);
-            }
-
+                _recordButton.onClick.AddListener(HandleRecordClick); }
             if (_timelineSlider != null)
             {
                 _timelineSlider.onValueChanged = new Slider.SliderEvent();
-                _timelineSlider.onValueChanged.AddListener(HandleTimelineValueChanged);
-            }
-
-            Refresh();
-        }
+                _timelineSlider.onValueChanged.AddListener(HandleTimelineValueChanged); }
+            Refresh(); }
 
         private void HandlePlayPauseClick()
         {
@@ -226,50 +192,30 @@ namespace Fbx2Vmd.Settings
 
         private void Refresh()
         {
-            bool hasPreparedMotion =
-                _pipeline != null && _pipeline.HasPreparedImportedMotion;
-            bool isRecording =
-                _pipeline != null && _pipeline.IsImportedMotionRecording;
-            bool isPreparingCorrection =
-                _pipeline != null &&
-                _pipeline.IsPreparingImportedMotionCorrection;
+            bool hasPreparedMotion = _pipeline != null && _pipeline.HasPreparedImportedMotion;
+            bool isRecording = _pipeline != null && _pipeline.IsImportedMotionRecording;
+            bool isPreparingCorrection = _pipeline != null && _pipeline.IsPreparingImportedMotionCorrection;
             if (_playPauseButton != null)
             {
-                _playPauseButton.interactable =
-                    hasPreparedMotion && !isRecording && !isPreparingCorrection;
-                SetLabel(
-                    _playPauseButton,
-                    isPreparingCorrection
-                        ? "보정 준비 중"
-                        : _pipeline != null && _pipeline.IsImportedMotionPlaying
-                        ? "일시정지"
-                        : "재생");
-            }
-
+                _playPauseButton.interactable = hasPreparedMotion && !isRecording && !isPreparingCorrection;
+                SetLabel( _playPauseButton, isPreparingCorrection ? "보정 준비 중" : _pipeline != null && _pipeline.IsImportedMotionPlaying ? "일시정지" : "재생"); }
             if (_stopButton != null)
             {
                 _stopButton.interactable = hasPreparedMotion;
             }
             if (_recordButton != null)
             {
-                _recordButton.interactable =
-                    hasPreparedMotion && !isPreparingCorrection;
+                _recordButton.interactable = hasPreparedMotion && !isPreparingCorrection;
                 SetLabel(_recordButton, isRecording ? "녹화 중지" : "녹화");
             }
             if (_timelineSlider != null)
             {
-                _timelineSlider.interactable =
-                    hasPreparedMotion && !isRecording && !isPreparingCorrection;
+                _timelineSlider.interactable = hasPreparedMotion && !isRecording && !isPreparingCorrection;
                 _timelineSlider.minValue = 0f;
                 _timelineSlider.maxValue = hasPreparedMotion
                     ? _pipeline.ImportedMotionLastFrameIndex
                     : 0f;
-                _timelineSlider.SetValueWithoutNotify(
-                    hasPreparedMotion
-                        ? _pipeline.ImportedMotionCurrentFrameIndex
-                        : 0f);
-            }
-
+                _timelineSlider.SetValueWithoutNotify( hasPreparedMotion ? _pipeline.ImportedMotionCurrentFrameIndex : 0f); }
             SetTimelineLabel(hasPreparedMotion, isPreparingCorrection);
         }
 
@@ -288,7 +234,6 @@ namespace Fbx2Vmd.Settings
                   $"{FormatTime(_pipeline.ImportedMotionCurrentTimeSeconds)}/" +
                   FormatTime(_pipeline.ImportedMotionClipLengthSeconds)
                 : "프레임 - / -";
-
             if (_timelineLabel != null)
             {
                 _timelineLabel.text = label;
@@ -301,51 +246,36 @@ namespace Fbx2Vmd.Settings
             {
                 _legacyTimelineLabel.text = label;
                 ApplyLegacyKoreanFont(_legacyTimelineLabel);
-            }
-        }
+            } }
 
         private static Button CreateControlButton(
-            Button template,
-            string objectName,
-            string label,
-            float verticalOffset,
-            UnityEngine.Events.UnityAction onClick)
+            Button template, string objectName, string label, float verticalOffset, UnityEngine.Events.UnityAction onClick)
         {
             Button button = Instantiate(template, template.transform.parent);
             button.name = objectName;
             button.gameObject.hideFlags = HideFlags.DontSave;
             button.onClick = new Button.ButtonClickedEvent();
             button.onClick.AddListener(onClick);
-
             if (button.transform is RectTransform rectTransform)
             {
                 rectTransform.anchorMin = new Vector2(1f, 0f);
                 rectTransform.anchorMax = new Vector2(1f, 0f);
                 rectTransform.pivot = new Vector2(1f, 0f);
-                rectTransform.anchoredPosition =
-                    new Vector2(-ControlSideMargin, verticalOffset);
-                rectTransform.SetAsLastSibling();
-            }
-
+                rectTransform.anchoredPosition = new Vector2(-ControlSideMargin, verticalOffset);
+                rectTransform.SetAsLastSibling(); }
             TMP_Text tmpLabel = button.GetComponentInChildren<TMP_Text>(true);
             if (tmpLabel != null)
             {
                 tmpLabel.enableAutoSizing = true;
-                tmpLabel.fontSizeMin = 18f;
-            }
-            else
+                tmpLabel.fontSizeMin = 18f; } else
             {
                 Text legacyLabel = button.GetComponentInChildren<Text>(true);
                 if (legacyLabel != null)
                 {
                     legacyLabel.resizeTextForBestFit = true;
-                    legacyLabel.resizeTextMinSize = 18;
-                }
-            }
-
+                    legacyLabel.resizeTextMinSize = 18; } }
             SetLabel(button, label);
-            return button;
-        }
+            return button; }
 
         private static void SetLabel(Button button, string label)
         {
@@ -378,113 +308,5 @@ namespace Fbx2Vmd.Settings
             }
         }
 
-        private static Button ResolveImportButton()
-        {
-            GameObject buttonObject = GameObject.Find(ImportButtonName);
-            return buttonObject != null ? buttonObject.GetComponent<Button>() : null;
-        }
-
-        private static Button ResolveButton(string objectName)
-        {
-            GameObject buttonObject = GameObject.Find(objectName);
-            return buttonObject != null ? buttonObject.GetComponent<Button>() : null;
-        }
-
-        private static Button FindButton(Transform parent, string objectName)
-        {
-            if (parent == null)
-            {
-                return null;
-            }
-
-            for (int index = 0; index < parent.childCount; index++)
-            {
-                Transform child = parent.GetChild(index);
-                if (child.name == objectName)
-                {
-                    return child.GetComponent<Button>();
-                }
-            }
-
-            return null;
-        }
-
-        private static Slider FindSlider(Transform parent, string objectName)
-        {
-            if (parent == null)
-            {
-                return null;
-            }
-
-            for (int index = 0; index < parent.childCount; index++)
-            {
-                Transform child = parent.GetChild(index);
-                if (child.name == objectName)
-                {
-                    return child.GetComponent<Slider>();
-                }
-            }
-
-            return null;
-        }
-
-        private void ResolveTimelineLabel()
-        {
-            if (_timelineSlider == null)
-            {
-                return;
-            }
-
-            _timelineLabel ??= _timelineSlider.GetComponentInChildren<TMP_Text>(true);
-            _legacyTimelineLabel ??=
-                _timelineSlider.GetComponentInChildren<Text>(true);
-        }
-
-        private static string FormatTime(float timeSeconds)
-        {
-            double safeTime = float.IsNaN(timeSeconds) ||
-                              float.IsInfinity(timeSeconds) ||
-                              timeSeconds < 0f
-                ? 0d
-                : timeSeconds;
-            TimeSpan time = TimeSpan.FromSeconds(safeTime);
-            return time.TotalHours >= 1d
-                ? $"{(int)time.TotalHours:00}:{time.Minutes:00}:{time.Seconds:00}.{time.Milliseconds:000}"
-                : $"{time.Minutes:00}:{time.Seconds:00}.{time.Milliseconds:000}";
-        }
-
-        private static void DestroyControlButton(Button button)
-        {
-            if (button == null)
-            {
-                return;
-            }
-
-            if (Application.isPlaying)
-            {
-                Destroy(button.gameObject);
-            }
-            else
-            {
-                DestroyImmediate(button.gameObject);
-            }
-        }
-
-        private static void DestroyControlObject(Component component)
-        {
-            if (component == null)
-            {
-                return;
-            }
-
-            if (Application.isPlaying)
-            {
-                Destroy(component.gameObject);
-            }
-            else
-            {
-                DestroyImmediate(component.gameObject);
-            }
-        }
     }
 }

@@ -24,27 +24,22 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return;
             }
-
             int changed = 0;
             if (clampHumanoidThumbRotations)
             {
                 changed += ClampThumbBoneRotations();
             }
-
             if (enableThumbVisualLengthGuard)
             {
                 changed += PreserveThumbVisualLength();
             }
-
             changed += SyncDetachedThumbBaseHelperTransforms();
-
             _lastFrameCorrectionCount = changed;
             _correctionsAppliedTotal += changed;
             if (changed > 0)
             {
                 _framesWithCorrections++;
             }
-
             if (changed > 0 && logCorrections && !_warningLogged)
             {
                 Debug.LogWarning($"[HumanoidThumbDeformationGuard] 엄지 본 localRotation {changed}개를 최종 렌더 포즈에서 제한했습니다.");

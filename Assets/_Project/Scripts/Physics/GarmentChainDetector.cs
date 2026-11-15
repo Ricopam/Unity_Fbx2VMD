@@ -59,50 +59,32 @@ namespace Fbx2Vmd.ClothPhysics
         /// <param name="boneVerts">본별 지배 버텍스 맵 (BodyColliderBuilder.GatherBoneVertices 결과)</param>
         /// <param name="minChainBones">이 본 수 미만 체인은 물리 대상에서 제외</param>
         /// <param name="minSkinnedVerts">이 버텍스 수 미만이면 메시와 무관한 보조 본으로 간주해 제외</param>
-        public static Result Detect(
-            IList<Transform> attachmentBones,
-            Func<Transform, bool> isClaimed,
-            Func<Transform, bool> isBodyBone,
-            IDictionary<Transform, List<Vector3>> boneVerts,
-            int minChainBones = 2,
-            int minSkinnedVerts = 4)
+        public static Result Detect( IList<Transform> attachmentBones, Func<Transform, bool> isClaimed, Func<Transform, bool> isBodyBone, IDictionary<Transform, List<Vector3>> boneVerts, int minChainBones = 2, int minSkinnedVerts = 4)
         {
             var result = new Result();
-            if (attachmentBones == null)
-                return result;
-
+            if (attachmentBones == null) return result;
             var adopted = new HashSet<Transform>(); // 이 탐지기가 채택한 체인의 본 — 중첩 루트 방지
             foreach (var attach in attachmentBones)
             {
-                if (attach == null)
-                    continue;
+                if (attach == null) continue;
                 foreach (Transform child in attach)
                 {
-                    if (!IsCandidate(child, isClaimed, isBodyBone, adopted))
-                        continue;
+                    if (!IsCandidate(child, isClaimed, isBodyBone, adopted)) continue;
                     var bones = CollectChain(child, isClaimed, adopted);
                     if (bones.Count < minChainBones)
                     {
                         result.report.Add($"장식물 후보 스킵(본 {bones.Count}개): {child.name}");
-                        continue;
-                    }
+                        continue; }
                     int verts = CountSkinnedVerts(bones, boneVerts);
                     if (verts < minSkinnedVerts)
                     {
-                        result.report.Add(
-                            $"장식물 후보 스킵(스키닝 버텍스 {verts}개): {child.name}");
-                        continue;
-                    }
-                    foreach (var b in bones)
-                        adopted.Add(b);
+                        result.report.Add( $"장식물 후보 스킵(스키닝 버텍스 {verts}개): {child.name}");
+                        continue; }
+                    foreach (var b in bones) adopted.Add(b);
                     result.roots.Add(child);
                     result.skinnedVertexCounts.Add(verts);
-                    result.report.Add(
-                        $"장식물 체인 채택(토폴로지): {child.name} — 본 {bones.Count}개, 스키닝 버텍스 {verts}개");
-                }
-            }
-            return result;
-        }
+                    result.report.Add( $"장식물 체인 채택(토폴로지): {child.name} — 본 {bones.Count}개, 스키닝 버텍스 {verts}개"); } }
+            return result; }
 
         /// <summary>체인 루트 후보 적격성 — 신체/기구/사지/타 경로 담당 본을 걸러낸다.</summary>
         static bool IsCandidate(
@@ -171,8 +153,7 @@ namespace Fbx2Vmd.ClothPhysics
                 foreach (Transform child in b)
                     stack.Push(child);
             }
-            return bones;
-        }
+            return bones; }
 
         static int CountSkinnedVerts(
             List<Transform> bones, IDictionary<Transform, List<Vector3>> boneVerts)

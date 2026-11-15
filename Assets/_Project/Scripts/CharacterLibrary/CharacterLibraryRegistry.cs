@@ -129,5 +129,42 @@ namespace Fbx2Vmd.CharacterLibrary
             public string error = string.Empty;
             public bool success => entry != null && string.IsNullOrEmpty(error);
         }
+
+        private static void ApplyFileStatToEntry(
+            CharacterLibraryEntry entry,
+            long fileSize,
+            string lastWriteTimeUtc,
+            string contentHash)
+        {
+            // 내용 해시가 바뀐 경우만 Changed로 표시한다(mtime만 바뀐 터치는 무시).
+            bool contentChanged = !string.Equals(
+                entry.contentHash, contentHash, StringComparison.Ordinal);
+
+            entry.fileSize = fileSize;
+            entry.lastWriteTimeUtc = lastWriteTimeUtc;
+
+            if (contentChanged)
+            {
+                entry.contentHash = contentHash;
+                entry.status = CharacterLibraryEntryStatus.Changed;
+            }
+            else if (entry.status == CharacterLibraryEntryStatus.Missing ||
+                     entry.status == CharacterLibraryEntryStatus.Error)
+            {
+                // 파일이 정상으로 읽히면 Missing/Error를 해소한다.
+                entry.status = CharacterLibraryEntryStatus.Ready;
+                entry.lastError = string.Empty;
+            }
+        }
+
+
+        private static bool IsSupportedCharacterFile(string extension)
+        {
+            return
+                string.Equals(extension, ".vrm", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(extension, ".fbx", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(extension, ".pmx", StringComparison.OrdinalIgnoreCase);
+        }
+
     }
 }

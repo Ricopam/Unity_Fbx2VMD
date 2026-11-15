@@ -67,8 +67,7 @@ namespace Fbx2Vmd.FBXImporter
 
         internal void PrepareSupportCurves(Animator animator)
         {
-            if (State != HumanoidMotionPlaybackState.Ready || animator == null || !CanUseSupportCurves ||
-                _footGrounding == null || !_footGrounding.IsPrepared)
+            if (State != HumanoidMotionPlaybackState.Ready || animator == null || !CanUseSupportCurves || _footGrounding == null || !_footGrounding.IsPrepared)
                 return;
 
             float savedTime = CurrentTimeSeconds;
@@ -79,8 +78,7 @@ namespace Fbx2Vmd.FBXImporter
             {
                 foreach (var window in _footGrounding.GetSupportCurveWindows().OrderBy(window => window.Start))
                 {
-                    if (_supportCurves.Count > 0 && _supportCurves[^1].End > window.Start ||
-                        !IsExtensionLimitedAt(window.Full, window.Side) || !IsExtensionLimitedAt(window.Full + 1, window.Side))
+                    if (_supportCurves.Count > 0 && _supportCurves[^1].End > window.Start || !IsExtensionLimitedAt(window.Full, window.Side) || !IsExtensionLimitedAt(window.Full + 1, window.Side))
                         continue;
 
                     int first = Math.Max(0, window.Start - 1);
@@ -142,8 +140,7 @@ namespace Fbx2Vmd.FBXImporter
             for (int before = Math.Max(0, frame - SupportCurvePreRollFrames); before < frame; before++) SeekFrame(before);
         }
 
-        private bool PreservesSupportCurve(HumanoidSupportCurveProblem.Curve curve, int first, int last,
-            HumanoidSupportCurveProblem.Sample[] samples, int[] boundaries)
+        private bool PreservesSupportCurve(HumanoidSupportCurveProblem.Curve curve, int first, int last, HumanoidSupportCurveProblem.Sample[] samples, int[] boundaries)
         {
             var baseline = new double2[samples.Length];
             var corrected = new double2[samples.Length];
@@ -165,27 +162,17 @@ namespace Fbx2Vmd.FBXImporter
                 if (frame < curve.Start || frame > curve.End) continue;
                 var source = new double2(samples[index].Left.ReferenceDegrees, samples[index].Right.ReferenceDegrees);
                 originalError += (baseline[index] - source) * (baseline[index] - source);
-                correctedError += (corrected[index] - source) * (corrected[index] - source);
-            }
-            if (!math.all(correctedError < originalError) ||
-                !PreservesMotion(baseline, corrected, baselineHips, correctedHips, 0, samples.Length)) return false;
+                correctedError += (corrected[index] - source) * (corrected[index] - source); }
+            if (!math.all(correctedError < originalError) || !PreservesMotion(baseline, corrected, baselineHips, correctedHips, 0, samples.Length)) return false;
             foreach (int boundary in boundaries)
             {
                 if (boundary - 1 < first || boundary + 1 > last) continue;
-                if (!PreservesMotion(baseline, corrected, baselineHips, correctedHips,
-                    (boundary - 1 - first) * SupportCurveSamplesPerFrame,
-                    (boundary + 1 - first) * SupportCurveSamplesPerFrame + 1)) return false;
-            }
-
+                if (!PreservesMotion(baseline, corrected, baselineHips, correctedHips, (boundary - 1 - first) * SupportCurveSamplesPerFrame, (boundary + 1 - first) * SupportCurveSamplesPerFrame + 1)) return false; }
             PreRollSupportCurve(curve.Start);
             for (int frame = curve.Start + 1; frame <= curve.End; frame++)
             {
-                if (!ReadSupportBoundary(curve, frame - .001f, out double2 beforeBase, out double2 beforeCurve) ||
-                    !ReadSupportBoundary(curve, frame, out double2 atBase, out double2 atCurve) ||
-                    !math.all(math.abs(atCurve - beforeCurve) <= math.abs(atBase - beforeBase) + .01)) return false;
-            }
-            return true;
-        }
+                if (!ReadSupportBoundary(curve, frame - .001f, out double2 beforeBase, out double2 beforeCurve) || !ReadSupportBoundary(curve, frame, out double2 atBase, out double2 atCurve) || !math.all(math.abs(atCurve - beforeCurve) <= math.abs(atBase - beforeBase) + .01)) return false; }
+            return true; }
 
         bool ReadSupportBoundary(HumanoidSupportCurveProblem.Curve curve, float frame,
             out double2 old, out double2 next)

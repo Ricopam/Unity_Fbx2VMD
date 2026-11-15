@@ -23,7 +23,6 @@ namespace Fbx2Vmd.FBXImporter
                     return true;
                 if (!Sampler.TrySample())
                     return false;
-
                 if (!ResolveFrameContacts(frame, ground)) return false;
                 // 착지 램프 중 발 회전의 프레임당 변화를 제한해 발끝 팝 성분을 분산함.
                 // 지지가 상승하는 부분 지지 구간에만 적용해 완전 지지·해제·슬라이드의
@@ -36,10 +35,8 @@ namespace Fbx2Vmd.FBXImporter
                 _prevSupport = _support;
                 if (_activeWeights.x > 0f && _activeWeights.y > 0f)
                     Diagnostic.pair_span_error_m = Mathf.Abs(
-                        (_localContactPoints[1] - _localContactPoints[0]).magnitude * Foot.lossyScale.x -
-                        Vector3.Distance(_anchors[0], _anchors[1]));
-                return ResolveTargetLiftAndReach(humanScale);
-            }
+                        (_localContactPoints[1] - _localContactPoints[0]).magnitude * Foot.lossyScale.x - Vector3.Distance(_anchors[0], _anchors[1]));
+                return ResolveTargetLiftAndReach(humanScale); }
 
             private bool ResolveTargetLiftAndReach(float humanScale)
             {
@@ -98,8 +95,7 @@ namespace Fbx2Vmd.FBXImporter
                     _activeWeights[channel] = weights[channel];
                     if (!contact.TryGetLocalPoint(Sampler, out _localContactPoints[channel])) return false;
                 }
-                return true;
-            }
+                return true; }
 
             private bool AlignContactPairRotation()
             {
@@ -144,8 +140,7 @@ namespace Fbx2Vmd.FBXImporter
                         fullSupportCount, humanScale);
                     _target = Vector3.LerpUnclamped(_originalFootPosition, target, _support);
                 }
-                return true;
-            }
+                return true; }
 
             // 지지점 간격이 양립할 때만 부분 지지가 완전 지지 목표를 밀어내지 않게 함.
             private Vector3 ClampPartialSupportPull(
@@ -277,8 +272,7 @@ namespace Fbx2Vmd.FBXImporter
                         continue;
                     if (!_activeContacts[channel].TryGetLocalPoint(Sampler, out Vector3 point))
                         return false;
-                    if (!Sampler.TrySelectContact(channel == 1, _ground.normal, out _,
-                            out Vector3 currentContact))
+                    if (!Sampler.TrySelectContact(channel == 1, _ground.normal, out _, out Vector3 currentContact))
                         return false;
                     Vector3 plannedContact = Foot.TransformPoint(point);
                     // 계획 지지점의 수평 고정과 현재 밑창 접촉의 높이를 따로 검사함.
@@ -286,13 +280,10 @@ namespace Fbx2Vmd.FBXImporter
                     Vector3 planarError = Vector3.ProjectOnPlane(plannedContact - _anchors[channel], _ground.normal);
                     float heightError = Vector3.Dot(currentContact - _anchors[channel], _ground.normal);
                     contactCount++;
-                    contactError = Mathf.Max(contactError,
-                        Mathf.Sqrt(planarError.sqrMagnitude + heightError * heightError));
-                }
+                    contactError = Mathf.Max(contactError, Mathf.Sqrt(planarError.sqrMagnitude + heightError * heightError)); }
                 Diagnostic.supported_contact_error_m = contactError;
                 Diagnostic.supported_contact_count = contactCount;
-                return true;
-            }
+                return true; }
 
             private float CalculatePlannedContactError(Vector3 position)
             {
@@ -315,6 +306,33 @@ namespace Fbx2Vmd.FBXImporter
                         _ground.point, _ground.normal) / _ground.normal.y);
                 return minimum;
             }
+
+            internal bool TryGetRegionHeights(out Vector2 heights)
+            {
+                heights = default;
+                if (!HasGround || !Sampler.TrySelectContact(false, _ground.normal, out _, out Vector3 rear) ||
+                    !Sampler.TrySelectContact(true, _ground.normal, out _, out Vector3 front))
+                    return false;
+                heights = new Vector2(Vector3.Dot(rear - _ground.point, _ground.normal),
+                    Vector3.Dot(front - _ground.point, _ground.normal));
+                return true;
+            }
+
+            private bool NeedsPelvisLowering()
+            {
+                Vector3 targetToHip = Upper.position - _target;
+                float reachSquared = _maximumReach * _maximumReach;
+                float horizontalSquared = targetToHip.x * targetToHip.x + targetToHip.z * targetToHip.z;
+                return targetToHip.y > 0f && horizontalSquared < reachSquared && targetToHip.sqrMagnitude > reachSquared;
+            }
+
+            private float _support, _clearance, _maximumReach;
+            private RaycastHit _ground;
+            // 착지 램프 중 목표 발 회전의 프레임당 변화 상한에 사용하는 직전 상태임.
+            private Quaternion _prevTargetFootRotation;
+            private float _prevSupport;
+            private bool _hasPrevTargetRot;
+
         }
     }
 }

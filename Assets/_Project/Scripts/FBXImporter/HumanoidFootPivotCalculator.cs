@@ -20,11 +20,8 @@ namespace Fbx2Vmd.FBXImporter
         {
             targetPosition = animationPosition;
             targetRotation = animationRotation;
-            if (!IsFinite(animationPosition) || !IsFinite(footLocalPivot) ||
-                !IsFinite(worldAnchor) || !IsUnitRotation(animationRotation) ||
-                !IsUnitRotation(desiredRotation) || !IsFinite(uniformScale) ||
-                uniformScale <= 0f || !IsFinite(contactWeight) ||
-                contactWeight < 0f || contactWeight > 1f)
+            if (!IsFinite(animationPosition) || !IsFinite(footLocalPivot) || !IsFinite(worldAnchor) || !IsUnitRotation(animationRotation) ||
+                !IsUnitRotation(desiredRotation) || !IsFinite(uniformScale) || uniformScale <= 0f || !IsFinite(contactWeight) || contactWeight < 0f || contactWeight > 1f)
             {
                 return false;
             }
@@ -34,8 +31,7 @@ namespace Fbx2Vmd.FBXImporter
                 return true;
             }
 
-            Quaternion rotation = Quaternion.Slerp(
-                animationRotation.normalized, desiredRotation.normalized, contactWeight);
+            Quaternion rotation = Quaternion.Slerp( animationRotation.normalized, desiredRotation.normalized, contactWeight);
             // 피벗은 스케일을 적용하지 않은 발 Transform 로컬 좌표이며 여기서 한 번만 배율을 적용함.
             Vector3 offset = rotation * (footLocalPivot * uniformScale);
             Vector3 fullContactPosition = worldAnchor - offset;

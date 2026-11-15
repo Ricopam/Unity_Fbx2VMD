@@ -79,7 +79,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             track.Debt = Vector3.MoveTowards(track.Debt, Vector3.zero,
                 DiffuseSpeedMetersPerSecond * dt);
             Vector3 target = raw + track.Debt;
@@ -92,25 +91,20 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     target = constrained;
                     track.Debt = target - raw;
-                }
-            }
+                } }
             if ((target - raw).sqrMagnitude < 0.000000001f)
             {
                 track.PrevOut = raw;
-                return false;
-            }
-
+                return false; }
             SolveFootIk(ref track, target);
             track.PrevOut = target;
-            return true;
-        }
+            return true; }
 
         static bool UpdateDebt(ref FootTrack track, float dt, Vector3 raw)
         {
             float rawDelta = track.HasState
                 ? (raw - track.PrevRaw).magnitude
                 : 0f;
-
             // 정지 상태의 발이 임계 이상 순간이동하면 그 차이를 잔여로 보유해
             // 이후 프레임에 걸쳐 상쇄시킴 — 출력은 원자세로부터 미끄러지듯 이동함.
             // dt=0인 동일 시각 재평가(보정 프리뷰 등)에서는 판정하지 않음 — 그 경로는
@@ -121,13 +115,11 @@ namespace Fbx2Vmd.FBXImporter
             {
                 track.Debt += track.PrevOut - raw;
             }
-
             track.PrevRaw = raw;
             // 리셋 직후 첫 전이는 직전 이동 이력이 없으므로 "정지"로 시딩하지 않음 —
             // 탐색 직후 실제 고속 이동 중인 발을 순간이동으로 오판해 확산하는 것을 막음.
             track.PrevRawDelta = track.HasState ? rawDelta : float.MaxValue;
             track.HasState = true;
-
             if (track.Debt.sqrMagnitude < 0.000000001f)
             {
                 track.PrevOut = raw;

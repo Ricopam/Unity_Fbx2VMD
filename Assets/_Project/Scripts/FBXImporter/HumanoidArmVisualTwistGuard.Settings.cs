@@ -24,5 +24,21 @@ namespace Fbx2Vmd.FBXImporter
             [FormerlySerializedAs("logConfiguration")]
             [SerializeField] private bool _logConfiguration= false;
             public bool logConfiguration { get => _logConfiguration; private set => _logConfiguration = value; }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+        }
+
+        private static bool IsFinite(Quaternion value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z) && IsFinite(value.w);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
     }
 }

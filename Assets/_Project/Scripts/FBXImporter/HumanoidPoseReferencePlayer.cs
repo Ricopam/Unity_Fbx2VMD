@@ -10,7 +10,7 @@ namespace Fbx2Vmd.FBXImporter
     /// <summary>
     /// 기준 Humanoid 모델에서 같은 시간의 원본 자세를 샘플링함.
     /// </summary>
-    internal sealed class HumanoidPoseReferencePlayer : IDisposable
+    internal sealed partial class HumanoidPoseReferencePlayer : IDisposable
     {
         private readonly NativeHumanoidAnimationPlayer _animationPlayer =
             new NativeHumanoidAnimationPlayer();
@@ -75,13 +75,10 @@ namespace Fbx2Vmd.FBXImporter
             DisableRuntimeComponents(_referenceInstance);
             _referenceInstance.SetActive(true);
 
-            _referenceAnimator =
-                _referenceInstance.GetComponent<Animator>() ??
-                _referenceInstance.GetComponentInChildren<Animator>(true);
+            _referenceAnimator = _referenceInstance.GetComponent<Animator>() ?? _referenceInstance.GetComponentInChildren<Animator>(true);
             if (_referenceAnimator == null)
             {
-                throw new InvalidOperationException(
-                    "Native Humanoid 기준 모델에 Animator가 없습니다.");
+                throw new InvalidOperationException( "Native Humanoid 기준 모델에 Animator가 없습니다.");
             }
 
             _referenceAnimator.runtimeAnimatorController = null;
@@ -93,24 +90,19 @@ namespace Fbx2Vmd.FBXImporter
             _rightToes = _referenceAnimator.GetBoneTransform(HumanBodyBones.RightToes);
             if (_leftFoot == null || _rightFoot == null)
             {
-                throw new InvalidOperationException(
-                    "Native Humanoid 기준 모델에 양발 본이 필요합니다.");
+                throw new InvalidOperationException( "Native Humanoid 기준 모델에 양발 본이 필요합니다.");
             }
             InitialRootRotation = _referenceAnimator.transform.rotation;
             if (!TryInitializeAvatarFootReference(_referenceAnimator.avatar.humanDescription.skeleton))
                 TryInitializeFootReference();
             _animationPlayer.Initialize(_referenceAnimator, clip);
-            _poseHandler = new HumanPoseHandler(
-                _referenceAnimator.avatar,
-                _referenceAnimator.transform);
+            _poseHandler = new HumanPoseHandler( _referenceAnimator.avatar, _referenceAnimator.transform);
         }
 
         private bool TryInitializeAvatarFootReference(SkeletonBone[] skeleton)
         {
             Transform root = _referenceAnimator.transform;
-            if (skeleton == null || skeleton.Length == 0 || _leftToes == null || _rightToes == null)
-                return false;
-
+            if (skeleton == null || skeleton.Length == 0 || _leftToes == null || _rightToes == null) return false;
             var bones = new List<Transform>();
             var names = new HashSet<string>(StringComparer.Ordinal);
             foreach (Transform toes in new[] { _leftToes, _rightToes })
@@ -120,28 +112,17 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     if (bones.Contains(bone)) continue;
                     if (!names.Add(bone.name)) return false;
-                    bones.Add(bone);
-                }
-            }
-            foreach (Transform bone in root.GetComponentsInChildren<Transform>(true))
-                if (bone != root && names.Contains(bone.name) && !bones.Contains(bone)) return false;
-
+                    bones.Add(bone); } }
+            foreach (Transform bone in root.GetComponentsInChildren<Transform>(true)) if (bone != root && names.Contains(bone.name) && !bones.Contains(bone)) return false;
             var reference = new Dictionary<string, SkeletonBone>(StringComparer.Ordinal);
             foreach (SkeletonBone pose in skeleton)
             {
                 if (pose.name == null || !names.Contains(pose.name)) continue;
-                if (reference.ContainsKey(pose.name) || !IsFinite(pose.position) || !IsFinite(pose.rotation) ||
-                    !IsFinite(pose.scale) || pose.scale.x <= 0f || pose.scale.y <= 0f || pose.scale.z <= 0f ||
-                    Mathf.Abs(Quaternion.Dot(pose.rotation, pose.rotation) - 1f) > 0.0001f)
-                    return false;
-                reference.Add(pose.name, pose);
-            }
+                if (reference.ContainsKey(pose.name) || !IsFinite(pose.position) || !IsFinite(pose.rotation) || !IsFinite(pose.scale) || pose.scale.x <= 0f || pose.scale.y <= 0f || pose.scale.z <= 0f || Mathf.Abs(Quaternion.Dot(pose.rotation, pose.rotation) - 1f) > 0.0001f) return false;
+                reference.Add(pose.name, pose); }
             if (reference.Count != bones.Count) return false;
-
             var original = new SkeletonBone[bones.Count];
-            for (int i = 0; i < bones.Count; i++)
-                original[i] = new SkeletonBone { position = bones[i].localPosition,
-                    rotation = bones[i].localRotation, scale = bones[i].localScale };
+            for (int i = 0; i < bones.Count; i++) original[i] = new SkeletonBone { position = bones[i].localPosition, rotation = bones[i].localRotation, scale = bones[i].localScale };
             try
             {
                 // 첫 동작의 기울기를 중립으로 삼지 않도록 Avatar 기준에서 발 축과 길이를 함께 취득함.
@@ -150,21 +131,15 @@ namespace Fbx2Vmd.FBXImporter
                     SkeletonBone pose = reference[bone.name];
                     bone.localPosition = pose.position;
                     bone.localRotation = pose.rotation;
-                    bone.localScale = pose.scale;
-                }
-                return TryInitializeFootReference();
-            }
-            finally
+                    bone.localScale = pose.scale; }
+                return TryInitializeFootReference(); } finally
             {
                 // 재생기와 HumanPoseHandler가 임시 자세를 초기 상태로 기억하지 않도록 먼저 복원함.
                 for (int i = 0; i < bones.Count; i++)
                 {
                     bones[i].localPosition = original[i].position;
                     bones[i].localRotation = original[i].rotation;
-                    bones[i].localScale = original[i].scale;
-                }
-            }
-        }
+                    bones[i].localScale = original[i].scale; } } }
 
         private bool TryInitializeFootReference()
         {
@@ -311,7 +286,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             bool applied = false;
             for (HumanBodyBones bone = HumanBodyBones.Hips;
                  bone < HumanBodyBones.LastBone;
@@ -325,11 +299,9 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     continue;
                 }
-
                 targetBone.localRotation = referenceBone.localRotation;
                 applied = true;
             }
-
             return applied;
         }
 
@@ -377,35 +349,14 @@ namespace Fbx2Vmd.FBXImporter
             out HumanoidArmDirectionReference reference)
         {
             reference = default;
-            if (!TryGetDirection(
-                    animator,
-                    HumanBodyBones.LeftUpperArm,
-                    HumanBodyBones.LeftLowerArm,
-                    out Vector3 leftUpperArm) ||
-                !TryGetDirection(
-                    animator,
-                    HumanBodyBones.LeftLowerArm,
-                    HumanBodyBones.LeftHand,
-                    out Vector3 leftForearm) ||
-                !TryGetDirection(
-                    animator,
-                    HumanBodyBones.RightUpperArm,
-                    HumanBodyBones.RightLowerArm,
-                    out Vector3 rightUpperArm) ||
-                !TryGetDirection(
-                    animator,
-                    HumanBodyBones.RightLowerArm,
-                    HumanBodyBones.RightHand,
-                    out Vector3 rightForearm))
+            if (!TryGetDirection( animator, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, out Vector3 leftUpperArm) || !TryGetDirection( animator, HumanBodyBones.LeftLowerArm,
+                    HumanBodyBones.LeftHand, out Vector3 leftForearm) || !TryGetDirection( animator, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, out Vector3 rightUpperArm) ||
+                !TryGetDirection( animator, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, out Vector3 rightForearm))
             {
                 return false;
             }
 
-            reference = new HumanoidArmDirectionReference(
-                leftUpperArm,
-                leftForearm,
-                rightUpperArm,
-                rightForearm);
+            reference = new HumanoidArmDirectionReference( leftUpperArm, leftForearm, rightUpperArm, rightForearm);
             return true;
         }
 
@@ -427,7 +378,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             direction = animator.transform.InverseTransformDirection(
                 end.position - start.position);
             if (!IsFinite(direction) || direction.sqrMagnitude <= 0.000001f)
@@ -435,43 +385,9 @@ namespace Fbx2Vmd.FBXImporter
                 direction = Vector3.zero;
                 return false;
             }
-
             direction.Normalize();
             return true;
         }
 
-        private static bool IsFinite(HumanPose pose)
-        {
-            if (!IsFinite(pose.bodyPosition) || !IsFinite(pose.bodyRotation) || pose.muscles == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < pose.muscles.Length; i++)
-            {
-                if (!IsFinite(pose.muscles[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool IsFinite(Vector3 value)
-        {
-            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
-        }
-
-        private static bool IsFinite(Quaternion value)
-        {
-            return IsFinite(value.x) && IsFinite(value.y) &&
-                IsFinite(value.z) && IsFinite(value.w);
-        }
-
-        private static bool IsFinite(float value)
-        {
-            return !float.IsNaN(value) && !float.IsInfinity(value);
-        }
     }
 }

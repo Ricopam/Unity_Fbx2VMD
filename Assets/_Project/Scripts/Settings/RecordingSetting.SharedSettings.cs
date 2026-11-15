@@ -126,46 +126,24 @@ public sealed partial class RecordingSetting
         {
             return MainRecordingSettingsActionResult.Failure("공유 설정 문서가 비어 있습니다.");
         }
-
         openSettingsPopupOnStart = document.openSettingsOnStart;
-        RecordingCaptureResolutionPlan capturePlan = RecordingCaptureResolution.CreateCustomPlan(
-            document.captureWidth,
-            document.captureHeight);
+        RecordingCaptureResolutionPlan capturePlan = RecordingCaptureResolution.CreateCustomPlan( document.captureWidth, document.captureHeight);
         recordingCaptureQuality = RecordingCaptureQualityPreset.Custom;
         customRecordingCaptureWidth = capturePlan.Width;
         customRecordingCaptureHeight = capturePlan.Height;
-
         FBXVmdPipeline resolvedFBXVmdPipeline = fileManager != null ? fileManager : recordingFBXVmdPipeline;
         if (resolvedFBXVmdPipeline != null)
         {
-            ApplyDiagnosticsToResolvedFBXVmdPipeline(resolvedFBXVmdPipeline);
-        }
-
-        if (TryProcessMotionCommand(
-                document, resolvedFBXVmdPipeline, startFbxImport,
-                clearPendingCommandWhenSkipped,
-                out MainRecordingSettingsActionResult motionResult))
+            ApplyDiagnosticsToResolvedFBXVmdPipeline(resolvedFBXVmdPipeline); }
+        if (TryProcessMotionCommand( document, resolvedFBXVmdPipeline, startFbxImport, clearPendingCommandWhenSkipped, out MainRecordingSettingsActionResult motionResult))
         {
-            return motionResult;
-        }
-
+            return motionResult; }
         Func<string, bool> tryStartFbxImport = resolvedFBXVmdPipeline == null
-            ? null
-            : path => sharedSettingsFbxImportStarter(resolvedFBXVmdPipeline, path);
-        if (sharedSettingsFbxImportCommandProcessor.TryProcess(
-                document,
-                startFbxImport,
-                clearPendingCommandWhenSkipped,
-                File.Exists,
-                tryStartFbxImport,
-                PersistConsumedSharedSettingsDocumentQuietly,
-                out MainRecordingSettingsActionResult commandResult))
+            ? null : path => sharedSettingsFbxImportStarter(resolvedFBXVmdPipeline, path);
+        if (sharedSettingsFbxImportCommandProcessor.TryProcess( document, startFbxImport, clearPendingCommandWhenSkipped, File.Exists, tryStartFbxImport, PersistConsumedSharedSettingsDocumentQuietly, out MainRecordingSettingsActionResult commandResult))
         {
-            return commandResult;
-        }
-
-        return MainRecordingSettingsActionResult.Success("공유 설정을 적용했습니다.");
-    }
+            return commandResult; }
+        return MainRecordingSettingsActionResult.Success("공유 설정을 적용했습니다."); }
 
     bool TryProcessMotionCommand(
         MainRecordingSettingsDocument document,

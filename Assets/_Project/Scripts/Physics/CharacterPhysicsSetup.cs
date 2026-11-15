@@ -81,7 +81,6 @@ namespace Fbx2Vmd.ClothPhysics
                  "스프링 의미론으로 덮어쓰고, 본 스프링 에셋 백엔드에서는 그대로 주입된다")]
         public HairSpringProfile springProfile = HairSpringProfile.Default;
 
-
         /// <summary>
         /// 자동 물리 설정을 실행한다. 기존 자동 생성물은 정리 후 재생성.
         /// 단, 플레이 중 기존 클로스가 전부 유효/빌드 중이면 재생성을 생략한다 —
@@ -171,32 +170,21 @@ namespace Fbx2Vmd.ClothPhysics
             ClearGenerated();
 
             Animator animator = ResolveAnimator();
-            if (!ResolveBoneContext(animator, report,
-                    out System.Func<HumanBodyBones, Transform> resolver,
-                    out HashSet<Transform> bodyBones, out float torso))
+            if (!ResolveBoneContext(animator, report, out System.Func<HumanBodyBones, Transform> resolver, out HashSet<Transform> bodyBones, out float torso))
                 return;
 
-            HashSet<Transform> externalOwned = BuildCollidersAndChains(
-                animator, resolver, bodyBones, torso, report,
-                out SkinnedMeshRenderer[] smrs,
-                out BodyColliderBuilder.BuildResult colResult,
-                out Dictionary<Transform, List<Vector3>> boneVerts,
-                out Transform head,
-                out HairChainDetector.Result detect);
+            HashSet<Transform> externalOwned = BuildCollidersAndChains( animator, resolver, bodyBones, torso, report, out SkinnedMeshRenderer[] smrs, out BodyColliderBuilder.BuildResult colResult,
+                out Dictionary<Transform, List<Vector3>> boneVerts, out Transform head, out HairChainDetector.Result detect);
             if (detect == null)
             {
                 Finish(report);
                 return;
             }
-            var context2 = CollectClothChains(
-                animator, resolver, bodyBones, boneVerts, externalOwned,
-                head, detect, report);
+            var context2 = CollectClothChains( animator, resolver, bodyBones, boneVerts, externalOwned, head, detect, report);
             int headHairChainCount = context2.headHairChainCount;
             var skirtBoneDepths = context2.skirtBoneDepths;
 
-            BuildDynamicsAndFinish(
-                animator, resolver, smrs, torso, head, detect,
-                headHairChainCount, skirtBoneDepths, colResult, report);
+            BuildDynamicsAndFinish( animator, resolver, smrs, torso, head, detect, headHairChainCount, skirtBoneDepths, colResult, report);
         }
 
         // 카운트는 머리카락 클로스만 — 스커트/VRM 변환 클로스도 generatedCloths에 들어간다
@@ -216,7 +204,6 @@ namespace Fbx2Vmd.ClothPhysics
             graceUntilFrame = Time.frameCount + RebuildGraceFrames;
             Finish(report);
         }
-
 
         // 1. 버텍스 수집 → 콜라이더 생성 + 2. 머리카락 체인 탐지까지의 준비 단계.
         // 네이티브 스프링본(VRM 등) 소유 본 — 같은 본에 MC2를 얹으면 이중 물리가 된다.
@@ -292,30 +279,20 @@ namespace Fbx2Vmd.ClothPhysics
         }
 
         MagicaCloth CreateHairCloth(
-            HairPart part, List<HairChain> chains,
-            Dictionary<ColliderCategory, List<ColliderComponent>> collidersByCategory,
-            float torso, Transform head, List<string> report)
+            HairPart part, List<HairChain> chains, Dictionary<ColliderCategory, List<ColliderComponent>> collidersByCategory, float torso, Transform head, List<string> report)
         {
-            if (chains.Count == 0)
-                return null;
-
+            if (chains.Count == 0) return null;
             var go = new GameObject(ClothNamePrefix + part);
             go.transform.SetParent(transform, false);
             var cloth = go.AddComponent<MagicaCloth>();
             var sdata = cloth.SerializeData;
-
             sdata.clothType = ClothProcess.ClothType.BoneCloth;
             sdata.rootBones.Clear();
-            foreach (var chain in chains)
-                sdata.rootBones.Add(chain.rootBone);
-
+            foreach (var chain in chains) sdata.rootBones.Add(chain.rootBone);
             float maxLen = chains.Max(c => c.worldLength);
             bool isLong = torso > 0f && maxLen >= torso * 0.8f;
-
             // 부위별 파라미터 템플릿 + 튜닝 배율 (+ Boing 프로파일 오버라이드)
-            HairPhysicsParameters.Apply(part, sdata, torso, head, isLong, tuning,
-                usePresetBaseline, springProfile);
-
+            HairPhysicsParameters.Apply(part, sdata, torso, head, isLong, tuning, usePresetBaseline, springProfile);
             // 관련 콜라이더만 등록 (32개 제한 관리)
             // Pre-build 데이터는 SerializeData2에 위치 — 에디터에서 Pre-build 생성도 필요
             cloth.GetSerializeData2().preBuildData.enabled = usePreBuild;
@@ -325,13 +302,10 @@ namespace Fbx2Vmd.ClothPhysics
             sdata.colliderCollisionConstraint.colliderList.AddRange(selected);
             ApplyCulling(cloth);
             cloth.OnBuildComplete += HandleClothBuildComplete;
-
-            report.Add($"{part}: 체인 {chains.Count}개, 최대길이 {maxLen:F2}m, " +
-                $"콜라이더 {selected.Count}개{(isLong ? " [장발]" : "")}");
+            report.Add($"{part}: 체인 {chains.Count}개, 최대길이 {maxLen:F2}m, " + $"콜라이더 {selected.Count}개{(isLong ? " [장발]" : "")}");
             generatedParts.Add(part);
             generatedIsLong.Add(isLong);
-            return cloth;
-        }
+            return cloth; }
 
         /// <summary>
         /// 이미 생성된 클로스에 현재 튜닝값만 다시 적용한다 (콜라이더/체인 재생성 없음).
@@ -424,32 +398,25 @@ namespace Fbx2Vmd.ClothPhysics
         void WireHairMutualCollision(List<string> report)
         {
             var hairs = generatedCloths.Where(IsHairCloth).ToList();
-
             // 재적용 대비 — 기존 상호 충돌 연결을 먼저 해제
             UnlinkHairMutualCollision(hairs);
             bool mutualOn = springProfile.enabled
                 ? springProfile.interChainCollision
                 : tuning.useMutualCollision;
-            if (!mutualOn || hairs.Count < 2)
-                return;
-
+            if (!mutualOn || hairs.Count < 2) return;
             var anchor = hairs.OrderByDescending(c => c.SerializeData.rootBones.Count).First();
             int linked = 0;
             foreach (var c in hairs)
             {
                 var sc = c.SerializeData.selfCollisionConstraint;
                 sc.clothMass = 1.0f; // 낮은 값은 떨림 유발 — 공식 예제와 동일하게 최대 질량
-                if (c == anchor)
-                    continue;
+                if (c == anchor) continue;
                 sc.syncMode = SelfCollisionConstraint.SelfCollisionMode.FullMesh;
                 sc.syncPartner = anchor;
                 NotifyParameterChange(c);
-                linked++;
-            }
+                linked++; }
             NotifyParameterChange(anchor);
-            if (linked > 0)
-                report.Add($"머리카락 상호 충돌: 앵커 {anchor.name} 기준 {linked}개 클로스 연결");
-        }
+            if (linked > 0) report.Add($"머리카락 상호 충돌: 앵커 {anchor.name} 기준 {linked}개 클로스 연결"); }
 
         /// <summary>
         /// 리스폰·순간이동 후 시뮬레이션을 초기 상태로 리셋한다.
@@ -481,66 +448,5 @@ namespace Fbx2Vmd.ClothPhysics
         /// 장식물이 매달릴 수 있는 신체 본을 해석한다 — 허리/척추/가슴/윗가슴/목/어깨.
         /// 해석 실패 본은 건너뛰고 중복은 제거한다.
         /// </summary>
-        static List<Transform> GarmentAttachmentBones(Func<HumanBodyBones, Transform> resolver)
-        {
-            var list = new List<Transform>();
-            foreach (var b in new[]
-            {
-                HumanBodyBones.Hips, HumanBodyBones.Spine, HumanBodyBones.Chest,
-                HumanBodyBones.UpperChest, HumanBodyBones.Neck,
-                HumanBodyBones.LeftShoulder, HumanBodyBones.RightShoulder,
-            })
-            {
-                var t = resolver(b);
-                if (t != null && !list.Contains(t))
-                    list.Add(t);
-            }
-            return list;
-        }
-
-        /// <summary>생성 클로스에 컬링 옵션을 적용한다 (프리셋 JSON은 컬링을 저장하지 않아 여기서 설정).</summary>
-        void ApplyCulling(MagicaCloth cloth)
-        {
-            var culling = cloth.SerializeData.cullingSettings;
-            culling.cameraCullingMode = cameraCullingMode;
-            culling.distanceCullingLength.SetValue(distanceCullingMeters > 0f, distanceCullingMeters);
-            culling.distanceCullingFadeRatio = Mathf.Clamp01(distanceCullingFadeRatio);
-        }
-
-        /// <summary>클로스 비동기 빌드 실패를 리포트에 남긴다.</summary>
-        void HandleClothBuildComplete(MagicaCloth cloth, bool success)
-        {
-            if (success)
-                return;
-            string clothName = cloth != null ? cloth.name : "?";
-            lastReport = $"클로스 비동기 빌드 실패 ({clothName}) — " +
-                "SerializeData/메시 상태를 확인하세요";
-            Debug.LogWarning("[CharacterPhysicsSetup] " + lastReport, this);
-        }
-
-        /// <summary>플레이 중 파라미터 변경을 MC2에 알린다 (공식 API).</summary>
-        static void NotifyParameterChange(MagicaCloth cloth)
-        {
-            if (!Application.isPlaying)
-                return;
-            cloth.SetParameterChange();
-        }
-
-        Animator ResolveAnimator()
-        {
-            if (targetAnimator != null)
-                return targetAnimator;
-            targetAnimator = GetComponent<Animator>();
-            if (targetAnimator == null)
-                targetAnimator = GetComponentInChildren<Animator>(true);
-            return targetAnimator;
-        }
-
-
-        void Finish(List<string> report)
-        {
-            lastReport = string.Join("\n", report);
-            Debug.Log("[CharacterPhysicsSetup]\n" + lastReport, this);
-        }
     }
 }

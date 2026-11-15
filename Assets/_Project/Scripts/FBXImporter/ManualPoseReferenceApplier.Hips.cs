@@ -72,63 +72,38 @@ namespace Fbx2Vmd.FBXImporter
                     out nextLocalPosition);
             }
 
-            internal static bool TryCalculateHipsLocalPositionReference(
-                Vector3 referenceCurrentLocalPosition,
-                Vector3 referenceRestLocalPosition,
-                bool hasReferenceRestLocalPosition,
-                Vector3 targetRestLocalPosition,
-                bool hasTargetRestLocalPosition,
-                Vector3 currentLocalPosition,
-                float weight,
-                float maxOffset,
-                out Vector3 nextLocalPosition)
+            internal static bool TryCalculateHipsLocalPositionReference( Vector3 referenceCurrentLocalPosition, Vector3 referenceRestLocalPosition, bool hasReferenceRestLocalPosition, Vector3 targetRestLocalPosition, bool hasTargetRestLocalPosition, Vector3 currentLocalPosition, float weight, float maxOffset, out Vector3 nextLocalPosition)
             {
                 nextLocalPosition = currentLocalPosition;
                 if (!IsFinite(referenceCurrentLocalPosition) || !IsFinite(currentLocalPosition))
                 {
-                    return false;
-                }
-
+                    return false; }
                 if (hasReferenceRestLocalPosition && !IsFinite(referenceRestLocalPosition))
                 {
-                    return false;
-                }
-
+                    return false; }
                 Vector3 desiredLocalPosition;
                 if (hasReferenceRestLocalPosition)
                 {
                     Vector3 referenceDelta = referenceCurrentLocalPosition - referenceRestLocalPosition;
                     Vector3 anchorLocalPosition = hasTargetRestLocalPosition && IsFinite(targetRestLocalPosition)
-                        ? targetRestLocalPosition
-                        : currentLocalPosition;
-                    desiredLocalPosition = anchorLocalPosition + referenceDelta;
-                }
-                else
+                        ? targetRestLocalPosition : currentLocalPosition;
+                    desiredLocalPosition = anchorLocalPosition + referenceDelta; } else
                 {
-                    desiredLocalPosition = referenceCurrentLocalPosition;
-                }
-
+                    desiredLocalPosition = referenceCurrentLocalPosition; }
                 Vector3 delta = desiredLocalPosition - currentLocalPosition;
                 if (!IsFinite(delta) || delta.sqrMagnitude <= 0.00000001f)
                 {
-                    return false;
-                }
-
+                    return false; }
                 float clampedMaxOffset = Mathf.Max(0f, maxOffset);
                 if (clampedMaxOffset > 0f)
                 {
-                    delta = Vector3.ClampMagnitude(delta, clampedMaxOffset);
-                }
-
+                    delta = Vector3.ClampMagnitude(delta, clampedMaxOffset); }
                 nextLocalPosition = currentLocalPosition + delta * Mathf.Clamp01(weight);
                 if (!IsFinite(nextLocalPosition))
                 {
                     nextLocalPosition = currentLocalPosition;
-                    return false;
-                }
-
-                return true;
-            }
+                    return false; }
+                return true; }
 
             internal static bool TryResolveHipsAlignedEndpointPositionReference(
                 Animator referenceAnimator,
@@ -145,13 +120,11 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     return false;
                 }
-
                 Transform referenceEndpoint = referenceAnimator.GetBoneTransform(endpointBone);
                 if (referenceEndpoint == null)
                 {
                     return false;
                 }
-
                 return TryCalculateHipsAlignedEndpointPositionReference(
                     referenceEndpoint.position,
                     referenceHips.position,
@@ -159,8 +132,7 @@ namespace Fbx2Vmd.FBXImporter
                     targetHips.position,
                     targetEndpoint.position,
                     targetAnimator.transform,
-                    out desiredEndpointPosition);
-            }
+                    out desiredEndpointPosition); }
 
             internal static bool TryCalculateHipsAlignedEndpointPositionReference(
                 Vector3 referenceEndpointPosition,
@@ -176,23 +148,19 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     return false;
                 }
-
                 Vector3 referenceOffset = referenceEndpointPosition - referenceHipsPosition;
                 if (!IsFinite(referenceOffset))
                 {
                     return false;
                 }
-
                 Vector3 referenceRootOffset = referenceRoot.InverseTransformVector(referenceOffset);
                 Vector3 desiredTargetOffset = targetRoot.TransformVector(referenceRootOffset);
                 if (!IsFinite(desiredTargetOffset))
                 {
                     return false;
                 }
-
                 desiredEndpointPosition = targetHipsPosition + desiredTargetOffset;
                 desiredEndpointPosition.y = currentTargetEndpointPosition.y;
-                return IsFinite(desiredEndpointPosition);
-            }
+                return IsFinite(desiredEndpointPosition); }
     }
 }

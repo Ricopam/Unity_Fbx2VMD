@@ -31,117 +31,63 @@ namespace Fbx2Vmd.FBXImporter
             return false;
         }
 
-        internal static bool TryCalculateTwistAngleDegrees(
-            Quaternion rotationDelta,
-            Vector3 twistAxis,
-            out float angleDegrees)
+        internal static bool TryCalculateTwistAngleDegrees( Quaternion rotationDelta, Vector3 twistAxis, out float angleDegrees)
         {
             angleDegrees = 0f;
             if (!IsFinite(rotationDelta) || !IsUsableDirection(twistAxis))
             {
-                return false;
-            }
-
-            float rotationMagnitudeSquared =
-                rotationDelta.x * rotationDelta.x +
-                rotationDelta.y * rotationDelta.y +
-                rotationDelta.z * rotationDelta.z +
-                rotationDelta.w * rotationDelta.w;
+                return false; }
+            float rotationMagnitudeSquared = rotationDelta.x * rotationDelta.x + rotationDelta.y * rotationDelta.y + rotationDelta.z * rotationDelta.z + rotationDelta.w * rotationDelta.w;
             if (rotationMagnitudeSquared <= Epsilon)
             {
-                return false;
-            }
-
+                return false; }
             float inverseRotationMagnitude = 1f / Mathf.Sqrt(rotationMagnitudeSquared);
-            Quaternion normalizedRotation = new Quaternion(
-                rotationDelta.x * inverseRotationMagnitude,
-                rotationDelta.y * inverseRotationMagnitude,
-                rotationDelta.z * inverseRotationMagnitude,
-                rotationDelta.w * inverseRotationMagnitude);
+            Quaternion normalizedRotation = new Quaternion( rotationDelta.x * inverseRotationMagnitude, rotationDelta.y * inverseRotationMagnitude, rotationDelta.z * inverseRotationMagnitude, rotationDelta.w * inverseRotationMagnitude);
             Vector3 axis = twistAxis.normalized;
-            Vector3 rotationVector = new Vector3(
-                normalizedRotation.x,
-                normalizedRotation.y,
-                normalizedRotation.z);
+            Vector3 rotationVector = new Vector3( normalizedRotation.x, normalizedRotation.y, normalizedRotation.z);
             Vector3 projectedRotation = axis * Vector3.Dot(rotationVector, axis);
-            Quaternion twist = new Quaternion(
-                projectedRotation.x,
-                projectedRotation.y,
-                projectedRotation.z,
-                normalizedRotation.w);
-
-            float twistMagnitudeSquared =
-                twist.x * twist.x + twist.y * twist.y +
-                twist.z * twist.z + twist.w * twist.w;
+            Quaternion twist = new Quaternion( projectedRotation.x, projectedRotation.y, projectedRotation.z, normalizedRotation.w);
+            float twistMagnitudeSquared = twist.x * twist.x + twist.y * twist.y + twist.z * twist.z + twist.w * twist.w;
             if (twistMagnitudeSquared <= Epsilon)
             {
-                return false;
-            }
-
+                return false; }
             float inverseTwistMagnitude = 1f / Mathf.Sqrt(twistMagnitudeSquared);
-            twist = new Quaternion(
-                twist.x * inverseTwistMagnitude,
-                twist.y * inverseTwistMagnitude,
-                twist.z * inverseTwistMagnitude,
-                twist.w * inverseTwistMagnitude);
+            twist = new Quaternion( twist.x * inverseTwistMagnitude, twist.y * inverseTwistMagnitude, twist.z * inverseTwistMagnitude, twist.w * inverseTwistMagnitude);
             angleDegrees = Quaternion.Angle(Quaternion.identity, twist);
             if (IsFinite(angleDegrees))
             {
-                return true;
-            }
-
+                return true; }
             angleDegrees = 0f;
-            return false;
-        }
+            return false; }
 
         internal static bool TryCalculateSegmentDistance(
             Vector3 firstStart,
             Vector3 firstEnd,
             Vector3 secondStart,
-            Vector3 secondEnd,
-            out float distance)
+            Vector3 secondEnd, out float distance)
         {
             distance = 0f;
-            if (!IsFinite(firstStart) || !IsFinite(firstEnd) ||
-                !IsFinite(secondStart) || !IsFinite(secondEnd))
+            if (!IsFinite(firstStart) || !IsFinite(firstEnd) || !IsFinite(secondStart) || !IsFinite(secondEnd))
             {
-                return false;
-            }
-
+                return false; }
             Vector3 firstDelta = firstEnd - firstStart;
             Vector3 secondDelta = secondEnd - secondStart;
             float firstLengthSquared = firstDelta.sqrMagnitude;
             float secondLengthSquared = secondDelta.sqrMagnitude;
-
             if (firstLengthSquared <= Epsilon && secondLengthSquared <= Epsilon)
             {
                 distance = Vector3.Distance(firstStart, secondStart);
-                return true;
-            }
-
+                return true; }
             if (firstLengthSquared <= Epsilon)
             {
-                distance = CalculatePointSegmentDistance(
-                    firstStart,
-                    secondStart,
-                    secondEnd);
-                return true;
-            }
-
+                distance = CalculatePointSegmentDistance( firstStart, secondStart, secondEnd);
+                return true; }
             if (secondLengthSquared <= Epsilon)
             {
-                distance = CalculatePointSegmentDistance(
-                    secondStart,
-                    firstStart,
-                    firstEnd);
-                return true;
-            }
-
-            distance = CalculateSegmentDistanceCore(
-                firstStart, firstDelta, firstLengthSquared,
-                secondStart, secondDelta, secondLengthSquared);
-            return IsFinite(distance);
-        }
+                distance = CalculatePointSegmentDistance( secondStart, firstStart, firstEnd);
+                return true; }
+            distance = CalculateSegmentDistanceCore( firstStart, firstDelta, firstLengthSquared, secondStart, secondDelta, secondLengthSquared);
+            return IsFinite(distance); }
 
         static float CalculateSegmentDistanceCore(
             Vector3 firstStart, Vector3 firstDelta, float firstLengthSquared,
@@ -154,7 +100,6 @@ namespace Fbx2Vmd.FBXImporter
             float denominator =
                 firstLengthSquared * secondLengthSquared -
                 firstSecondDot * firstSecondDot;
-
             float firstParameter = 0f;
             if (denominator > Epsilon)
             {
@@ -163,18 +108,15 @@ namespace Fbx2Vmd.FBXImporter
                      firstStartDot * secondLengthSquared) /
                     denominator);
             }
-
             float secondParameter = Mathf.Clamp01(
                 (firstSecondDot * firstParameter + secondStartDot) /
                 secondLengthSquared);
             firstParameter = Mathf.Clamp01(
                 (firstSecondDot * secondParameter - firstStartDot) /
                 firstLengthSquared);
-
             Vector3 firstClosest = firstStart + firstDelta * firstParameter;
             Vector3 secondClosest = secondStart + secondDelta * secondParameter;
-            return Vector3.Distance(firstClosest, secondClosest);
-        }
+            return Vector3.Distance(firstClosest, secondClosest); }
 
         private static float CalculatePointSegmentDistance(
             Vector3 point,

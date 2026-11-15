@@ -88,21 +88,15 @@ namespace Fbx2Vmd.FBXImporter
         {
             ValidateSamples(sourceSamples, targetSamples, frameRate);
 
-            float normalizedSourceHumanScale = IsFinite(sourceHumanScale) &&
-                sourceHumanScale > 0f
+            float normalizedSourceHumanScale = IsFinite(sourceHumanScale) && sourceHumanScale > 0f
                     ? sourceHumanScale
                     : 1f;
-            float normalizedTargetHumanScale = IsFinite(targetHumanScale) &&
-                targetHumanScale > 0f
+            float normalizedTargetHumanScale = IsFinite(targetHumanScale) && targetHumanScale > 0f
                     ? targetHumanScale
                     : normalizedSourceHumanScale;
             Quaternion normalizedRotation = NormalizeRotation(sourceToTargetRotation);
-            int minimumContactFrames = Mathf.Max(
-                1,
-                Mathf.CeilToInt(frameRate * MinimumContactDurationSeconds));
-            int releaseFrames = Mathf.Max(
-                1,
-                Mathf.CeilToInt(frameRate * ReleaseDurationSeconds));
+            int minimumContactFrames = Mathf.Max( 1, Mathf.CeilToInt(frameRate * MinimumContactDurationSeconds));
+            int releaseFrames = Mathf.Max( 1, Mathf.CeilToInt(frameRate * ReleaseDurationSeconds));
 
             SampleArrays arrays = CollectSampleArrays(sourceSamples, targetSamples);
             Vector3[] targetLeftFeet = arrays.TargetLeftFeet;
@@ -110,32 +104,13 @@ namespace Fbx2Vmd.FBXImporter
             Vector3[] targetRightFeet = arrays.TargetRightFeet;
             Vector3[] targetRightToes = arrays.TargetRightToes;
 
-            Quaternion targetToSourceRotation =
-                Quaternion.Inverse(normalizedRotation);
-            ChannelCorrections channels = BuildChannelCorrections(
-                arrays, normalizedSourceHumanScale, normalizedTargetHumanScale,
-                normalizedRotation, targetToSourceRotation, frameRate,
+            Quaternion targetToSourceRotation = Quaternion.Inverse(normalizedRotation);
+            ChannelCorrections channels = BuildChannelCorrections( arrays, normalizedSourceHumanScale, normalizedTargetHumanScale, normalizedRotation, targetToSourceRotation, frameRate,
                 minimumContactFrames, releaseFrames, intents);
-            Vector3[] leftToeDirections = ApplyToeDirections(
-                channels.LeftToeSegments, targetLeftFeet, targetLeftToes,
-                channels.LeftCorrections, targetToSourceRotation);
-            Vector3[] rightToeDirections = ApplyToeDirections(
-                channels.RightToeSegments, targetRightFeet, targetRightToes,
-                channels.RightCorrections, targetToSourceRotation);
-            return new HumanoidFootContactPlan(
-                channels.LeftCorrections,
-                channels.RightCorrections,
-                leftToeDirections,
-                rightToeDirections,
-                frameRate,
-                channels.LeftRunCount,
-                channels.RightRunCount);
+            Vector3[] leftToeDirections = ApplyToeDirections( channels.LeftToeSegments, targetLeftFeet, targetLeftToes, channels.LeftCorrections, targetToSourceRotation);
+            Vector3[] rightToeDirections = ApplyToeDirections( channels.RightToeSegments, targetRightFeet, targetRightToes, channels.RightCorrections, targetToSourceRotation);
+            return new HumanoidFootContactPlan( channels.LeftCorrections, channels.RightCorrections, leftToeDirections, rightToeDirections, frameRate, channels.LeftRunCount, channels.RightRunCount);
         }
-
-
-
-
-
 
         static Vector3[] ApplyToeDirections(
             Vector3[] toeSegments,
@@ -192,10 +167,6 @@ namespace Fbx2Vmd.FBXImporter
             return segments;
         }
 
-
-
-
-
         // 기본값은 기존 핀/해제/해제블렌드 구현 — 병합된 의도와 기존 핀 경로의
         // 조합 효과를 분리 측정할 수 있게 실험 토글로만 열어둠.
         // 오프라인 솔버는 FbxDiagnostics.RunAll의 -offlineSolver 인자나 EditMode
@@ -234,10 +205,6 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-
-
-
-
         /// <summary>
         /// 클립 전체를 아는 오프라인 제약 풀이로 접촉 런을 보정함.
         /// 런 안 각 프레임의 대상 접촉점을 입자로 보고 반복 수렴함:
@@ -246,8 +213,6 @@ namespace Fbx2Vmd.FBXImporter
         ///   - 런 첫 프레임은 진입 위치에 고정해 경계 연속성을 지킴
         /// 섬 단위 핀 해제가 없으므로 누적 잔차가 생기지 않음.
         /// </summary>
-
-
 
         private static Vector3 HorizontalLerp(Vector3 from, float x, float z,
             float t)
@@ -297,7 +262,6 @@ namespace Fbx2Vmd.FBXImporter
                     releaseCorrection * (1f - smoothProgress);
             }
         }
-
 
         private static void MarkStableContactSpan(
             IReadOnlyList<bool> stableFrames,
@@ -403,41 +367,5 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        private static Quaternion NormalizeRotation(Quaternion rotation)
-        {
-            if (!IsFinite(rotation) ||
-                rotation.x * rotation.x +
-                rotation.y * rotation.y +
-                rotation.z * rotation.z +
-                rotation.w * rotation.w <= MinimumQuaternionMagnitude)
-            {
-                throw new ArgumentException("원본과 대상 사이 회전은 유효해야 합니다.");
-            }
-
-            return rotation.normalized;
-        }
-
-        private static float HorizontalDistance(Vector3 first, Vector3 second)
-        {
-            return Vector2.Distance(
-                new Vector2(first.x, first.z),
-                new Vector2(second.x, second.z));
-        }
-
-        private static bool IsFinite(Vector3 value)
-        {
-            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
-        }
-
-        private static bool IsFinite(Quaternion value)
-        {
-            return IsFinite(value.x) && IsFinite(value.y) &&
-                IsFinite(value.z) && IsFinite(value.w);
-        }
-
-        private static bool IsFinite(float value)
-        {
-            return !float.IsNaN(value) && !float.IsInfinity(value);
-        }
     }
 }

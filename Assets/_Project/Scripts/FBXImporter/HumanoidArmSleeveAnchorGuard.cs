@@ -6,7 +6,7 @@ namespace Fbx2Vmd.FBXImporter
 {
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(CorrectionPassOrder.ArmSleeveAnchor)]
-    public class HumanoidArmSleeveAnchorGuard : MonoBehaviour
+    public partial class HumanoidArmSleeveAnchorGuard : MonoBehaviour
     {
         [Header("YYB Arm Sleeve Anchor Guard")]
         [Tooltip("YYB 소매/어깨 보조본이 상완 본과 따로 놀아 소매가 어깨에서 무너져 보이는 현상을 줄입니다.")]
@@ -73,29 +73,6 @@ namespace Fbx2Vmd.FBXImporter
             return match;
         }
 
-        private struct AnchorCorrection
-        {
-            public Transform Source;
-            public Transform Node;
-            public Quaternion BaselineLocalRotation;
-            public Quaternion BaselineSourceRelativeRotation;
-            public float Influence;
-
-            public AnchorCorrection(
-                Transform source,
-                Transform node,
-                Quaternion baselineLocalRotation,
-                Quaternion baselineSourceRelativeRotation,
-                float influence)
-            {
-                Source = source;
-                Node = node;
-                BaselineLocalRotation = baselineLocalRotation;
-                BaselineSourceRelativeRotation = baselineSourceRelativeRotation;
-                Influence = influence;
-            }
-        }
-
         private void LateUpdate()
         {
             if (!enableSleeveAnchor || !_configured)
@@ -132,14 +109,8 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             int configuredCount = 0;
-            configuredCount += ConfigureArm(
-                HumanBodyBones.LeftUpperArm,
-                "joint_LeftArmM",
-                "!joint_LeftShoulderC");
-            configuredCount += ConfigureArm(
-                HumanBodyBones.RightUpperArm,
-                "joint_RightArmM",
-                "!joint_RightShoulderC");
+            configuredCount += ConfigureArm( HumanBodyBones.LeftUpperArm, "joint_LeftArmM", "!joint_LeftShoulderC");
+            configuredCount += ConfigureArm( HumanBodyBones.RightUpperArm, "joint_RightArmM", "!joint_RightShoulderC");
 
             _configured = configuredCount > 0;
             enabled = _configured;

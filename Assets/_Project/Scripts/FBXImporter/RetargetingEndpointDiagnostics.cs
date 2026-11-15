@@ -5,7 +5,7 @@ namespace Fbx2Vmd.FBXImporter
     /// <summary>
     /// 끝점 보정 후보와 중간 진단값을 입력 값만으로 계산함.
     /// </summary>
-    internal static class RetargetingEndpointDiagnostics
+    internal static partial class RetargetingEndpointDiagnostics
     {
         private const float FootHipsAlignedResidualYawGateMeters = 0.12f;
         private const float FootHipsAlignedResidualYawSideGapMeters = 0.005f;
@@ -32,41 +32,78 @@ namespace Fbx2Vmd.FBXImporter
         }
 
         internal static bool TryCalculateEditorFootHipsAlignedResidualYawReference(
-            Vector3 desiredFootPosition,
-            Vector3 currentFootPosition,
-            Vector3 pivotPosition,
-            Quaternion currentParentWorldRotation,
-            float weight,
-            float maxAngleDegrees,
-            out Quaternion nextParentWorldRotation,
-            out float yawCorrectionAngle)
+            Vector3 desiredFootPosition, Vector3 currentFootPosition, Vector3 pivotPosition, Quaternion currentParentWorldRotation,
+            float weight, float maxAngleDegrees, out Quaternion nextParentWorldRotation, out float yawCorrectionAngle)
         {
             nextParentWorldRotation = currentParentWorldRotation;
             yawCorrectionAngle = float.NaN;
-            if (!IsFinite(desiredFootPosition) ||
-                !IsFinite(currentFootPosition) ||
-                !IsFinite(pivotPosition) ||
-                !IsFinite(currentParentWorldRotation))
+            if (!IsFinite(desiredFootPosition) || !IsFinite(currentFootPosition) || !IsFinite(pivotPosition) || !IsFinite(currentParentWorldRotation))
             {
                 return false;
             }
 
-            Vector3 currentOffset = currentFootPosition - pivotPosition;
-            Vector3 desiredOffset = desiredFootPosition - pivotPosition;
-            currentOffset.y = 0f;
-            desiredOffset.y = 0f;
-            if (!TryNormalize(currentOffset, out Vector3 currentDirection) ||
-                !TryNormalize(desiredOffset, out Vector3 desiredDirection))
+            if (!TryResolveYawDirections(
+                    desiredFootPosition, currentFootPosition, pivotPosition,
+                    out Vector3 currentDirection, out Vector3 desiredDirection))
             {
                 return false;
             }
 
             Quaternion correction = Quaternion.FromToRotation(currentDirection, desiredDirection);
-            if (!IsFinite(correction))
+            if (!IsFinite(correction)) { return false; }
+
+            correction = ApplyYawCorrectionLimits(correction, weight, maxAngleDegrees);
+            return TryComposeCorrectedRotation(
+                correction, currentParentWorldRotation,
+                out nextParentWorldRotation, out yawCorrectionAngle);
+        }
+
+        // 보정 회전을 부모 회전에 합성하고 유의미 여부를 검증함.
+        private static bool TryComposeCorrectedRotation(
+            Quaternion correction,
+            Quaternion currentParentWorldRotation,
+            out Quaternion nextParentWorldRotation,
+            out float yawCorrectionAngle)
+        {
+            yawCorrectionAngle = Quaternion.Angle(Quaternion.identity, correction);
+            nextParentWorldRotation = currentParentWorldRotation;
+            if (yawCorrectionAngle <= 0.001f)
             {
                 return false;
             }
 
+            Quaternion composed = correction * currentParentWorldRotation;
+            if (!IsFinite(composed) || Quaternion.Angle(currentParentWorldRotation, composed) <= 0.001f)
+            {
+                return false;
+            }
+
+            nextParentWorldRotation = composed;
+            return true;
+        }
+
+        // 피벗 기준 수평 오프셋을 단위 방향으로 해석함.
+        private static bool TryResolveYawDirections(
+            Vector3 desiredFootPosition,
+            Vector3 currentFootPosition,
+            Vector3 pivotPosition,
+            out Vector3 currentDirection,
+            out Vector3 desiredDirection)
+        {
+            Vector3 currentOffset = currentFootPosition - pivotPosition;
+            Vector3 desiredOffset = desiredFootPosition - pivotPosition;
+            currentOffset.y = 0f;
+            desiredOffset.y = 0f;
+            return TryNormalize(currentOffset, out currentDirection) &&
+                   TryNormalize(desiredOffset, out desiredDirection);
+        }
+
+        // 최대 각도와 가중치를 순서대로 회전 보정에 반영함.
+        private static Quaternion ApplyYawCorrectionLimits(
+            Quaternion correction,
+            float weight,
+            float maxAngleDegrees)
+        {
             float maxAngle = Mathf.Max(0f, maxAngleDegrees);
             if (maxAngle > 0f)
             {
@@ -82,22 +119,7 @@ namespace Fbx2Vmd.FBXImporter
             {
                 correction = Quaternion.Slerp(Quaternion.identity, correction, clampedWeight);
             }
-            yawCorrectionAngle = Quaternion.Angle(Quaternion.identity, correction);
-
-            if (yawCorrectionAngle <= 0.001f)
-            {
-                return false;
-            }
-
-            nextParentWorldRotation = correction * currentParentWorldRotation;
-            if (!IsFinite(nextParentWorldRotation) ||
-                Quaternion.Angle(currentParentWorldRotation, nextParentWorldRotation) <= 0.001f)
-            {
-                nextParentWorldRotation = currentParentWorldRotation;
-                return false;
-            }
-
-            return true;
+            return correction;
         }
 
         internal static float ResolveEditorFootHipsAlignedResidualYawSideAwareMaxAngle(
@@ -194,17 +216,7 @@ namespace Fbx2Vmd.FBXImporter
                 out _);
         }
 
-        internal static bool TryCalculateReferencePosition(
-            Vector3 desiredFootPosition,
-            Vector3 desiredToesPosition,
-            Vector3 currentFootPosition,
-            Vector3 currentToesPosition,
-            float weight,
-            float maxOffset,
-            float positiveZScale,
-            float toesBlendWeight,
-            out Vector3 nextFootPosition,
-            out RetargetingEndpointDiagnosticSnapshot diagnostics)
+        internal static bool TryCalculateReferencePosition( Vector3 desiredFootPosition, Vector3 desiredToesPosition, Vector3 currentFootPosition, Vector3 currentToesPosition, float weight, float maxOffset, float positiveZScale, float toesBlendWeight, out Vector3 nextFootPosition, out RetargetingEndpointDiagnosticSnapshot diagnostics)
         {
             nextFootPosition = currentFootPosition;
             diagnostics = RetargetingEndpointDiagnosticSnapshot.Empty;
@@ -212,57 +224,65 @@ namespace Fbx2Vmd.FBXImporter
             diagnostics.DesiredToesPosition = desiredToesPosition;
             diagnostics.CurrentFootPosition = currentFootPosition;
             diagnostics.CurrentToesPosition = currentToesPosition;
-
             if (!IsFinite(desiredFootPosition) || !IsFinite(currentFootPosition))
             {
-                return false;
-            }
-
+                return false; }
             Vector3 footDelta = desiredFootPosition - currentFootPosition;
             footDelta.y = 0f;
-            Vector3 endpointDelta = footDelta;
-            if (IsFinite(desiredToesPosition) && IsFinite(currentToesPosition))
-            {
-                Vector3 toesDelta = desiredToesPosition - currentToesPosition;
-                toesDelta.y = 0f;
-                Vector3 averagedEndpointDelta = (footDelta + toesDelta) * 0.5f;
-                endpointDelta = Vector3.Lerp(
-                    footDelta,
-                    averagedEndpointDelta,
-                    Mathf.Clamp01(toesBlendWeight));
-            }
+            Vector3 endpointDelta = ResolveEndpointDelta(
+                footDelta, desiredToesPosition, currentToesPosition, toesBlendWeight);
             diagnostics.EndpointDeltaBeforeClamp = endpointDelta;
-
             if (!IsFinite(endpointDelta) || endpointDelta.sqrMagnitude <= 0.00000001f)
             {
-                return false;
-            }
-
-            float clampedMaxOffset = Mathf.Max(0f, maxOffset);
-            if (clampedMaxOffset > 0f)
-            {
-                endpointDelta = Vector3.ClampMagnitude(endpointDelta, clampedMaxOffset);
-            }
-            diagnostics.EndpointDeltaAfterClamp = endpointDelta;
-
-            if (endpointDelta.z > 0f)
-            {
-                endpointDelta.z *= Mathf.Clamp01(positiveZScale);
-            }
-            diagnostics.EndpointDeltaAfterPositiveZScale = endpointDelta;
-
-            Vector3 correction = endpointDelta * Mathf.Clamp01(weight);
-            correction.y = 0f;
-            diagnostics.Correction = correction;
+                return false; }
+            Vector3 correction = ApplyEndpointShaping(
+                endpointDelta, maxOffset, positiveZScale, weight, ref diagnostics);
             if (!IsFinite(correction) || correction.sqrMagnitude <= 0.00000001f)
             {
-                return false;
-            }
-
+                return false; }
             nextFootPosition = currentFootPosition + correction;
             nextFootPosition.y = currentFootPosition.y;
             diagnostics.NextFootPosition = nextFootPosition;
-            return IsFinite(nextFootPosition);
+            return IsFinite(nextFootPosition); }
+
+        // 발끝 델타가 유효하면 발 델타와 혼합한 평균을 반환함.
+        private static Vector3 ResolveEndpointDelta(
+            Vector3 footDelta,
+            Vector3 desiredToesPosition,
+            Vector3 currentToesPosition,
+            float toesBlendWeight)
+        {
+            if (!IsFinite(desiredToesPosition) || !IsFinite(currentToesPosition))
+            {
+                return footDelta;
+            }
+            Vector3 toesDelta = desiredToesPosition - currentToesPosition;
+            toesDelta.y = 0f;
+            Vector3 averagedEndpointDelta = (footDelta + toesDelta) * 0.5f;
+            return Vector3.Lerp(footDelta, averagedEndpointDelta, Mathf.Clamp01(toesBlendWeight));
+        }
+
+        // 오프셋 클램프와 전진 스케일을 적용한 뒤 가중 보정량과 진단을 기록함.
+        private static Vector3 ApplyEndpointShaping(
+            Vector3 endpointDelta,
+            float maxOffset,
+            float positiveZScale,
+            float weight,
+            ref RetargetingEndpointDiagnosticSnapshot diagnostics)
+        {
+            float clampedMaxOffset = Mathf.Max(0f, maxOffset);
+            if (clampedMaxOffset > 0f)
+            {
+                endpointDelta = Vector3.ClampMagnitude(endpointDelta, clampedMaxOffset); }
+            diagnostics.EndpointDeltaAfterClamp = endpointDelta;
+            if (endpointDelta.z > 0f)
+            {
+                endpointDelta.z *= Mathf.Clamp01(positiveZScale); }
+            diagnostics.EndpointDeltaAfterPositiveZScale = endpointDelta;
+            Vector3 correction = endpointDelta * Mathf.Clamp01(weight);
+            correction.y = 0f;
+            diagnostics.Correction = correction;
+            return correction;
         }
 
         internal static bool TryCalculateEvaluatorXzReferencePosition(
@@ -286,14 +306,7 @@ namespace Fbx2Vmd.FBXImporter
         }
 
         internal static bool TryCalculateEvaluatorXzReferencePosition(
-            Vector3 referenceFootPosition,
-            Vector3 currentFootPosition,
-            Vector3 firstMatchedFootOffset,
-            float targetMagnitude,
-            float weight,
-            float maxOffset,
-            out Vector3 nextFootPosition,
-            out RetargetingEndpointDiagnosticSnapshot diagnostics)
+            Vector3 referenceFootPosition, Vector3 currentFootPosition, Vector3 firstMatchedFootOffset, float targetMagnitude, float weight, float maxOffset, out Vector3 nextFootPosition, out RetargetingEndpointDiagnosticSnapshot diagnostics)
         {
             nextFootPosition = currentFootPosition;
             diagnostics = RetargetingEndpointDiagnosticSnapshot.Empty;
@@ -302,14 +315,9 @@ namespace Fbx2Vmd.FBXImporter
             diagnostics.EvaluatorXzReferenceEnabled = 1f;
             diagnostics.EvaluatorXzFirstOffset = firstMatchedFootOffset;
             diagnostics.EvaluatorXzTargetMagnitude = Mathf.Max(0f, targetMagnitude);
-
-            if (!IsFinite(referenceFootPosition) ||
-                !IsFinite(currentFootPosition) ||
-                !IsFinite(firstMatchedFootOffset))
+            if (!IsFinite(referenceFootPosition) || !IsFinite(currentFootPosition) || !IsFinite(firstMatchedFootOffset))
             {
-                return false;
-            }
-
+                return false; }
             Vector3 normalizedDelta = currentFootPosition - referenceFootPosition - firstMatchedFootOffset;
             normalizedDelta.y = 0f;
             diagnostics.EvaluatorXzNormalizedDelta = normalizedDelta;
@@ -317,37 +325,18 @@ namespace Fbx2Vmd.FBXImporter
             if (!IsFinite(normalizedDelta) || normalizedDelta.sqrMagnitude <= 0.00000001f)
             {
                 diagnostics.DesiredFootPosition = currentFootPosition;
-                return false;
-            }
-
+                return false; }
             float magnitude = normalizedDelta.magnitude;
             float clampedTargetMagnitude = Mathf.Max(0f, targetMagnitude);
             if (!IsFinite(magnitude) || magnitude <= clampedTargetMagnitude || magnitude <= 0f)
             {
                 diagnostics.DesiredFootPosition = currentFootPosition;
-                return false;
-            }
-
-            return ApplyXzCorrection(
-                normalizedDelta,
-                magnitude,
-                clampedTargetMagnitude,
-                weight,
-                maxOffset,
-                currentFootPosition,
-                ref diagnostics,
-                out nextFootPosition);
-        }
+                return false; }
+            return ApplyXzCorrection( normalizedDelta, magnitude, clampedTargetMagnitude, weight, maxOffset, currentFootPosition, ref diagnostics, out nextFootPosition); }
 
         static bool ApplyXzCorrection(
             Vector3 normalizedDelta,
-            float magnitude,
-            float clampedTargetMagnitude,
-            float weight,
-            float maxOffset,
-            Vector3 currentFootPosition,
-            ref RetargetingEndpointDiagnosticSnapshot diagnostics,
-            out Vector3 nextFootPosition)
+            float magnitude, float clampedTargetMagnitude, float weight, float maxOffset, Vector3 currentFootPosition, ref RetargetingEndpointDiagnosticSnapshot diagnostics, out Vector3 nextFootPosition)
         {
             nextFootPosition = currentFootPosition;
             Vector3 desiredNormalizedDelta = normalizedDelta * (clampedTargetMagnitude / magnitude);
@@ -355,30 +344,24 @@ namespace Fbx2Vmd.FBXImporter
             Vector3 correction = desiredNormalizedDelta - normalizedDelta;
             correction.y = 0f;
             diagnostics.EndpointDeltaBeforeClamp = correction;
-
             float clampedMaxOffset = Mathf.Max(0f, maxOffset);
             if (clampedMaxOffset > 0f)
             {
-                correction = Vector3.ClampMagnitude(correction, clampedMaxOffset);
-            }
+                correction = Vector3.ClampMagnitude(correction, clampedMaxOffset); }
             diagnostics.EndpointDeltaAfterClamp = correction;
             diagnostics.EndpointDeltaAfterPositiveZScale = correction;
-
             correction *= Mathf.Clamp01(weight);
             correction.y = 0f;
             diagnostics.Correction = correction;
             if (!IsFinite(correction) || correction.sqrMagnitude <= 0.00000001f)
             {
                 diagnostics.DesiredFootPosition = currentFootPosition;
-                return false;
-            }
-
+                return false; }
             nextFootPosition = currentFootPosition + correction;
             nextFootPosition.y = currentFootPosition.y;
             diagnostics.DesiredFootPosition = nextFootPosition;
             diagnostics.NextFootPosition = nextFootPosition;
-            return IsFinite(nextFootPosition);
-        }
+            return IsFinite(nextFootPosition); }
 
         internal static bool ShouldKeepHipsLocalPositionReferenceByTargetGap(
             Vector3 referenceFootPosition,
@@ -410,23 +393,14 @@ namespace Fbx2Vmd.FBXImporter
 
         internal static bool TryFindFirstStagePositionJump(
             string[] stageNames,
-            Vector3[] positions,
-            float threshold,
-            out string stage,
-            out Vector3 delta,
-            out float magnitude)
+            Vector3[] positions, float threshold, out string stage, out Vector3 delta, out float magnitude)
         {
             stage = "";
             delta = NaNVector3;
             magnitude = float.NaN;
-            if (stageNames == null ||
-                positions == null ||
-                stageNames.Length != positions.Length ||
-                positions.Length < 2)
+            if (stageNames == null || positions == null || stageNames.Length != positions.Length || positions.Length < 2)
             {
-                return false;
-            }
-
+                return false; }
             float safeThreshold = Mathf.Max(0f, threshold);
             for (int i = 1; i < positions.Length; i++)
             {
@@ -434,24 +408,17 @@ namespace Fbx2Vmd.FBXImporter
                 Vector3 current = positions[i];
                 if (!IsFinite(previous) || !IsFinite(current))
                 {
-                    continue;
-                }
-
+                    continue; }
                 Vector3 stageDelta = current - previous;
                 float stageMagnitude = stageDelta.magnitude;
                 if (!IsFinite(stageDelta) || !IsFinite(stageMagnitude) || stageMagnitude <= safeThreshold)
                 {
-                    continue;
-                }
-
+                    continue; }
                 stage = stageNames[i] ?? "";
                 delta = stageDelta;
                 magnitude = stageMagnitude;
-                return true;
-            }
-
-            return false;
-        }
+                return true; }
+            return false; }
 
         private static bool TryCalculateEndpointTargetGap(
             Vector3 referenceFootPosition,
@@ -471,87 +438,9 @@ namespace Fbx2Vmd.FBXImporter
             return IsFinite(gap);
         }
 
-        private static bool TryCalculateXzDistance(Vector3 a, Vector3 b, out float distance)
-        {
-            distance = float.NaN;
-            if (!IsFinite(a) || !IsFinite(b))
-            {
-                return false;
-            }
-
-            distance = Vector2.Distance(new Vector2(a.x, a.z), new Vector2(b.x, b.z));
-            return IsFinite(distance);
-        }
-
-        private static Vector3 NaNVector3 => new Vector3(float.NaN, float.NaN, float.NaN);
-
-        private static bool IsFinite(float value)
-        {
-            return !float.IsNaN(value) && !float.IsInfinity(value);
-        }
-
-        private static bool IsFinite(Vector3 value)
-        {
-            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
-        }
-
-        private static bool IsFinite(Quaternion value)
-        {
-            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z) && IsFinite(value.w);
-        }
-
-        private static bool TryNormalize(Vector3 value, out Vector3 normalized)
-        {
-            normalized = Vector3.zero;
-            if (!IsFinite(value) || value.sqrMagnitude <= 0.00000001f)
-            {
-                return false;
-            }
-
-            normalized = value.normalized;
-            return IsFinite(normalized);
-        }
     }
 
     /// <summary>
     /// 끝점 보정 단계별 계산값을 호출자에게 전달함.
     /// </summary>
-    internal struct RetargetingEndpointDiagnosticSnapshot
-    {
-        internal Vector3 DesiredFootPosition;
-        internal Vector3 DesiredToesPosition;
-        internal Vector3 CurrentFootPosition;
-        internal Vector3 CurrentToesPosition;
-        internal Vector3 EndpointDeltaBeforeClamp;
-        internal Vector3 EndpointDeltaAfterClamp;
-        internal Vector3 EndpointDeltaAfterPositiveZScale;
-        internal Vector3 Correction;
-        internal Vector3 NextFootPosition;
-        internal float EvaluatorXzReferenceEnabled;
-        internal Vector3 EvaluatorXzFirstOffset;
-        internal Vector3 EvaluatorXzNormalizedDelta;
-        internal Vector3 EvaluatorXzDesiredNormalizedDelta;
-        internal float EvaluatorXzTargetMagnitude;
-
-        internal static RetargetingEndpointDiagnosticSnapshot Empty =>
-            new RetargetingEndpointDiagnosticSnapshot
-            {
-                DesiredFootPosition = NaNVector3,
-                DesiredToesPosition = NaNVector3,
-                CurrentFootPosition = NaNVector3,
-                CurrentToesPosition = NaNVector3,
-                EndpointDeltaBeforeClamp = NaNVector3,
-                EndpointDeltaAfterClamp = NaNVector3,
-                EndpointDeltaAfterPositiveZScale = NaNVector3,
-                Correction = NaNVector3,
-                NextFootPosition = NaNVector3,
-                EvaluatorXzReferenceEnabled = float.NaN,
-                EvaluatorXzFirstOffset = NaNVector3,
-                EvaluatorXzNormalizedDelta = NaNVector3,
-                EvaluatorXzDesiredNormalizedDelta = NaNVector3,
-                EvaluatorXzTargetMagnitude = float.NaN
-            };
-
-        private static Vector3 NaNVector3 => new Vector3(float.NaN, float.NaN, float.NaN);
-    }
 }

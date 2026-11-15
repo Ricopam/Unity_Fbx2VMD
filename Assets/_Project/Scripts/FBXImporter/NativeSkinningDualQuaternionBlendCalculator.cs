@@ -115,25 +115,14 @@ namespace Fbx2Vmd.FBXImporter
             IReadOnlyList<Vector3> originalVertices = null)
         {
             result = null;
-            if (!HasValidPreparedInput(
-                    baselineVertices,
-                    restVertices,
-                    boneTransforms,
-                    blendContract) ||
-                (originalVertices != null && originalVertices.Count != baselineVertices.Count))
+            if (!HasValidPreparedInput( baselineVertices, restVertices, boneTransforms, blendContract) || (originalVertices != null && originalVertices.Count != baselineVertices.Count))
             {
                 return false;
             }
 
             var candidateVertexIndices = new List<int>();
             var candidateOffsets = new List<Vector3>();
-            CollectBlendCandidates(
-                baselineVertices,
-                restVertices,
-                boneTransforms,
-                blendContract,
-                candidateVertexIndices,
-                candidateOffsets);
+            CollectBlendCandidates( baselineVertices, restVertices, boneTransforms, blendContract, candidateVertexIndices, candidateOffsets);
 
             if (candidateVertexIndices.Count == 0)
             {
@@ -141,14 +130,7 @@ namespace Fbx2Vmd.FBXImporter
                 return true;
             }
 
-            return TrySearchAndFinalize(
-                baselineVertices,
-                restVertices,
-                originalVertices,
-                blendContract,
-                candidateVertexIndices,
-                candidateOffsets,
-                out result);
+            return TrySearchAndFinalize( baselineVertices, restVertices, originalVertices, blendContract, candidateVertexIndices, candidateOffsets, out result);
         }
 
         static bool TrySearchAndFinalize(
@@ -161,25 +143,12 @@ namespace Fbx2Vmd.FBXImporter
             out NativeSkinningDualQuaternionBlendResult result)
         {
             Vector3[] candidateVertices = baselineVertices.ToArray();
-            if (!NativeSkinningDualQuaternionQualityEvaluator.TryCreate(
-                    baselineVertices,
-                    restVertices,
-                    blendContract,
-                    out NativeSkinningDualQuaternionQualityEvaluator qualityEvaluator))
+            if (!NativeSkinningDualQuaternionQualityEvaluator.TryCreate( baselineVertices, restVertices, blendContract, out NativeSkinningDualQuaternionQualityEvaluator qualityEvaluator))
             {
                 result = null;
                 return false;
             }
-            if (!TrySearchBlend(
-                    baselineVertices,
-                    originalVertices,
-                    blendContract,
-                    qualityEvaluator,
-                    candidateVertexIndices,
-                    candidateOffsets,
-                    candidateVertices,
-                    out bool foundBlend,
-                    out result))
+            if (!TrySearchBlend( baselineVertices, originalVertices, blendContract, qualityEvaluator, candidateVertexIndices, candidateOffsets, candidateVertices, out bool foundBlend, out result))
             {
                 return false;
             }
@@ -249,35 +218,14 @@ namespace Fbx2Vmd.FBXImporter
                 }
 
                 changedVertexIndices.Clear();
-                if (!ApplyBlendCandidates(
-                        baselineVertices,
-                        candidateVertexIndices,
-                        candidateOffsets,
-                        blend,
-                        candidateVertices,
-                        changedVertexIndices))
+                if (!ApplyBlendCandidates( baselineVertices, candidateVertexIndices, candidateOffsets, blend, candidateVertices, changedVertexIndices))
                 {
                     return false;
                 }
 
-                qualityEvaluator.Evaluate(
-                    candidateVertices,
-                    out float maximumRestEdgeStrainIncrease,
-                    out int newDegenerateFaceCount,
-                    out int reversedFaceCount,
-                    out int newCollapsedPairCount);
-                if (TryAcceptBlend(
-                        originalVertices,
-                        baselineVertices,
-                        blendContract,
-                        candidateVertices,
-                        changedVertexIndices,
-                        blend,
-                        maximumRestEdgeStrainIncrease,
-                        newDegenerateFaceCount,
-                        reversedFaceCount,
-                        newCollapsedPairCount,
-                        out result))
+                qualityEvaluator.Evaluate( candidateVertices, out float maximumRestEdgeStrainIncrease, out int newDegenerateFaceCount, out int reversedFaceCount, out int newCollapsedPairCount);
+                if (TryAcceptBlend( originalVertices, baselineVertices, blendContract, candidateVertices, changedVertexIndices, blend, maximumRestEdgeStrainIncrease, newDegenerateFaceCount,
+                        reversedFaceCount, newCollapsedPairCount, out result))
                 {
                     foundBlend = true;
                     return true;

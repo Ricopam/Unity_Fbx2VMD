@@ -82,47 +82,30 @@ namespace Fbx2Vmd.FBXImporter
             float timeSeconds,
             HumanoidPoseReferencePlayer sourceReference)
         {
-            if (!sourceReference.TryEvaluateFootSupportPointsAt(
-                    timeSeconds,
-                    out Vector3 sourceLeftFoot,
-                    out Vector3 sourceLeftToes,
-                    out Vector3 sourceRightFoot,
-                    out Vector3 sourceRightToes))
+            if (!sourceReference.TryEvaluateFootSupportPointsAt( timeSeconds, out Vector3 sourceLeftFoot, out Vector3 sourceLeftToes, out Vector3 sourceRightFoot, out Vector3 sourceRightToes))
             {
-                throw new InvalidOperationException(
-                    "원본 Humanoid 발 접촉점을 샘플링하지 못했습니다.");
+                throw new InvalidOperationException( "원본 Humanoid 발 접촉점을 샘플링하지 못했습니다.");
             }
 
             Vector2? relativeFootHeights = null;
             Quaternion? leftFootFrame = null, rightFootFrame = null;
             if (sourceReference.HasFootRotationReference)
             {
-                if (!sourceReference.TryCaptureFootSupportReference(out Vector2 heights,
-                        out Quaternion leftFrame, out Quaternion rightFrame))
+                if (!sourceReference.TryCaptureFootSupportReference(out Vector2 heights, out Quaternion leftFrame, out Quaternion rightFrame))
                     throw new InvalidOperationException("원본 Humanoid 발 지지 방향을 샘플링하지 못했습니다.");
                 relativeFootHeights = heights;
                 leftFootFrame = leftFrame;
                 rightFootFrame = rightFrame;
             }
 
-            if (!sourceReference.TryCaptureHipsPose(
-                    out Vector3 sourceHipsPosition,
-                    out Quaternion sourceHipsRotation))
+            if (!sourceReference.TryCaptureHipsPose( out Vector3 sourceHipsPosition, out Quaternion sourceHipsRotation))
             {
-                throw new InvalidOperationException(
-                    "원본 Humanoid 골반 기준을 샘플링하지 못했습니다.");
+                throw new InvalidOperationException( "원본 Humanoid 골반 기준을 샘플링하지 못했습니다.");
             }
             _sourceHipsPositions[frameIndex] = sourceHipsPosition;
             _sourceHipsRotations[frameIndex] = sourceHipsRotation;
 
-            return new HumanoidFootContactSample(
-                sourceLeftFoot,
-                sourceLeftToes,
-                sourceRightFoot,
-                sourceRightToes,
-                relativeFootHeights,
-                leftFootFrame,
-                rightFootFrame);
+            return new HumanoidFootContactSample( sourceLeftFoot, sourceLeftToes, sourceRightFoot, sourceRightToes, relativeFootHeights, leftFootFrame, rightFootFrame);
         }
 
         static Vector3 ResolveBendNormal(Vector3 correctionNormal, Vector3 fallbackNormal)
@@ -132,15 +115,6 @@ namespace Fbx2Vmd.FBXImporter
                 : fallbackNormal;
         }
 
-        struct WorldCorrections
-        {
-            internal Vector3 LeftCorrection;
-            internal Vector3 RightCorrection;
-            internal Vector3 LeftToeDirection;
-            internal Vector3 RightToeDirection;
-            internal Vector3 LeftBendNormal;
-            internal Vector3 RightBendNormal;
-        }
 
         bool TryResolveWorldCorrections(
             Vector3 leftRootSpaceCorrection,
@@ -202,50 +176,34 @@ namespace Fbx2Vmd.FBXImporter
             rightRootSpacePosition = Vector3.zero;
             leftRootSpaceBendNormal = Vector3.zero;
             rightRootSpaceBendNormal = Vector3.zero;
-            if (!IsFinite(timeSeconds) ||
-                timeSeconds < 0f ||
-                _frameRate <= 0f ||
-                _leftBaseRootSpaceFootPositions.Length == 0 ||
-                _leftBaseRootSpaceFootPositions.Length !=
-                _rightBaseRootSpaceFootPositions.Length ||
-                _leftBaseRootSpaceBendNormals.Length !=
-                _leftBaseRootSpaceFootPositions.Length ||
-                _rightBaseRootSpaceBendNormals.Length !=
+            if (!IsFinite(timeSeconds) || timeSeconds < 0f || _frameRate <= 0f || _leftBaseRootSpaceFootPositions.Length == 0 || _leftBaseRootSpaceFootPositions.Length !=
+                _rightBaseRootSpaceFootPositions.Length || _leftBaseRootSpaceBendNormals.Length != _leftBaseRootSpaceFootPositions.Length || _rightBaseRootSpaceBendNormals.Length !=
                 _rightBaseRootSpaceFootPositions.Length)
             {
                 return false;
             }
 
-            float frame = Mathf.Clamp(
-                timeSeconds * _frameRate,
-                0f,
-                _leftBaseRootSpaceFootPositions.Length - 1);
+            float frame = Mathf.Clamp( timeSeconds * _frameRate, 0f, _leftBaseRootSpaceFootPositions.Length - 1);
             int firstFrame = Mathf.FloorToInt(frame);
-            int secondFrame = Mathf.Min(
-                firstFrame + 1,
-                _leftBaseRootSpaceFootPositions.Length - 1);
+            int secondFrame = Mathf.Min( firstFrame + 1, _leftBaseRootSpaceFootPositions.Length - 1);
             float interpolation = frame - firstFrame;
-            leftRootSpacePosition = Vector3.LerpUnclamped(
-                _leftBaseRootSpaceFootPositions[firstFrame],
-                _leftBaseRootSpaceFootPositions[secondFrame],
-                interpolation);
-            rightRootSpacePosition = Vector3.LerpUnclamped(
-                _rightBaseRootSpaceFootPositions[firstFrame],
-                _rightBaseRootSpaceFootPositions[secondFrame],
-                interpolation);
-            leftRootSpaceBendNormal = Vector3.LerpUnclamped(
-                _leftBaseRootSpaceBendNormals[firstFrame],
-                _leftBaseRootSpaceBendNormals[secondFrame],
-                interpolation).normalized;
-            rightRootSpaceBendNormal = Vector3.LerpUnclamped(
-                _rightBaseRootSpaceBendNormals[firstFrame],
-                _rightBaseRootSpaceBendNormals[secondFrame],
-                interpolation).normalized;
-            return IsFinite(leftRootSpacePosition) &&
-                IsFinite(rightRootSpacePosition) &&
-                IsFinite(leftRootSpaceBendNormal) &&
-                IsFinite(rightRootSpaceBendNormal);
+            leftRootSpacePosition = Vector3.LerpUnclamped( _leftBaseRootSpaceFootPositions[firstFrame], _leftBaseRootSpaceFootPositions[secondFrame], interpolation);
+            rightRootSpacePosition = Vector3.LerpUnclamped( _rightBaseRootSpaceFootPositions[firstFrame], _rightBaseRootSpaceFootPositions[secondFrame], interpolation);
+            leftRootSpaceBendNormal = Vector3.LerpUnclamped( _leftBaseRootSpaceBendNormals[firstFrame], _leftBaseRootSpaceBendNormals[secondFrame], interpolation).normalized;
+            rightRootSpaceBendNormal = Vector3.LerpUnclamped( _rightBaseRootSpaceBendNormals[firstFrame], _rightBaseRootSpaceBendNormals[secondFrame], interpolation).normalized;
+            return IsFinite(leftRootSpacePosition) && IsFinite(rightRootSpacePosition) && IsFinite(leftRootSpaceBendNormal) && IsFinite(rightRootSpaceBendNormal);
         }
+
+
+        private Transform _targetRoot;
+        private HumanoidFootContactPlan _plan;
+        private Vector3[] _leftBaseRootSpaceFootPositions = Array.Empty<Vector3>();
+        private Vector3[] _rightBaseRootSpaceFootPositions = Array.Empty<Vector3>();
+        private Vector3[] _leftBaseRootSpaceBendNormals = Array.Empty<Vector3>();
+        private Vector3[] _rightBaseRootSpaceBendNormals = Array.Empty<Vector3>();
+        private Vector3[] _sourceHipsPositions = Array.Empty<Vector3>();
+        private Quaternion[] _sourceHipsRotations = Array.Empty<Quaternion>();
+        private float _frameRate;
 
     }
 }

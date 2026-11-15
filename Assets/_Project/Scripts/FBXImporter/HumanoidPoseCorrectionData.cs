@@ -147,48 +147,32 @@ namespace Fbx2Vmd.FBXImporter
         {
             if (_schemaVersion != CurrentSchemaVersion)
             {
-                errorMessage =
-                    $"지원하지 않는 보정 문서 버전입니다: {_schemaVersion}";
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(_motionName) ||
-                !string.Equals(_motionName, _motionName.Trim(), StringComparison.Ordinal))
+                errorMessage = $"지원하지 않는 보정 문서 버전입니다: {_schemaVersion}";
+                return false; }
+            if (string.IsNullOrWhiteSpace(_motionName) || !string.Equals(_motionName, _motionName.Trim(), StringComparison.Ordinal))
             {
                 errorMessage = "보정 문서의 모션 이름이 올바르지 않습니다.";
-                return false;
-            }
-
+                return false; }
             if (!IsFinite(_sourceFrameRate) || _sourceFrameRate <= 0f)
             {
                 errorMessage = "보정 문서의 원본 프레임률이 올바르지 않습니다.";
-                return false;
-            }
-
+                return false; }
             var frameIndices = new HashSet<int>();
             foreach (HumanoidPoseCorrectionFrame frame in Frames)
             {
                 if (frame == null)
                 {
                     errorMessage = "보정 문서에 비어 있는 프레임이 있습니다.";
-                    return false;
-                }
-
+                    return false; }
                 if (!frameIndices.Add(frame.FrameIndex))
                 {
                     errorMessage = $"중복 보정 프레임이 있습니다: {frame.FrameIndex}";
-                    return false;
-                }
-
+                    return false; }
                 if (!frame.TryValidate(out errorMessage))
                 {
-                    return false;
-                }
-            }
-
+                    return false; } }
             errorMessage = string.Empty;
-            return true;
-        }
+            return true; }
 
         private List<HumanoidPoseCorrectionFrame> Frames =>
             _frames ??= new List<HumanoidPoseCorrectionFrame>();
@@ -257,9 +241,7 @@ namespace Fbx2Vmd.FBXImporter
 
         internal bool TryApplyMuscleDeltas(float[] muscles)
         {
-            if (muscles == null ||
-                muscles.Length < HumanTrait.MuscleCount ||
-                MuscleCorrections.Count == 0)
+            if (muscles == null || muscles.Length < HumanTrait.MuscleCount || MuscleCorrections.Count == 0)
             {
                 return false;
             }
@@ -268,12 +250,8 @@ namespace Fbx2Vmd.FBXImporter
             for (int index = 0; index < MuscleCorrections.Count; index++)
             {
                 HumanoidMuscleCorrection correction = MuscleCorrections[index];
-                int muscleIndex = RetargetingMuscleReferencePolicy.FindHumanMuscleIndex(
-                    correction.MuscleName);
-                if (muscleIndex < 0 ||
-                    muscleIndex >= HumanTrait.MuscleCount ||
-                    !IsFinite(correction.Delta) ||
-                    !IsFinite(muscles[muscleIndex]))
+                int muscleIndex = RetargetingMuscleReferencePolicy.FindHumanMuscleIndex( correction.MuscleName);
+                if (muscleIndex < 0 || muscleIndex >= HumanTrait.MuscleCount || !IsFinite(correction.Delta) || !IsFinite(muscles[muscleIndex]))
                 {
                     return false;
                 }
@@ -284,10 +262,7 @@ namespace Fbx2Vmd.FBXImporter
             for (int index = 0; index < MuscleCorrections.Count; index++)
             {
                 int muscleIndex = muscleIndices[index];
-                muscles[muscleIndex] = Mathf.Clamp(
-                    muscles[muscleIndex] + MuscleCorrections[index].Delta,
-                    -1f,
-                    1f);
+                muscles[muscleIndex] = Mathf.Clamp( muscles[muscleIndex] + MuscleCorrections[index].Delta, -1f, 1f);
             }
 
             return true;
@@ -300,13 +275,11 @@ namespace Fbx2Vmd.FBXImporter
                 errorMessage = $"보정 프레임 번호가 올바르지 않습니다: {_frameIndex}";
                 return false;
             }
-
             if (MuscleCorrections.Count == 0)
             {
                 errorMessage = $"{_frameIndex} 프레임에 muscle 보정값이 없습니다.";
                 return false;
             }
-
             var muscleNames = new HashSet<string>(StringComparer.Ordinal);
             foreach (HumanoidMuscleCorrection correction in MuscleCorrections)
             {
@@ -314,16 +287,12 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     return false;
                 }
-
                 if (!muscleNames.Add(correction.MuscleName))
                 {
-                    errorMessage =
-                        $"{_frameIndex} 프레임에 중복 muscle이 있습니다: " +
-                        correction.MuscleName;
+                    errorMessage = $"{_frameIndex} 프레임에 중복 muscle이 있습니다: " + correction.MuscleName;
                     return false;
                 }
             }
-
             errorMessage = string.Empty;
             return true;
         }

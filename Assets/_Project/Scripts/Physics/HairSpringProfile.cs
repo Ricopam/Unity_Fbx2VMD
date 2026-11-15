@@ -145,9 +145,7 @@ namespace Fbx2Vmd.ClothPhysics
         /// </summary>
         public void ApplyToMc2(ClothSerializeData s, float unit)
         {
-            if (!enabled || s == null)
-                return;
-
+            if (!enabled || s == null) return;
             // 진동수 → 복원 강성 근사 (10Hz = 최대 강성). 포즈 강성 커브로 깊이별 차등.
             var rest = s.angleRestorationConstraint;
             rest.useAngleRestoration = true;
@@ -157,37 +155,25 @@ namespace Fbx2Vmd.ClothPhysics
             rest.velocityAttenuation = Mathf.Clamp01(dampingRatio);
             // 전역 감쇠 — MC2 damping은 프리셋 0.1 기준. ζ=0.5 → 0.1이 되도록 근사.
             s.damping.SetValue(Mathf.Clamp01(dampingRatio) * 0.2f);
-
             // 애니메이션 혼합 평균 → animationPoseRatio (MC2는 본별 커브가 없어 평균 사용)
             s.animationPoseRatio = Mathf.Clamp01(animationBlend.Average());
-
             // 굽힘 상한 → angleLimit (커브 = 최대각 대비 비율)
             var limit = s.angleLimitConstraint;
             if (maxBendAngleDeg < 179.5f)
             {
                 limit.useAngleLimit = true;
-                limit.limitAngle.SetValue(maxBendAngleDeg, BuildCurve(bendAngleCap));
-            }
-            else
+                limit.limitAngle.SetValue(maxBendAngleDeg, BuildCurve(bendAngleCap)); } else
             {
-                limit.useAngleLimit = false;
-            }
-
+                limit.useAngleLimit = false; }
             // 본 반경 → 파티클 굵기 (충돌·상호충돌 크기에 그대로 반영)
-            s.radius.SetValue(
-                maxCollisionRadius * unit, BuildCurve(collisionRadius));
-
+            s.radius.SetValue( maxCollisionRadius * unit, BuildCurve(collisionRadius));
             // 본 스프링은 중력이 독립 파라미터 — 절대값으로 덮어쓴다
             s.gravity = gravity;
             s.gravityDirection = Vector3.down;
-
             // 자기 충돌 두께도 본 반경 기준으로 정렬 (켜져 있을 때만 덮어씀)
             if (s.selfCollisionConstraint.selfMode != SelfCollisionConstraint.SelfCollisionMode.None)
             {
-                s.selfCollisionConstraint.surfaceThickness.SetValue(
-                    maxCollisionRadius * unit * 0.5f, BuildCurve(collisionRadius));
-            }
-        }
+                s.selfCollisionConstraint.surfaceThickness.SetValue( maxCollisionRadius * unit * 0.5f, BuildCurve(collisionRadius)); } }
 
         /// <summary>깊이 커브를 MC2 CurveSerializeData용 AnimationCurve로 변환한다.</summary>
         AnimationCurve BuildCurve(DepthSpringCurve c)

@@ -79,14 +79,7 @@ namespace Fbx2Vmd.FBXImporter
 
         public bool Configure(
             Animator ghostAnimator,
-            Animator targetAnimator,
-            float nextUpperArmWeight,
-            float nextForearmWeight,
-            float nextUpperArmMaxDegrees,
-            float nextForearmMaxDegrees,
-            float nextLeftSideWeightScale,
-            float nextRightSideWeightScale,
-            bool nextLogConfiguration)
+            Animator targetAnimator, float nextUpperArmWeight, float nextForearmWeight, float nextUpperArmMaxDegrees, float nextForearmMaxDegrees, float nextLeftSideWeightScale, float nextRightSideWeightScale, bool nextLogConfiguration)
         {
             _ghostAnimator = ghostAnimator;
             _targetAnimator = targetAnimator != null ? targetAnimator : GetComponent<Animator>();
@@ -99,7 +92,6 @@ namespace Fbx2Vmd.FBXImporter
             logConfiguration = nextLogConfiguration;
             _warningLogged = false;
             _segments.Clear();
-
             _configured = IsValidHumanoid(_ghostAnimator) && IsValidHumanoid(_targetAnimator);
             if (_configured)
             {
@@ -107,18 +99,12 @@ namespace Fbx2Vmd.FBXImporter
                 AddSegment(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, upperArmWeight * rightSideWeightScale, upperArmMaxDegrees);
                 AddSegment(HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, forearmWeight * leftSideWeightScale, forearmMaxDegrees);
                 AddSegment(HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, forearmWeight * rightSideWeightScale, forearmMaxDegrees);
-                _configured = _segments.Count > 0;
-            }
-
+                _configured = _segments.Count > 0; }
             enabled = _configured && enableDirectionRetarget;
-
             if (logConfiguration)
             {
-                Debug.Log($"[HumanoidArmDirectionRetargetGuard] Arm direction retarget configured={_configured}, segments={_segments.Count}, sideScales={leftSideWeightScale:F2}/{rightSideWeightScale:F2}");
-            }
-
-            return _configured;
-        }
+                Debug.Log($"[HumanoidArmDirectionRetargetGuard] Arm direction retarget configured={_configured}, segments={_segments.Count}, sideScales={leftSideWeightScale:F2}/{rightSideWeightScale:F2}"); }
+            return _configured; }
 
         private bool HasLiveRuntimeState()
         {
@@ -148,30 +134,20 @@ namespace Fbx2Vmd.FBXImporter
             Transform targetSource = _targetAnimator.GetBoneTransform(sourceBone);
             Transform targetEnd = _targetAnimator.GetBoneTransform(endBone);
 
-            if (ghostRoot == null || targetRoot == null ||
-                ghostSource == null || ghostEnd == null ||
-                targetSource == null || targetEnd == null ||
-                weight <= 0f)
+            if (ghostRoot == null || targetRoot == null || ghostSource == null || ghostEnd == null || targetSource == null || targetEnd == null || weight <= 0f)
             {
                 return;
             }
 
             Vector3 ghostLocalBaseline = ghostRoot.InverseTransformDirection(ghostEnd.position - ghostSource.position).normalized;
             Vector3 targetLocalBaseline = targetRoot.InverseTransformDirection(targetEnd.position - targetSource.position).normalized;
-            if (!IsFinite(ghostLocalBaseline) || !IsFinite(targetLocalBaseline) ||
-                ghostLocalBaseline.sqrMagnitude <= 0.000001f ||
-                targetLocalBaseline.sqrMagnitude <= 0.000001f)
+            if (!IsFinite(ghostLocalBaseline) || !IsFinite(targetLocalBaseline) || ghostLocalBaseline.sqrMagnitude <= 0.000001f || targetLocalBaseline.sqrMagnitude <= 0.000001f)
             {
                 return;
             }
 
             Quaternion correction = Quaternion.FromToRotation(ghostLocalBaseline, targetLocalBaseline);
-            _segments.Add(new SegmentMapping(
-                sourceBone,
-                endBone,
-                correction,
-                Mathf.Clamp01(weight),
-                Mathf.Clamp(maxDegrees, 0f, 120f)));
+            _segments.Add(new SegmentMapping( sourceBone, endBone, correction, Mathf.Clamp01(weight), Mathf.Clamp(maxDegrees, 0f, 120f)));
         }
 
         private void ApplySegment(SegmentMapping segment)
@@ -188,24 +164,20 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return;
             }
-
             Vector3 ghostWorldDirection = ghostEnd.position - ghostSource.position;
             if (ghostWorldDirection.sqrMagnitude <= 0.000001f)
             {
                 return;
             }
-
             Vector3 ghostLocalDirection = ghostRoot.InverseTransformDirection(ghostWorldDirection.normalized);
             Vector3 desiredTargetLocalDirection = segment.GhostToTargetLocalCorrection * ghostLocalDirection;
             Vector3 desiredTargetWorldDirection = targetRoot.TransformDirection(desiredTargetLocalDirection).normalized;
-
             AlignBoneDirection(
                 targetSource,
                 targetEnd.position - targetSource.position,
                 desiredTargetWorldDirection,
                 segment.Weight,
-                segment.MaxDegrees);
-        }
+                segment.MaxDegrees); }
 
         private void AlignBoneDirection(
             Transform bone,
@@ -220,14 +192,12 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return;
             }
-
             Vector3 current = currentWorldDirection.normalized;
             Vector3 desired = desiredWorldDirection.normalized;
             if (!IsFinite(current) || !IsFinite(desired))
             {
                 return;
             }
-
             Quaternion delta = Quaternion.FromToRotation(current, desired);
             delta = LimitRotation(delta, maxDegrees);
             Quaternion weightedDelta = Quaternion.Slerp(Quaternion.identity, delta, Mathf.Clamp01(weight));
@@ -235,11 +205,8 @@ namespace Fbx2Vmd.FBXImporter
             if (!IsFinite(nextRotation))
             {
                 LogWarningOnce("Calculated arm direction rotation was invalid. Skipping this frame.");
-                return;
-            }
-
-            bone.rotation = nextRotation;
-        }
+                return; }
+            bone.rotation = nextRotation; }
 
         private static Quaternion LimitRotation(Quaternion rotation, float maxDegrees)
         {

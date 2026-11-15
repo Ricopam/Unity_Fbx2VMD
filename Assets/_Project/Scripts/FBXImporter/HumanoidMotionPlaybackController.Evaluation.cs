@@ -13,8 +13,7 @@ namespace Fbx2Vmd.FBXImporter
             _supportCurvePose?.Restore();
             _footGrounding?.RestoreAppliedPose();
             RestoreFootRotationBindings();
-            if (!TrySamplePoseAndBendNormals(
-                    out Vector3 leftBendNormal, out Vector3 rightBendNormal))
+            if (!TrySamplePoseAndBendNormals( out Vector3 leftBendNormal, out Vector3 rightBendNormal))
             {
                 return false;
             }
@@ -35,9 +34,7 @@ namespace Fbx2Vmd.FBXImporter
 
             using (PerfScope.Measure("PlaybackController.FootStabilization"))
             {
-                return TryApplyFootContactStabilization(
-                    leftBendNormal,
-                    rightBendNormal);
+                return TryApplyFootContactStabilization( leftBendNormal, rightBendNormal);
             }
         }
 
@@ -254,5 +251,18 @@ namespace Fbx2Vmd.FBXImporter
                 throw new ArgumentOutOfRangeException(parameterName);
             }
         }
+
+        private bool _isGroundResponseEnabled;
+        // 실험 경로 — goal IK 드라이브가 켜져도 gate는 매 프레임 실행되고
+        // 드라이버는 주장 프레임에만 gate 결과 위에 오버레이됨.
+        private bool _useIkGoalFootDrive;
+        private float _footGoalAlpha;
+        // 소스 클립의 단발 불연속으로 정지 발이 순간이동할 때 확산 적용 여부.
+        private bool _useFootStepDiffusion;
+        private HumanoidFootGrounding _footGrounding;
+        private HumanoidFootRotationBinding _leftFootRotation;
+        private HumanoidFootRotationBinding _rightFootRotation;
+        private Quaternion _sourceToTargetRotation = Quaternion.identity;
+
     }
 }

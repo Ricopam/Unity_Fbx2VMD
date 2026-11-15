@@ -29,8 +29,7 @@ namespace Fbx2Vmd.CharacterLibrary
             }
 
             GameObject previousTarget = pipeline.targetCharacter;
-            CharacterLibraryInstance previousLibrary =
-                FindMarkerOn(previousTarget);
+            CharacterLibraryInstance previousLibrary = FindMarkerOn(previousTarget);
 
             var marker = newRoot.GetComponent<CharacterLibraryInstance>();
             if (marker == null)
@@ -111,49 +110,35 @@ namespace Fbx2Vmd.CharacterLibrary
         /// 이전 타겟이 없으면 라이브러리 루트만 제거하고 false를 돌려준다.
         /// rebindGuard=false면 파이프라인의 유휴 가드 재초기화를 생략한다(씬 저장 콜백용).
         /// </summary>
-        public static bool Restore(
-            FBXVmdPipeline pipeline, out bool removedLibraryCharacter, bool rebindGuard = true)
+        public static bool Restore( FBXVmdPipeline pipeline, out bool removedLibraryCharacter, bool rebindGuard = true)
         {
             GameObject libraryRoot = FindActiveLibraryRoot(pipeline);
             removedLibraryCharacter = libraryRoot != null;
             if (libraryRoot == null)
             {
-                return false;
-            }
-
+                return false; }
             CharacterLibraryInstance marker = libraryRoot.GetComponent<CharacterLibraryInstance>();
             GameObject previous = marker != null ? marker.previousSceneTarget : null;
-
             // FindActiveLibraryRoot와 같은 기준: 타겟이 루트 자체이거나 그 자식이면
             // 라이브러리 캐릭터를 가리키는 것으로 본다.
-            bool targetsLibrary = pipeline != null && pipeline.targetCharacter != null &&
-                                  pipeline.targetCharacter.transform.root == libraryRoot.transform;
+            bool targetsLibrary = pipeline != null && pipeline.targetCharacter != null && pipeline.targetCharacter.transform.root == libraryRoot.transform;
             bool targetFree = pipeline != null && pipeline.targetCharacter == null;
-
             if (pipeline != null && (targetsLibrary || targetFree))
             {
                 pipeline.targetCharacter = previous;
                 if (rebindGuard)
                 {
-                    pipeline.RebindIdlePoseGuard();
-                }
-            }
-
+                    pipeline.RebindIdlePoseGuard(); } }
             DestroyObject(libraryRoot);
-
             // 파이프라인이 없거나 타겟이 비어 있거나 라이브러리를 가리키던 경우에만
             // 비활성 보존된 이전 캐릭터를 되살린다. 제3자가 다른 캐릭터를 가리키는
             // 동안에는 활성 캐릭터가 2개가 되는 것을 막기 위해 보류한다.
-            bool canReactivate = previous != null &&
-                                 (pipeline == null || targetFree || targetsLibrary);
+            bool canReactivate = previous != null && (pipeline == null || targetFree || targetsLibrary);
             if (canReactivate)
             {
                 previous.SetActive(true);
-                return true;
-            }
-
-            return false;
-        }
+                return true; }
+            return false; }
 
         /// <summary>
         /// 파이프라인 씬(없으면 활성 씬)에서 라이브러리 표식이 붙은 루트를 찾는다.
@@ -181,7 +166,6 @@ namespace Fbx2Vmd.CharacterLibrary
                     }
                 }
             }
-
             return roots[0];
         }
 

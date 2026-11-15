@@ -51,25 +51,19 @@ namespace Fbx2Vmd.FBXImporter
             return true;
         }
 
-        private static bool ProjectLinearConstraints(
-            JointProjectionRow[] rows, double[] multipliers, double[] search,
-            double3[] proposal, double3[] columnSums)
+        private static bool ProjectLinearConstraints( JointProjectionRow[] rows, double[] multipliers, double[] search, double3[] proposal, double3[] columnSums)
         {
             Array.Clear(columnSums, 0, columnSums.Length);
             foreach (JointProjectionRow row in rows)
             {
-                row.AddColumnMagnitudes(columnSums);
-            }
+                row.AddColumnMagnitudes(columnSums); }
             double upperBound = 0;
             foreach (JointProjectionRow row in rows)
             {
-                upperBound = Math.Max(upperBound, row.Dot(columnSums, absolute: true));
-            }
+                upperBound = Math.Max(upperBound, row.Dot(columnSums, absolute: true)); }
             if (!double.IsFinite(upperBound) || upperBound <= 0)
             {
-                return false;
-            }
-
+                return false; }
             // 희소 제약의 쌍대 문제에서 가속 투영을 수행하고 행합 상한으로 스텝을 제한함.
             Array.Copy(multipliers, search, search.Length);
             for (int iteration = 0; iteration < JointProjectionInnerIterations; iteration++)
@@ -81,21 +75,16 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     JointProjectionRow row = rows[index];
                     double next = row.HasGradient
-                        ? Math.Max(0, search[index] - (row.Dot(proposal) - row.RightHandSide) / upperBound)
-                        : 0;
+                        ? Math.Max(0, search[index] - (row.Dot(proposal) - row.RightHandSide) / upperBound) : 0;
                     double change = next - multipliers[index];
                     maximumChange = Math.Max(maximumChange, Math.Abs(change));
                     search[index] = next + acceleration * change;
-                    multipliers[index] = next;
-                }
+                    multipliers[index] = next; }
                 if (maximumChange < 1e-9)
                 {
-                    break;
-                }
-            }
+                    break; } }
             Accumulate(multipliers);
             return true;
-
             void Accumulate(double[] values)
             {
                 Array.Clear(proposal, 0, proposal.Length);
@@ -103,11 +92,7 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     if (values[index] != 0)
                     {
-                        rows[index].Accumulate(values[index], proposal);
-                    }
-                }
-            }
-        }
+                        rows[index].Accumulate(values[index], proposal); } } } }
 
         private static double3 ToDouble(Vector3 value) => new double3(value.x, value.y, value.z);
 

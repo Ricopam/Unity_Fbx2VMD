@@ -86,10 +86,8 @@ namespace Fbx2Vmd.FBXImporter
                         {
                             cosineGradient[index, side] = reach / leg.LengthProduct;
                             angleGradient[index, side] = -cosineGradient[index, side] *
-                                (DegreesPerRadian / Math.Sqrt(Math.Max(1e-12, 1 - cosine * cosine)));
-                        }
+                                (DegreesPerRadian / Math.Sqrt(Math.Max(1e-12, 1 - cosine * cosine))); }
                         if (index < owner._first || index > owner._last) continue;
-
                         double relative = (angles[index, side] - leg.ReferenceDegrees) / owner._baselineRms[side];
                         errors[side] += relative * relative;
                         if (!derivatives) continue;
@@ -100,12 +98,7 @@ namespace Fbx2Vmd.FBXImporter
                             if (row[axis] == 0) continue;
                             sideGradient[side][axis] += 2 * relative * row[axis] / activeCount;
                             double weight = side == 0 ? leftWeight : rightWeight;
-                            for (int column = 0; column <= axis; column++)
-                                metric[axis, column] += weight * row[axis] * row[column] / activeCount;
-                        }
-                    }
-                }
-            }
+                            for (int column = 0; column <= axis; column++) metric[axis, column] += weight * row[axis] * row[column] / activeCount; } } } }
 
             private void AddAngularConstraints(double[] limits, int order)
             {

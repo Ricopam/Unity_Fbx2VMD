@@ -9,7 +9,7 @@ namespace Fbx2Vmd.FBXImporter
         private const int TouchdownSamplesPerFrame = 4;
         private readonly Dictionary<int, TouchdownWindow> _touchdownWindows = new();
 
-        private sealed class TouchdownWindow
+        private sealed partial class TouchdownWindow
         {
             internal readonly Leg Leg;
             internal readonly Leg SupportingLeg;
@@ -142,7 +142,7 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        private struct TouchdownMotion
+        private partial struct TouchdownMotion
         {
             private TouchdownPose _previous;
             private TouchdownPose _beforePrevious;
@@ -150,12 +150,6 @@ namespace Fbx2Vmd.FBXImporter
             private Vector2 _previousIntegerKneeStep;
             private int _count;
             private int _integerCount;
-            private float _maxDrop;
-            private float _maxHipAcceleration;
-            private float _maxKneeAcceleration;
-            private float _maxIntegerKneeAcceleration;
-            private float _maxLeftStep;
-            private float _maxRightStep;
 
             internal void Add(TouchdownPose pose, bool integer)
             {
@@ -165,8 +159,7 @@ namespace Fbx2Vmd.FBXImporter
                     float acceleration = pose.HipsY - 2f * _previous.HipsY + _beforePrevious.HipsY;
                     Vector2 knees = pose.Knees - 2f * _previous.Knees + _beforePrevious.Knees;
                     _maxHipAcceleration = Mathf.Max(_maxHipAcceleration, Mathf.Abs(acceleration));
-                    _maxKneeAcceleration = Mathf.Max(_maxKneeAcceleration,
-                        Mathf.Max(Mathf.Abs(knees.x), Mathf.Abs(knees.y)));
+                    _maxKneeAcceleration = Mathf.Max(_maxKneeAcceleration, Mathf.Max(Mathf.Abs(knees.x), Mathf.Abs(knees.y)));
                 }
                 if (integer)
                 {
@@ -179,8 +172,7 @@ namespace Fbx2Vmd.FBXImporter
                         {
                             // 분수 표본의 개선이 실제 정수 프레임 사이 급변을 가리지 않게 함.
                             Vector2 acceleration = kneeStep - _previousIntegerKneeStep;
-                            _maxIntegerKneeAcceleration = Mathf.Max(_maxIntegerKneeAcceleration,
-                                Mathf.Max(Mathf.Abs(acceleration.x), Mathf.Abs(acceleration.y)));
+                            _maxIntegerKneeAcceleration = Mathf.Max(_maxIntegerKneeAcceleration, Mathf.Max(Mathf.Abs(acceleration.x), Mathf.Abs(acceleration.y)));
                         }
                         _previousIntegerKneeStep = kneeStep;
                     }
@@ -206,9 +198,7 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        private bool TryApplyTouchdown(TouchdownWindow window, HumanoidGroundResponse ground,
-            Leg.TargetState leftTarget, Leg.TargetState rightTarget, float offset, Vector2 footOffsets,
-            out bool rejected)
+        private bool TryApplyTouchdown(TouchdownWindow window, HumanoidGroundResponse ground, Leg.TargetState leftTarget, Leg.TargetState rightTarget, float offset, Vector2 footOffsets, out bool rejected)
         {
             rejected = false;
             var leg = window.Leg;
@@ -217,39 +207,27 @@ namespace Fbx2Vmd.FBXImporter
             if (!_left.TryGetRegionHeights(out var leftHeights) || !_right.TryGetRegionHeights(out var rightHeights))
             {
                 rejected = true;
-                return true;
-            }
+                return true; }
             Vector2 heights = leg == _left ? leftHeights : rightHeights;
-            float blend = 0.5f * Mathf.SmoothStep(0f, 1f,
-                (Mathf.Min(heights.x, heights.y) - contactLimit) / (_humanScale * SupportedContactErrorPerHumanScale));
+            float blend = 0.5f * Mathf.SmoothStep(0f, 1f, (Mathf.Min(heights.x, heights.y) - contactLimit) / (_humanScale * SupportedContactErrorPerHumanScale));
             if (blend <= 0f) return true;
-
             Vector3 originalTarget = leg == _left ? leftTarget.Position : rightTarget.Position;
-            if (!window.SupportingLeg.HasFullSupportOn(window.SupportingGround, window.SupportingGroundMatrix, contactLimit) ||
-                !leg.TryGetTouchdownTarget(window, ground, originalTarget, blend, contactLimit, out Vector3 proposed))
+            if (!window.SupportingLeg.HasFullSupportOn(window.SupportingGround, window.SupportingGroundMatrix, contactLimit) || !leg.TryGetTouchdownTarget(window, ground, originalTarget, blend, contactLimit, out Vector3 proposed))
             {
                 rejected = true;
-                return true;
-            }
+                return true; }
             if (proposed == originalTarget) return true;
-
             bool baselineUsedPhysicalReach = UsedPhysicalReach;
             RestoreAppliedPose();
             _left.RestoreTarget(leftTarget);
             _right.RestoreTarget(rightTarget);
-            if (leg.TrySetTouchdownTarget(proposed) && TryResolveReach(out float newOffset, out var newFootOffsets) &&
-                TrySolveGroundPose(newOffset, newFootOffsets, out _) && RawGatePass &&
-                _left.TryGetRegionHeights(out var newLeft) && _right.TryGetRegionHeights(out var newRight) &&
-                SameRegionContact(leftHeights, newLeft, contactLimit) && SameRegionContact(rightHeights, newRight, contactLimit))
-                return true;
-
+            if (leg.TrySetTouchdownTarget(proposed) && TryResolveReach(out float newOffset, out var newFootOffsets) && TrySolveGroundPose(newOffset, newFootOffsets, out _) && RawGatePass && _left.TryGetRegionHeights(out var newLeft) && _right.TryGetRegionHeights(out var newRight) && SameRegionContact(leftHeights, newLeft, contactLimit) && SameRegionContact(rightHeights, newRight, contactLimit)) return true;
             rejected = true;
             RestoreAppliedPose();
             _left.RestoreTarget(leftTarget);
             _right.RestoreTarget(rightTarget);
             UsedPhysicalReach = baselineUsedPhysicalReach;
-            return TrySolveGroundPose(offset, footOffsets, out _);
-        }
+            return TrySolveGroundPose(offset, footOffsets, out _); }
 
         private static bool SameRegionContact(Vector2 baseline, Vector2 candidate, float limit) =>
             (baseline.x <= limit) == (candidate.x <= limit) && (baseline.y <= limit) == (candidate.y <= limit);
@@ -335,24 +313,6 @@ namespace Fbx2Vmd.FBXImporter
                     Foot.lossyScale.x, _ground.point, _ground.normal, out Vector3 constrained, out _) &&
                 TrySetReleaseTarget(constrained);
 
-            internal bool TryGetRegionHeights(out Vector2 heights)
-            {
-                heights = default;
-                if (!HasGround || !Sampler.TrySelectContact(false, _ground.normal, out _, out Vector3 rear) ||
-                    !Sampler.TrySelectContact(true, _ground.normal, out _, out Vector3 front))
-                    return false;
-                heights = new Vector2(Vector3.Dot(rear - _ground.point, _ground.normal),
-                    Vector3.Dot(front - _ground.point, _ground.normal));
-                return true;
-            }
-
-            private bool NeedsPelvisLowering()
-            {
-                Vector3 targetToHip = Upper.position - _target;
-                float reachSquared = _maximumReach * _maximumReach;
-                float horizontalSquared = targetToHip.x * targetToHip.x + targetToHip.z * targetToHip.z;
-                return targetToHip.y > 0f && horizontalSquared < reachSquared && targetToHip.sqrMagnitude > reachSquared;
-            }
         }
     }
 }

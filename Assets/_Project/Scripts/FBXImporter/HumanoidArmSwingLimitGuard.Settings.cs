@@ -92,5 +92,38 @@ namespace Fbx2Vmd.FBXImporter
             [FormerlySerializedAs("logCorrections")]
             [SerializeField] private bool _logCorrections= false;
             public bool logCorrections { get => _logCorrections; private set => _logCorrections = value; }
+
+        private static float CalculateElbowAngleDegrees(Transform upper, Transform lower, Transform hand)
+        {
+            if (upper == null || lower == null || hand == null)
+            {
+                return float.NaN;
+            }
+
+            Vector3 toUpper = upper.position - lower.position;
+            Vector3 toHand = hand.position - lower.position;
+            if (toUpper.sqrMagnitude <= 0.000001f || toHand.sqrMagnitude <= 0.000001f)
+            {
+                return float.NaN;
+            }
+
+            return Vector3.Angle(toUpper, toHand);
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+        }
+
+        private static bool IsFinite(Quaternion value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z) && IsFinite(value.w);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
     }
 }

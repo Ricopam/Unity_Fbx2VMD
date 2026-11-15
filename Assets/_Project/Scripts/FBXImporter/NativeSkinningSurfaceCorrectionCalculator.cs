@@ -146,6 +146,8 @@ namespace Fbx2Vmd.FBXImporter
                 baselineVertices,
                 contract,
                 out initialSharpFoldCount);
+            restShapeRecoveryPairIndices = null;
+            sharpFoldPairIndices = null;
             if (initialSharpFoldCount == 0)
             {
                 result = CreateEmptyCorrectionResult(initialVertices);

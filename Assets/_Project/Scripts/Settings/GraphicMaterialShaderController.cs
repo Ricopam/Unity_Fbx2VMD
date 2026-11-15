@@ -21,67 +21,42 @@ public static class GraphicMaterialShaderController
             "_AlphaToMaskOn"
         };
 
-        public static GraphicMaterialShaderApplyResult Apply(
-            GraphicMaterialShaderPlan plan,
-            IEnumerable<Material> materials)
+        public static GraphicMaterialShaderApplyResult Apply( GraphicMaterialShaderPlan plan, IEnumerable<Material> materials)
         {
             if (materials == null)
             {
-                return new GraphicMaterialShaderApplyResult(0, 0, 0, 0, 0);
-            }
-
+                return new GraphicMaterialShaderApplyResult(0, 0, 0, 0, 0); }
             int processedMaterials = 0;
             int changedMaterials = 0;
             int changedProperties = 0;
             int skippedMaterials = 0;
             int skippedProperties = 0;
             var seen = new HashSet<Material>();
-
             foreach (Material material in materials)
             {
                 if (material == null || material.shader == null || !seen.Add(material))
                 {
                     skippedMaterials++;
-                    continue;
-                }
-
+                    continue; }
                 processedMaterials++;
                 int changedBeforeMaterial = changedProperties;
-
                 if (plan.ApplyOutline)
                 {
                     SetFloatIfSupported(material, EdgeScaleProperty, plan.OutlineScale, ref changedProperties, ref skippedProperties);
-                    SetFloatIfSupported(material, EdgeSizeProperty, plan.OutlineSize, ref changedProperties, ref skippedProperties);
-                }
-
+                    SetFloatIfSupported(material, EdgeSizeProperty, plan.OutlineSize, ref changedProperties, ref skippedProperties); }
                 if (plan.ApplyAlphaCutoff)
                 {
-                    SetFloatIfSupported(material, CutoffProperty, plan.AlphaCutoff, ref changedProperties, ref skippedProperties);
-                }
-
+                    SetFloatIfSupported(material, CutoffProperty, plan.AlphaCutoff, ref changedProperties, ref skippedProperties); }
                 if (plan.SurfaceMode != GraphicMaterialSurfaceMode.Keep)
                 {
-                    ApplySurfaceMode(material, plan.SurfaceMode, ref changedProperties, ref skippedProperties);
-                }
-
+                    ApplySurfaceMode(material, plan.SurfaceMode, ref changedProperties, ref skippedProperties); }
                 if (plan.EnableAlphaToCoverage)
                 {
-                    SetAlphaToCoverageIfSupported(material, ref changedProperties, ref skippedProperties);
-                }
-
+                    SetAlphaToCoverageIfSupported(material, ref changedProperties, ref skippedProperties); }
                 if (changedProperties > changedBeforeMaterial)
                 {
-                    changedMaterials++;
-                }
-            }
-
-            return new GraphicMaterialShaderApplyResult(
-                processedMaterials,
-                changedMaterials,
-                changedProperties,
-                skippedMaterials,
-                skippedProperties);
-        }
+                    changedMaterials++; } }
+            return new GraphicMaterialShaderApplyResult( processedMaterials, changedMaterials, changedProperties, skippedMaterials, skippedProperties); }
 
         private static void ApplySurfaceMode(
             Material material,
@@ -160,40 +135,11 @@ public static class GraphicMaterialShaderController
         {
             switch (surfaceMode)
             {
-                case GraphicMaterialSurfaceMode.Opaque:
-                    return new SurfaceState(
-                        0f,
-                        (float)BlendMode.One,
-                        (float)BlendMode.Zero,
-                        1f,
-                        -1,
-                        string.Empty);
-                case GraphicMaterialSurfaceMode.Cutout:
-                    return new SurfaceState(
-                        1f,
-                        (float)BlendMode.One,
-                        (float)BlendMode.Zero,
-                        1f,
-                        (int)RenderQueue.AlphaTest,
-                        "TransparentCutout");
-                case GraphicMaterialSurfaceMode.Fade:
-                    return new SurfaceState(
-                        2f,
-                        (float)BlendMode.SrcAlpha,
-                        (float)BlendMode.OneMinusSrcAlpha,
-                        0f,
-                        (int)RenderQueue.Transparent,
-                        "Transparent");
-                case GraphicMaterialSurfaceMode.Transparent:
-                    return new SurfaceState(
-                        3f,
-                        (float)BlendMode.One,
-                        (float)BlendMode.OneMinusSrcAlpha,
-                        0f,
-                        (int)RenderQueue.Transparent,
-                        "Transparent");
-                default:
-                    return new SurfaceState(0f, 0f, 0f, 0f, -1, string.Empty);
+                case GraphicMaterialSurfaceMode.Opaque: return new SurfaceState( 0f, (float)BlendMode.One, (float)BlendMode.Zero, 1f, -1, string.Empty);
+                case GraphicMaterialSurfaceMode.Cutout: return new SurfaceState( 1f, (float)BlendMode.One, (float)BlendMode.Zero, 1f, (int)RenderQueue.AlphaTest, "TransparentCutout");
+                case GraphicMaterialSurfaceMode.Fade: return new SurfaceState( 2f, (float)BlendMode.SrcAlpha, (float)BlendMode.OneMinusSrcAlpha, 0f, (int)RenderQueue.Transparent, "Transparent");
+                case GraphicMaterialSurfaceMode.Transparent: return new SurfaceState( 3f, (float)BlendMode.One, (float)BlendMode.OneMinusSrcAlpha, 0f, (int)RenderQueue.Transparent, "Transparent");
+                default: return new SurfaceState(0f, 0f, 0f, 0f, -1, string.Empty);
             }
         }
 

@@ -36,77 +36,38 @@ namespace Fbx2Vmd.FBXImporter
             return IsFinite(angleDegrees);
         }
 
-        internal static bool TryCalculateCorrections(
-            Vector3 opposite0,
-            Vector3 opposite1,
-            Vector3 edge0,
-            Vector3 edge1,
-            float maximumAngleDegrees,
-            float stiffness,
-            out Vector3 opposite0Correction,
-            out Vector3 opposite1Correction,
-            out Vector3 edge0Correction,
-            out Vector3 edge1Correction)
+        internal static bool TryCalculateCorrections( Vector3 opposite0, Vector3 opposite1, Vector3 edge0, Vector3 edge1, float maximumAngleDegrees, float stiffness, out Vector3 opposite0Correction, out Vector3 opposite1Correction, out Vector3 edge0Correction, out Vector3 edge1Correction)
         {
             opposite0Correction = Vector3.zero;
             opposite1Correction = Vector3.zero;
             edge0Correction = Vector3.zero;
             edge1Correction = Vector3.zero;
-
-            if (!AreFinite(opposite0, opposite1, edge0, edge1) ||
-                !IsFinite(maximumAngleDegrees) ||
-                !IsFinite(stiffness) ||
-                maximumAngleDegrees < 0f ||
-                maximumAngleDegrees > 180f ||
-                stiffness <= 0f)
+            if (!AreFinite(opposite0, opposite1, edge0, edge1) || !IsFinite(maximumAngleDegrees) || !IsFinite(stiffness) || maximumAngleDegrees < 0f || maximumAngleDegrees > 180f || stiffness <= 0f)
             {
-                return false;
-            }
-
-            if (!TryBuildGeometry(
-                    opposite0, opposite1, edge0, edge1,
-                    out DihedralGeometry geometry))
+                return false; }
+            if (!TryBuildGeometry( opposite0, opposite1, edge0, edge1, out DihedralGeometry geometry))
             {
-                return false;
-            }
-
-            float currentAngleRadians = Mathf.Acos(Mathf.Clamp(
-                Vector3.Dot(geometry.unitNormal0, geometry.unitNormal1),
-                -1f,
-                1f));
+                return false; }
+            float currentAngleRadians = Mathf.Acos(Mathf.Clamp( Vector3.Dot(geometry.unitNormal0, geometry.unitNormal1), -1f, 1f));
             float maximumAngleRadians = maximumAngleDegrees * Mathf.Deg2Rad;
-            if (!IsFinite(currentAngleRadians) ||
-                currentAngleRadians <= maximumAngleRadians)
+            if (!IsFinite(currentAngleRadians) || currentAngleRadians <= maximumAngleRadians)
             {
-                return false;
-            }
-
-            if (!TrySolveLambda(
-                    geometry, currentAngleRadians, maximumAngleRadians,
-                    stiffness, out float lambda))
+                return false; }
+            if (!TrySolveLambda( geometry, currentAngleRadians, maximumAngleRadians, stiffness, out float lambda))
             {
-                return false;
-            }
-
+                return false; }
             opposite0Correction = -lambda * geometry.gradient0;
             opposite1Correction = -lambda * geometry.gradient1;
             edge0Correction = -lambda * geometry.gradient2;
             edge1Correction = -lambda * geometry.gradient3;
-            if (AreFinite(
-                    opposite0Correction,
-                    opposite1Correction,
-                    edge0Correction,
-                    edge1Correction))
+            if (AreFinite( opposite0Correction, opposite1Correction, edge0Correction, edge1Correction))
             {
-                return true;
-            }
-
+                return true; }
             opposite0Correction = Vector3.zero;
             opposite1Correction = Vector3.zero;
             edge0Correction = Vector3.zero;
             edge1Correction = Vector3.zero;
-            return false;
-        }
+            return false; }
 
         static bool TrySolveLambda(
             DihedralGeometry geometry, float currentAngleRadians,
@@ -159,44 +120,23 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
-            Vector3 unscaledNormal0 = Vector3.Cross(
-                edge0 - opposite0,
-                edge1 - opposite0);
-            Vector3 unscaledNormal1 = Vector3.Cross(
-                edge1 - opposite1,
-                edge0 - opposite1);
+            Vector3 unscaledNormal0 = Vector3.Cross( edge0 - opposite0, edge1 - opposite0);
+            Vector3 unscaledNormal1 = Vector3.Cross( edge1 - opposite1, edge0 - opposite1);
             float normal0SquaredMagnitude = unscaledNormal0.sqrMagnitude;
             float normal1SquaredMagnitude = unscaledNormal1.sqrMagnitude;
-            if (normal0SquaredMagnitude < MinimumNormalSquaredMagnitude ||
-                normal1SquaredMagnitude < MinimumNormalSquaredMagnitude)
+            if (normal0SquaredMagnitude < MinimumNormalSquaredMagnitude || normal1SquaredMagnitude < MinimumNormalSquaredMagnitude)
             {
                 return false;
             }
-
             geometry.sharedEdge = sharedEdge;
-            geometry.gradient0 = sharedEdgeLength *
-                (unscaledNormal0 / normal0SquaredMagnitude);
-            geometry.gradient1 = sharedEdgeLength *
-                (unscaledNormal1 / normal1SquaredMagnitude);
+            geometry.gradient0 = sharedEdgeLength * (unscaledNormal0 / normal0SquaredMagnitude);
+            geometry.gradient1 = sharedEdgeLength * (unscaledNormal1 / normal1SquaredMagnitude);
             float inverseEdgeLength = 1f / sharedEdgeLength;
-            geometry.gradient2 =
-                Vector3.Dot(opposite0 - edge1, sharedEdge) * inverseEdgeLength *
-                (unscaledNormal0 / normal0SquaredMagnitude) +
-                Vector3.Dot(opposite1 - edge1, sharedEdge) * inverseEdgeLength *
-                (unscaledNormal1 / normal1SquaredMagnitude);
-            geometry.gradient3 =
-                Vector3.Dot(edge0 - opposite0, sharedEdge) * inverseEdgeLength *
-                (unscaledNormal0 / normal0SquaredMagnitude) +
-                Vector3.Dot(edge0 - opposite1, sharedEdge) * inverseEdgeLength *
-                (unscaledNormal1 / normal1SquaredMagnitude);
-
-            geometry.unitNormal0 = unscaledNormal0 /
-                Mathf.Sqrt(normal0SquaredMagnitude);
-            geometry.unitNormal1 = unscaledNormal1 /
-                Mathf.Sqrt(normal1SquaredMagnitude);
-            return true;
-        }
+            geometry.gradient2 = Vector3.Dot(opposite0 - edge1, sharedEdge) * inverseEdgeLength * (unscaledNormal0 / normal0SquaredMagnitude) + Vector3.Dot(opposite1 - edge1, sharedEdge) * inverseEdgeLength * (unscaledNormal1 / normal1SquaredMagnitude);
+            geometry.gradient3 = Vector3.Dot(edge0 - opposite0, sharedEdge) * inverseEdgeLength * (unscaledNormal0 / normal0SquaredMagnitude) + Vector3.Dot(edge0 - opposite1, sharedEdge) * inverseEdgeLength * (unscaledNormal1 / normal1SquaredMagnitude);
+            geometry.unitNormal0 = unscaledNormal0 / Mathf.Sqrt(normal0SquaredMagnitude);
+            geometry.unitNormal1 = unscaledNormal1 / Mathf.Sqrt(normal1SquaredMagnitude);
+            return true; }
 
         private static bool TryCalculateUnitNormals(
             Vector3 opposite0,
@@ -212,7 +152,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             Vector3 candidate0 = Vector3.Cross(
                 edge0 - opposite0,
                 edge1 - opposite0);
@@ -224,11 +163,9 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             normal0 = candidate0 / Mathf.Sqrt(candidate0.sqrMagnitude);
             normal1 = candidate1 / Mathf.Sqrt(candidate1.sqrMagnitude);
-            return true;
-        }
+            return true; }
 
         private static bool AreFinite(
             Vector3 value0,

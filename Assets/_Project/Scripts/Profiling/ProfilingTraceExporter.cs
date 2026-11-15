@@ -35,7 +35,6 @@ namespace Fbx2Vmd.Profiling
         {
             var sb = new StringBuilder(2048);
             sb.Append("{\"displayTimeUnit\":\"ms\",\"traceEvents\":[");
-
             bool first = true;
             if (record?.stages != null)
             {
@@ -43,32 +42,22 @@ namespace Fbx2Vmd.Profiling
                 {
                     if (stage == null)
                     {
-                        continue;
-                    }
-
+                        continue; }
                     // 스테이지 시작 시각 = 누적 시각 - 구간 소요. ts/dur는 µs가 포맷 규격이다.
                     long startUs = (long)((stage.sinceRunStartMs - stage.deltaMs) * 1000f);
                     long durationUs = (long)(stage.deltaMs * 1000f);
                     AppendEvent(sb, ref first);
                     sb.Append("{\"name\":\"").Append(EscapeJson(stage.stage)).Append("\",");
-                    sb.Append("\"cat\":\"stage\",\"ph\":\"X\",\"ts\":").Append(startUs)
-                        .Append(",\"dur\":").Append(durationUs).Append(",\"pid\":1,\"tid\":1,");
-                    sb.Append("\"args\":{\"message\":\"").Append(EscapeJson(stage.message)).Append("\"}}");
-                }
-            }
-
+                    sb.Append("\"cat\":\"stage\",\"ph\":\"X\",\"ts\":").Append(startUs) .Append(",\"dur\":").Append(durationUs).Append(",\"pid\":1,\"tid\":1,");
+                    sb.Append("\"args\":{\"message\":\"").Append(EscapeJson(stage.message)).Append("\"}}"); } }
             if (record != null && !string.IsNullOrEmpty(record.outcome))
             {
                 long endUs = (long)(record.totalMs * 1000f);
                 AppendEvent(sb, ref first);
                 sb.Append("{\"name\":\"outcome: ").Append(EscapeJson(record.outcome)).Append("\",");
-                sb.Append("\"cat\":\"run\",\"ph\":\"i\",\"s\":\"p\",\"ts\":").Append(endUs)
-                    .Append(",\"pid\":1,\"tid\":1}");
-            }
-
+                sb.Append("\"cat\":\"run\",\"ph\":\"i\",\"s\":\"p\",\"ts\":").Append(endUs) .Append(",\"pid\":1,\"tid\":1}"); }
             sb.Append("]}");
-            return sb.ToString();
-        }
+            return sb.ToString(); }
 
         private static void AppendEvent(StringBuilder sb, ref bool first)
         {
@@ -85,7 +74,6 @@ namespace Fbx2Vmd.Profiling
             {
                 return string.Empty;
             }
-
             var sb = new StringBuilder(text.Length + 8);
             foreach (char c in text)
             {
@@ -106,9 +94,7 @@ namespace Fbx2Vmd.Profiling
                             sb.Append(c);
                         }
                         break;
-                }
-            }
-            return sb.ToString();
-        }
+                } }
+            return sb.ToString(); }
     }
 }

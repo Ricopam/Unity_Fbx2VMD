@@ -62,32 +62,27 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 return result;
             }
-
             RuntimeGltfInstance loaded = null;
             try
             {
                 loaded = await VrmUtility.LoadAsync(path, CreateAwaitCaller());
-
                 if (cancellationToken.IsCancellationRequested)
                 {
                     result.cancelled = true;
                     DestroyInstance(loaded);
                     return result;
                 }
-
                 if (!TryCommitVrmInstance(loaded, result))
                 {
                     return result;
                 }
-
                 result.instance = loaded;
                 return result;
             }
             catch (Exception error)
             {
                 return FailVrmLoad(result, loaded, error);
-            }
-        }
+            } }
 
         private static bool IsMissingCharacterFile(string path, Result result)
         {

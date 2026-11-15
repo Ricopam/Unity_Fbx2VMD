@@ -76,6 +76,21 @@ namespace Fbx2Vmd.ClothPhysics
             trackedBones.Clear();
             if (setup == null)
                 return;
+            CollectTrackableBones();
+            baselines.Clear();
+            consecutivePenetrations.Clear();
+            stuckBoneIndexes.Clear();
+            for (int i = 0; i < trackedBones.Count; i++)
+            {
+                baselines.Add(float.NaN);
+                consecutivePenetrations.Add(0);
+            }
+            tracking = trackedBones.Count > 0;
+        }
+
+        // 생성된 클로스의 루트 본 자식부터 추적 대상 본을 수집함.
+        void CollectTrackableBones()
+        {
             foreach (var cloth in setup.generatedCloths)
             {
                 if (cloth == null)
@@ -92,15 +107,6 @@ namespace Fbx2Vmd.ClothPhysics
                         trackedBones.Add((t, cloth));
                 }
             }
-            baselines.Clear();
-            consecutivePenetrations.Clear();
-            stuckBoneIndexes.Clear();
-            for (int i = 0; i < trackedBones.Count; i++)
-            {
-                baselines.Add(float.NaN);
-                consecutivePenetrations.Add(0);
-            }
-            tracking = trackedBones.Count > 0;
         }
 
         /// <summary>
@@ -170,6 +176,13 @@ namespace Fbx2Vmd.ClothPhysics
                 return false;
             }
             float excess = maxDepth - baselines[i];
+            return TrackPenetrationExcess(i, p, bone.name, cloth.name, maxCol, excess);
+        }
+
+        // 기저선 초과분을 누적해 최악·연속 침투 지표를 갱신함.
+        bool TrackPenetrationExcess(
+            int i, Vector3 p, string boneName, string clothName, string maxCol, float excess)
+        {
             bool penetrated = false;
             if (excess >= penetrationWarningDepth)
             {
@@ -189,8 +202,7 @@ namespace Fbx2Vmd.ClothPhysics
                 worstPenetration = excess;
                 worstFrame = frame;
                 worstPoint = p;
-                worstInfo = $"{bone.name} -> {maxCol} ({cloth.name}) " +
-                    $"[기저 {baselines[i] * 1000f:F0}mm]";
+                worstInfo = $"{boneName} -> {maxCol} ({clothName}) " + $"[기저 {baselines[i] * 1000f:F0}mm]";
             }
             suspectedStuckBoneCount = stuckBoneIndexes.Count;
             return penetrated;
@@ -212,19 +224,25 @@ namespace Fbx2Vmd.ClothPhysics
             }
             if (col is MagicaCapsuleCollider cap)
             {
-                var size = cap.GetSize(); // (startR, endR, len)
-                Vector3 localDir = cap.GetLocalDir();
-                Vector3 center = cap.center;
-                Vector3 aLocal = center - localDir * (size.z * 0.5f);
-                Vector3 bLocal = center + localDir * (size.z * 0.5f);
-                Vector3 a = cap.transform.TransformPoint(aLocal);
-                Vector3 b = cap.transform.TransformPoint(bLocal);
-                float r = Mathf.Max(size.x, size.y) * scale;
-                float sd = ColliderMath.SignedDistanceCapsule(point, a, b, r);
-                float md = MirrorPenetration(point, col);
-                return Mathf.Max(-sd, md);
+                return MeasureCapsulePenetration(point, cap, scale);
             }
             return 0f;
+        }
+
+        // 캡슐 콜라이더의 침투 심도를 미러 측과 함께 측정함.
+        static float MeasureCapsulePenetration(Vector3 point, MagicaCapsuleCollider cap, float scale)
+        {
+            var size = cap.GetSize(); // (startR, endR, len)
+            Vector3 localDir = cap.GetLocalDir();
+            Vector3 center = cap.center;
+            Vector3 aLocal = center - localDir * (size.z * 0.5f);
+            Vector3 bLocal = center + localDir * (size.z * 0.5f);
+            Vector3 a = cap.transform.TransformPoint(aLocal);
+            Vector3 b = cap.transform.TransformPoint(bLocal);
+            float r = Mathf.Max(size.x, size.y) * scale;
+            float sd = ColliderMath.SignedDistanceCapsule(point, a, b, r);
+            float md = MirrorPenetration(point, cap);
+            return Mathf.Max(-sd, md);
         }
 
         /// <summary>
@@ -254,59 +272,49 @@ namespace Fbx2Vmd.ClothPhysics
         }
 
         /// <summary>대칭 모드·소스 포즈·대칭 타겟으로 대칭 콜라이더 월드 포즈를 계산한다.</summary>
-        public static bool TryComputeSymmetryPose(
-            ColliderSymmetryMode mode,
-            Transform src,
-            Transform target,
-            out Vector3 worldPos,
-            out Quaternion worldRot,
-            out Vector3 worldScale)
+        public static bool TryComputeSymmetryPose( ColliderSymmetryMode mode, Transform src, Transform target, out Vector3 worldPos, out Quaternion worldRot, out Vector3 worldScale)
         {
             worldPos = default;
             worldRot = default;
             worldScale = default;
-            if (target == null || src == null || mode == ColliderSymmetryMode.None)
-                return false;
-
+            if (target == null || src == null || mode == ColliderSymmetryMode.None) return false;
             Vector3 lpos = src.localPosition;
             Vector3 lrotDeg = src.localEulerAngles;
-            switch (mode)
-            {
-                case ColliderSymmetryMode.X_Symmetry:
-                    lpos.x = -lpos.x;
-                    lrotDeg.y = -lrotDeg.y;
-                    lrotDeg.z = -lrotDeg.z;
-                    break;
-                case ColliderSymmetryMode.Y_Symmetry:
-                    lpos.y = -lpos.y;
-                    lrotDeg.x = -lrotDeg.x;
-                    lrotDeg.z = -lrotDeg.z;
-                    break;
-                case ColliderSymmetryMode.Z_Symmetry:
-                    lpos.z = -lpos.z;
-                    lrotDeg.x = -lrotDeg.x;
-                    lrotDeg.y = -lrotDeg.y;
-                    break;
-                case ColliderSymmetryMode.XYZ_Symmetry:
-                    lpos = -lpos;
-                    break;
-                default:
-                    // AutomaticHumanBody/AutomaticTarget은 런타임에 구체 축으로 해석됨.
-                    // 해석되지 않은 상태면 대칭 인스턴스가 없으므로 측정 대상 아님.
-                    return false;
-            }
-
+            if (!TryMirrorLocalPose(mode, ref lpos, ref lrotDeg)) return false;
             Vector3 pscl = target.lossyScale;
-            Vector3 sclSign = new Vector3(
-                Mathf.Sign(pscl.x), Mathf.Sign(pscl.y), Mathf.Sign(pscl.z));
+            Vector3 sclSign = new Vector3( Mathf.Sign(pscl.x), Mathf.Sign(pscl.y), Mathf.Sign(pscl.z));
             Vector3 sclEulerSign = Vector3.one;
-            if (pscl.x < 0f || pscl.y < 0f || pscl.z < 0f)
-                sclEulerSign = -sclSign;
-
+            if (pscl.x < 0f || pscl.y < 0f || pscl.z < 0f) sclEulerSign = -sclSign;
             Quaternion prot = target.rotation;
             worldPos = prot * Vector3.Scale(pscl, lpos) + target.position;
             worldRot = prot * Quaternion.Euler(Vector3.Scale(lrotDeg, sclEulerSign));
             worldScale = Vector3.Scale(pscl, src.localScale);
+            return true; }
+
+        /// <summary>대칭 모드에 따라 로컬 위치·회전을 반전한다.</summary>
+        private static bool TryMirrorLocalPose(
+            ColliderSymmetryMode mode, ref Vector3 lpos, ref Vector3 lrotDeg)
+        {
+            switch (mode)
+            {
+                case ColliderSymmetryMode.X_Symmetry: lpos.x = -lpos.x;
+                    lrotDeg.y = -lrotDeg.y;
+                    lrotDeg.z = -lrotDeg.z;
+                    break;
+                case ColliderSymmetryMode.Y_Symmetry: lpos.y = -lpos.y;
+                    lrotDeg.x = -lrotDeg.x;
+                    lrotDeg.z = -lrotDeg.z;
+                    break;
+                case ColliderSymmetryMode.Z_Symmetry: lpos.z = -lpos.z;
+                    lrotDeg.x = -lrotDeg.x;
+                    lrotDeg.y = -lrotDeg.y;
+                    break;
+                case ColliderSymmetryMode.XYZ_Symmetry: lpos = -lpos;
+                    break;
+                default:
+                    // AutomaticHumanBody/AutomaticTarget은 런타임에 구체 축으로 해석됨.
+                    // 해석되지 않은 상태면 대칭 인스턴스가 없으므로 측정 대상 아님.
+                    return false; }
             return true;
         }
 
@@ -322,41 +330,31 @@ namespace Fbx2Vmd.ClothPhysics
         // 대칭 콜라이더 인스턴스에 대한 침투 검사 — MC2의 대칭 포즈 수식을 재현해 측정한다.
         static float MirrorPenetration(Vector3 point, ColliderComponent col)
         {
-            if (!TryComputeSymmetryPose(col, out Vector3 wpos, out Quaternion wrot, out Vector3 wscl))
-                return 0f;
-
+            if (!TryComputeSymmetryPose(col, out Vector3 wpos, out Quaternion wrot, out Vector3 wscl)) return 0f;
             Transform target = col.ActiveSymmetryTarget;
             Vector3 pscl = target.lossyScale;
-            var sclSign = new Vector3(
-                Mathf.Sign(pscl.x), Mathf.Sign(pscl.y), Mathf.Sign(pscl.z));
-            float radiusScale = Mathf.Max(
-                Mathf.Abs(wscl.x), Mathf.Abs(wscl.y), Mathf.Abs(wscl.z));
-
+            var sclSign = new Vector3( Mathf.Sign(pscl.x), Mathf.Sign(pscl.y), Mathf.Sign(pscl.z));
+            float radiusScale = Mathf.Max( Mathf.Abs(wscl.x), Mathf.Abs(wscl.y), Mathf.Abs(wscl.z));
             if (col is MagicaSphereCollider sphere)
             {
                 // 소스 center의 대칭 축 반사 (ColliderManager와 동일 규칙)
-                Vector3 c = MirrorLocalOffset(
-                    col.ActiveSymmetryMode ?? ColliderSymmetryMode.None, sphere.center);
+                Vector3 c = MirrorLocalOffset( col.ActiveSymmetryMode ?? ColliderSymmetryMode.None, sphere.center);
                 Vector3 cWorld = SymmetryLocalToWorld(c, wpos, wrot, wscl, sclSign);
                 float r = sphere.GetSize().x * radiusScale;
-                return -ColliderMath.SignedDistanceSphere(point, cWorld, r);
-            }
+                return -ColliderMath.SignedDistanceSphere(point, cWorld, r); }
             if (col is MagicaCapsuleCollider cap)
             {
                 var size = cap.GetSize(); // (startR, endR, len)
                 Vector3 localDir = cap.GetLocalDir();
-                Vector3 center = MirrorLocalOffset(
-                    col.ActiveSymmetryMode ?? ColliderSymmetryMode.None, cap.center);
+                Vector3 center = MirrorLocalOffset( col.ActiveSymmetryMode ?? ColliderSymmetryMode.None, cap.center);
                 // 캡슐은 축 대칭 도형이라 방향 반전 플래그는 형상에 영향 없음
                 Vector3 aLocal = center - localDir * (size.z * 0.5f);
                 Vector3 bLocal = center + localDir * (size.z * 0.5f);
                 Vector3 a = SymmetryLocalToWorld(aLocal, wpos, wrot, wscl, sclSign);
                 Vector3 b = SymmetryLocalToWorld(bLocal, wpos, wrot, wscl, sclSign);
                 float r = Mathf.Max(size.x, size.y) * radiusScale;
-                return -ColliderMath.SignedDistanceCapsule(point, a, b, r);
-            }
-            return 0f;
-        }
+                return -ColliderMath.SignedDistanceCapsule(point, a, b, r); }
+            return 0f; }
 
         /// <summary>콜라이더 로컬 오프셋(center)을 대칭 축 기준으로 반사한다.</summary>
         static Vector3 MirrorLocalOffset(ColliderSymmetryMode mode, Vector3 v)

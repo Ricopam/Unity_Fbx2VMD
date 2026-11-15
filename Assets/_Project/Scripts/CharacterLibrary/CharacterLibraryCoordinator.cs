@@ -284,49 +284,36 @@ namespace Fbx2Vmd.CharacterLibrary
         {
             SetState(LoadState.Validating);
             // Humanoid 검증은 CharacterLoader 내부에서 완료됐다.
-
             SetState(LoadState.Activating);
             try
             {
-                CharacterLibrarySceneBinding.Commit(
-                    _pipeline, entry.id, result.Root, result.instance);
-            }
-            catch (System.Exception error)
+                CharacterLibrarySceneBinding.Commit( _pipeline, entry.id, result.Root, result.instance); } catch (System.Exception error)
             {
                 // 커밋 중 오류가 나도 로드된 루트가 남지 않게 정리한다.
                 CharacterLoader.DestroyResult(result);
                 _lastError = $"캐릭터 적용 실패: {error.Message}";
                 SetState(LoadState.Failed);
-                return false;
-            }
+                return false; }
             CharacterLibraryEntry committedEntry = Registry.FindById(entry.id);
             if (committedEntry != null)
             {
                 committedEntry.compatibility.humanoidValid = true;
-                committedEntry.compatibility.checkedAtUtc =
-                    System.DateTime.UtcNow.ToString("O");
-                committedEntry.status = CharacterLibraryEntryStatus.Ready;
-            }
-
+                committedEntry.compatibility.checkedAtUtc = System.DateTime.UtcNow.ToString("O");
+                committedEntry.status = CharacterLibraryEntryStatus.Ready; }
             _activeEntryId = entry.id;
             // 기본 프리셋이 지정돼 있으면 커밋된 캐릭터에 자동 적용한다(실패해도 로드는 유지).
             if (committedEntry != null && !string.IsNullOrEmpty(committedEntry.defaultPresetId))
             {
-                TryApplyDefaultPreset(committedEntry, result.Root);
-            }
+                TryApplyDefaultPreset(committedEntry, result.Root); }
             // 저장 실패가 로드 성공 상태를 덮지 않게 격리한다.
             try
             {
-                Registry.MarkUsed(entry.id);
-            }
-            catch (System.Exception error)
+                Registry.MarkUsed(entry.id); } catch (System.Exception error)
             {
                 Debug.LogException(error);
-                _lastError = $"라이브러리 기록 저장 실패: {error.Message}";
-            }
+                _lastError = $"라이브러리 기록 저장 실패: {error.Message}"; }
             SetState(LoadState.Active);
-            return true;
-        }
+            return true; }
 
         /// <summary>
         /// 라이브러리 캐릭터를 제거하고 스왑 전 씬 캐릭터로 되돌린다.
@@ -337,36 +324,25 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 return false;
             }
-
             if (!EnsurePipeline())
             {
                 _lastError = "씬에 FBXVmdPipeline이 없습니다.";
-                return false;
-            }
-
-            bool restored = CharacterLibrarySceneBinding.Restore(
-                _pipeline, out bool removedLibraryCharacter);
+                return false; }
+            bool restored = CharacterLibrarySceneBinding.Restore( _pipeline, out bool removedLibraryCharacter);
             if (restored || removedLibraryCharacter)
             {
                 _activeEntryId = string.Empty;
                 try
                 {
-                    Registry.ClearActiveCharacter();
-                }
-                catch (System.Exception error)
+                    Registry.ClearActiveCharacter(); } catch (System.Exception error)
                 {
-                    Debug.LogException(error);
-                }
-                SetState(LoadState.Idle);
-            }
+                    Debug.LogException(error); }
+                SetState(LoadState.Idle); }
             if (!restored)
             {
                 _lastError = removedLibraryCharacter
-                    ? "라이브러리 캐릭터를 제거했습니다. 이전 씬 캐릭터는 다른 캐릭터가 사용 중이거나 찾지 못했습니다."
-                    : "복원할 라이브러리 캐릭터가 없습니다.";
-            }
-            return restored;
-        }
+                    ? "라이브러리 캐릭터를 제거했습니다. 이전 씬 캐릭터는 다른 캐릭터가 사용 중이거나 찾지 못했습니다." : "복원할 라이브러리 캐릭터가 없습니다."; }
+            return restored; }
 
         public void CancelLoading()
         {
@@ -394,30 +370,21 @@ namespace Fbx2Vmd.CharacterLibrary
                 {
                     return;
                 }
-
                 TargetIdlePoseGuard guard = _pipeline != null
                     ? _pipeline.GetComponent<TargetIdlePoseGuard>()
                     : null;
-                List<string> warnings = CharacterPresetSnapshot.Apply(
-                    preset, _pipeline, characterRoot, guard);
+                List<string> warnings = CharacterPresetSnapshot.Apply( preset, _pipeline, characterRoot, guard);
                 if (warnings.Count > 0)
                 {
                     string summary = $"프리셋 '{preset.name}' 일부 미적용({warnings.Count}건)";
-                    Debug.LogWarning(
-                        $"[CharacterLibrary] {summary}: {string.Join(", ", warnings)}");
+                    Debug.LogWarning( $"[CharacterLibrary] {summary}: {string.Join(", ", warnings)}");
                     _lastError = string.IsNullOrEmpty(_lastError)
                         ? summary
-                        : _lastError + " | " + summary;
-                }
-            }
-            catch (System.Exception error)
+                        : _lastError + " | " + summary; } } catch (System.Exception error)
             {
                 Debug.LogException(error);
                 _lastError = string.IsNullOrEmpty(_lastError)
-                    ? $"프리셋 적용 실패: {error.Message}"
-                    : _lastError + $" | 프리셋 적용 실패: {error.Message}";
-            }
-        }
+                    ? $"프리셋 적용 실패: {error.Message}" : _lastError + $" | 프리셋 적용 실패: {error.Message}"; } }
 
         /// <summary>
         /// 저장 예외를 로깅만 하고 상태 머신 진행은 막지 않는다.

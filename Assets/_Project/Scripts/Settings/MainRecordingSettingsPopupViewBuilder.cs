@@ -92,46 +92,26 @@ namespace Fbx2Vmd.Settings
             out Button closeButton,
             out TextMeshProUGUI notificationText)
         {
-            elementBuilder.CreateText("MainTitle", parent, MainRecordingSettingsLayoutSpec.WindowTitle, 22,
-                new Color32(52, 64, 76, 255), FontStyles.Bold,
-                TextAlignmentOptions.MidlineLeft, new Rect(
-                    MainRecordingSettingsLayoutSpec.MainX,
-                    MainRecordingSettingsLayoutSpec.TitleY,
-                    360f,
-                    34f));
+            elementBuilder.CreateText("MainTitle", parent, MainRecordingSettingsLayoutSpec.WindowTitle, 22, new Color32(52, 64, 76, 255), FontStyles.Bold, TextAlignmentOptions.MidlineLeft, new Rect(
+                    MainRecordingSettingsLayoutSpec.MainX, MainRecordingSettingsLayoutSpec.TitleY, 360f, 34f));
 
             Rect viewportRect = new Rect(305f, 31f, 950f, 644f);
             RectTransform viewport = elementBuilder.CreateRectTransform("MainViewport", parent, viewportRect);
             viewport.gameObject.AddComponent<RectMask2D>();
-            RectTransform content = elementBuilder.CreateRectTransform(
-                "MainContent",
-                viewport,
-                new Rect(0f, 0f, viewportRect.width, 780f));
+            RectTransform content = elementBuilder.CreateRectTransform( "MainContent", viewport, new Rect(0f, 0f, viewportRect.width, 780f));
 
             MainRecordingSettingsCardSpec[] cards = MainRecordingSettingsLayoutSpec.Cards;
             var cardButtons = new Button[cards.Length];
             for (int i = 0; i < cards.Length; i++)
             {
-                float y = (MainRecordingSettingsLayoutSpec.CardY - viewportRect.y) +
-                          (i * (MainRecordingSettingsLayoutSpec.CardHeight + MainRecordingSettingsLayoutSpec.CardGap));
-                cardButtons[i] = BuildCard(content, cards[i], new Rect(
-                    MainRecordingSettingsLayoutSpec.CardX - viewportRect.x,
-                    y,
-                    MainRecordingSettingsLayoutSpec.CardWidth,
-                    MainRecordingSettingsLayoutSpec.CardHeight),
-                    elementBuilder);
+                float y = (MainRecordingSettingsLayoutSpec.CardY - viewportRect.y) + (i * (MainRecordingSettingsLayoutSpec.CardHeight + MainRecordingSettingsLayoutSpec.CardGap));
+                cardButtons[i] = BuildCard(content, cards[i], new Rect( MainRecordingSettingsLayoutSpec.CardX - viewportRect.x, y, MainRecordingSettingsLayoutSpec.CardWidth,
+                    MainRecordingSettingsLayoutSpec.CardHeight), elementBuilder);
             }
 
-            elementBuilder.CreateImage("StaticScrollbar", parent, new Rect(1257f, 34f, 4f, 406f),
-                MainRecordingSettingsLayoutSpec.ActiveColor);
-            closeButton = elementBuilder.CreateButton(
-                "CloseButton",
-                parent,
-                "닫기",
-                new Rect(1190f, 632f, 56f, 32f),
-                true);
-            notificationText = elementBuilder.CreateText("Notification", parent, string.Empty, 13,
-                new Color32(80, 88, 96, 255), FontStyles.Normal,
+            elementBuilder.CreateImage("StaticScrollbar", parent, new Rect(1257f, 34f, 4f, 406f), MainRecordingSettingsLayoutSpec.ActiveColor);
+            closeButton = elementBuilder.CreateButton( "CloseButton", parent, "닫기", new Rect(1190f, 632f, 56f, 32f), true);
+            notificationText = elementBuilder.CreateText("Notification", parent, string.Empty, 13, new Color32(80, 88, 96, 255), FontStyles.Normal,
                 TextAlignmentOptions.MidlineRight, new Rect(860f, 632f, 300f, 32f));
             return cardButtons;
         }

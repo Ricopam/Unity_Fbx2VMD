@@ -107,22 +107,16 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 for (int f = 0; f < SpringBoneFields.Length; f++)
                 {
-                    FieldInfo field = typeof(VRMSpringBone).GetField(
-                        SpringBoneFields[f],
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    FieldInfo field = typeof(VRMSpringBone).GetField( SpringBoneFields[f], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                     if (field == null)
                     {
                         continue;
                     }
-                    if (TryEncode(field.GetValue(springs[i]), field.FieldType,
-                            out string type, out string value))
+                    if (TryEncode(field.GetValue(springs[i]), field.FieldType, out string type, out string value))
                     {
                         preset.sections.physics.Add(new PresetFieldValue
                         {
-                            key = $"spring[{i}].{SpringBoneFields[f]}",
-                            type = type,
-                            value = value,
-                        });
+                            key = $"spring[{i}].{SpringBoneFields[f]}", type = type, value = value, });
                     }
                 }
             }
@@ -349,9 +343,7 @@ namespace Fbx2Vmd.CharacterLibrary
                 int open = field.key.IndexOf('[');
                 int close = field.key.IndexOf(']');
                 int dot = field.key.IndexOf('.', close < 0 ? 0 : close);
-                if (open < 0 || close <= open || dot <= close ||
-                    !field.key.StartsWith(SpringKeyPrefix, StringComparison.Ordinal) ||
-                    !int.TryParse(field.key.Substring(open + 1, close - open - 1),
+                if (open < 0 || close <= open || dot <= close || !field.key.StartsWith(SpringKeyPrefix, StringComparison.Ordinal) || !int.TryParse(field.key.Substring(open + 1, close - open - 1),
                         NumberStyles.Integer, CultureInfo.InvariantCulture, out int index))
                 {
                     warnings.Add($"알 수 없는 물리 키: {field.key}");

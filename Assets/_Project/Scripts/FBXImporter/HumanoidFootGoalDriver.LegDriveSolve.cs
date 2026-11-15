@@ -54,21 +54,16 @@ namespace Fbx2Vmd.FBXImporter
                     if (ground != null && ground.TryFindGround(SupportedPosition, out RaycastHit supportGround))
                     {
                         supportNormal = supportGround.normal;
-                        Vector3 projectedGoal = SupportedPosition + Vector3.ProjectOnPlane(
-                            sourceGoal - SupportedPosition, supportNormal);
+                        Vector3 projectedGoal = SupportedPosition + Vector3.ProjectOnPlane( sourceGoal - SupportedPosition, supportNormal);
                         // 같은 지지면에서는 핀이 접지 자세를 덮지 않도록 발 모임 가중치만큼 보호함.
-                        if (ground.TryFindGround(projectedGoal, out RaycastHit goalGround) &&
-                            (goalGround.normal - supportNormal).sqrMagnitude <= 0.00000001f &&
-                            Mathf.Abs(Vector3.Dot(goalGround.point - supportGround.point, supportNormal)) <=
-                            Reach * HumanoidFootGrounding.SoleClearancePerHumanScale)
+                        if (ground.TryFindGround(projectedGoal, out RaycastHit goalGround) && (goalGround.normal - supportNormal).sqrMagnitude <= 0.00000001f &&
+                            Mathf.Abs(Vector3.Dot(goalGround.point - supportGround.point, supportNormal)) <= Reach * HumanoidFootGrounding.SoleClearancePerHumanScale)
                             separationFraction = Mathf.Max(separationFraction, separationWeight);
                     }
                     if (separationFraction > 0f)
                     {
-                        sourceGoal = Vector3.Lerp(sourceGoal, SupportedPosition + Vector3.ProjectOnPlane(
-                            sourceGoal - SupportedPosition, supportNormal), separationFraction);
-                        rawSourceGoal = Vector3.Lerp(rawSourceGoal, SupportedPosition + Vector3.ProjectOnPlane(
-                            rawSourceGoal - SupportedPosition, supportNormal), separationFraction);
+                        sourceGoal = Vector3.Lerp(sourceGoal, SupportedPosition + Vector3.ProjectOnPlane( sourceGoal - SupportedPosition, supportNormal), separationFraction);
+                        rawSourceGoal = Vector3.Lerp(rawSourceGoal, SupportedPosition + Vector3.ProjectOnPlane( rawSourceGoal - SupportedPosition, supportNormal), separationFraction);
                         goalFrame = Quaternion.Slerp(goalFrame, _supportedFrame, separationFraction);
                     }
                 }
@@ -166,10 +161,7 @@ namespace Fbx2Vmd.FBXImporter
                         // 감쇠 중 재핀이면 현재 유효 목표(블렌드 위치)로 앵커를
                         // 이어 잡아 정박 지점이 생목표로 단발 점프하지 않게 함.
                         _pinAnchor = _pinReleased && _pinAnchorValid
-                            ? new Vector3(
-                                Mathf.Lerp(goalWorld.x, _pinAnchor.x, Weight),
-                                goalWorld.y,
-                                Mathf.Lerp(goalWorld.z, _pinAnchor.z, Weight))
+                            ? new Vector3( Mathf.Lerp(goalWorld.x, _pinAnchor.x, Weight), goalWorld.y, Mathf.Lerp(goalWorld.z, _pinAnchor.z, Weight))
                             : goalWorld;
                         _pinAnchorValid = true;
                         _pinReleased = false;
@@ -213,12 +205,10 @@ namespace Fbx2Vmd.FBXImporter
                 if (SolveWeight <= 0f) return;
                 // 지지 해제 중 목표 변화가 없으면 앞 단계의 무릎 자세까지 보존함.
                 // 골반이 이동하면 현재 발과 목표가 달라지므로 지지 보존 IK를 계속 적용함.
-                if (!HasValidatedSupport && SourceSolveWeight <= 0f &&
-                    EffectiveGoal.Equals(Foot.position))
+                if (!HasValidatedSupport && SourceSolveWeight <= 0f && EffectiveGoal.Equals(Foot.position))
                 {
                     LastUsedBendNormal = bendNormal;
-                    return;
-                }
+                    return; }
                 Quaternion goalFrame = _effectiveFrame;
                 Quaternion upperRotation = Upper.rotation;
                 Quaternion lowerRotation = Lower.rotation;
@@ -227,8 +217,7 @@ namespace Fbx2Vmd.FBXImporter
                 bool hasInputFrame = _binding != null && _binding.TryCaptureWorldFrame(out inputFrame);
                 bendNormal = ResolveBendNormal(upperRotation, bendNormal);
                 LastUsedBendNormal = bendNormal;
-                bool solved = HumanoidLegPoseSolver.TrySolve(Upper, Lower, Foot,
-                    EffectiveGoal, bendNormal, out float targetError);
+                bool solved = HumanoidLegPoseSolver.TrySolve(Upper, Lower, Foot, EffectiveGoal, bendNormal, out float targetError);
                 CaptureDebugSolveInputs(bendNormal);
                 DebugSolveSucceeded = solved;
                 DebugTargetError = targetError;
@@ -240,17 +229,14 @@ namespace Fbx2Vmd.FBXImporter
                     Quaternion solvedFootRotation = Foot.rotation;
                     Upper.rotation = Quaternion.Slerp(upperRotation, solvedUpperRotation, SolveWeight);
                     Lower.rotation = Quaternion.Slerp(lowerRotation, solvedLowerRotation, SolveWeight);
-                    Foot.rotation = Quaternion.Slerp(footRotation, solvedFootRotation, SolveWeight);
-                }
+                    Foot.rotation = Quaternion.Slerp(footRotation, solvedFootRotation, SolveWeight); }
                 // 발 회전 — 목표 프레임(grounded 시 정렬+soft-cap 반영됨)을 가중 적용.
                 if (!hasInputFrame)
                 {
-                    return;
-                }
+                    return; }
                 // 부모 IK가 만든 회전을 보간 시작값에 섞지 않도록 입력 발 회전을 유지함.
                 Quaternion blended = Quaternion.Slerp(inputFrame, goalFrame, SolveWeight);
-                _binding.TryApplyWorldFrame(blended);
-            }
+                _binding.TryApplyWorldFrame(blended); }
 
             private Vector3 ResolveBendNormal(Quaternion upperRotation, Vector3 bendNormal)
             {
@@ -259,39 +245,27 @@ namespace Fbx2Vmd.FBXImporter
                 // 가중 정합해 굽힘면을 고정함. 기준이 없거나 정합이 퇴화하면
                 // 기존 입력·캐시 경로로 폴백함.
                 Vector3 referenceNormal = upperRotation * _referenceNormal;
-                bool bendAligned = HumanoidLegPoseSolver.TryCalculateBendNormal(
-                    Lower.position - Upper.position,
-                    Foot.position - Lower.position,
-                    EffectiveGoal - Upper.position,
+                bool bendAligned = HumanoidLegPoseSolver.TryCalculateBendNormal( Lower.position - Upper.position, Foot.position - Lower.position, EffectiveGoal - Upper.position,
                     referenceNormal, out bendNormal, out float referenceWeight);
                 if (bendAligned)
                 {
                     _lastBendNormal = bendNormal;
-                }
-                else if (IsStableBendNormal(referenceNormal))
+                } else if (IsStableBendNormal(referenceNormal))
                 {
                     bendNormal = referenceNormal;
-                    _lastBendNormal = bendNormal;
-                }
-                else
+                    _lastBendNormal = bendNormal; } else
                 {
                     // 정합 실패 시 out은 zero — 캐시 유지가 우선. 경계값(1~3°)의
                     // 현재 자세 cross는 잡음성이라 캐시를 덮어쓰면 굽힘면이
                     // 프레임마다 흔들리므로 자세 cross는 캐시가 비어 있을 때만 시드로 씀.
                     if (!IsStableBendNormal(_lastBendNormal))
                     {
-                        Vector3 currentBendNormal = Vector3.Cross(
-                            Lower.position - Upper.position,
-                            Foot.position - Lower.position);
+                        Vector3 currentBendNormal = Vector3.Cross( Lower.position - Upper.position, Foot.position - Lower.position);
                         if (IsStableBendNormal(currentBendNormal))
                         {
-                            _lastBendNormal = currentBendNormal;
-                        }
-                    }
-                    bendNormal = _lastBendNormal;
-                }
-                return bendNormal;
-            }
+                            _lastBendNormal = currentBendNormal; } }
+                    bendNormal = _lastBendNormal; }
+                return bendNormal; }
 
             private void CaptureDebugSolveInputs(Vector3 bendNormal)
             {

@@ -54,8 +54,7 @@ namespace Fbx2Vmd.FBXImporter
         private void Apply(Leg leg, Vector3 bendNormal, bool isLeft,
             HumanoidFootGrounding grounding)
         {
-            if (leg.Upper == null || leg.Lower == null || leg.Foot == null ||
-                !TryConstrainFootTarget(isLeft, leg.Foot.position, grounding, out Vector3 target))
+            if (leg.Upper == null || leg.Lower == null || leg.Foot == null || !TryConstrainFootTarget(isLeft, leg.Foot.position, grounding, out Vector3 target))
                 return;
 
             if ((target - leg.Foot.position).sqrMagnitude <= 0.0000000001f)
@@ -65,11 +64,8 @@ namespace Fbx2Vmd.FBXImporter
             // 그 방향이 정답이다. stale·부호반전된 전달 법선을 그대로 쓰면
             // 무릎이 반대편에 배치되므로 자세 cross를 우선하고, 무릎이 거의
             // 펴져 자세 cross가 퇴화할 때만 전달 법선을 폴백으로 사용함.
-            Vector3 poseNormal = Vector3.Cross(
-                leg.Lower.position - leg.Upper.position,
-                leg.Foot.position - leg.Lower.position);
-            float stableThreshold =
-                (leg.Lower.position - leg.Upper.position).magnitude *
+            Vector3 poseNormal = Vector3.Cross( leg.Lower.position - leg.Upper.position, leg.Foot.position - leg.Lower.position);
+            float stableThreshold = (leg.Lower.position - leg.Upper.position).magnitude *
                 (leg.Foot.position - leg.Lower.position).magnitude *
                 MinimumStableBendSine;
             stableThreshold *= stableThreshold;
@@ -82,8 +78,7 @@ namespace Fbx2Vmd.FBXImporter
             Quaternion footRotation = leg.Foot.rotation;
             Quaternion toeRotation = leg.Toes == null ? Quaternion.identity : leg.Toes.rotation;
             // 지면이 멀면 solver의 도달 한계를 사용하며 본 위치나 scale을 늘리지 않음.
-            IKSolverTrigonometric.Solve(
-                leg.Upper, leg.Lower, leg.Foot, target, bendNormal, 1f);
+            IKSolverTrigonometric.Solve( leg.Upper, leg.Lower, leg.Foot, target, bendNormal, 1f);
             leg.Foot.rotation = footRotation;
             if (leg.Toes != null)
                 leg.Toes.rotation = toeRotation;

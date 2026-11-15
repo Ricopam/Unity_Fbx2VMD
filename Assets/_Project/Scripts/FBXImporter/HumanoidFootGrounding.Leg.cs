@@ -32,12 +32,6 @@ namespace Fbx2Vmd.FBXImporter
             private Quaternion _upperRotation, _lowerRotation, _footRotation, _toeRotation;
             private Quaternion _originalFootRotation, _originalUpperRotation, _targetFootRotation;
             private Vector3 _upperToKnee, _kneeToFoot, _originalFootPosition, _target;
-            private float _support, _clearance, _maximumReach;
-            private RaycastHit _ground;
-            // 착지 램프 중 목표 발 회전의 프레임당 변화 상한에 사용하는 직전 상태임.
-            private Quaternion _prevTargetFootRotation;
-            private float _prevSupport;
-            private bool _hasPrevTargetRot;
 
             internal readonly struct TargetState
             {
@@ -175,10 +169,8 @@ namespace Fbx2Vmd.FBXImporter
                         frameRate, referenceHeights, sourceScale / 30f, sourceScale / 6f,
                         0.1f, 0.1f, out _weights))
                     return false;
-
                 // 확정된 지지 의도 구간 안에서 감지된 접촉은 빠르게 잠금함(터치다운 비대칭 전이).
                 HumanoidFootAnchorPolicyResolver.ApplyTouchdownLock(_weights, intents);
-
                 // 역할 배열을 먼저 확정하여 임의 탐색 순서에도 같은 접촉 계획을 사용함.
                 if (hasRelativeHeights)
                 {
@@ -186,15 +178,10 @@ namespace Fbx2Vmd.FBXImporter
                             frameRate, sourceScale / 300f, 0.1f, out Vector2[] roleWeights))
                         return false;
                     _weights = roleWeights;
-                    _hasSupportRoles = true;
-                }
+                    _hasSupportRoles = true; }
                 _relativeHeights = relativeHeights;
                 _nearLevelHeight = sourceScale / 70f;
-
-                return BuildAnchorPlan(
-                    intents, sourceScale, scaleRatio, frameRate, clipLength,
-                    evaluate, sourceRotation, sourceFrames, hasSourceFrames);
-            }
+                return BuildAnchorPlan( intents, sourceScale, scaleRatio, frameRate, clipLength, evaluate, sourceRotation, sourceFrames, hasSourceFrames); }
 
             // 의도 구간을 프레임별 앵커 방침으로 변환하고 자유 구간은 속도 상한을 둠.
             private bool BuildAnchorPlan(
@@ -275,16 +262,13 @@ namespace Fbx2Vmd.FBXImporter
                     {
                         if (!TryGetReleaseRange(frame, out int end, out int channel, out var contact))
                             continue;
-
                         evaluate(Mathf.Min(frame / frameRate, clipLength));
                         CapturePose();
                         if (!TryCalculateTarget(frame, ground, humanScale) || !HasGround ||
                             _support < 0.999f || Diagnostic.mixed_ground_collider)
                             continue;
-
                         // 마지막 지지에서 골반을 내릴 이유가 없는 다리의 해제 궤적은 보존함.
                         if (!NeedsPelvisLowering()) continue;
-
                         var reference = new ReleaseReference(frame, channel, contact.FirstPoint,
                             contact.Anchor, _target - _originalFootPosition, _ground);
                         for (int index = frame; index < end; index++)
@@ -295,9 +279,7 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     _hasPrevTargetRot = false;
                     _prevSupport = 0f;
-                    Diagnostic.Reset();
-                }
-            }
+                    Diagnostic.Reset(); } }
 
             private static int GetSingleSupportChannel(Vector2 weights)
             {

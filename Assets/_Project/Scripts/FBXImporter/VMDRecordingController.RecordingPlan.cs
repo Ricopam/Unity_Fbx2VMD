@@ -121,50 +121,31 @@ namespace Fbx2Vmd.FBXImporter
             FBXEditorDiagnosticSession editorDiagnosticSession,
             HumanoidSampleCode recorderController)
         {
-            float requestedDuration = Mathf.Max(
-                0.1f,
-                editorDiagnosticSession.DurationSeconds);
-            bool hasEditorSmokeTimingOverride =
-                !float.IsNaN(editorDiagnosticSession.RecordingStartTimeOverrideSeconds) ||
-                !float.IsNaN(editorDiagnosticSession.RecordingPlaybackSpeedOverride);
-            plan.startTime = FBXEditorDiagnosticPlanner.CalculateStartTime(
-                clip,
-                requestedDuration,
-                editorDiagnosticSession.Segment);
+            float requestedDuration = Mathf.Max( 0.1f, editorDiagnosticSession.DurationSeconds);
+            bool hasEditorSmokeTimingOverride = !float.IsNaN(editorDiagnosticSession.RecordingStartTimeOverrideSeconds) || !float.IsNaN(editorDiagnosticSession.RecordingPlaybackSpeedOverride);
+            plan.startTime = FBXEditorDiagnosticPlanner.CalculateStartTime( clip, requestedDuration, editorDiagnosticSession.Segment);
             if (!float.IsNaN(editorDiagnosticSession.RecordingStartTimeOverrideSeconds))
             {
-                plan.startTime = Mathf.Clamp(
-                    editorDiagnosticSession.RecordingStartTimeOverrideSeconds,
-                    0f,
-                    Mathf.Max(0f, clip.length));
+                plan.startTime = Mathf.Clamp( editorDiagnosticSession.RecordingStartTimeOverrideSeconds, 0f, Mathf.Max(0f, clip.length));
             }
 
             if (!float.IsNaN(editorDiagnosticSession.RecordingPlaybackSpeedOverride))
             {
-                plan.playbackSpeed =
-                    editorDiagnosticSession.RecordingPlaybackSpeedOverride;
+                plan.playbackSpeed = editorDiagnosticSession.RecordingPlaybackSpeedOverride;
             }
 
             float safePlaybackSpeed = Mathf.Max(0.0001f, plan.playbackSpeed);
             float remainingLength = Mathf.Max(0.1f, (clip.length - plan.startTime) / safePlaybackSpeed);
             plan.length = Mathf.Min(requestedDuration, remainingLength);
-            plan.targetFrameCount = Mathf.Min(
-                Mathf.Max(1, editorDiagnosticSession.TargetFrameCount),
-                Mathf.CeilToInt(plan.length * FBXVmdPipeline.EDITOR_DIAGNOSTIC_SMOKE_FRAME_RATE));
+            plan.targetFrameCount = Mathf.Min( Mathf.Max(1, editorDiagnosticSession.TargetFrameCount), Mathf.CeilToInt(plan.length * FBXVmdPipeline.EDITOR_DIAGNOSTIC_SMOKE_FRAME_RATE));
             plan.outputBaseName = editorDiagnosticSession.UseInputBaseName
                 ? outputBaseName
-                : FBXEditorDiagnosticPlanner.BuildOutputBaseName(
-                    outputBaseName, plan.length, editorDiagnosticSession.Segment);
+                : FBXEditorDiagnosticPlanner.BuildOutputBaseName( outputBaseName, plan.length, editorDiagnosticSession.Segment);
             plan.comparisonLabel = $"auto_{plan.outputBaseName}";
-            Debug.Log(
-                $"[Recording] 에디터 스모크 녹화 제한 적용됨. VMD={plan.outputBaseName}.vmd, " +
-                $"segment={FBXEditorDiagnosticPlanner.GetSegmentLabel(editorDiagnosticSession.Segment)}, " +
-                $"start={plan.startTime:F2}s, duration={plan.length:F2}s, " +
-                $"targetFrameCount={plan.targetFrameCount}");
+            Debug.Log( $"[Recording] 에디터 스모크 녹화 제한 적용됨. VMD={plan.outputBaseName}.vmd, " + $"segment={FBXEditorDiagnosticPlanner.GetSegmentLabel(editorDiagnosticSession.Segment)}, " +
+                $"start={plan.startTime:F2}s, duration={plan.length:F2}s, " + $"targetFrameCount={plan.targetFrameCount}");
 
-            TryApplyEditorReferenceTiming(
-                ref plan, clip, outputBaseName, editorDiagnosticSession,
-                recorderController, hasEditorSmokeTimingOverride);
+            TryApplyEditorReferenceTiming( ref plan, clip, outputBaseName, editorDiagnosticSession, recorderController, hasEditorSmokeTimingOverride);
         }
 
         void TryApplyEditorReferenceTiming(
@@ -230,5 +211,56 @@ namespace Fbx2Vmd.FBXImporter
                 recorderController.vmdRecorder.DropLateFrameBacklogWhenNotUsingCaptureFramerate = false;
             }
         }
+
+        public static int ResolvePrewarmFrameCount(int configuredFrameCount)
+        {
+            return Mathf.Clamp(configuredFrameCount, 0, FBXVmdPipeline.MAX_RETARGET_PREWARM_FRAME_COUNT);
+        }
+
+        public static int ResolvePrewarmFrameCountForRecordingMode(
+            int configuredFrameCount,
+            bool shouldStartVmdRecording)
+        {
+            return shouldStartVmdRecording
+                ? ResolvePrewarmFrameCount(configuredFrameCount)
+                : 0;
+        }
+
+        public static int ResolveVisiblePrewarmYieldFrameCountForRecordingMode(
+            int configuredFrameCount,
+            bool shouldStartVmdRecording)
+        {
+            if (!shouldStartVmdRecording)
+            {
+                return 0;
+            }
+
+            int prewarmFrames = ResolvePrewarmFrameCount(configuredFrameCount);
+            return prewarmFrames > 0 ? prewarmFrames : 1;
+        }
+
+        public static bool ShouldStartVmdRecording(bool shouldRecordVmdAfterImport)
+        {
+            return shouldRecordVmdAfterImport;
+        }
+
+        /// <summary>
+        /// 녹화 모드에 따라 시작 지연 시간을 해석함. 녹화하지 않으면 0을 반환함.
+        /// </summary>
+        public static float ResolveStartDelay(float configuredStartDelay, bool shouldStartVmdRecording)
+        {
+            if (!shouldStartVmdRecording)
+            {
+                return 0f;
+            }
+
+            if (float.IsNaN(configuredStartDelay) || float.IsInfinity(configuredStartDelay))
+            {
+                return 0f;
+            }
+
+            return Mathf.Clamp(configuredStartDelay, 0f, 10f);
+        }
+
     }
 }

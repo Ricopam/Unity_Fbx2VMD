@@ -97,33 +97,24 @@ namespace Fbx2Vmd.FBXImporter
             {
                 if (skin == null || skin.sharedMesh == null)
                     continue;
-
                 Transform[] bones = skin.bones;
                 int supportIndex = Array.IndexOf(bones, support);
                 if (supportIndex < 0)
                     continue;
-
                 int driverIndex = Array.IndexOf(bones, driver);
                 Matrix4x4[] bindposes = skin.sharedMesh.bindposes;
                 if (driverIndex < 0 || driverIndex >= bindposes.Length || supportIndex >= bindposes.Length)
                     return false;
-
                 Matrix4x4 relative = bindposes[driverIndex] * bindposes[supportIndex].inverse;
                 if (!IsRigidRotation(relative))
                     return false;
-
                 Quaternion candidate = relative.rotation;
-                if (hasOffset && Quaternion.Angle(offset, candidate) > 0.05f)
-                    return false;
-
+                if (hasOffset && Quaternion.Angle(offset, candidate) > 0.05f) return false;
                 offset = candidate;
                 hasOffset = true;
                 var weights = skin.sharedMesh.GetAllBoneWeights();
-                for (int index = 0; index < weights.Length && !hasWeight; index++)
-                    hasWeight = weights[index].boneIndex == supportIndex && weights[index].weight > 0f;
-            }
-            return hasOffset && hasWeight;
-        }
+                for (int index = 0; index < weights.Length && !hasWeight; index++) hasWeight = weights[index].boneIndex == supportIndex && weights[index].weight > 0f; }
+            return hasOffset && hasWeight; }
 
         private static bool IsRigidRotation(Matrix4x4 matrix)
         {

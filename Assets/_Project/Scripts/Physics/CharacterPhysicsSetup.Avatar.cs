@@ -48,11 +48,8 @@ namespace Fbx2Vmd.ClothPhysics
                 saved++;
             }
             UnityEditor.AssetDatabase.Refresh();
-            lastReport = $"캐릭터 프리셋 {saved}개 저장 (키 '{key}') — " +
-                "Resources/PhysicsPresets/Character/. 적용하려면 " +
-                "characterPresetKey에 같은 키를 입력하세요.";
-            Debug.Log("[CharacterPhysicsSetup] " + lastReport, this);
-        }
+            lastReport = $"캐릭터 프리셋 {saved}개 저장 (키 '{key}') — " + "Resources/PhysicsPresets/Character/. 적용하려면 " + "characterPresetKey에 같은 키를 입력하세요.";
+            Debug.Log("[CharacterPhysicsSetup] " + lastReport, this); }
 
         /// <summary>
         /// Avatar가 비어있을 때 모델 원본에서 Humanoid Avatar를 찾아 할당한다.
@@ -64,9 +61,7 @@ namespace Fbx2Vmd.ClothPhysics
         {
             if (animator.avatar != null)
                 return animator.avatar.isHuman;
-
             var candidatePaths = CollectAvatarCandidatePaths(animator);
-
             var tried = new List<Avatar>();
             foreach (var path in candidatePaths)
             {
@@ -76,17 +71,14 @@ namespace Fbx2Vmd.ClothPhysics
                         tried.Add(avatar);
                 }
             }
-
             foreach (var avatar in tried)
             {
                 animator.avatar = avatar;
                 // 호환성 검증: Head 본이 해결되지 않으면 다른 스켈레톤의 Avatar
                 if (animator.isHuman && animator.GetBoneTransform(HumanBodyBones.Head) != null)
-                    return true;
-            }
+                    return true; }
             animator.avatar = null;
-            return false;
-        }
+            return false; }
 
         private List<string> CollectAvatarCandidatePaths(Animator animator)
         {

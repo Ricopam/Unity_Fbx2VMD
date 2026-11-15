@@ -94,10 +94,7 @@ namespace Fbx2Vmd.FBXImporter
                 return FBXModelImportResult.Fail(sourceValidationError);
             }
 
-            _pipeline.SetSessionState(
-                FBXVmdPipeline.FBXSessionState.Selected,
-                $"선택됨: {Path.GetFileName(sourcePath)}",
-                0.05f);
+            _pipeline.SetSessionState( FBXVmdPipeline.FBXSessionState.Selected, $"선택됨: {Path.GetFileName(sourcePath)}", 0.05f);
             string targetPath = CopyToControlledImportFolder(sourcePath);
             string outputBaseName = Path.GetFileNameWithoutExtension(targetPath);
             if (shouldRecordVmdAfterImport)
@@ -109,10 +106,7 @@ namespace Fbx2Vmd.FBXImporter
                 Debug.Log($"[FBXImport] Unity 촬영 전용 모드 선택됨. 출력={outputBaseName}, VMD 자동 녹화=생략");
             }
 
-            _pipeline.SetSessionState(
-                FBXVmdPipeline.FBXSessionState.Copied,
-                $"복제 완료: {Path.GetFileName(targetPath)}",
-                0.15f);
+            _pipeline.SetSessionState( FBXVmdPipeline.FBXSessionState.Copied, $"복제 완료: {Path.GetFileName(targetPath)}", 0.15f);
             try
             {
                 PipelineRunProfiler.SetContext(inputBytes: new FileInfo(targetPath).Length);
@@ -121,10 +115,7 @@ namespace Fbx2Vmd.FBXImporter
 
             ConfigureEditorImportSettingsIfNeeded(sourcePath, targetPath);
 
-            _pipeline.SetSessionState(
-                FBXVmdPipeline.FBXSessionState.LoadingFbx,
-                "FBX 로드 중",
-                0.25f);
+            _pipeline.SetSessionState( FBXVmdPipeline.FBXSessionState.LoadingFbx, "FBX 로드 중", 0.25f);
             GameObject importedModel;
             // Assimp 네이티브 임포트는 워커 스레드에서 실행되므로 GC 지표는 호출 스레드 기준만 남는다(문서화된 한계).
             using (PerfScope.Measure("FBXImportController.ImportModelAsync"))
@@ -145,13 +136,10 @@ namespace Fbx2Vmd.FBXImporter
             Dictionary<string, string> mapping = new Dictionary<string, string>();
             string loadName = Path.GetFileNameWithoutExtension(BONE_MAPPING_FILE);
             TextAsset mappingAsset = Resources.Load<TextAsset>(loadName);
-
             if (mappingAsset == null)
             {
                 Debug.LogWarning($"[FBXImport] BoneMapping 로드 실패: Resources/{loadName}.txt (자동 본 매핑으로 폴백합니다.)");
-                return mapping;
-            }
-
+                return mapping; }
             Debug.Log($"[FBXImport] BoneMapping 로드 성공 (Resources/{loadName})");
             string[] lines = mappingAsset.text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             bool insideBoneTemplate = false;
@@ -161,35 +149,23 @@ namespace Fbx2Vmd.FBXImporter
                 if (trimmedLine.StartsWith("m_BoneTemplate:"))
                 {
                     insideBoneTemplate = true;
-                    continue;
-                }
-
+                    continue; }
                 if (!insideBoneTemplate)
                 {
-                    continue;
-                }
-
+                    continue; }
                 if (trimmedLine.StartsWith("m_"))
                 {
-                    break;
-                }
-
+                    break; }
                 int colonIndex = trimmedLine.IndexOf(':');
                 if (colonIndex <= 0)
                 {
-                    continue;
-                }
-
+                    continue; }
                 string key = trimmedLine[..colonIndex].Trim();
                 string value = trimmedLine[(colonIndex + 1)..].Trim();
                 if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
                 {
-                    mapping[key] = value;
-                }
-            }
-
-            return mapping;
-        }
+                    mapping[key] = value; } }
+            return mapping; }
 
         internal static bool ValidateGhostAvatar(GameObject importedModel)
         {
@@ -234,7 +210,6 @@ namespace Fbx2Vmd.FBXImporter
                     return false;
                 }
             }
-
             errorMessage = string.Empty;
             return true;
         }
@@ -250,37 +225,23 @@ namespace Fbx2Vmd.FBXImporter
             ghostAnimation = null;
             targetClip = null;
             boneMapping = null;
-
             ghostAnimation = importedModel.GetComponent<Animation>();
             targetClip = ExtractPrimaryClip(ghostAnimation, shouldLogRuntimeAnimation);
             if (targetClip == null)
             {
                 errorMessage = "FBX에서 유효한 애니메이션 클립을 찾지 못했습니다.";
-                return false;
-            }
-
+                return false; }
             if (!RuntimeHumanoidReferencePoseApplier.TryApply(importedModel, targetClip))
             {
                 errorMessage = "FBX 기준 자세를 준비하지 못했습니다.";
-                return false;
-            }
-
+                return false; }
             if (!TryPrepareRuntimeAvatar(importedModel, out boneMapping, out errorMessage))
             {
-                return false;
-            }
-
-            PipelineRunProfiler.SetContext(
-                clipLengthSec: targetClip.length,
-                boneCount: importedModel.GetComponentsInChildren<Transform>(true).Length);
-            _pipeline.SetSessionState(
-                FBXVmdPipeline.FBXSessionState.AvatarReady,
-                "Humanoid Avatar 준비 완료",
-                0.45f);
-
+                return false; }
+            PipelineRunProfiler.SetContext( clipLengthSec: targetClip.length, boneCount: importedModel.GetComponentsInChildren<Transform>(true).Length);
+            _pipeline.SetSessionState( FBXVmdPipeline.FBXSessionState.AvatarReady, "Humanoid Avatar 준비 완료", 0.45f);
             errorMessage = string.Empty;
-            return true;
-        }
+            return true; }
 
         internal static AnimationClip ExtractPrimaryClip(Animation ghostAnimation, bool shouldLogRuntimeAnimation)
         {

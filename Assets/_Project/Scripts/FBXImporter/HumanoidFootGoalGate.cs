@@ -98,23 +98,15 @@ namespace Fbx2Vmd.FBXImporter
         {
             if (evidence.LabelIsSupport == false)
             {
-                return false;
-            }
-
-            bool candidate = evidence.LabelIsSupport == true ||
-                evidence.HasConfidentPlantIntent;
+                return false; }
+            bool candidate = evidence.LabelIsSupport == true || evidence.HasConfidentPlantIntent;
             // 기권 구간은 사람 강제 표식이 없으면 후보가 될 수 없음.
-            if (candidate && evidence.InUncertainSpan &&
-                evidence.LabelIsSupport != true)
+            if (candidate && evidence.InUncertainSpan && evidence.LabelIsSupport != true)
             {
-                return false;
-            }
-
+                return false; }
             if (!candidate)
             {
-                return false;
-            }
-
+                return false; }
             // 발끝 스치기 차단 — pin이 닫힌 상태에선 엄격 진입값을, 열린 상태에선
             // 완만 해제값을 요구해 경계 프레임의 채터를 막음. 측정이 없으면 증거 그대로 신뢰함.
             if (!float.IsNaN(evidence.ToeHeightAboveFloor))
@@ -122,19 +114,13 @@ namespace Fbx2Vmd.FBXImporter
                 float heightLimit = _pinOpen ? _exitToeHeight : _enterToeHeight;
                 if (evidence.ToeHeightAboveFloor > heightLimit)
                 {
-                    return false;
-                }
-            }
+                    return false; } }
             if (!float.IsNaN(evidence.AnkleSpeed))
             {
                 float speedLimit = _pinOpen ? _exitAnkleSpeed : _enterAnkleSpeed;
                 if (evidence.AnkleSpeed > speedLimit)
                 {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+                    return false; } }
+            return true; }
     }
 }

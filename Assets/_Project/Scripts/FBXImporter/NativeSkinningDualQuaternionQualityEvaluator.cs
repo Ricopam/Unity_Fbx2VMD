@@ -130,20 +130,12 @@ namespace Fbx2Vmd.FBXImporter
             newDegenerateFaceCount = 0;
             reversedFaceCount = 0;
             // 체적 보정이 앞 단계에서 복원한 표면을 다시 붕괴시키지 않도록 제한함.
-            newCollapsedPairCount = _preservedPairIndices.Count(index =>
-                NativeSkinningSurfaceCorrectionCalculator.IsRestShapeRecoveryPairUnresolved(
-                    candidateVertices, _surfaceContract, index));
+            newCollapsedPairCount = _preservedPairIndices.Count(index => NativeSkinningSurfaceCorrectionCalculator.IsRestShapeRecoveryPairUnresolved( candidateVertices, _surfaceContract, index));
             foreach (FaceReference face in _faces)
             {
-                Vector3 candidateCross = Vector3.Cross(
-                    candidateVertices[face.Second] - candidateVertices[face.First],
-                    candidateVertices[face.Third] - candidateVertices[face.First]);
-                float signedArea = Vector3.Dot(
-                    candidateCross,
-                    face.BaselineNormal);
-                if (float.IsNaN(signedArea) ||
-                    float.IsInfinity(signedArea) ||
-                    signedArea < face.MinimumSignedArea)
+                Vector3 candidateCross = Vector3.Cross( candidateVertices[face.Second] - candidateVertices[face.First], candidateVertices[face.Third] - candidateVertices[face.First]);
+                float signedArea = Vector3.Dot( candidateCross, face.BaselineNormal);
+                if (float.IsNaN(signedArea) || float.IsInfinity(signedArea) || signedArea < face.MinimumSignedArea)
                 {
                     if (signedArea < 0f)
                     {
@@ -159,15 +151,8 @@ namespace Fbx2Vmd.FBXImporter
             foreach (EdgeReference edge in _edges)
             {
                 float increase = NativeSkinningRestShapeRecoveryCalculator
-                    .CalculateStrainIncrease(
-                        edge.BaselineLength,
-                        Vector3.Distance(
-                            candidateVertices[edge.First],
-                            candidateVertices[edge.Second]),
-                        edge.RestLength);
-                maximumRestEdgeStrainIncrease = Mathf.Max(
-                    maximumRestEdgeStrainIncrease,
-                    increase);
+                    .CalculateStrainIncrease( edge.BaselineLength, Vector3.Distance( candidateVertices[edge.First], candidateVertices[edge.Second]), edge.RestLength);
+                maximumRestEdgeStrainIncrease = Mathf.Max( maximumRestEdgeStrainIncrease, increase);
             }
         }
 

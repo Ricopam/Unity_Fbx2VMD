@@ -12,10 +12,7 @@ namespace Fbx2Vmd.Settings
             out TMP_Text timelineLabel,
             out Text legacyTimelineLabel)
         {
-            var sliderObject = new GameObject(
-                TimelineSliderName,
-                typeof(RectTransform),
-                typeof(Slider));
+            var sliderObject = new GameObject( TimelineSliderName, typeof(RectTransform), typeof(Slider));
             sliderObject.hideFlags = HideFlags.DontSave;
             sliderObject.transform.SetParent(template.transform.parent, false);
 
@@ -25,11 +22,8 @@ namespace Fbx2Vmd.Settings
                 sliderRect.anchorMin = new Vector2(0f, 0f);
                 sliderRect.anchorMax = new Vector2(0f, 0f);
                 sliderRect.pivot = new Vector2(0f, 0f);
-                sliderRect.anchoredPosition =
-                    new Vector2(ControlSideMargin, TimelineBottomMargin);
-                sliderRect.sizeDelta = new Vector2(
-                    Mathf.Max(240f, templateRect.rect.width),
-                    TimelineHeight);
+                sliderRect.anchoredPosition = new Vector2(ControlSideMargin, TimelineBottomMargin);
+                sliderRect.sizeDelta = new Vector2( Mathf.Max(240f, templateRect.rect.width), TimelineHeight);
                 sliderRect.SetAsLastSibling();
             }
 
@@ -137,28 +131,18 @@ namespace Fbx2Vmd.Settings
             Color color)
         {
             var imageObject = new GameObject(
-                name,
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image));
+                name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             imageObject.hideFlags = HideFlags.DontSave;
             imageObject.transform.SetParent(parent, false);
             Image image = imageObject.GetComponent<Image>();
             image.color = color;
-            return image;
-        }
-
-        private static void SetStretch(
-            RectTransform rectTransform,
-            Vector2 offsetMin,
-            Vector2 offsetMax)
+            return image; }
+        private static void SetStretch( RectTransform rectTransform, Vector2 offsetMin, Vector2 offsetMax)
         {
             rectTransform.anchorMin = Vector2.zero;
             rectTransform.anchorMax = Vector2.one;
             rectTransform.offsetMin = offsetMin;
-            rectTransform.offsetMax = offsetMax;
-        }
-
+            rectTransform.offsetMax = offsetMax; }
         private static void ConfigureTimelineLabel(RectTransform labelRect)
         {
             labelRect.anchorMin = new Vector2(0f, 1f);
@@ -166,26 +150,120 @@ namespace Fbx2Vmd.Settings
             labelRect.pivot = new Vector2(0.5f, 0f);
             labelRect.anchoredPosition = new Vector2(0f, 8f);
             labelRect.sizeDelta = new Vector2(0f, TimelineHeight);
-
             TMP_Text tmpLabel = labelRect.GetComponent<TMP_Text>();
             if (tmpLabel != null)
             {
                 tmpLabel.enableAutoSizing = true;
                 tmpLabel.fontSizeMin = MinimumTimelineFontSize;
-                tmpLabel.fontSizeMax = Mathf.Max(
-                    MinimumTimelineFontSize,
-                    tmpLabel.fontSize);
-            }
-
+                tmpLabel.fontSizeMax = Mathf.Max( MinimumTimelineFontSize, tmpLabel.fontSize); }
             Text legacyLabel = labelRect.GetComponent<Text>();
             if (legacyLabel != null)
             {
                 legacyLabel.resizeTextForBestFit = true;
                 legacyLabel.resizeTextMinSize = Mathf.RoundToInt(MinimumTimelineFontSize);
-                legacyLabel.resizeTextMaxSize = Mathf.Max(
-                    legacyLabel.resizeTextMinSize,
-                    legacyLabel.fontSize);
+                legacyLabel.resizeTextMaxSize = Mathf.Max( legacyLabel.resizeTextMinSize, legacyLabel.fontSize); } }
+        private static Button ResolveImportButton()
+        {
+            GameObject buttonObject = GameObject.Find(ImportButtonName);
+            return buttonObject != null ? buttonObject.GetComponent<Button>() : null; }
+        private static Button ResolveButton(string objectName)
+        {
+            GameObject buttonObject = GameObject.Find(objectName);
+            return buttonObject != null ? buttonObject.GetComponent<Button>() : null; }
+        private static Button FindButton(Transform parent, string objectName)
+        {
+            if (parent == null)
+            {
+                return null; }
+            for (int index = 0; index < parent.childCount; index++)
+            {
+                Transform child = parent.GetChild(index);
+                if (child.name == objectName)
+                {
+                    return child.GetComponent<Button>();
+                }
+            }
+
+            return null;
+        }
+
+        private static Slider FindSlider(Transform parent, string objectName)
+        {
+            if (parent == null)
+            {
+                return null;
+            }
+
+            for (int index = 0; index < parent.childCount; index++)
+            {
+                Transform child = parent.GetChild(index);
+                if (child.name == objectName)
+                {
+                    return child.GetComponent<Slider>();
+                }
+            }
+
+            return null;
+        }
+
+        private void ResolveTimelineLabel()
+        {
+            if (_timelineSlider == null)
+            {
+                return;
+            }
+
+            _timelineLabel ??= _timelineSlider.GetComponentInChildren<TMP_Text>(true);
+            _legacyTimelineLabel ??=
+                _timelineSlider.GetComponentInChildren<Text>(true);
+        }
+
+        private static string FormatTime(float timeSeconds)
+        {
+            double safeTime = float.IsNaN(timeSeconds) ||
+                              float.IsInfinity(timeSeconds) ||
+                              timeSeconds < 0f
+                ? 0d
+                : timeSeconds;
+            System.TimeSpan time = System.TimeSpan.FromSeconds(safeTime);
+            return time.TotalHours >= 1d
+                ? $"{(int)time.TotalHours:00}:{time.Minutes:00}:{time.Seconds:00}.{time.Milliseconds:000}"
+                : $"{time.Minutes:00}:{time.Seconds:00}.{time.Milliseconds:000}";
+        }
+
+        private static void DestroyControlButton(Button button)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(button.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(button.gameObject);
             }
         }
+
+        private static void DestroyControlObject(Component component)
+        {
+            if (component == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(component.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(component.gameObject);
+            }
+        }
+
     }
 }

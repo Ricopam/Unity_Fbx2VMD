@@ -12,9 +12,7 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return null;
             }
-
-            HumanoidArmSleeveAnchorGuard sleeveAnchorGuard =
-                targetObject.GetComponent<HumanoidArmSleeveAnchorGuard>();
+            HumanoidArmSleeveAnchorGuard sleeveAnchorGuard = targetObject.GetComponent<HumanoidArmSleeveAnchorGuard>();
             if (!_pipeline.enableYybArmSleeveAnchorCorrection)
             {
                 if (sleeveAnchorGuard != null)
@@ -22,32 +20,19 @@ namespace Fbx2Vmd.FBXImporter
                     sleeveAnchorGuard.DisableCorrection();
                     sleeveAnchorGuard.enabled = false;
                 }
-
                 return null;
             }
-
             if (sleeveAnchorGuard == null)
             {
-                sleeveAnchorGuard = targetObject.AddComponent<HumanoidArmSleeveAnchorGuard>();
-            }
-
+                sleeveAnchorGuard = targetObject.AddComponent<HumanoidArmSleeveAnchorGuard>(); }
             sleeveAnchorGuard.enableSleeveAnchor = true;
             sleeveAnchorGuard.enabled = true;
-            bool configured = sleeveAnchorGuard.Configure(
-                targetAnimator,
-                _pipeline.YybArmSleeveAnchorInfluence,
-                _pipeline.YybArmShoulderCapAnchorInfluence,
-                _pipeline.YybArmSleeveAnchorMaxDegrees,
-                _pipeline.logYybArmSleeveAnchorCorrection);
-
+            bool configured = sleeveAnchorGuard.Configure( targetAnimator, _pipeline.YybArmSleeveAnchorInfluence, _pipeline.YybArmShoulderCapAnchorInfluence, _pipeline.YybArmSleeveAnchorMaxDegrees, _pipeline.logYybArmSleeveAnchorCorrection);
             if (!configured)
             {
                 sleeveAnchorGuard.enabled = false;
-                return null;
-            }
-
-            return sleeveAnchorGuard;
-        }
+                return null; }
+            return sleeveAnchorGuard; }
 
         internal HumanoidArmVisualTwistGuard ConfigureArmVisualTwistGuard(
             GameObject targetObject,
@@ -57,9 +42,7 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return null;
             }
-
-            HumanoidArmVisualTwistGuard visualTwistGuard =
-                targetObject.GetComponent<HumanoidArmVisualTwistGuard>();
+            HumanoidArmVisualTwistGuard visualTwistGuard = targetObject.GetComponent<HumanoidArmVisualTwistGuard>();
             if (!_pipeline.enableYybArmVisualTwistCorrection)
             {
                 if (visualTwistGuard != null)
@@ -67,33 +50,18 @@ namespace Fbx2Vmd.FBXImporter
                     visualTwistGuard.DisableCorrection();
                     visualTwistGuard.enabled = false;
                 }
-
-                return null;
-            }
-
+                return null; }
             if (visualTwistGuard == null)
             {
-                visualTwistGuard = targetObject.AddComponent<HumanoidArmVisualTwistGuard>();
-            }
-
+                visualTwistGuard = targetObject.AddComponent<HumanoidArmVisualTwistGuard>(); }
             visualTwistGuard.enableVisualTwistGuard = true;
             visualTwistGuard.enabled = true;
-            bool configured = visualTwistGuard.Configure(
-                targetAnimator,
-                _pipeline.YybArmVisualUpperArmInfluence,
-                _pipeline.YybArmVisualForearmInfluence,
-                _pipeline.YybArmVisualUpperArmMaxDegrees,
-                _pipeline.YybArmVisualForearmMaxDegrees,
-                _pipeline.logYybArmVisualTwistCorrection);
-
+            bool configured = visualTwistGuard.Configure( targetAnimator, _pipeline.YybArmVisualUpperArmInfluence, _pipeline.YybArmVisualForearmInfluence, _pipeline.YybArmVisualUpperArmMaxDegrees, _pipeline.YybArmVisualForearmMaxDegrees, _pipeline.logYybArmVisualTwistCorrection);
             if (!configured)
             {
                 visualTwistGuard.enabled = false;
-                return null;
-            }
-
-            return visualTwistGuard;
-        }
+                return null; }
+            return visualTwistGuard; }
 
     }
 }

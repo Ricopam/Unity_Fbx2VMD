@@ -15,53 +15,29 @@ namespace Fbx2Vmd.FBXImporter
             Vector3[] frontPoints,
             float frameRate,
             Vector2 referenceHeights,
-            float heightTolerance,
-            float speedLimit,
-            float minimumSupportSeconds,
-            float blendSeconds,
-            out Vector2[] weights)
+            float heightTolerance, float speedLimit, float minimumSupportSeconds, float blendSeconds, out Vector2[] weights)
         {
             weights = Array.Empty<Vector2>();
-            if (rearPoints == null || frontPoints == null || rearPoints.Length < 2 ||
-                rearPoints.Length != frontPoints.Length || !IsPositive(frameRate) ||
-                !IsPositive(heightTolerance) || !IsPositive(speedLimit) ||
-                !IsPositive(minimumSupportSeconds) || !IsPositive(blendSeconds) ||
-                !IsFinite(referenceHeights.x) || !IsFinite(referenceHeights.y) ||
-                !IsFinite(referenceHeights.x + heightTolerance * ReleaseThresholdRatio) ||
-                !IsFinite(referenceHeights.y + heightTolerance * ReleaseThresholdRatio) ||
-                !IsFinite(speedLimit * ReleaseThresholdRatio))
+            if (rearPoints == null || frontPoints == null || rearPoints.Length < 2 || rearPoints.Length != frontPoints.Length || !IsPositive(frameRate) || !IsPositive(heightTolerance) || !IsPositive(speedLimit) || !IsPositive(minimumSupportSeconds) || !IsPositive(blendSeconds) || !IsFinite(referenceHeights.x) || !IsFinite(referenceHeights.y) || !IsFinite(referenceHeights.x + heightTolerance * ReleaseThresholdRatio) || !IsFinite(referenceHeights.y + heightTolerance * ReleaseThresholdRatio) || !IsFinite(speedLimit * ReleaseThresholdRatio))
             {
-                return false;
-            }
-
+                return false; }
             for (int i = 0; i < rearPoints.Length; i++)
             {
-                if (!IsFinite(rearPoints[i]) || !IsFinite(frontPoints[i]))
-                    return false;
-            }
-
+                if (!IsFinite(rearPoints[i]) || !IsFinite(frontPoints[i])) return false; }
             float minimumIntervals = frameRate * minimumSupportSeconds;
             if (minimumIntervals >= rearPoints.Length)
             {
                 weights = new Vector2[rearPoints.Length];
-                return true;
-            }
-
+                return true; }
             // 표본 사이 경과시간을 기준으로 하므로 60Hz의 0.1초 지지에는 7개 시점이 필요함.
             int minimumFrames = Mathf.CeilToInt(minimumIntervals) + 1;
             float blendFrames = (float)Math.Min(rearPoints.Length, (double)frameRate * blendSeconds);
             var result = new Vector2[rearPoints.Length];
-            if (!TryCalculateChannel(rearPoints, frameRate, referenceHeights.x,
-                    heightTolerance, speedLimit, minimumFrames, blendFrames, 0, result) ||
-                !TryCalculateChannel(frontPoints, frameRate, referenceHeights.y,
-                    heightTolerance, speedLimit, minimumFrames, blendFrames, 1, result))
+            if (!TryCalculateChannel(rearPoints, frameRate, referenceHeights.x, heightTolerance, speedLimit, minimumFrames, blendFrames, 0, result) || !TryCalculateChannel(frontPoints, frameRate, referenceHeights.y, heightTolerance, speedLimit, minimumFrames, blendFrames, 1, result))
             {
-                return false;
-            }
-
+                return false; }
             weights = result;
-            return true;
-        }
+            return true; }
 
         private static bool TryCalculateChannel(
             Vector3[] points, float frameRate, float referenceHeight,
@@ -72,43 +48,25 @@ namespace Fbx2Vmd.FBXImporter
             for (int i = 0; i <= points.Length; i++)
             {
                 bool isSupported = false;
-                if (i < points.Length &&
-                    !EvaluateSupport(points, i, frameRate, referenceHeight, heightTolerance,
-                        speedLimit, start >= 0 ? ReleaseThresholdRatio : 1f, out isSupported))
-                    return false;
-
+                if (i < points.Length && !EvaluateSupport(points, i, frameRate, referenceHeight, heightTolerance, speedLimit, start >= 0 ? ReleaseThresholdRatio : 1f, out isSupported)) return false;
                 if (isSupported)
                 {
-                    if (start < 0)
-                        start = i;
-                    continue;
-                }
-
-                if (start < 0)
-                    continue;
-
+                    if (start < 0) start = i;
+                    continue; }
+                if (start < 0) continue;
                 // 런 도중의 짧은 공백도 발끝이 지면 높이에 머물면 실제 이륙이 아닌
                 // 속도 지터로 보고 지지를 이어감. 이륙은 반드시 높이 상승을 동반함.
-                if (!TryResumeRun(
-                        points, ref i, frameRate, referenceHeight,
-                        heightTolerance, speedLimit, minimumFrames,
-                        out bool runResumed))
+                if (!TryResumeRun( points, ref i, frameRate, referenceHeight, heightTolerance, speedLimit, minimumFrames, out bool runResumed))
                 {
-                    return false;
-                }
+                    return false; }
                 if (runResumed)
                 {
-                    continue;
-                }
-
+                    continue; }
                 if (i - start >= minimumFrames)
                 {
-                    WriteRunWeights(points, start, i, blendFrames, channel, result);
-                }
-                start = -1;
-            }
-            return true;
-        }
+                    WriteRunWeights(points, start, i, blendFrames, channel, result); }
+                start = -1; }
+            return true; }
 
         static bool TryResumeRun(
             Vector3[] points, ref int index, float frameRate, float referenceHeight,
@@ -120,7 +78,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return true;
             }
-
             int resume = index;
             bool resumeSupported = false;
             while (resume < points.Length && resume - index < minimumFrames &&
@@ -132,17 +89,13 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     return false;
                 }
-                if (resumeSupported)
-                    break;
-                resume++;
-            }
+                if (resumeSupported) break;
+                resume++; }
             if (resumeSupported && resume - index < minimumFrames)
             {
                 index = resume - 1;
-                resumed = true;
-            }
-            return true;
-        }
+                resumed = true; }
+            return true; }
 
         static void WriteRunWeights(
             Vector3[] points, int start, int end, float blendFrames,

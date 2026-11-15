@@ -44,81 +44,53 @@ namespace Fbx2Vmd.ClothPhysics
         public static Result Detect(
             Transform headBone,
             Func<Transform, bool> isBodyBone,
-            IList<Transform> explicitRoots = null,
-            bool includeUnknownBones = false)
+            IList<Transform> explicitRoots = null, bool includeUnknownBones = false)
         {
             var result = new Result();
-            if (headBone == null)
-                return result;
-
+            if (headBone == null) return result;
             // 명시 지정이 있으면 그 루트들만 사용
             if (explicitRoots != null && explicitRoots.Count > 0)
             {
                 foreach (var root in explicitRoots)
                 {
-                    if (root == null)
-                        continue;
+                    if (root == null) continue;
                     var chain = BuildChain(root, headBone, isBodyBone);
-                    if (chain != null)
-                        result.chains.Add(chain);
-                }
-                foreach (var chain in result.chains)
-                    chain.worldLength = MeasureChainLength(chain);
-                return result;
-            }
-
-            foreach (Transform child in headBone)
-                Visit(child, headBone, isBodyBone, includeUnknownBones, result);
-
+                    if (chain != null) result.chains.Add(chain); }
+                foreach (var chain in result.chains) chain.worldLength = MeasureChainLength(chain);
+                return result; }
+            foreach (Transform child in headBone) Visit(child, headBone, isBodyBone, includeUnknownBones, result);
             // 체인 길이 측정
-            foreach (var chain in result.chains)
-                chain.worldLength = MeasureChainLength(chain);
-
-            return result;
-        }
+            foreach (var chain in result.chains) chain.worldLength = MeasureChainLength(chain);
+            return result; }
 
         static void Visit(Transform bone, Transform headBone, Func<Transform, bool> isBodyBone,
             bool includeUnknown, Result result)
         {
             if (bone == null)
                 return;
-            if (isBodyBone != null && isBodyBone(bone))
-                return;
-            if (HairBoneClassifier.IsExcluded(bone.name))
-                return;
-
+            if (isBodyBone != null && isBodyBone(bone)) return;
+            if (HairBoneClassifier.IsExcluded(bone.name)) return;
             if (HairBoneClassifier.IsHairBoneName(bone.name))
             {
                 var chain = BuildChain(bone, headBone, isBodyBone);
-                if (chain != null)
-                    result.chains.Add(chain);
-                return;
-            }
-
+                if (chain != null) result.chains.Add(chain);
+                return; }
             // 미분류 본: 자식 중 머리카락이 있으면 계속 내려가고, 없으면 skipped 기록
             bool hasHairDescendant = false;
             foreach (Transform child in bone)
             {
                 int before = result.chains.Count;
                 Visit(child, headBone, isBodyBone, includeUnknown, result);
-                if (result.chains.Count > before)
-                    hasHairDescendant = true;
-            }
-
+                if (result.chains.Count > before) hasHairDescendant = true; }
             if (!hasHairDescendant && includeUnknown && bone.childCount > 0)
             {
                 // 자식 전체가 미분류인 비신체 체인 — 머리카락 후보로 수용
                 var chain = BuildChain(bone, headBone, isBodyBone);
-                if (chain != null && chain.bones.Count >= 2)
-                    result.chains.Add(chain);
+                if (chain != null && chain.bones.Count >= 2) result.chains.Add(chain);
                 else
-                    result.skipped.Add(bone);
-            }
-            else if (!hasHairDescendant)
+                    result.skipped.Add(bone); } else if (!hasHairDescendant)
             {
-                result.skipped.Add(bone);
-            }
-        }
+                result.skipped.Add(bone); } }
 
         /// <summary>
         /// 루트에서 시작해 유효 자식 체인을 수집한다. 자식 2개 미만 체인은 물리 대상이 아니므로 null.

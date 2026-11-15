@@ -22,13 +22,7 @@ namespace Fbx2Vmd.FBXImporter
             Vector3[] vertices = initialVertices;
             var activePairIndices = new HashSet<int>(seedPairIndices);
             long sectionStamp = NativeSkinningSolverTiming.Stamp();
-            LocalWorkset workset = BuildLocalWorkset(
-                baselineVertices,
-                contract,
-                activePairIndices,
-                configuration.WorksetRingCount,
-                frameEdges,
-                buffers);
+            LocalWorkset workset = BuildLocalWorkset( baselineVertices, contract, activePairIndices, configuration.WorksetRingCount, frameEdges, buffers);
             timing?.AddSetup(sectionStamp);
             buffers.EnsureLocalSize(workset.ConstrainedVertices.Length);
             buffers.EnsureVertexSize(vertices.Length);
@@ -36,17 +30,7 @@ namespace Fbx2Vmd.FBXImporter
                  iteration < configuration.LocalGlobalIterations;
                  iteration++)
             {
-                if (!RunCorrectionIteration(
-                        baselineVertices,
-                        ref vertices,
-                        contract,
-                        workset,
-                        activePairIndices,
-                        shouldRecoverRestShape,
-                        allowsStrainRecovery,
-                        configuration,
-                        buffers,
-                        timing,
+                if (!RunCorrectionIteration( baselineVertices, ref vertices, contract, workset, activePairIndices, shouldRecoverRestShape, allowsStrainRecovery, configuration, buffers, timing,
                         iteration))
                 {
                     break;
@@ -71,36 +55,15 @@ namespace Fbx2Vmd.FBXImporter
             int iteration)
         {
             timing?.AddLgIteration();
-            if (!PrepareIterationSystem(
-                    baselineVertices,
-                    vertices,
-                    contract,
-                    workset,
-                    activePairIndices,
-                    shouldRecoverRestShape,
-                    buffers,
-                    timing,
-                    out double beforeEnergy,
+            if (!PrepareIterationSystem( baselineVertices, vertices, contract, workset, activePairIndices, shouldRecoverRestShape, buffers, timing, out double beforeEnergy,
                     out NativeSkinningMaterialStrainConstraint[]
                         materialStrainConstraints))
             {
                 return false;
             }
 
-            return ProposeAndAcceptStep(
-                baselineVertices,
-                ref vertices,
-                contract,
-                workset,
-                activePairIndices,
-                materialStrainConstraints,
-                beforeEnergy,
-                shouldRecoverRestShape,
-                allowsStrainRecovery,
-                configuration,
-                buffers,
-                timing,
-                iteration);
+            return ProposeAndAcceptStep( baselineVertices, ref vertices, contract, workset, activePairIndices, materialStrainConstraints, beforeEnergy, shouldRecoverRestShape, allowsStrainRecovery,
+                configuration, buffers, timing, iteration);
         }
 
         // 솔브·제안·수용을 잇는 스텝 실행부.
@@ -241,22 +204,8 @@ namespace Fbx2Vmd.FBXImporter
             out NativeSkinningMaterialStrainConstraint[] materialStrainConstraints)
         {
             long sectionStamp = NativeSkinningSolverTiming.Stamp();
-            UpdateActiveCorrectionPairs(
-                baselineVertices,
-                vertices,
-                contract,
-                workset.FacePairIndices,
-                shouldRecoverRestShape,
-                activePairIndices);
-            beforeEnergy = CalculateConstraintEnergy(
-                baselineVertices,
-                vertices,
-                contract,
-                activePairIndices,
-                workset.FacePairIndices,
-                workset.FaceIndices,
-                workset.Edges,
-                shouldRecoverRestShape);
+            UpdateActiveCorrectionPairs( baselineVertices, vertices, contract, workset.FacePairIndices, shouldRecoverRestShape, activePairIndices);
+            beforeEnergy = CalculateConstraintEnergy( baselineVertices, vertices, contract, activePairIndices, workset.FacePairIndices, workset.FaceIndices, workset.Edges, shouldRecoverRestShape);
             timing?.AddPairEnergy(sectionStamp);
             if (beforeEnergy <= 0d)
             {
@@ -265,16 +214,7 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             sectionStamp = NativeSkinningSolverTiming.Stamp();
-            BuildDisplacementSystem(
-                baselineVertices,
-                vertices,
-                contract,
-                workset,
-                activePairIndices,
-                shouldRecoverRestShape,
-                buffers,
-                out materialStrainConstraints,
-                out int activeConstraintCount);
+            BuildDisplacementSystem( baselineVertices, vertices, contract, workset, activePairIndices, shouldRecoverRestShape, buffers, out materialStrainConstraints, out int activeConstraintCount);
             timing?.AddBuildSystem(sectionStamp);
             return activeConstraintCount > 0;
         }
@@ -323,41 +263,22 @@ namespace Fbx2Vmd.FBXImporter
             CorrectionConfiguration configuration,
             SolverBuffers buffers)
         {
-            LimitDisplacement(
-                displacement,
-                workset.ConstrainedVertices.Length,
-                vertices,
-                contract,
-                activePairIndices);
+            LimitDisplacement( displacement, workset.ConstrainedVertices.Length, vertices, contract, activePairIndices);
             Vector3[] proposedLocalPositions = buffers.ProposedLocal;
             for (int localIndex = 0;
                  localIndex < workset.ConstrainedVertices.Length;
                  localIndex++)
             {
-                proposedLocalPositions[localIndex] =
-                    vertices[workset.ConstrainedVertices[localIndex]] +
-                    displacement[localIndex];
+                proposedLocalPositions[localIndex] = vertices[workset.ConstrainedVertices[localIndex]] + displacement[localIndex];
             }
             if (shouldRecoverRestShape)
             {
-                ProjectRestShapeRecoveryConstraints(
-                    baselineVertices,
-                    vertices,
-                    proposedLocalPositions,
-                    workset,
-                    contract,
-                    activePairIndices);
+                ProjectRestShapeRecoveryConstraints( baselineVertices, vertices, proposedLocalPositions, workset, contract, activePairIndices);
             }
             else
             {
-                ProjectEdgeLengthBounds(
-                    vertices,
-                    proposedLocalPositions,
-                    workset.ConstrainedVertices,
-                    workset.Edges,
-                    configuration.MaximumEdgeLengthStrain -
-                        EdgeLengthProjectionMargin,
-                    configuration.EdgeLengthProjectionIterations);
+                ProjectEdgeLengthBounds( vertices, proposedLocalPositions, workset.ConstrainedVertices, workset.Edges, configuration.MaximumEdgeLengthStrain -
+                        EdgeLengthProjectionMargin, configuration.EdgeLengthProjectionIterations);
             }
             return proposedLocalPositions;
         }

@@ -36,9 +36,7 @@ namespace Fbx2Vmd.FBXImporter
         {
             ValidateTarget(targetAnimator);
             ValidateClip(clip);
-
             Dispose();
-
             _targetAnimator = targetAnimator;
             _originalApplyRootMotion = targetAnimator.applyRootMotion;
             _originalCullingMode = targetAnimator.cullingMode;
@@ -47,33 +45,22 @@ namespace Fbx2Vmd.FBXImporter
             _rootRotationAnchor = targetAnimator.transform.rotation;
             _hasRootTranslationAnchor = _rootTranslationSampler != null;
             _rootTranslationSampler?.Initialize(clip);
-
             try
             {
                 targetAnimator.applyRootMotion = false;
                 targetAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
                 targetAnimator.runtimeAnimatorController = null;
-
                 _graph = PlayableGraph.Create(nameof(NativeHumanoidAnimationPlayer));
                 _graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-
                 _clipPlayable = AnimationClipPlayable.Create(_graph, clip);
                 _clipPlayable.SetApplyFootIK(false);
                 _clipPlayable.SetApplyPlayableIK(false);
-
-                AnimationPlayableOutput output = AnimationPlayableOutput.Create(
-                    _graph,
-                    PlayableOutputName,
-                    targetAnimator);
+                AnimationPlayableOutput output = AnimationPlayableOutput.Create( _graph, PlayableOutputName, targetAnimator);
                 output.SetSourcePlayable(_clipPlayable);
-                _graph.Play();
-            }
-            catch
+                _graph.Play(); } catch
             {
                 Dispose();
-                throw;
-            }
-        }
+                throw; } }
 
         internal void EvaluateAt(float timeSeconds)
         {

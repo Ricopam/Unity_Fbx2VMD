@@ -13,29 +13,19 @@ namespace Fbx2Vmd.CharacterLibrary
         {
             if (document == null)
             {
-                return new CharacterLibraryDocument();
-            }
-
+                return new CharacterLibraryDocument(); }
             if (document.schemaVersion <= 0)
             {
-                document.schemaVersion = 1;
-            }
-
+                document.schemaVersion = 1; }
             if (document.updatedAtUtc == null)
             {
-                document.updatedAtUtc = string.Empty;
-            }
-
+                document.updatedAtUtc = string.Empty; }
             if (document.activeCharacterId == null)
             {
-                document.activeCharacterId = string.Empty;
-            }
-
+                document.activeCharacterId = string.Empty; }
             if (document.entries == null)
             {
-                document.entries = new List<CharacterLibraryEntry>();
-            }
-
+                document.entries = new List<CharacterLibraryEntry>(); }
             var seenIds = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < document.entries.Count; i++)
             {
@@ -44,27 +34,18 @@ namespace Fbx2Vmd.CharacterLibrary
                 {
                     document.entries.RemoveAt(i);
                     i--;
-                    continue;
-                }
-
+                    continue; }
                 NormalizeEntry(entry);
-
                 if (entry.id.Length == 0)
                 {
                     // 수기 편집 등으로 id가 비어 있으면 새로 부여해 엔트리를 살린다.
-                    entry.id = Guid.NewGuid().ToString("N");
-                }
-
+                    entry.id = Guid.NewGuid().ToString("N"); }
                 if (!seenIds.Add(entry.id))
                 {
                     // 동일 id 중복은 첫 항목만 유지한다.
                     document.entries.RemoveAt(i);
-                    i--;
-                }
-            }
-
-            return document;
-        }
+                    i--; } }
+            return document; }
 
         private static void NormalizeEntry(CharacterLibraryEntry entry)
         {

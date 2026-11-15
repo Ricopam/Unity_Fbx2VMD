@@ -29,43 +29,19 @@ namespace Fbx2Vmd.FBXImporter
             out Vector3[] projectedVertices)
         {
             projectedVertices = null;
-            if (baselineVertices == null ||
-                initialVertices == null ||
-                contract == null ||
-                baselineVertices.Count != contract.VertexCount ||
-                initialVertices.Count != contract.VertexCount ||
-                restShapeRecoveryPairIndices == null ||
-                restShapeRecoveryPairIndices.Count == 0 ||
-                sharpFoldPairIndices == null)
+            if (baselineVertices == null || initialVertices == null || contract == null || baselineVertices.Count != contract.VertexCount || initialVertices.Count != contract.VertexCount ||
+                restShapeRecoveryPairIndices == null || restShapeRecoveryPairIndices.Count == 0 || sharpFoldPairIndices == null)
             {
                 return false;
             }
 
             projectedVertices = initialVertices.ToArray();
-            int[] localPairIndices = BuildLocalPairIndices(
-                contract,
-                restShapeRecoveryPairIndices.Concat(sharpFoldPairIndices));
-            int[] localFaceIndices = BuildLocalFaceIndices(
-                contract,
-                localPairIndices);
-            var activeSharpFoldPairIndices = new HashSet<int>(
-                sharpFoldPairIndices);
-            RestStrainEdge[] restStrainEdges = BuildRestStrainEdges(
-                baselineVertices,
-                contract,
-                localFaceIndices);
-            if (!RunProjectionIterations(
-                    baselineVertices,
-                    projectedVertices,
-                    contract,
-                    restShapeRecoveryPairIndices,
-                    localPairIndices,
-                    localFaceIndices,
-                    restStrainEdges,
-                    activeSharpFoldPairIndices,
-                    maximumRestSmoothAngleDegrees,
-                    sharpFoldActivationAngleDegrees,
-                    sharpFoldTargetAngleDegrees))
+            int[] localPairIndices = BuildLocalPairIndices( contract, restShapeRecoveryPairIndices.Concat(sharpFoldPairIndices));
+            int[] localFaceIndices = BuildLocalFaceIndices( contract, localPairIndices);
+            var activeSharpFoldPairIndices = new HashSet<int>( sharpFoldPairIndices);
+            RestStrainEdge[] restStrainEdges = BuildRestStrainEdges( baselineVertices, contract, localFaceIndices);
+            if (!RunProjectionIterations( baselineVertices, projectedVertices, contract, restShapeRecoveryPairIndices, localPairIndices, localFaceIndices, restStrainEdges, activeSharpFoldPairIndices,
+                    maximumRestSmoothAngleDegrees, sharpFoldActivationAngleDegrees, sharpFoldTargetAngleDegrees))
             {
                 projectedVertices = null;
                 return false;
@@ -91,36 +67,13 @@ namespace Fbx2Vmd.FBXImporter
                  iteration++)
             {
                 bool projectedConstraint = false;
-                if (!TryProjectCollapsedEdges(
-                        projectedVertices,
-                        contract,
-                        restShapeRecoveryPairIndices,
-                        ref projectedConstraint))
+                if (!TryProjectCollapsedEdges( projectedVertices, contract, restShapeRecoveryPairIndices, ref projectedConstraint))
                 {
                     return false;
                 }
-                ActivateSharpFoldPairs(
-                    projectedVertices,
-                    contract,
-                    localPairIndices,
-                    maximumRestSmoothAngleDegrees,
-                    sharpFoldActivationAngleDegrees,
-                    activeSharpFoldPairIndices);
-                if (!TryProjectPairs(
-                        projectedVertices,
-                        contract,
-                        activeSharpFoldPairIndices,
-                        _ => sharpFoldTargetAngleDegrees,
-                        ref projectedConstraint) ||
-                    !TryProjectRestStrainEdges(
-                        projectedVertices,
-                        restStrainEdges,
-                        ref projectedConstraint) ||
-                    !TryProjectFaceOrientations(
-                        baselineVertices,
-                        projectedVertices,
-                        contract,
-                        localFaceIndices,
+                ActivateSharpFoldPairs( projectedVertices, contract, localPairIndices, maximumRestSmoothAngleDegrees, sharpFoldActivationAngleDegrees, activeSharpFoldPairIndices);
+                if (!TryProjectPairs( projectedVertices, contract, activeSharpFoldPairIndices, _ => sharpFoldTargetAngleDegrees, ref projectedConstraint) || !TryProjectRestStrainEdges(
+                        projectedVertices, restStrainEdges, ref projectedConstraint) || !TryProjectFaceOrientations( baselineVertices, projectedVertices, contract, localFaceIndices,
                         ref projectedConstraint))
                 {
                     return false;
@@ -253,54 +206,32 @@ namespace Fbx2Vmd.FBXImporter
                 int firstIndex = contract.Triangles[offset];
                 int secondIndex = contract.Triangles[offset + 1];
                 int thirdIndex = contract.Triangles[offset + 2];
-                Vector3 baselineNormal = Vector3.Cross(
-                    baselineVertices[secondIndex] - baselineVertices[firstIndex],
-                    baselineVertices[thirdIndex] - baselineVertices[firstIndex]);
+                Vector3 baselineNormal = Vector3.Cross( baselineVertices[secondIndex] - baselineVertices[firstIndex], baselineVertices[thirdIndex] - baselineVertices[firstIndex]);
                 float baselineArea = baselineNormal.magnitude;
                 if (baselineNormal.sqrMagnitude < MinimumNormalSquaredMagnitude)
                 {
-                    continue;
-                }
-
+                    continue; }
                 baselineNormal /= baselineArea;
                 Vector3 first = vertices[firstIndex];
                 Vector3 second = vertices[secondIndex];
                 Vector3 third = vertices[thirdIndex];
-                float signedArea = Vector3.Dot(
-                    Vector3.Cross(second - first, third - first),
-                    baselineNormal);
+                float signedArea = Vector3.Dot( Vector3.Cross(second - first, third - first), baselineNormal);
                 float minimumSignedArea = baselineArea * MinimumSignedAreaRatio;
                 if (signedArea >= minimumSignedArea)
                 {
-                    continue;
-                }
-
-                Vector3 firstGradient = Vector3.Cross(
-                    second - third,
-                    baselineNormal);
-                Vector3 secondGradient = Vector3.Cross(
-                    third - first,
-                    baselineNormal);
-                Vector3 thirdGradient = Vector3.Cross(
-                    baselineNormal,
-                    second - first);
-                float squaredGradientMagnitude =
-                    firstGradient.sqrMagnitude +
-                    secondGradient.sqrMagnitude +
-                    thirdGradient.sqrMagnitude;
+                    continue; }
+                Vector3 firstGradient = Vector3.Cross( second - third, baselineNormal);
+                Vector3 secondGradient = Vector3.Cross( third - first, baselineNormal);
+                Vector3 thirdGradient = Vector3.Cross( baselineNormal, second - first);
+                float squaredGradientMagnitude = firstGradient.sqrMagnitude + secondGradient.sqrMagnitude + thirdGradient.sqrMagnitude;
                 if (squaredGradientMagnitude < MinimumNormalSquaredMagnitude)
                 {
-                    return false;
-                }
-
-                float correctionScale =
-                    (minimumSignedArea - signedArea) /
-                    squaredGradientMagnitude;
+                    return false; }
+                float correctionScale = (minimumSignedArea - signedArea) / squaredGradientMagnitude;
                 vertices[firstIndex] += firstGradient * correctionScale;
                 vertices[secondIndex] += secondGradient * correctionScale;
                 vertices[thirdIndex] += thirdGradient * correctionScale;
-                projectedConstraint = true;
-            }
+                projectedConstraint = true; }
             return true;
         }
 
@@ -311,38 +242,21 @@ namespace Fbx2Vmd.FBXImporter
         {
             foreach (RestStrainEdge edge in edges)
             {
-                float maximumAbsoluteStrain = Mathf.Abs(
-                    edge.BaselineLength / edge.RestLength - 1f) +
-                    NativeSkinningRestShapeRecoveryCalculator
+                float maximumAbsoluteStrain = Mathf.Abs( edge.BaselineLength / edge.RestLength - 1f) + NativeSkinningRestShapeRecoveryCalculator
                         .MaximumRestStrainIncrease -
                     RestStrainSafetyMargin;
-                float minimumLength = Mathf.Max(
-                    0f,
-                    edge.RestLength * (1f - maximumAbsoluteStrain));
+                float minimumLength = Mathf.Max( 0f, edge.RestLength * (1f - maximumAbsoluteStrain));
                 float maximumLength = edge.RestLength *
                     (1f + maximumAbsoluteStrain);
-                float currentLength = Vector3.Distance(
-                    vertices[edge.FirstVertex],
-                    vertices[edge.SecondVertex]);
+                float currentLength = Vector3.Distance( vertices[edge.FirstVertex], vertices[edge.SecondVertex]);
                 if (currentLength < minimumLength)
                 {
-                    if (!TryProjectEdgeToLength(
-                            vertices,
-                            edge.FirstVertex,
-                            edge.SecondVertex,
-                            minimumLength,
-                            ref projectedConstraint))
+                    if (!TryProjectEdgeToLength( vertices, edge.FirstVertex, edge.SecondVertex, minimumLength, ref projectedConstraint))
                     {
                         return false;
                     }
                 }
-                else if (currentLength > maximumLength &&
-                         !TryProjectEdgeToLength(
-                             vertices,
-                             edge.FirstVertex,
-                             edge.SecondVertex,
-                             maximumLength,
-                             ref projectedConstraint))
+                else if (currentLength > maximumLength && !TryProjectEdgeToLength( vertices, edge.FirstVertex, edge.SecondVertex, maximumLength, ref projectedConstraint))
                 {
                     return false;
                 }
@@ -356,50 +270,17 @@ namespace Fbx2Vmd.FBXImporter
             IEnumerable<int> pairIndices,
             ref bool projectedConstraint)
         {
-            float minimumRestLengthRatio =
-                NativeSkinningRestShapeCollapseDetector
-                    .CalculateMinimumNonSevereRestLengthRatio() +
-                RestLengthRatioSafetyMargin;
+            float minimumRestLengthRatio = NativeSkinningRestShapeCollapseDetector
+                    .CalculateMinimumNonSevereRestLengthRatio() + RestLengthRatioSafetyMargin;
             foreach (int pairIndex in pairIndices)
             {
                 NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
-                NativeSkinningFacePairRestLengths restLengths =
-                    contract.FacePairRestLengths[pairIndex];
-                if (!TryProjectEdge(
-                        vertices,
-                        pair.FirstEdge,
-                        pair.SecondEdge,
-                        restLengths.SharedEdge,
-                        minimumRestLengthRatio,
-                        ref projectedConstraint) ||
-                    !TryProjectEdge(
-                        vertices,
-                        pair.FirstOpposite,
-                        pair.FirstEdge,
-                        restLengths.FirstOppositeToFirstEdge,
-                        minimumRestLengthRatio,
-                        ref projectedConstraint) ||
-                    !TryProjectEdge(
-                        vertices,
-                        pair.FirstOpposite,
-                        pair.SecondEdge,
-                        restLengths.FirstOppositeToSecondEdge,
-                        minimumRestLengthRatio,
-                        ref projectedConstraint) ||
-                    !TryProjectEdge(
-                        vertices,
-                        pair.SecondOpposite,
-                        pair.FirstEdge,
-                        restLengths.SecondOppositeToFirstEdge,
-                        minimumRestLengthRatio,
-                        ref projectedConstraint) ||
-                    !TryProjectEdge(
-                        vertices,
-                        pair.SecondOpposite,
-                        pair.SecondEdge,
-                        restLengths.SecondOppositeToSecondEdge,
-                        minimumRestLengthRatio,
-                        ref projectedConstraint))
+                NativeSkinningFacePairRestLengths restLengths = contract.FacePairRestLengths[pairIndex];
+                if (!TryProjectEdge( vertices, pair.FirstEdge, pair.SecondEdge, restLengths.SharedEdge, minimumRestLengthRatio, ref projectedConstraint) || !TryProjectEdge( vertices,
+                        pair.FirstOpposite, pair.FirstEdge, restLengths.FirstOppositeToFirstEdge, minimumRestLengthRatio, ref projectedConstraint) || !TryProjectEdge( vertices, pair.FirstOpposite,
+                        pair.SecondEdge, restLengths.FirstOppositeToSecondEdge, minimumRestLengthRatio, ref projectedConstraint) || !TryProjectEdge( vertices, pair.SecondOpposite, pair.FirstEdge,
+                        restLengths.SecondOppositeToFirstEdge, minimumRestLengthRatio, ref projectedConstraint) || !TryProjectEdge( vertices, pair.SecondOpposite, pair.SecondEdge,
+                        restLengths.SecondOppositeToSecondEdge, minimumRestLengthRatio, ref projectedConstraint))
                 {
                     return false;
                 }
@@ -466,10 +347,7 @@ namespace Fbx2Vmd.FBXImporter
             {
                 NativeSkinningFacePair pair = contract.FacePairs[pairIndex];
                 float targetAngleDegrees = resolveTargetAngleDegrees(pairIndex);
-                if (!NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                        vertices,
-                        pair,
-                        out float angleDegrees))
+                if (!NativeSkinningSurfaceContractBuilder.TryMeasureAngle( vertices, pair, out float angleDegrees))
                 {
                     return false;
                 }
@@ -477,29 +355,15 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     continue;
                 }
-                if (!MeshDihedralConstraintCalculator.TryCalculateCorrections(
-                        vertices[pair.FirstOpposite],
-                        vertices[pair.SecondOpposite],
-                        vertices[pair.FirstEdge],
-                        vertices[pair.SecondEdge],
-                        targetAngleDegrees,
-                        ProjectionStiffness,
-                        out Vector3 firstOppositeCorrection,
-                        out Vector3 secondOppositeCorrection,
-                        out Vector3 firstEdgeCorrection,
-                        out Vector3 secondEdgeCorrection))
+                if (!MeshDihedralConstraintCalculator.TryCalculateCorrections( vertices[pair.FirstOpposite], vertices[pair.SecondOpposite], vertices[pair.FirstEdge], vertices[pair.SecondEdge], targetAngleDegrees, ProjectionStiffness, out Vector3 firstOppositeCorrection, out Vector3 secondOppositeCorrection, out Vector3 firstEdgeCorrection, out Vector3 secondEdgeCorrection))
                 {
-                    return false;
-                }
-
+                    return false; }
                 vertices[pair.FirstOpposite] += firstOppositeCorrection;
                 vertices[pair.SecondOpposite] += secondOppositeCorrection;
                 vertices[pair.FirstEdge] += firstEdgeCorrection;
                 vertices[pair.SecondEdge] += secondEdgeCorrection;
-                projectedConstraint = true;
-            }
-            return true;
-        }
+                projectedConstraint = true; }
+            return true; }
 
         private static bool IsFinite(Vector3 value)
         {

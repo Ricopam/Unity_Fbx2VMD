@@ -18,48 +18,31 @@ namespace Fbx2Vmd.FBXImporter
             Transform helperTransform = FindThumbBaseHelperTransformForSide(isRightThumb);
             if (helperTransform == null)
             {
-                return $"side={sideLabel}, helper=<none>, source=<none>, state=missing";
-            }
-
+                return $"side={sideLabel}, helper=<none>, source=<none>, state=missing"; }
             _detachedThumbBaseHelperSources.TryGetValue(helperTransform, out Transform sourceTransform);
-
             float initialDistance = float.NaN;
             float currentDistance = float.NaN;
             float distanceDelta = float.NaN;
-            if (sourceTransform != null &&
-                _detachedThumbBaseInitialDistances.TryGetValue(helperTransform, out float storedDistance))
+            if (sourceTransform != null && _detachedThumbBaseInitialDistances.TryGetValue(helperTransform, out float storedDistance))
             {
                 initialDistance = storedDistance;
                 currentDistance = Vector3.Distance(helperTransform.position, sourceTransform.position);
-                distanceDelta = Mathf.Abs(currentDistance - initialDistance);
-            }
-
+                distanceDelta = Mathf.Abs(currentDistance - initialDistance); }
             float relativeRotationDelta = float.NaN;
-            if (sourceTransform != null &&
-                _detachedThumbBaseInitialRelativeRotations.TryGetValue(helperTransform, out Quaternion initialRelativeRotation))
+            if (sourceTransform != null && _detachedThumbBaseInitialRelativeRotations.TryGetValue(helperTransform, out Quaternion initialRelativeRotation))
             {
                 Quaternion currentRelativeRotation = Quaternion.Inverse(sourceTransform.rotation) * helperTransform.rotation;
-                relativeRotationDelta = Quaternion.Angle(initialRelativeRotation, currentRelativeRotation);
-            }
-
+                relativeRotationDelta = Quaternion.Angle(initialRelativeRotation, currentRelativeRotation); }
             float helperLocalPositionDelta = float.NaN;
             if (_initialLocalPositions.TryGetValue(helperTransform, out Vector3 initialLocalPosition))
             {
-                helperLocalPositionDelta = Vector3.Distance(initialLocalPosition, helperTransform.localPosition);
-            }
-
+                helperLocalPositionDelta = Vector3.Distance(initialLocalPosition, helperTransform.localPosition); }
             float helperLocalRotationDelta = float.NaN;
             if (_initialLocalRotations.TryGetValue(helperTransform, out Quaternion initialLocalRotation))
             {
-                helperLocalRotationDelta = Quaternion.Angle(initialLocalRotation, helperTransform.localRotation);
-            }
-
+                helperLocalRotationDelta = Quaternion.Angle(initialLocalRotation, helperTransform.localRotation); }
             return
-                $"side={sideLabel}, helper={GetTransformPath(helperTransform)}, source={GetTransformPath(sourceTransform)}, " +
-                $"initDist={FormatDebugFloat(initialDistance)}, currDist={FormatDebugFloat(currentDistance)}, distDelta={FormatDebugFloat(distanceDelta)}, " +
-                $"relRotDelta={FormatDebugFloat(relativeRotationDelta)}, localPosDelta={FormatDebugFloat(helperLocalPositionDelta)}, " +
-                $"localRotDelta={FormatDebugFloat(helperLocalRotationDelta)}, linkedRetargeter={GetTransformPath(linkedPoseSpaceRetargeter != null ? linkedPoseSpaceRetargeter.transform : null)}";
-        }
+                $"side={sideLabel}, helper={GetTransformPath(helperTransform)}, source={GetTransformPath(sourceTransform)}, " + $"initDist={FormatDebugFloat(initialDistance)}, currDist={FormatDebugFloat(currentDistance)}, distDelta={FormatDebugFloat(distanceDelta)}, " + $"relRotDelta={FormatDebugFloat(relativeRotationDelta)}, localPosDelta={FormatDebugFloat(helperLocalPositionDelta)}, " + $"localRotDelta={FormatDebugFloat(helperLocalRotationDelta)}, linkedRetargeter={GetTransformPath(linkedPoseSpaceRetargeter != null ? linkedPoseSpaceRetargeter.transform : null)}"; }
 
         private void ResetThumbPoseShapingDiagnostics()
         {

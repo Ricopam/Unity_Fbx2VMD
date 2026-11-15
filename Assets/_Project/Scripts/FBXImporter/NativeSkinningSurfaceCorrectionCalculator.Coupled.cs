@@ -35,21 +35,10 @@ namespace Fbx2Vmd.FBXImporter
                 TryCalculateCoupledProjectionFallback(
                     baselineVertices,
                     initialVertices,
-                    contract,
-                    configuration,
-                    allowsStrainRecovery,
-                    frameEdges,
-                    initialSharpFoldCount,
-                    restShapeRecoveryPairIndices,
-                    sharpFoldPairIndices,
-                    buffers,
-                    timing,
-                    out NativeSkinningSurfaceCorrectionResult fallbackResult))
+                    contract, configuration, allowsStrainRecovery, frameEdges, initialSharpFoldCount, restShapeRecoveryPairIndices, sharpFoldPairIndices, buffers, timing, out NativeSkinningSurfaceCorrectionResult fallbackResult))
             {
-                result = fallbackResult;
-            }
-            return result;
-        }
+                result = fallbackResult; }
+            return result; }
 
         private static bool TryCalculateCoupledProjectionFallback(
             IReadOnlyList<Vector3> baselineVertices,
@@ -70,7 +59,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             Vector3[] sharpFoldCorrectedVertices = sharpFoldPairIndices.Count > 0
                 ? ApplyCorrectionPass(
                     baselineVertices,
@@ -78,23 +66,8 @@ namespace Fbx2Vmd.FBXImporter
                     contract,
                     configuration,
                     sharpFoldPairIndices,
-                    false,
-                    allowsStrainRecovery,
-                    frameEdges,
-                    buffers,
-                    timing)
-                : initialVertices.ToArray();
-            return TryRunCoupledProjectionRounds(
-                baselineVertices,
-                sharpFoldCorrectedVertices,
-                contract,
-                configuration,
-                frameEdges,
-                initialSharpFoldCount,
-                restShapeRecoveryPairIndices,
-                sharpFoldPairIndices,
-                out result);
-        }
+                    false, allowsStrainRecovery, frameEdges, buffers, timing) : initialVertices.ToArray();
+            return TryRunCoupledProjectionRounds( baselineVertices, sharpFoldCorrectedVertices, contract, configuration, frameEdges, initialSharpFoldCount, restShapeRecoveryPairIndices, sharpFoldPairIndices, out result); }
 
         private static bool TryRunCoupledProjectionRounds(
             IReadOnlyList<Vector3> baselineVertices,
@@ -118,21 +91,12 @@ namespace Fbx2Vmd.FBXImporter
                         ProjectionAngleDegrees,
                         out Vector3[] projectedVertices))
                 {
-                    return false;
-                }
-
-                if (TryAcceptRoundResult(
-                        baselineVertices, projectionStartVertices,
-                        projectedVertices, contract, configuration, frameEdges,
-                        initialSharpFoldCount, restShapeRecoveryPairIndices,
-                        ref result))
+                    return false; }
+                if (TryAcceptRoundResult( baselineVertices, projectionStartVertices, projectedVertices, contract, configuration, frameEdges, initialSharpFoldCount, restShapeRecoveryPairIndices, ref result))
                 {
-                    return true;
-                }
-                projectionStartVertices = projectedVertices;
-            }
-            return false;
-        }
+                    return true; }
+                projectionStartVertices = projectedVertices; }
+            return false; }
 
         private static bool TryAcceptRoundResult(
             IReadOnlyList<Vector3> baselineVertices,
@@ -161,12 +125,7 @@ namespace Fbx2Vmd.FBXImporter
                 projectionStartVertices,
                 projectedVertices,
                 contract,
-                configuration,
-                frameEdges,
-                initialSharpFoldCount,
-                restShapeRecoveryPairIndices,
-                out result);
-        }
+                configuration, frameEdges, initialSharpFoldCount, restShapeRecoveryPairIndices, out result); }
 
         private static bool TryFindQualityPreservingCoupledBlend(
             IReadOnlyList<Vector3> baselineVertices,
@@ -189,26 +148,13 @@ namespace Fbx2Vmd.FBXImporter
                      vertexIndex++)
                 {
                     blendedVertices[vertexIndex] = Vector3.Lerp(
-                        projectionStartVertices[vertexIndex],
-                        projectedVertices[vertexIndex],
-                        blend);
-                }
-
-                NativeSkinningSurfaceCorrectionResult candidate = EvaluateResult(
-                    baselineVertices,
-                    blendedVertices,
-                    contract,
-                    frameEdges,
-                    initialSharpFoldCount,
-                    restShapeRecoveryPairIndices);
+                        projectionStartVertices[vertexIndex], projectedVertices[vertexIndex], blend); }
+                NativeSkinningSurfaceCorrectionResult candidate = EvaluateResult( baselineVertices, blendedVertices, contract, frameEdges, initialSharpFoldCount, restShapeRecoveryPairIndices);
                 if (IsWithinQuality(candidate, contract, configuration))
                 {
                     result = candidate;
-                    return true;
-                }
-            }
-            return false;
-        }
+                    return true; } }
+            return false; }
 
 
     }

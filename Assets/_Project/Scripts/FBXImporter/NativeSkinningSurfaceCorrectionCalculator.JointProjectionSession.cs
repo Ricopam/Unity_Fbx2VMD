@@ -93,9 +93,7 @@ namespace Fbx2Vmd.FBXImporter
                     if (Math.Abs(length / edge.BaselineLength - 1) > maxStrain)
                     {
                         active.Add(edge.FirstVertex);
-                        active.Add(edge.SecondVertex);
-                    }
-                }
+                        active.Add(edge.SecondVertex); } }
                 foreach (NativeSkinningFacePair pair in pairs)
                 {
                     double3 first = ToDouble(seed[pair.FirstOpposite]);
@@ -107,9 +105,7 @@ namespace Fbx2Vmd.FBXImporter
                         active.Add(pair.FirstOpposite);
                         active.Add(pair.SecondOpposite);
                         active.Add(pair.FirstEdge);
-                        active.Add(pair.SecondEdge);
-                    }
-                }
+                        active.Add(pair.SecondEdge); } }
                 for (int ring = 0; ring < JointProjectionRingCount; ring++)
                 {
                     var frontier = new HashSet<int>(active);
@@ -118,12 +114,8 @@ namespace Fbx2Vmd.FBXImporter
                         if (frontier.Contains(edge.FirstVertex) || frontier.Contains(edge.SecondVertex))
                         {
                             active.Add(edge.FirstVertex);
-                            active.Add(edge.SecondVertex);
-                        }
-                    }
-                }
-                return active;
-            }
+                            active.Add(edge.SecondVertex); } } }
+                return active; }
 
             private List<(int First, int Second, int Third, double3 Reference)> CollectFaces()
             {
@@ -185,14 +177,10 @@ namespace Fbx2Vmd.FBXImporter
                             (point, trial) = (trial, point);
                             accepted = true;
                             break;
-                        }
-                    }
+                        } }
                     if (!accepted)
                     {
-                        break;
-                    }
-                }
-            }
+                        break; } } }
 
             internal Vector3[] BuildCorrectedVertices()
             {

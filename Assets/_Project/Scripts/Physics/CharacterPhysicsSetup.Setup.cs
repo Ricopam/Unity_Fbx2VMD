@@ -124,32 +124,6 @@ namespace Fbx2Vmd.ClothPhysics
 #endif
         }
 
-        private bool TryResolveByNamePattern(
-            Animator animator, List<string> report,
-            out System.Func<HumanBodyBones, Transform> resolver,
-            out HashSet<Transform> bodyBones, out float torso)
-        {
-            resolver = null;
-            bodyBones = null;
-            torso = 0f;
-            var nameMap = NamePatternBoneResolver.Resolve(animator.transform);
-            if (!nameMap.TryGetValue(HumanBodyBones.Head, out _) ||
-                !nameMap.TryGetValue(HumanBodyBones.Hips, out _))
-            {
-                lastReport = "실패: Avatar가 Humanoid가 아니고 본 이름 패턴으로도 " +
-                    "Head/Hips를 해석할 수 없습니다. (수동 본 지정 필요)\n" +
-                    string.Join("\n", report);
-                Debug.LogError(lastReport, this);
-                return false;
-            }
-            resolver = b => nameMap.TryGetValue(b, out var t) ? t : null;
-            bodyBones = new HashSet<Transform>(nameMap.Values);
-            torso = BodyColliderBuilder.MeasureTorso(
-                nameMap[HumanBodyBones.Hips], nameMap[HumanBodyBones.Head]);
-            report.Add($"Humanoid 아님 — 이름 패턴 폴백으로 신체 본 {nameMap.Count}개 해석");
-            return true;
-        }
-
         private HashSet<Transform> ApplyNativeGuardAndConversion(
             Animator animator, float torso, List<string> report)
         {
@@ -390,21 +364,6 @@ namespace Fbx2Vmd.ClothPhysics
                 $"체인 루트 {loopRoots.Count}개 (콜라이더 {skirtColliders.Count}개)");
             ReportSkirtPose(poseVerdict, poseDetail, true, report);
             return true;
-        }
-
-        private void ReportSkirtPose(SkirtAnimationProbe.Verdict poseVerdict,
-            string poseDetail, bool isBonePath, List<string> report)
-        {
-            if (poseVerdict != SkirtAnimationProbe.Verdict.Static)
-                report.Add($"스커트 포즈 판정: {poseDetail}");
-            else if (!skirtSkinningFallback)
-                report.Add($"스커트 포즈 판정: {poseDetail} — 커스텀 스키닝 폴백 꺼짐");
-            else if (isBonePath)
-                // BoneCloth는 정점=본이라 애니메이션 포즈가 본 자체 —
-                // 커스텀 스키닝(메시 정점 재스키닝)은 의미 없음
-                report.Add($"스커트 포즈 판정: {poseDetail} — BoneCloth 경로는 커스텀 스키닝 불필요");
-            else
-                report.Add($"스커트 포즈 판정: {poseDetail} → 커스텀 스키닝 폴백");
         }
 
         private void CreateSkirtMeshCloth(SkinnedMeshRenderer[] smrs,

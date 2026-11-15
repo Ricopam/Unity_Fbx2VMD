@@ -87,26 +87,20 @@ namespace Fbx2Vmd.ClothPhysics
         }
 
         /// <summary>클립 목록이 스커트 본 경로를 하나라도 구동하는지 판정한다.</summary>
-        public static Verdict EvaluateClips(
-            IEnumerable<AnimationClip> clips, Transform characterRoot,
-            ICollection<Transform> skirtBones, out string detail)
+        public static Verdict EvaluateClips( IEnumerable<AnimationClip> clips, Transform characterRoot, ICollection<Transform> skirtBones, out string detail)
         {
             detail = "";
             if (skirtBones == null || skirtBones.Count == 0)
             {
                 detail = "스커트 본 없음";
-                return Verdict.MissingBones;
-            }
+                return Verdict.MissingBones; }
             var clipList = clips?.Where(c => c != null).ToList();
             if (clipList == null || clipList.Count == 0)
             {
                 detail = "클립 없음";
-                return Verdict.NoClip;
-            }
+                return Verdict.NoClip; }
 #if UNITY_EDITOR
-            var bonePaths = new HashSet<string>(
-                skirtBones.Where(b => b != null).Select(
-                    b => UnityEditor.AnimationUtility.CalculateTransformPath(b, characterRoot)));
+            var bonePaths = new HashSet<string>( skirtBones.Where(b => b != null).Select( b => UnityEditor.AnimationUtility.CalculateTransformPath(b, characterRoot)));
             int humanoidClips = 0, boundClips = 0;
             foreach (var clip in clipList)
             {
@@ -116,17 +110,13 @@ namespace Fbx2Vmd.ClothPhysics
                     continue; // 머슬 클립은 비휴머노이드 본 경로를 구동 불가
                 }
                 var bindings = UnityEditor.AnimationUtility.GetCurveBindings(clip);
-                if (bindings.Any(b => bonePaths.Contains(b.path)))
-                    boundClips++;
-            }
+                if (bindings.Any(b => bonePaths.Contains(b.path))) boundClips++; }
             if (boundClips > 0)
             {
                 detail = $"{boundClips}/{clipList.Count} 클립이 스커트 본을 구동";
-                return Verdict.Animated;
-            }
+                return Verdict.Animated; }
             detail = humanoidClips > 0
-                ? $"휴머노이드 클립 {humanoidClips}개 — 스커트 본 비구동"
-                : $"{clipList.Count}개 클립에 스커트 본 바인딩 없음";
+                ? $"휴머노이드 클립 {humanoidClips}개 — 스커트 본 비구동" : $"{clipList.Count}개 클립에 스커트 본 바인딩 없음";
             return Verdict.Static;
 #else
             // 빌드에서는 바인딩 조회 불가 — 에디터에서의 설정 결과를 사용

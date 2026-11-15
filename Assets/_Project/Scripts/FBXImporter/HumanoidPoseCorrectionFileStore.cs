@@ -20,43 +20,12 @@ namespace Fbx2Vmd.FBXImporter
             string temporaryPath = string.Empty;
             try
             {
-                if (!TryResolvePath(filePath, out string resolvedPath, out errorMessage))
+                if (!TryValidateSaveInput(filePath, document, out string resolvedPath, out errorMessage))
                 {
                     return false;
                 }
 
-                if (document == null)
-                {
-                    errorMessage = "저장할 Humanoid 보정 문서가 없습니다.";
-                    return false;
-                }
-
-                if (!document.TryValidate(out errorMessage))
-                {
-                    return false;
-                }
-
-                string directoryPath = Path.GetDirectoryName(resolvedPath);
-                if (!string.IsNullOrWhiteSpace(directoryPath))
-                {
-                    Directory.CreateDirectory(directoryPath);
-                }
-
-                temporaryPath = resolvedPath + ".tmp-" + Guid.NewGuid().ToString("N");
-                File.WriteAllText(
-                    temporaryPath,
-                    JsonUtility.ToJson(document, prettyPrint: true),
-                    Utf8NoBom);
-
-                if (File.Exists(resolvedPath))
-                {
-                    File.Replace(temporaryPath, resolvedPath, null);
-                }
-                else
-                {
-                    File.Move(temporaryPath, resolvedPath);
-                }
-
+                WriteDocumentAtomically(resolvedPath, document, ref temporaryPath);
                 errorMessage = string.Empty;
                 return true;
             }
@@ -71,52 +40,98 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        internal static bool TryLoad(
-            string filePath,
-            out HumanoidPoseCorrectionDocument document,
-            out string errorMessage)
+        // 저장 경로 해석과 문서 유효성을 함께 검증함.
+        private static bool TryValidateSaveInput(
+            string filePath, HumanoidPoseCorrectionDocument document,
+            out string resolvedPath, out string errorMessage)
+        {
+            if (!TryResolvePath(filePath, out resolvedPath, out errorMessage))
+            {
+                return false;
+            }
+
+            if (document == null)
+            {
+                errorMessage = "저장할 Humanoid 보정 문서가 없습니다.";
+                return false;
+            }
+
+            return document.TryValidate(out errorMessage);
+        }
+
+        // 임시 파일에 쓴 뒤 Replace/Move로 원자적으로 반영함.
+        private static void WriteDocumentAtomically(
+            string resolvedPath, HumanoidPoseCorrectionDocument document, ref string temporaryPath)
+        {
+            string directoryPath = Path.GetDirectoryName(resolvedPath);
+            if (!string.IsNullOrWhiteSpace(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            temporaryPath = resolvedPath + ".tmp-" + Guid.NewGuid().ToString("N");
+            File.WriteAllText(temporaryPath, JsonUtility.ToJson(document, prettyPrint: true), Utf8NoBom);
+
+            if (File.Exists(resolvedPath))
+            {
+                File.Replace(temporaryPath, resolvedPath, null);
+            }
+            else
+            {
+                File.Move(temporaryPath, resolvedPath);
+            }
+        }
+
+        internal static bool TryLoad( string filePath, out HumanoidPoseCorrectionDocument document, out string errorMessage)
         {
             document = null;
             try
             {
                 if (!TryResolvePath(filePath, out string resolvedPath, out errorMessage))
                 {
-                    return false;
-                }
-
+                    return false; }
                 if (!File.Exists(resolvedPath))
                 {
                     errorMessage = $"Humanoid 보정 문서를 찾지 못했습니다: {resolvedPath}";
-                    return false;
-                }
-
-                string json = File.ReadAllText(resolvedPath, Utf8NoBom);
-                if (string.IsNullOrWhiteSpace(json))
+                    return false; }
+                if (!TryReadDocumentJson(resolvedPath, out string json, out errorMessage))
                 {
-                    errorMessage = "Humanoid 보정 문서가 비어 있습니다.";
-                    return false;
-                }
-
-                HumanoidPoseCorrectionDocument loadedDocument =
-                    JsonUtility.FromJson<HumanoidPoseCorrectionDocument>(json);
-                if (loadedDocument == null ||
-                    !loadedDocument.TryValidate(out errorMessage))
+                    return false; }
+                if (!TryParseDocument(json, out document, out errorMessage))
                 {
-                    errorMessage = string.IsNullOrWhiteSpace(errorMessage)
-                        ? "Humanoid 보정 문서 형식이 올바르지 않습니다."
-                        : errorMessage;
-                    return false;
-                }
-
-                document = loadedDocument;
+                    return false; }
                 errorMessage = string.Empty;
-                return true;
-            }
-            catch (Exception exception)
+                return true; } catch (Exception exception)
             {
                 errorMessage = $"Humanoid 보정 문서를 불러오지 못했습니다: {exception.Message}";
+                return false; } }
+
+        // 파일에서 JSON 본문을 읽고 비어 있지 않은지 확인함.
+        private static bool TryReadDocumentJson(
+            string resolvedPath, out string json, out string errorMessage)
+        {
+            json = File.ReadAllText(resolvedPath, Utf8NoBom);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                errorMessage = null;
+                return true;
+            }
+            errorMessage = "Humanoid 보정 문서가 비어 있습니다.";
+            return false;
+        }
+
+        // JSON을 문서로 역직렬화하고 형식을 검증함.
+        private static bool TryParseDocument(
+            string json, out HumanoidPoseCorrectionDocument document, out string errorMessage)
+        {
+            document = JsonUtility.FromJson<HumanoidPoseCorrectionDocument>(json);
+            if (document == null || !document.TryValidate(out errorMessage))
+            {
+                errorMessage = string.IsNullOrWhiteSpace(errorMessage)
+                    ? "Humanoid 보정 문서 형식이 올바르지 않습니다." : errorMessage;
                 return false;
             }
+            return true;
         }
 
         private static bool TryResolvePath(

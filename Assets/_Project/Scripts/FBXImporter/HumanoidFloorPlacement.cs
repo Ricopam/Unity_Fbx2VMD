@@ -30,13 +30,10 @@ namespace Fbx2Vmd.FBXImporter
             return true;
         }
 
-        private static bool TryMeasureSoles(Transform root, Transform left, Transform right,
-            out Vector3 leftSole, out Vector3 rightSole)
+        private static bool TryMeasureSoles(Transform root, Transform left, Transform right, out Vector3 leftSole, out Vector3 rightSole)
         {
             leftSole = rightSole = new Vector3(0f, float.PositiveInfinity, 0f);
-            if (left == null || right == null)
-                return false;
-
+            if (left == null || right == null) return false;
             var baked = new Mesh();
             var vertices = new List<Vector3>();
             try
@@ -44,41 +41,24 @@ namespace Fbx2Vmd.FBXImporter
                 foreach (SkinnedMeshRenderer renderer in root.GetComponentsInChildren<SkinnedMeshRenderer>())
                 {
                     Mesh mesh = renderer.sharedMesh;
-                    if (!renderer.enabled || mesh == null)
-                        continue;
+                    if (!renderer.enabled || mesh == null) continue;
 #if !UNITY_EDITOR
                     // 빌드에서 읽을 수 없는 메시로 부정확한 배치값을 만들지 않음.
-                    if (!mesh.isReadable)
-                        return false;
+                    if (!mesh.isReadable) return false;
 #endif
                     BoneWeight[] weights = mesh.boneWeights;
                     Transform[] bones = renderer.bones;
-                    if (weights.Length != mesh.vertexCount)
-                        return false;
-
+                    if (weights.Length != mesh.vertexCount) return false;
                     renderer.BakeMesh(baked);
                     baked.GetVertices(vertices);
-                    if (vertices.Count != weights.Length)
-                        return false;
-
-                    if (!AccumulateSoles(renderer, vertices, weights, bones, left, right,
-                            ref leftSole, ref rightSole))
-                        return false;
-                }
-                return IsFinite(leftSole) && IsFinite(rightSole);
-            }
-            catch (UnityException)
+                    if (vertices.Count != weights.Length) return false;
+                    if (!AccumulateSoles(renderer, vertices, weights, bones, left, right, ref leftSole, ref rightSole)) return false; }
+                return IsFinite(leftSole) && IsFinite(rightSole); } catch (UnityException)
             {
-                return false;
-            }
-            finally
+                return false; } finally
             {
-                if (Application.isPlaying)
-                    Object.Destroy(baked);
-                else
-                    Object.DestroyImmediate(baked);
-            }
-        }
+                if (Application.isPlaying) Object.Destroy(baked);
+                else Object.DestroyImmediate(baked); } }
 
         static bool AccumulateSoles(
             SkinnedMeshRenderer renderer, List<Vector3> vertices,

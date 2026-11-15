@@ -5,26 +5,16 @@ namespace Fbx2Vmd.FBXImporter
 {
     internal static class HumanoidFootSupportRoleCalculator
     {
-        internal static bool TryBuild(Vector2[] sourceWeights, float[] relativeHeights,
-            float frameRate, float heightTolerance, float blendSeconds, out Vector2[] weights)
+        internal static bool TryBuild(Vector2[] sourceWeights, float[] relativeHeights, float frameRate, float heightTolerance, float blendSeconds, out Vector2[] weights)
         {
             weights = Array.Empty<Vector2>();
-            if (sourceWeights == null || relativeHeights == null || sourceWeights.Length == 0 ||
-                sourceWeights.Length != relativeHeights.Length || !IsPositiveFinite(frameRate) ||
-                !IsPositiveFinite(heightTolerance) || !IsPositiveFinite(blendSeconds))
-                return false;
-
+            if (sourceWeights == null || relativeHeights == null || sourceWeights.Length == 0 || sourceWeights.Length != relativeHeights.Length || !IsPositiveFinite(frameRate) || !IsPositiveFinite(heightTolerance) || !IsPositiveFinite(blendSeconds)) return false;
             float maximumRoleChange = (float)Math.Min(2d, 1d / frameRate / blendSeconds);
-            if (maximumRoleChange <= 0f)
-                return false;
+            if (maximumRoleChange <= 0f) return false;
             for (int i = 0; i < sourceWeights.Length; i++)
             {
                 Vector2 source = sourceWeights[i];
-                if (!IsFinite(relativeHeights[i]) || !IsFinite(source.x) || !IsFinite(source.y) ||
-                    source.x < 0f || source.x > 1f || source.y < 0f || source.y > 1f)
-                    return false;
-            }
-
+                if (!IsFinite(relativeHeights[i]) || !IsFinite(source.x) || !IsFinite(source.y) || source.x < 0f || source.x > 1f || source.y < 0f || source.y > 1f) return false; }
             weights = new Vector2[sourceWeights.Length];
             float role = 0f;
             bool hasRole = false;
@@ -34,9 +24,7 @@ namespace Fbx2Vmd.FBXImporter
                 if (whole <= 0f)
                 {
                     hasRole = false;
-                    continue;
-                }
-
+                    continue; }
                 float height = relativeHeights[i];
                 float rear = Mathf.Clamp01(1f - Mathf.Max(0f, -height) / heightTolerance);
                 float front = Mathf.Clamp01(1f - Mathf.Max(0f, height) / heightTolerance);
@@ -44,10 +32,8 @@ namespace Fbx2Vmd.FBXImporter
                 // 단일 역할을 완화하여 전체 지지는 보존하고, 해제 후 재진입에는 이전 역할을 남기지 않음.
                 role = hasRole ? Mathf.MoveTowards(role, desired, maximumRoleChange) : desired;
                 hasRole = true;
-                weights[i] = whole * new Vector2(1f + Mathf.Min(0f, role), 1f - Mathf.Max(0f, role));
-            }
-            return true;
-        }
+                weights[i] = whole * new Vector2(1f + Mathf.Min(0f, role), 1f - Mathf.Max(0f, role)); }
+            return true; }
 
         internal static Vector2 Interpolate(Vector2 first, Vector2 second, float blend)
         {

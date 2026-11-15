@@ -80,53 +80,32 @@ namespace Fbx2Vmd.ClothPhysics
         /// </summary>
         /// <param name="boneResolver">HumanBodyBones → Transform 해석 함수</param>
         /// <param name="torsoLength">머리~골반 기준 길이</param>
-        public static BuildResult Build(
-            System.Func<HumanBodyBones, Transform> boneResolver,
-            float torsoLength,
-            Dictionary<Transform, List<Vector3>> boneVerts = null,
-            bool useSymmetry = true,
-            bool includeLegs = true,
-            float radiusScale = 1.15f)
+        public static BuildResult Build( System.Func<HumanBodyBones, Transform> boneResolver, float torsoLength, Dictionary<Transform, List<Vector3>> boneVerts = null, bool useSymmetry = true, bool includeLegs = true, float radiusScale = 1.15f)
         {
             var result = new BuildResult();
             bool mirrorOk = useSymmetry; // AutomaticHumanBody는 Animator가 같은 부모 위에 있어야 함
-
             foreach (var slot in Slots)
             {
-                if (!includeLegs && (slot.category == ColliderCategory.Legs || slot.category == ColliderCategory.Feet))
-                    continue;
-
+                if (!includeLegs && (slot.category == ColliderCategory.Legs || slot.category == ColliderCategory.Feet)) continue;
                 Transform startBone = boneResolver(slot.start);
                 if (startBone == null)
                 {
                     result.warnings.Add($"본이 없어 건너뜀: {slot.start}");
-                    continue;
-                }
+                    continue; }
                 Transform endBone = boneResolver(slot.end); // 없을 수 있음(UpperChest/Toes)
                 WarnIfNonUniformScale(startBone, slot.name, result);
-
                 ColliderComponent col = slot.capsule && endBone != null
-                    ? CreateCapsule(startBone, endBone, slot.name, boneVerts, torsoLength, radiusScale, slot.maxR)
-                    : CreateSphere(startBone, endBone, slot.name, boneVerts, torsoLength, radiusScale, slot.maxR);
-
-                if (col == null)
-                    continue;
-
-                if (slot.paired && mirrorOk)
-                    col.symmetryMode = ColliderSymmetryMode.AutomaticHumanBody;
-                else if (slot.paired)
-                    CreateMirrorIfPossible(col, slot, boneResolver, boneVerts, torsoLength, radiusScale, result);
-
+                    ? CreateCapsule(startBone, endBone, slot.name, boneVerts, torsoLength, radiusScale, slot.maxR) : CreateSphere(startBone, endBone, slot.name, boneVerts, torsoLength, radiusScale, slot.maxR);
+                if (col == null) continue;
+                if (slot.paired && mirrorOk) col.symmetryMode = ColliderSymmetryMode.AutomaticHumanBody;
+                else if (slot.paired) CreateMirrorIfPossible(col, slot, boneResolver, boneVerts, torsoLength, radiusScale, result);
                 // MC2 공식 요구사항: 스크립트로 파라미터 변경 후 UpdateParameters를 호출해야
                 // 데이터 검증과 시메트리 해석이 즉시 반영된다.
                 col.UpdateParameters();
                 result.colliders.Add(col);
-                if (!result.byCategory.TryGetValue(slot.category, out var list))
-                    result.byCategory[slot.category] = list = new List<ColliderComponent>();
-                list.Add(col);
-            }
-            return result;
-        }
+                if (!result.byCategory.TryGetValue(slot.category, out var list)) result.byCategory[slot.category] = list = new List<ColliderComponent>();
+                list.Add(col); }
+            return result; }
 
         /// <summary>
         /// 생성된 콜라이더 GameObject를 전부 제거한다 (접두사 기준, 재실행 안전).
@@ -170,13 +149,10 @@ namespace Fbx2Vmd.ClothPhysics
         {
             var go = new GameObject(AutoNamePrefix + slotName);
             go.transform.SetParent(bone, false);
-
             var col = go.AddComponent<MagicaCapsuleCollider>();
-
             // 본→자식 방향을 본 로컬축으로 변환해 캡슐 축 결정
             Vector3 localChild = bone.InverseTransformPoint(child.position);
             SetCapsuleAxis(col, localChild);
-
             float length = localChild.magnitude;
             float radius;
             if (boneVerts != null && boneVerts.TryGetValue(bone, out var verts) && verts.Count > 0)
@@ -216,7 +192,6 @@ namespace Fbx2Vmd.ClothPhysics
             float cap = maxRRatio > 0f ? torsoLength * maxRRatio : torsoLength * 0.6f;
             radius = Mathf.Clamp(radius, 0.015f, cap);
             col.SetSize(radius);
-
             // 손·발은 관절 끝 방향으로 중심을 약간 이동해 커버 범위 확보
             if (nextBone != null)
             {
@@ -335,7 +310,6 @@ namespace Fbx2Vmd.ClothPhysics
             var map = new Dictionary<Transform, List<Vector3>>();
             if (renderers == null)
                 return map;
-
             foreach (var smr in renderers)
             {
                 if (smr == null || smr.sharedMesh == null)
@@ -344,23 +318,16 @@ namespace Fbx2Vmd.ClothPhysics
                 var verts = mesh.vertices;
                 var boneWeights = mesh.boneWeights;
                 var bones = smr.bones;
-                if (boneWeights == null || boneWeights.Length != verts.Length)
-                    continue;
-
+                if (boneWeights == null || boneWeights.Length != verts.Length) continue;
                 Transform root = smr.transform;
                 for (int i = 0; i < verts.Length; i++)
                 {
                     var bw = boneWeights[i];
                     int bi = DominantBoneIndex(bw);
-                    if (bi < 0 || bi >= bones.Length || bones[bi] == null)
-                        continue;
-                    if (!map.TryGetValue(bones[bi], out var list))
-                        map[bones[bi]] = list = new List<Vector3>();
-                    list.Add(root.TransformPoint(verts[i]));
-                }
-            }
-            return map;
-        }
+                    if (bi < 0 || bi >= bones.Length || bones[bi] == null) continue;
+                    if (!map.TryGetValue(bones[bi], out var list)) map[bones[bi]] = list = new List<Vector3>();
+                    list.Add(root.TransformPoint(verts[i])); } }
+            return map; }
 
         static int DominantBoneIndex(BoneWeight w)
         {

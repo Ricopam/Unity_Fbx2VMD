@@ -75,47 +75,33 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             private int RunIterations(
-                NativeArray<Vector3> residual,
-                NativeArray<Vector3> direction,
-                NativeArray<Vector3> preconditionedResidual,
-                NativeArray<Vector3> matrixDirection)
+                NativeArray<Vector3> residual, NativeArray<Vector3> direction, NativeArray<Vector3> preconditionedResidual, NativeArray<Vector3> matrixDirection)
             {
                 double residualDot = Dot(residual, direction);
                 int run = 0;
-                for (int iteration = 0;
-                     iteration < MaximumIterations && residualDot > 1e-20d;
-                     iteration++)
-                {
+                for (int iteration = 0; iteration < MaximumIterations && residualDot > 1e-20d; iteration++) {
                     run++;
                     ApplyMatrix(direction, matrixDirection);
                     double denominator = Dot(direction, matrixDirection);
                     if (math.abs(denominator) <= 1e-20d)
                     {
-                        break;
-                    }
+                        break; }
                     float step = (float)(residualDot / denominator);
                     for (int index = 0; index < Count; index++)
                     {
                         Solution[index] += direction[index] * step;
-                        residual[index] -= matrixDirection[index] * step;
-                    }
+                        residual[index] -= matrixDirection[index] * step; }
                     if (Dot(residual, residual) <= 1e-18d)
                     {
-                        break;
-                    }
+                        break; }
                     ApplyPreconditioner(residual, preconditionedResidual);
-                    double nextResidualDot =
-                        Dot(residual, preconditionedResidual);
+                    double nextResidualDot = Dot(residual, preconditionedResidual);
                     float beta = (float)(nextResidualDot / residualDot);
                     for (int index = 0; index < Count; index++)
                     {
-                        direction[index] = preconditionedResidual[index] +
-                            direction[index] * beta;
-                    }
-                    residualDot = nextResidualDot;
-                }
-                return run;
-            }
+                        direction[index] = preconditionedResidual[index] + direction[index] * beta; }
+                    residualDot = nextResidualDot; }
+                return run; }
 
             private void ApplyMatrix(
                 NativeArray<Vector3> values,
@@ -168,9 +154,7 @@ namespace Fbx2Vmd.FBXImporter
                                 BendGradients[term * 4 + index] *
                                 projectedDisplacement;
                         }
-                    }
-                }
-            }
+                    } } }
 
             private void ApplyStrainTerms(
                 NativeArray<Vector3> values,
@@ -196,16 +180,10 @@ namespace Fbx2Vmd.FBXImporter
                     {
                         result[indices.x] += EdgeStrainBarrierWeight *
                             StrainFirstGradients[term] *
-                            projectedDisplacement;
-                    }
+                            projectedDisplacement; }
                     if (indices.y >= 0)
                     {
-                        result[indices.y] += EdgeStrainBarrierWeight *
-                            StrainSecondGradients[term] *
-                            projectedDisplacement;
-                    }
-                }
-            }
+                        result[indices.y] += EdgeStrainBarrierWeight * StrainSecondGradients[term] * projectedDisplacement; } } }
 
             private void ApplyMaterialTerms(
                 NativeArray<Vector3> values,

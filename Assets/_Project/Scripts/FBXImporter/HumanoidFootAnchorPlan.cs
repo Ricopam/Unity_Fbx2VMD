@@ -148,9 +148,7 @@ namespace Fbx2Vmd.FBXImporter
             return true;
         }
 
-        internal static bool TryFindSupportPose(Transform foot, HumanoidFootSoleSampler sampler, Vector3 axis,
-            Quaternion referenceRotation, Vector3 groundNormal,
-            out Quaternion rotation, out int rear, out int front)
+        internal static bool TryFindSupportPose(Transform foot, HumanoidFootSoleSampler sampler, Vector3 axis, Quaternion referenceRotation, Vector3 groundNormal, out Quaternion rotation, out int rear, out int front)
         {
             rotation = referenceRotation;
             rear = front = -1;
@@ -160,12 +158,8 @@ namespace Fbx2Vmd.FBXImporter
                 rearPoint = frontPoint = -1;
                 Quaternion candidate = Quaternion.AngleAxis(angle, axis) * original;
                 Vector3 normal = foot.rotation * (Quaternion.Inverse(candidate) * groundNormal);
-                if (!sampler.TrySelectContact(false, normal.normalized, out rearPoint, out _) ||
-                    !sampler.TrySelectContact(true, normal.normalized, out frontPoint, out _) ||
-                    !sampler.TryGetLocalPoint(rearPoint, out Vector3 rearLocal) ||
-                    !sampler.TryGetLocalPoint(frontPoint, out Vector3 frontLocal)) return float.NaN;
-                return Vector3.Dot(candidate * ((rearLocal - frontLocal) * foot.lossyScale.x), groundNormal);
-            }
+                if (!sampler.TrySelectContact(false, normal.normalized, out rearPoint, out _) || !sampler.TrySelectContact(true, normal.normalized, out frontPoint, out _) || !sampler.TryGetLocalPoint(rearPoint, out Vector3 rearLocal) || !sampler.TryGetLocalPoint(frontPoint, out Vector3 frontLocal)) return float.NaN;
+                return Vector3.Dot(candidate * ((rearLocal - frontLocal) * foot.lossyScale.x), groundNormal); }
             float best = float.PositiveInfinity;
             float leftValue = Evaluate(-45f, out _, out _);
             // 단조성을 가정하지 않고 짧은 구간별로 해를 찾은 뒤 원본에 가장 가까운 각도를 선택함.
@@ -181,18 +175,14 @@ namespace Fbx2Vmd.FBXImporter
                         float middle = (left + right) * 0.5f;
                         float middleValue = Evaluate(middle, out _, out _);
                         if (value * middleValue <= 0f) right = middle;
-                        else { left = middle; value = middleValue; }
-                    }
+                        else { left = middle; value = middleValue; } }
                     float angle = (left + right) * 0.5f;
-                    if (Mathf.Abs(angle) < Mathf.Abs(best)) best = angle;
-                }
-                leftValue = rightValue;
-            }
+                    if (Mathf.Abs(angle) < Mathf.Abs(best)) best = angle; }
+                leftValue = rightValue; }
             if (float.IsInfinity(best)) return false;
             Evaluate(best, out rear, out front);
             rotation = Quaternion.AngleAxis(best, axis) * original;
-            return true;
-        }
+            return true; }
 
         // 추종 지연은 갭 비율로 회수하되 프레임 이동 절대 상한을 넘기지 않음.
         private static Vector3 MoveEmittedAnchor(Vector3 emitted, Vector3 target, float trackStep)

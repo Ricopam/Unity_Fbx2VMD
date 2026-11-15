@@ -25,16 +25,9 @@ namespace Fbx2Vmd.FBXImporter
         /// 안정적인 녹화 시퀀스를 시작함. 지연 대기 → 프리웜 → VMD 녹화 순서로 진행함.
         /// </summary>
         public IEnumerator RecordAsync(
-            Animation ghostAnim,
-            PoseSpaceRetargeter retargeter,
-            GameObject targetObject,
-            AnimationClip clip,
-            string outputBaseName)
+            Animation ghostAnim, PoseSpaceRetargeter retargeter,
+            GameObject targetObject, AnimationClip clip, string outputBaseName)
         {
-#if UNITY_EDITOR
-            FBXEditorDiagnosticSession editorDiagnosticSession =
-                _pipeline.EditorDiagnosticSession;
-#endif
             yield return AwaitStartDelay();
 
             if (ghostAnim == null || clip == null)
@@ -43,49 +36,59 @@ namespace Fbx2Vmd.FBXImporter
                 yield break;
             }
 
-            var plan = new RecordingPlan
+            RecordingPlan plan = CreateRecordingPlan(clip, outputBaseName);
+            bool shouldStartVmdRecording = ShouldStartVmdRecording( _pipeline.ShouldRecordVmdAfterImport);
+            if (!TryPrepareRecording( targetObject, ref plan, clip, outputBaseName, shouldStartVmdRecording, out HumanoidSampleCode recorderController))
             {
-                playbackSpeed = ResolveVmdRecordingPlaybackSpeed(_pipeline.vmdRecordingPlaybackSpeed),
-                outputBaseName = outputBaseName,
-            };
-            plan.length = ResolveRecordingLengthForPlaybackSpeed(clip.length, plan.playbackSpeed);
-            plan.comparisonLabel = $"auto_{plan.outputBaseName}";
+                yield break; }
 
-            bool shouldStartVmdRecording = ShouldStartVmdRecording(
-                _pipeline.ShouldRecordVmdAfterImport);
-
-            HumanoidSampleCode recorderController = null;
-            if (shouldStartVmdRecording &&
-                !PrepareRecorderAndPlan(targetObject, ref plan, clip, outputBaseName,
-                    out recorderController
-#if UNITY_EDITOR
-                    , editorDiagnosticSession
-#endif
-                    ))
-            {
-                yield break;
-            }
-
-            yield return PrewarmAndCaptureBaseline(
-                ghostAnim, clip, retargeter, plan, shouldStartVmdRecording);
+            yield return PrewarmAndCaptureBaseline( ghostAnim, clip, retargeter, plan, shouldStartVmdRecording);
 
             if (!shouldStartVmdRecording)
             {
-                _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.Success, $"FBX 임포트/촬영 준비 완료: {outputBaseName}", 1f);
-                Debug.Log($"[Recording] FBX 임포트 및 Unity 촬영 준비 완료됨. 출력={outputBaseName}, VMD 자동 녹화=생략");
-                _pipeline._isProcessing = false;
+                CompleteImportWithoutVmdRecording(outputBaseName);
                 yield break;
             }
 
             StartAutoRecordingOrFail(plan, recorderController);
         }
 
+        // 재생 속도·길이·비교 라벨이 채워진 녹화 계획을 만듦.
+        private RecordingPlan CreateRecordingPlan(AnimationClip clip, string outputBaseName)
+        {
+            var plan = new RecordingPlan
+            {
+                playbackSpeed = ResolveVmdRecordingPlaybackSpeed(_pipeline.vmdRecordingPlaybackSpeed), outputBaseName = outputBaseName, };
+            plan.length = ResolveRecordingLengthForPlaybackSpeed(clip.length, plan.playbackSpeed);
+            plan.comparisonLabel = $"auto_{plan.outputBaseName}";
+            return plan;
+        }
 
+        // VMD 녹화 예정이면 레코더와 계획을 준비함. 생략 경로는 즉시 성공.
+        private bool TryPrepareRecording(
+            GameObject targetObject, ref RecordingPlan plan, AnimationClip clip,
+            string outputBaseName, bool shouldStartVmdRecording,
+            out HumanoidSampleCode recorderController)
+        {
+            recorderController = null;
+            return !shouldStartVmdRecording ||
+                PrepareRecorderAndPlan(targetObject, ref plan, clip, outputBaseName,
+                    out recorderController
+#if UNITY_EDITOR
+                    , _pipeline.EditorDiagnosticSession
+#endif
+                    );
+        }
 
-
+        // VMD 자동 녹화 생략 경로의 성공 상태·로그·플래그 정리.
+        private void CompleteImportWithoutVmdRecording(string outputBaseName)
+        {
+            _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.Success, $"FBX 임포트/촬영 준비 완료: {outputBaseName}", 1f);
+            Debug.Log($"[Recording] FBX 임포트 및 Unity 촬영 준비 완료됨. 출력={outputBaseName}, VMD 자동 녹화=생략");
+            _pipeline._isProcessing = false;
+        }
 
         // 녹화 파라미터 가변 묶음 — 스모크 오버라이드·참조 타이밍이 부분 갱신한다.
-
 
         void ApplyRecorderDiagnostics(
             HumanoidSampleCode recorderController, float[] diagnosticSampleTimesOverride
@@ -99,43 +102,25 @@ namespace Fbx2Vmd.FBXImporter
             float diagnosticScreenshotVerticalViewportCenter = 0.28f;
 #if UNITY_EDITOR
             recordingCapturePlan = editorDiagnosticSession.HasCaptureResolutionOverride
-                ? RecordingCaptureResolution.CreateCustomPlan(
-                    editorDiagnosticSession.CaptureWidth,
-                    editorDiagnosticSession.CaptureHeight)
-                : RecordingCaptureResolution.CreatePlan(
-                    _pipeline.recordingCaptureQuality,
-                    _pipeline.customRecordingCaptureWidth,
-                    _pipeline.customRecordingCaptureHeight);
-            diagnosticScreenshotPadding = float.IsNaN(
-                editorDiagnosticSession.DiagnosticScreenshotPaddingOverride)
+                ? RecordingCaptureResolution.CreateCustomPlan( editorDiagnosticSession.CaptureWidth, editorDiagnosticSession.CaptureHeight)
+                : RecordingCaptureResolution.CreatePlan( _pipeline.recordingCaptureQuality, _pipeline.customRecordingCaptureWidth, _pipeline.customRecordingCaptureHeight);
+            diagnosticScreenshotPadding = float.IsNaN( editorDiagnosticSession.DiagnosticScreenshotPaddingOverride)
                 ? diagnosticScreenshotPadding
                 : editorDiagnosticSession.DiagnosticScreenshotPaddingOverride;
-            diagnosticScreenshotVerticalViewportCenter = float.IsNaN(
-                editorDiagnosticSession.DiagnosticScreenshotVerticalViewportCenterOverride)
+            diagnosticScreenshotVerticalViewportCenter = float.IsNaN( editorDiagnosticSession.DiagnosticScreenshotVerticalViewportCenterOverride)
                 ? diagnosticScreenshotVerticalViewportCenter
                 : editorDiagnosticSession.DiagnosticScreenshotVerticalViewportCenterOverride;
 #else
-            recordingCapturePlan = RecordingCaptureResolution.CreatePlan(
-                _pipeline.recordingCaptureQuality,
-                _pipeline.customRecordingCaptureWidth,
-                _pipeline.customRecordingCaptureHeight);
+            recordingCapturePlan = RecordingCaptureResolution.CreatePlan( _pipeline.recordingCaptureQuality, _pipeline.customRecordingCaptureWidth, _pipeline.customRecordingCaptureHeight);
 #endif
-            recorderController.SetRecordingDiagnostics(
-                _pipeline.enableRecordingDiagnostics,
-                _pipeline.enableRecordingDiagnostics && _pipeline.enableDiagnosticFingerCloseups,
-                _pipeline.enableRecordingDiagnostics && _pipeline.useDeterministicCaptureFramerateForDiagnostics,
-                diagnosticSampleTimesOverride,
-                recordingCapturePlan.Width,
-                recordingCapturePlan.Height,
-                diagnosticScreenshotPadding,
-                diagnosticScreenshotVerticalViewportCenter);
+            recorderController.SetRecordingDiagnostics( _pipeline.enableRecordingDiagnostics, _pipeline.enableRecordingDiagnostics && _pipeline.enableDiagnosticFingerCloseups,
+                _pipeline.enableRecordingDiagnostics && _pipeline.useDeterministicCaptureFramerateForDiagnostics, diagnosticSampleTimesOverride, recordingCapturePlan.Width,
+                recordingCapturePlan.Height, diagnosticScreenshotPadding, diagnosticScreenshotVerticalViewportCenter);
         }
 
 #if UNITY_EDITOR
 
 #endif
-
-
 
         private void OnRecordingFinished(VmdSaveResult result)
         {
@@ -147,22 +132,7 @@ namespace Fbx2Vmd.FBXImporter
             TryCopyVmdToAdditionalFolder(effectiveResult);
             ClearActiveRecordingSubscription();
             _pipeline.LogRetargetPlaybackStabilitySummary();
-
-            if (effectiveResult.Success)
-            {
-                _pipeline.SetSessionState(
-                    FBXSessionState.Success,
-                    $"VMD 저장 완료: {Path.GetFileName(effectiveResult.FilePath)}",
-                    1f);
-            }
-            else
-            {
-                string errorMessage = string.IsNullOrWhiteSpace(effectiveResult.ErrorMessage)
-                    ? "VMD 저장 실패"
-                    : effectiveResult.ErrorMessage;
-                _pipeline.SetSessionState(FBXSessionState.Failed, errorMessage, 0f);
-            }
-
+            SetSaveResultState(effectiveResult);
             _pipeline.CleanupActiveGhost();
             _pipeline.ResetTargetStateAfterSession(recaptureGuardBaselines: false);
 #if UNITY_EDITOR
@@ -170,6 +140,21 @@ namespace Fbx2Vmd.FBXImporter
             _pipeline.ClearEditorSmokeOverride();
 #endif
             _pipeline._isProcessing = false;
+        }
+
+        // 저장 결과에 따라 세션 상태를 성공 또는 실패로 반영함.
+        private void SetSaveResultState(VmdSaveResult effectiveResult)
+        {
+            if (effectiveResult.Success)
+            {
+                _pipeline.SetSessionState( FBXSessionState.Success, $"VMD 저장 완료: {Path.GetFileName(effectiveResult.FilePath)}", 1f);
+                return;
+            }
+
+            string errorMessage = string.IsNullOrWhiteSpace(effectiveResult.ErrorMessage)
+                ? "VMD 저장 실패"
+                : effectiveResult.ErrorMessage;
+            _pipeline.SetSessionState(FBXSessionState.Failed, errorMessage, 0f);
         }
 
         private static void TryAppendVmdArtifactToComparisonSessionManifest(
@@ -225,10 +210,8 @@ namespace Fbx2Vmd.FBXImporter
 
         private void TryCopyVmdToAdditionalFolder(VmdSaveResult result)
         {
-            if (!result.Success ||
-                string.IsNullOrWhiteSpace(_pipeline.additionalVmdCopyFolder) ||
-                string.IsNullOrWhiteSpace(result.FilePath) ||
-                !File.Exists(result.FilePath))
+            if (!result.Success || string.IsNullOrWhiteSpace(_pipeline.additionalVmdCopyFolder) ||
+                string.IsNullOrWhiteSpace(result.FilePath) || !File.Exists(result.FilePath))
             {
                 return;
             }
@@ -239,8 +222,7 @@ namespace Fbx2Vmd.FBXImporter
                 if (!Path.IsPathRooted(targetFolder))
                 {
                     string projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
-                    targetFolder = Path.Combine(projectRoot, targetFolder);
-                }
+                    targetFolder = Path.Combine(projectRoot, targetFolder); }
 
                 Directory.CreateDirectory(targetFolder);
                 string targetPath = Path.Combine(targetFolder, Path.GetFileName(result.FilePath));
@@ -249,8 +231,7 @@ namespace Fbx2Vmd.FBXImporter
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[Recording] VMD 추가 복사 실패함. 오류={ex.Message}");
-            }
+                Debug.LogWarning($"[Recording] VMD 추가 복사 실패함. 오류={ex.Message}"); }
         }
 
         internal void ClearActiveRecordingSubscription()
@@ -267,53 +248,42 @@ namespace Fbx2Vmd.FBXImporter
         /// <summary>
         /// 녹화 시작 포즈를 프리웜함. Ghost 애니메이터를 시작 시간으로 설정하고 프리웜 프레임만큼 샘플링함.
         /// </summary>
-        public IEnumerator PrewarmStartPose(
-            Animation ghostAnim,
-            AnimationClip clip,
-            PoseSpaceRetargeter retargeter,
-            float startTimeSeconds,
-            float playbackSpeed,
-            int configuredPrewarmFrameCount,
-            int visiblePrewarmYieldFrameCount)
+        public IEnumerator PrewarmStartPose( Animation ghostAnim, AnimationClip clip, PoseSpaceRetargeter retargeter, float startTimeSeconds, float playbackSpeed, int configuredPrewarmFrameCount, int visiblePrewarmYieldFrameCount)
         {
             ghostAnim.clip = clip;
             if (ghostAnim.GetClip(clip.name) == null)
             {
-                ghostAnim.AddClip(clip, clip.name);
-            }
-
+                ghostAnim.AddClip(clip, clip.name); }
             ghostAnim.Play(clip.name);
             AnimationState state = ghostAnim[clip.name];
             if (state == null)
             {
                 yield return new WaitForEndOfFrame();
-                yield break;
-            }
-
+                yield break; }
             float sampleTime = Mathf.Clamp(startTimeSeconds, 0f, Mathf.Max(0f, state.length));
             float safePlaybackSpeed = Mathf.Max(0.0001f, playbackSpeed);
             int prewarmFrames = ResolvePrewarmFrameCount(configuredPrewarmFrameCount);
             int visibleYieldFrames = Mathf.Max(0, visiblePrewarmYieldFrameCount);
             if (prewarmFrames <= 0)
             {
-                if (!FBXVmdPipeline.PrepareRetargeterRecordingStartPose(retargeter, sampleTime, safePlaybackSpeed, holdPose: false))
-                {
-                    state.time = sampleTime;
-                    state.speed = safePlaybackSpeed;
-                    ghostAnim.Sample();
-                }
+                yield return ApplyImmediateStartPose( ghostAnim, state, retargeter, sampleTime, safePlaybackSpeed, visibleYieldFrames);
+                yield break; }
+            yield return RunPrewarmFrames( ghostAnim, clip, state, retargeter, sampleTime, safePlaybackSpeed, prewarmFrames); }
 
-                retargeter?.ApplyLateVisualGroundingCorrection();
-                if (visibleYieldFrames > 0)
-                {
-                    yield return FBXVmdPipeline.YieldRetargetPrewarmFrame();
-                }
-
-                yield break;
-            }
-
-            yield return RunPrewarmFrames(
-                ghostAnim, clip, state, retargeter, sampleTime, safePlaybackSpeed, prewarmFrames);
+        // 프리웜 프레임이 없을 때 시작 포즈를 즉시 적용하고 접지 보정을 반영함.
+        IEnumerator ApplyImmediateStartPose(
+            Animation ghostAnim, AnimationState state, PoseSpaceRetargeter retargeter,
+            float sampleTime, float safePlaybackSpeed, int visibleYieldFrames)
+        {
+            if (!FBXVmdPipeline.PrepareRetargeterRecordingStartPose(retargeter, sampleTime, safePlaybackSpeed, holdPose: false))
+            {
+                state.time = sampleTime;
+                state.speed = safePlaybackSpeed;
+                ghostAnim.Sample(); }
+            retargeter?.ApplyLateVisualGroundingCorrection();
+            if (visibleYieldFrames > 0)
+            {
+                yield return FBXVmdPipeline.YieldRetargetPrewarmFrame(); }
         }
 
         IEnumerator RunPrewarmFrames(
@@ -332,10 +302,7 @@ namespace Fbx2Vmd.FBXImporter
                     state.time = sampleTime;
                     ghostAnim.Sample();
                 }
-
-                yield return FBXVmdPipeline.YieldRetargetPrewarmFrame();
-            }
-
+                yield return FBXVmdPipeline.YieldRetargetPrewarmFrame(); }
             if (!FBXVmdPipeline.PrepareRetargeterRecordingStartPose(retargeter, sampleTime, safePlaybackSpeed, holdPose: false))
             {
                 state.time = sampleTime;
@@ -344,12 +311,9 @@ namespace Fbx2Vmd.FBXImporter
                 ghostAnim.Play(clip.name);
                 state.time = sampleTime;
                 state.speed = safePlaybackSpeed;
-                ghostAnim.Sample();
-            }
-
+                ghostAnim.Sample(); }
             retargeter?.ApplyLateVisualGroundingCorrection();
-            Debug.Log($"[Retargeting] 리타게팅 프리웜 완료됨. 프레임={prewarmFrames}, 클립 시간={sampleTime:F2}초");
-        }
+            Debug.Log($"[Retargeting] 리타게팅 프리웜 완료됨. 프레임={prewarmFrames}, 클립 시간={sampleTime:F2}초"); }
 
         public static float ResolveVmdRecordingPlaybackSpeed(float configuredPlaybackSpeed)
         {
@@ -396,103 +360,34 @@ namespace Fbx2Vmd.FBXImporter
         public static bool TryBuildKnownMmdReferenceRecordingPlan(
             string outputBaseName,
             float clipLengthSeconds,
-            float recordingFrameRate,
-            bool useKnownReferenceTiming,
-            out float recordingLengthSeconds,
-            out int targetFrameCount,
-            out float playbackSpeed)
+            float recordingFrameRate, bool useKnownReferenceTiming, out float recordingLengthSeconds, out int targetFrameCount, out float playbackSpeed)
         {
             recordingLengthSeconds = clipLengthSeconds;
             targetFrameCount = 0;
             playbackSpeed = 1f;
-
             if (!useKnownReferenceTiming)
             {
-                return false;
-            }
-
-            if (recordingFrameRate <= 0f ||
-                float.IsNaN(recordingFrameRate) ||
-                float.IsInfinity(recordingFrameRate) ||
-                clipLengthSeconds <= 0f ||
-                float.IsNaN(clipLengthSeconds) ||
-                float.IsInfinity(clipLengthSeconds))
+                return false; }
+            if (recordingFrameRate <= 0f || float.IsNaN(recordingFrameRate) || float.IsInfinity(recordingFrameRate) || clipLengthSeconds <= 0f || float.IsNaN(clipLengthSeconds) || float.IsInfinity(clipLengthSeconds))
             {
-                return false;
-            }
-
+                return false; }
             string cleanBaseName = Path.GetFileNameWithoutExtension(outputBaseName ?? string.Empty);
             if (!string.Equals(cleanBaseName, VMDOutputNamePolicy.SatisfactionReferenceBaseName, StringComparison.OrdinalIgnoreCase))
             {
-                return false;
-            }
-
+                return false; }
             int referenceFrameCount = VMDOutputNamePolicy.SatisfactionReferenceMaxMmdFrame + 1;
             float referenceDurationSeconds = referenceFrameCount / recordingFrameRate;
             float frameToleranceSeconds = 0.5f / recordingFrameRate;
-
             if (clipLengthSeconds + frameToleranceSeconds < referenceDurationSeconds)
             {
-                return false;
-            }
-
+                return false; }
             recordingLengthSeconds = referenceDurationSeconds;
             targetFrameCount = referenceFrameCount;
             playbackSpeed = Mathf.Max(0.0001f, clipLengthSeconds / referenceDurationSeconds);
-            return true;
-        }
+            return true; }
 
         /// <summary>
         /// 설정된 프리웜 프레임 수를 최대치로 클램프하여 해석함.
         /// </summary>
-        public static int ResolvePrewarmFrameCount(int configuredFrameCount)
-        {
-            return Mathf.Clamp(configuredFrameCount, 0, FBXVmdPipeline.MAX_RETARGET_PREWARM_FRAME_COUNT);
-        }
-
-        public static int ResolvePrewarmFrameCountForRecordingMode(
-            int configuredFrameCount,
-            bool shouldStartVmdRecording)
-        {
-            return shouldStartVmdRecording
-                ? ResolvePrewarmFrameCount(configuredFrameCount)
-                : 0;
-        }
-
-        public static int ResolveVisiblePrewarmYieldFrameCountForRecordingMode(
-            int configuredFrameCount,
-            bool shouldStartVmdRecording)
-        {
-            if (!shouldStartVmdRecording)
-            {
-                return 0;
-            }
-
-            int prewarmFrames = ResolvePrewarmFrameCount(configuredFrameCount);
-            return prewarmFrames > 0 ? prewarmFrames : 1;
-        }
-
-        public static bool ShouldStartVmdRecording(bool shouldRecordVmdAfterImport)
-        {
-            return shouldRecordVmdAfterImport;
-        }
-
-        /// <summary>
-        /// 녹화 모드에 따라 시작 지연 시간을 해석함. 녹화하지 않으면 0을 반환함.
-        /// </summary>
-        public static float ResolveStartDelay(float configuredStartDelay, bool shouldStartVmdRecording)
-        {
-            if (!shouldStartVmdRecording)
-            {
-                return 0f;
-            }
-
-            if (float.IsNaN(configuredStartDelay) || float.IsInfinity(configuredStartDelay))
-            {
-                return 0f;
-            }
-
-            return Mathf.Clamp(configuredStartDelay, 0f, 10f);
-        }
     }
 }

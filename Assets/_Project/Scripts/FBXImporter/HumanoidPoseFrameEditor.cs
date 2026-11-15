@@ -89,13 +89,7 @@ namespace Fbx2Vmd.FBXImporter
             out float maxDirectionErrorDegrees)
         {
             maxDirectionErrorDegrees = 0f;
-            if (!TryGetArmBones(
-                    out Transform leftUpperArm,
-                    out Transform leftLowerArm,
-                    out Transform leftHand,
-                    out Transform rightUpperArm,
-                    out Transform rightLowerArm,
-                    out Transform rightHand))
+            if (!TryGetArmBones( out Transform leftUpperArm, out Transform leftLowerArm, out Transform leftHand, out Transform rightUpperArm, out Transform rightLowerArm, out Transform rightHand))
             {
                 return false;
             }
@@ -105,30 +99,9 @@ namespace Fbx2Vmd.FBXImporter
             Quaternion rightUpperRotation = rightUpperArm.localRotation;
             Quaternion rightLowerRotation = rightLowerArm.localRotation;
 
-            if (TryApplyArmSegment(
-                    leftUpperArm,
-                    leftLowerArm,
-                    reference.LeftUpperArm,
-                    isForearm: false,
-                    ref maxDirectionErrorDegrees) &&
-                TryApplyArmSegment(
-                    leftLowerArm,
-                    leftHand,
-                    reference.LeftForearm,
-                    isForearm: true,
-                    ref maxDirectionErrorDegrees) &&
-                TryApplyArmSegment(
-                    rightUpperArm,
-                    rightLowerArm,
-                    reference.RightUpperArm,
-                    isForearm: false,
-                    ref maxDirectionErrorDegrees) &&
-                TryApplyArmSegment(
-                    rightLowerArm,
-                    rightHand,
-                    reference.RightForearm,
-                    isForearm: true,
-                    ref maxDirectionErrorDegrees))
+            if (TryApplyArmSegment( leftUpperArm, leftLowerArm, reference.LeftUpperArm, isForearm: false, ref maxDirectionErrorDegrees) && TryApplyArmSegment( leftLowerArm, leftHand,
+                    reference.LeftForearm, isForearm: true, ref maxDirectionErrorDegrees) && TryApplyArmSegment( rightUpperArm, rightLowerArm, reference.RightUpperArm, isForearm: false,
+                    ref maxDirectionErrorDegrees) && TryApplyArmSegment( rightLowerArm, rightHand, reference.RightForearm, isForearm: true, ref maxDirectionErrorDegrees))
             {
                 return true;
             }
@@ -305,19 +278,13 @@ namespace Fbx2Vmd.FBXImporter
             float[] originalMuscles,
             float[] correctedMuscles)
         {
-            if (originalMuscles == null ||
-                correctedMuscles == null ||
-                originalMuscles.Length < HumanTrait.MuscleCount ||
-                correctedMuscles.Length < HumanTrait.MuscleCount ||
+            if (originalMuscles == null || correctedMuscles == null || originalMuscles.Length < HumanTrait.MuscleCount || correctedMuscles.Length < HumanTrait.MuscleCount ||
                 _affectedBoneRotations.Length < (int)HumanBodyBones.LastBone)
             {
                 return false;
             }
 
-            Array.Clear(
-                _affectedBoneRotations,
-                0,
-                _affectedBoneRotations.Length);
+            Array.Clear( _affectedBoneRotations, 0, _affectedBoneRotations.Length);
             for (int muscleIndex = 0;
                  muscleIndex < HumanTrait.MuscleCount;
                  muscleIndex++)

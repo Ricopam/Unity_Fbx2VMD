@@ -33,22 +33,13 @@ namespace Fbx2Vmd.FBXImporter
             CalculateAllContracts(frameIndex, vertices, contracts,
                 calculatedCorrections, successByContract, fallbackByContract,
                 errorByContract);
-
             RetryFailedContracts(frameIndex, vertices, work, contracts,
-                calculatedCorrections, successByContract, fallbackByContract,
-                boneTransformsProvider, ref boneTransforms);
-
+                calculatedCorrections, successByContract, fallbackByContract, boneTransformsProvider, ref boneTransforms);
             usedFallback = fallbackByContract.Any(value => value);
-            int failedContractIndex = Array.FindIndex(
-                successByContract,
-                success => !success);
+            int failedContractIndex = Array.FindIndex( successByContract, success => !success);
             errorMessage = failedContractIndex < 0
-                ? string.Empty
-                : BuildCorrectionErrorMessage(frameIndex, vertices, work,
-                    contracts, calculatedCorrections, successByContract,
-                    errorByContract, failedContractIndex);
-            return failedContractIndex < 0;
-        }
+                ? string.Empty : BuildCorrectionErrorMessage(frameIndex, vertices, work, contracts, calculatedCorrections, successByContract, errorByContract, failedContractIndex);
+            return failedContractIndex < 0; }
 
         private void CalculateAllContracts(int frameIndex,
             IReadOnlyList<Vector3> vertices,
@@ -76,15 +67,8 @@ namespace Fbx2Vmd.FBXImporter
                 bool fallback = false;
                 successByContract[contractIndex] =
                     TryCalculateValidatedSurfaceCorrection(
-                        frameIndex,
-                        vertices,
-                        contracts[contractIndex],
-                        ref fallback,
-                        out calculatedCorrections[contractIndex],
-                        out errorByContract[contractIndex]);
-                fallbackByContract[contractIndex] = fallback;
-            });
-        }
+                        frameIndex, vertices, contracts[contractIndex], ref fallback, out calculatedCorrections[contractIndex], out errorByContract[contractIndex]);
+                fallbackByContract[contractIndex] = fallback; }); }
 
         private void RetryFailedContracts(int frameIndex,
             IReadOnlyList<Vector3> vertices, RendererWork work,
@@ -103,25 +87,17 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     continue;
                 }
-
                 if (!resolvedBoneTransforms)
                 {
                     boneTransforms = boneTransformsProvider?.Invoke();
-                    resolvedBoneTransforms = true;
-                }
+                    resolvedBoneTransforms = true; }
                 long retryStart = System.Diagnostics.Stopwatch.GetTimestamp();
-                if (NativeSkinningSurfaceCorrectionCalculator.TryRecoverFailedFrame(
-                        vertices, contracts[index], previous, work.RestVertices, work.BoneWeights,
-                        boneTransforms, _solverTiming, out NativeSkinningSurfaceCorrectionResult recovered))
+                if (NativeSkinningSurfaceCorrectionCalculator.TryRecoverFailedFrame( vertices, contracts[index], previous, work.RestVertices, work.BoneWeights, boneTransforms, _solverTiming, out NativeSkinningSurfaceCorrectionResult recovered))
                 {
                     calculatedCorrections[index] = recovered;
                     successByContract[index] = true;
-                    fallbackByContract[index] = true;
-                }
-                System.Threading.Interlocked.Add(ref _strongPathTicks,
-                    System.Diagnostics.Stopwatch.GetTimestamp() - retryStart);
-            }
-        }
+                    fallbackByContract[index] = true; }
+                System.Threading.Interlocked.Add(ref _strongPathTicks, System.Diagnostics.Stopwatch.GetTimestamp() - retryStart); } }
 
         private string BuildCorrectionErrorMessage(int frameIndex,
             IReadOnlyList<Vector3> vertices, RendererWork work,
@@ -145,62 +121,37 @@ namespace Fbx2Vmd.FBXImporter
                     .Where(index => !successByContract[index])
                     .Select(index => $"{index}:{contracts[index].Side}:" +
                         (calculatedCorrections[index] == null
-                            ? "none"
-                            : calculatedCorrections[index]
-                                .ResidualSharpFoldCount.ToString())));
-            TryDumpFailureBaselineVertices(
-                frameIndex,
-                work.RendererName,
-                vertices);
+                            ? "none" : calculatedCorrections[index] .ResidualSharpFoldCount.ToString())));
+            TryDumpFailureBaselineVertices( frameIndex, work.RendererName, vertices);
             if (failedCorrection == null)
             {
-                return errorMessage;
-            }
-            return errorMessage + BuildFailureDetail(
-                vertices, failedContract, failedCorrection);
-        }
+                return errorMessage; }
+            return errorMessage + BuildFailureDetail( vertices, failedContract, failedCorrection); }
 
         private static string BuildFailureDetail(
             IReadOnlyList<Vector3> vertices,
             NativeSkinningSurfaceContract failedContract,
             NativeSkinningSurfaceCorrectionResult failedCorrection)
         {
-            string detail =
-                $" initialFold={failedCorrection.InitialSharpFoldCount}" +
-                $" residualFold={failedCorrection.ResidualSharpFoldCount}" +
-                $" newFold={failedCorrection.NewSharpFoldCount}" +
-                $" degenerate={failedCorrection.NewDegenerateFaceCount}" +
-                $" reversed={failedCorrection.ReversedFaceCount}" +
-                $" displacement={failedCorrection.MaximumVertexDisplacement:F6}" +
-                $" strain={failedCorrection.MaximumEdgeLengthStrain:F6}" +
-                $" restRecovery={failedCorrection.UsedRestShapeRecovery}" +
-                $" restStrain={failedCorrection.MaximumRestEdgeStrainIncrease:F6}" +
-                $" unresolved={failedCorrection.UnresolvedRestShapeRecoveryCount}";
+            string detail = $" initialFold={failedCorrection.InitialSharpFoldCount}" + $" residualFold={failedCorrection.ResidualSharpFoldCount}" + $" newFold={failedCorrection.NewSharpFoldCount}" +
+                $" degenerate={failedCorrection.NewDegenerateFaceCount}" + $" reversed={failedCorrection.ReversedFaceCount}" + $" displacement={failedCorrection.MaximumVertexDisplacement:F6}" +
+                $" strain={failedCorrection.MaximumEdgeLengthStrain:F6}" + $" restRecovery={failedCorrection.UsedRestShapeRecovery}" +
+                $" restStrain={failedCorrection.MaximumRestEdgeStrainIncrease:F6}" + $" unresolved={failedCorrection.UnresolvedRestShapeRecoveryCount}";
             for (int pairIndex = 0;
                  pairIndex < failedContract.FacePairs.Length;
                  pairIndex++)
             {
                 if (failedContract.RestAnglesDegrees[pairIndex] >
                         NativeSkinningSurfaceDefectDetector
-                            .MaximumCorrectableRestAngleDegrees ||
-                    !NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                        failedCorrection.CorrectedVertices,
-                        failedContract.FacePairs[pairIndex],
-                        out float correctedAngle) ||
-                    correctedAngle <= NativeSkinningSurfaceDefectDetector
+                            .MaximumCorrectableRestAngleDegrees || !NativeSkinningSurfaceContractBuilder.TryMeasureAngle( failedCorrection.CorrectedVertices, failedContract.FacePairs[pairIndex],
+                        out float correctedAngle) || correctedAngle <= NativeSkinningSurfaceDefectDetector
                         .MinimumSharpFoldAngleDegrees)
                 {
                     continue;
                 }
 
-                NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
-                    vertices,
-                    failedContract.FacePairs[pairIndex],
-                    out float baselineAngle);
-                detail += $" pair={pairIndex}" +
-                    $" restAngle={failedContract.RestAnglesDegrees[pairIndex]:F2}" +
-                    $" baselineAngle={baselineAngle:F2}" +
-                    $" correctedAngle={correctedAngle:F2}";
+                NativeSkinningSurfaceContractBuilder.TryMeasureAngle( vertices, failedContract.FacePairs[pairIndex], out float baselineAngle);
+                detail += $" pair={pairIndex}" + $" restAngle={failedContract.RestAnglesDegrees[pairIndex]:F2}" + $" baselineAngle={baselineAngle:F2}" + $" correctedAngle={correctedAngle:F2}";
                 break;
             }
             return detail;
@@ -242,44 +193,31 @@ namespace Fbx2Vmd.FBXImporter
         // 진단용: 플래그 파일이 있을 때만 실패 프레임의 입력 정점을 덤프함.
         private void TryDumpFailureBaselineVertices(
             int frameIndex,
-            string rendererName,
-            IReadOnlyList<Vector3> vertices)
+            string rendererName, IReadOnlyList<Vector3> vertices)
         {
             try
             {
                 string directory = _diagnosticsDirectory;
-                if (!File.Exists(
-                        Path.Combine(directory, "native-prep-dump.flag")))
+                if (!File.Exists( Path.Combine(directory, "native-prep-dump.flag")))
                 {
-                    return;
-                }
+                    return; }
                 Directory.CreateDirectory(directory);
                 // GameObject 이름에는 파일명 비허용 문자(경로 구분자 포함)가 올 수 있어 정제한다.
                 string safeName = rendererName ?? "null";
                 foreach (char invalid in Path.GetInvalidFileNameChars())
                 {
-                    safeName = safeName.Replace(invalid, '_');
-                }
-                string path = Path.Combine(directory,
-                    $"f{frameIndex}-{safeName}.bin");
+                    safeName = safeName.Replace(invalid, '_'); }
+                string path = Path.Combine(directory, $"f{frameIndex}-{safeName}.bin");
                 using var writer = new BinaryWriter(File.Create(path));
                 writer.Write(vertices.Count);
                 foreach (Vector3 vertex in vertices)
                 {
                     writer.Write(vertex.x);
                     writer.Write(vertex.y);
-                    writer.Write(vertex.z);
-                }
-                Debug.Log(
-                    $"[NativePrepDump] frame={frameIndex} renderer={rendererName} " +
-                    $"verts={vertices.Count} path={path}");
-            }
-            catch (Exception exception)
+                    writer.Write(vertex.z); }
+                Debug.Log( $"[NativePrepDump] frame={frameIndex} renderer={rendererName} " + $"verts={vertices.Count} path={path}"); } catch (Exception exception)
             {
-                Debug.LogWarning(
-                    $"[NativePrepDump] 실패 입력 덤프 기록 실패: {exception.Message}");
-            }
-        }
+                Debug.LogWarning( $"[NativePrepDump] 실패 입력 덤프 기록 실패: {exception.Message}"); } }
 
         private bool TryCalculateValidatedSurfaceCorrection(
             int frameIndex,
@@ -292,48 +230,23 @@ namespace Fbx2Vmd.FBXImporter
             correction = null;
             errorMessage = string.Empty;
             var pathWatch = System.Diagnostics.Stopwatch.StartNew();
-            if (!NativeSkinningSurfaceCorrectionCalculator
-                    .TryCalculateFastValidatedFrameTimed(
-                        vertices,
-                        contract,
-                        _solverTiming,
-                        out correction))
-            {
-                errorMessage =
-                    $"frame {frameIndex}의 빠른 표면 보정을 계산하지 못했습니다.";
+            if (!NativeSkinningSurfaceCorrectionCalculator .TryCalculateFastValidatedFrameTimed( vertices, contract, _solverTiming, out correction)) {
+                errorMessage = $"frame {frameIndex}의 빠른 표면 보정을 계산하지 못했습니다.";
                 return false;
             }
-            System.Threading.Interlocked.Add(
-                ref _fastPathTicks, pathWatch.ElapsedTicks);
-            if (!NativeSkinningSurfaceCorrectionCalculator
-                    .IsWithinFastQuality(correction, contract))
-            {
+            System.Threading.Interlocked.Add( ref _fastPathTicks, pathWatch.ElapsedTicks);
+            if (!NativeSkinningSurfaceCorrectionCalculator .IsWithinFastQuality(correction, contract)) {
                 usedFallback = true;
                 pathWatch.Restart();
-                if (!NativeSkinningSurfaceCorrectionCalculator
-                        .TryCalculateStrongValidatedFrameTimed(
-                            vertices,
-                            contract,
-                            _solverTiming,
-                            out correction))
-                {
-                    errorMessage =
-                        $"frame {frameIndex}의 강한 표면 보정을 계산하지 못했습니다.";
+                if (!NativeSkinningSurfaceCorrectionCalculator .TryCalculateStrongValidatedFrameTimed( vertices, contract, _solverTiming, out correction)) {
+                    errorMessage = $"frame {frameIndex}의 강한 표면 보정을 계산하지 못했습니다.";
                     return false;
                 }
-                System.Threading.Interlocked.Add(
-                    ref _strongPathTicks, pathWatch.ElapsedTicks);
-            }
-            if (NativeSkinningSurfaceCorrectionCalculator
-                    .IsWithinStrongQuality(correction, contract))
-            {
-                return true;
-            }
-
-            errorMessage =
-                $"frame {frameIndex}의 Native 보정이 품질 계약을 통과하지 못했습니다.";
-            return false;
-        }
+                System.Threading.Interlocked.Add( ref _strongPathTicks, pathWatch.ElapsedTicks); }
+            if (NativeSkinningSurfaceCorrectionCalculator .IsWithinStrongQuality(correction, contract)) {
+                return true; }
+            errorMessage = $"frame {frameIndex}의 Native 보정이 품질 계약을 통과하지 못했습니다.";
+            return false; }
 
         private static void AddSparseCorrections(
             IReadOnlyList<Vector3> baselineVertices,

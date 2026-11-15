@@ -51,7 +51,6 @@ namespace Fbx2Vmd.FBXImporter
             float projectionRisk = float.NaN;
             float helperDistanceRisk = CalculateThumbWebbingHelperDistanceRisk(helperTransform, sourceTransform, targetLocalPosition);
             float helperRotationRisk = CalculateThumbWebbingHelperRotationRisk(helperTransform, sourceTransform, targetLocalRotation);
-
             Transform thumbSideReference = helperTransform != null ? helperTransform : sourceTransform;
             if (TryResolveThumbSide(thumbSideReference, out bool isRightThumb) &&
                 TryCalculateThumbAndIndexDirections(isRightThumb, out Vector3 thumbDirection, out Vector3 indexDirection))
@@ -60,7 +59,6 @@ namespace Fbx2Vmd.FBXImporter
                     Vector3.Angle(thumbDirection, indexDirection),
                     Mathf.Clamp(thumbIndexMaxSpreadAngle, 0f, 90f),
                     ThumbWebbingSpreadFullRiskAngle);
-
                 if (TryBuildPalmFrame(isRightThumb, out _, out Vector3 palmNormal, out _))
                 {
                     projectionRisk = ThumbPoseRiskCalculator.CalculateOutsideRange(
@@ -70,13 +68,7 @@ namespace Fbx2Vmd.FBXImporter
                         ThumbWebbingProjectionFullRiskDistance);
                 }
             }
-
-            return ThumbPoseRiskCalculator.FindMaximumFinite(
-                spreadRisk,
-                projectionRisk,
-                helperDistanceRisk,
-                helperRotationRisk);
-        }
+            return ThumbPoseRiskCalculator.FindMaximumFinite( spreadRisk, projectionRisk, helperDistanceRisk, helperRotationRisk); }
 
         private float CalculateThumbWebbingHelperDistanceRisk(
             Transform helperTransform,

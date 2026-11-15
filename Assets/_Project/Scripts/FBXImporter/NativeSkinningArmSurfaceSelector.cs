@@ -74,22 +74,8 @@ namespace Fbx2Vmd.FBXImporter
             for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
             {
                 SkinnedMeshRenderer renderer = renderers[rendererIndex];
-                AddSideSelections(
-                    animator,
-                    renderer,
-                    NativeSkinningArmSide.Left,
-                    HumanBodyBones.LeftUpperArm,
-                    HumanBodyBones.LeftLowerArm,
-                    HumanBodyBones.LeftHand,
-                    selections);
-                AddSideSelections(
-                    animator,
-                    renderer,
-                    NativeSkinningArmSide.Right,
-                    HumanBodyBones.RightUpperArm,
-                    HumanBodyBones.RightLowerArm,
-                    HumanBodyBones.RightHand,
-                    selections);
+                AddSideSelections( animator, renderer, NativeSkinningArmSide.Left, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, selections);
+                AddSideSelections( animator, renderer, NativeSkinningArmSide.Right, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, selections);
             }
 
             return selections.ToArray();
@@ -110,46 +96,28 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             Transform[] bones = renderer.bones;
-            if (!TryResolveArmBones(
-                    animator, bones, upperArmBone, lowerArmBone, handBone,
-                    out Transform upperArm,
-                    out Transform lowerArm,
-                    out Transform hand,
-                    out int upperArmIndex,
-                    out int lowerArmIndex,
-                    out int handIndex))
+            if (!TryResolveArmBones( animator, bones, upperArmBone, lowerArmBone, handBone, out Transform upperArm, out Transform lowerArm, out Transform hand, out int upperArmIndex,
+                    out int lowerArmIndex, out int handIndex))
             {
                 return;
             }
 
-            if (!TryResolveArmPositions(
-                    renderer, mesh, bones, upperArm, lowerArm, hand,
-                    upperArmIndex, lowerArmIndex, handIndex,
-                    out Vector3 upperArmPosition,
-                    out Vector3 lowerArmPosition,
-                    out Vector3 handPosition,
-                    out float armChainLength,
-                    out Vector3 incomingAxis))
+            if (!TryResolveArmPositions( renderer, mesh, bones, upperArm, lowerArm, hand, upperArmIndex, lowerArmIndex, handIndex, out Vector3 upperArmPosition, out Vector3 lowerArmPosition,
+                    out Vector3 handPosition, out float armChainLength, out Vector3 incomingAxis))
             {
                 return;
             }
 
             Vector3[] vertices = mesh.vertices;
-            if (!TryBuildVertexComponents(mesh, vertices.Length,
-                    out VertexDisjointSet components))
+            if (!TryBuildVertexComponents(mesh, vertices.Length, out VertexDisjointSet components))
             {
                 return;
             }
 
             float halfWindow = armChainLength * ElbowWindowToArmLengthRatio;
-            Dictionary<int, int> mixedVertexCountByRoot = CountMixedVerticesByRoot(
-                vertices, mesh.boneWeights, lowerArmIndex, lowerArmPosition,
-                incomingAxis, halfWindow, components);
+            Dictionary<int, int> mixedVertexCountByRoot = CountMixedVerticesByRoot( vertices, mesh.boneWeights, lowerArmIndex, lowerArmPosition, incomingAxis, halfWindow, components);
 
-            AddComponentSelections(
-                renderer, side, vertices, lowerArmIndex, lowerArmPosition,
-                incomingAxis, halfWindow, armChainLength, components,
-                mixedVertexCountByRoot, selections);
+            AddComponentSelections( renderer, side, vertices, lowerArmIndex, lowerArmPosition, incomingAxis, halfWindow, armChainLength, components, mixedVertexCountByRoot, selections);
         }
 
         static bool TryGetReadableMesh(SkinnedMeshRenderer renderer, out Mesh mesh)

@@ -39,7 +39,7 @@ namespace Fbx2Vmd.FBXImporter
     /// 표면 보정 캐시 문서를 바이너리로 원자적으로 저장하고, 키·허용 범위·CRC를
     /// 검증해 불러옴. 키가 다르거나 손상된 파일은 미스로 보고해 재계산으로 넘긴다.
     /// </summary>
-    internal static class NativeSkinningCorrectionCacheFileStore
+    internal static partial class NativeSkinningCorrectionCacheFileStore
     {
         private static readonly byte[] Magic =
             { (byte)'N', (byte)'S', (byte)'C', (byte)'C' };
@@ -105,16 +105,14 @@ namespace Fbx2Vmd.FBXImporter
                     Directory.CreateDirectory(directoryPath);
                 }
 
-                WriteCacheFileAtomically(
-                    resolvedPath, keyHash, document, ref temporaryPath);
+                WriteCacheFileAtomically( resolvedPath, keyHash, document, ref temporaryPath);
 
                 errorMessage = string.Empty;
                 return true;
             }
             catch (Exception exception)
             {
-                errorMessage =
-                    $"표면 보정 캐시를 저장하지 못했습니다: {exception.Message}";
+                errorMessage = $"표면 보정 캐시를 저장하지 못했습니다: {exception.Message}";
                 return false;
             }
             finally
@@ -140,15 +138,12 @@ namespace Fbx2Vmd.FBXImporter
                 string resolvedPath = Path.GetFullPath(filePath.Trim());
                 if (!File.Exists(resolvedPath))
                 {
-                    errorMessage =
-                        $"표면 보정 캐시를 찾지 못했습니다: {resolvedPath}";
+                    errorMessage = $"표면 보정 캐시를 찾지 못했습니다: {resolvedPath}";
                     return false;
                 }
 
                 byte[] bytes = File.ReadAllBytes(resolvedPath);
-                if (!TryReadDocument(
-                        bytes, expectedKeyHash,
-                        out document, out errorMessage))
+                if (!TryReadDocument( bytes, expectedKeyHash, out document, out errorMessage))
                 {
                     return false;
                 }
@@ -165,8 +160,7 @@ namespace Fbx2Vmd.FBXImporter
             catch (Exception exception)
             {
                 document = null;
-                errorMessage =
-                    $"표면 보정 캐시를 불러오지 못했습니다: {exception.Message}";
+                errorMessage = $"표면 보정 캐시를 불러오지 못했습니다: {exception.Message}";
                 return false;
             }
         }
@@ -205,29 +199,21 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        static bool TryReadDocument(
-            byte[] bytes, byte[] expectedKeyHash,
-            out NativeSkinningCorrectionCacheDocument document,
-            out string errorMessage)
+        static bool TryReadDocument( byte[] bytes, byte[] expectedKeyHash, out NativeSkinningCorrectionCacheDocument document, out string errorMessage)
         {
             document = null;
             errorMessage = string.Empty;
-            int minimumLength = Magic.Length + sizeof(int) +
-                KeyHashLength + sizeof(int) + sizeof(uint);
+            int minimumLength = Magic.Length + sizeof(int) + KeyHashLength + sizeof(int) + sizeof(uint);
             if (bytes.Length < minimumLength)
             {
                 errorMessage = "표면 보정 캐시 파일이 손상됐습니다.";
-                return false;
-            }
+                return false; }
             for (int index = 0; index < Magic.Length; index++)
             {
                 if (bytes[index] != Magic[index])
                 {
                     errorMessage = "표면 보정 캐시 파일 형식이 아닙니다.";
-                    return false;
-                }
-            }
-
+                    return false; } }
             using (var stream = new MemoryStream(bytes))
             using (var reader = new BinaryReader(stream, Encoding.UTF8))
             {
@@ -235,37 +221,27 @@ namespace Fbx2Vmd.FBXImporter
                 int version = reader.ReadInt32();
                 if (version != FormatVersion)
                 {
-                    errorMessage =
-                        $"표면 보정 캐시 형식 버전이 다릅니다: {version}";
-                    return false;
-                }
+                    errorMessage = $"표면 보정 캐시 형식 버전이 다릅니다: {version}";
+                    return false; }
                 byte[] storedKey = reader.ReadBytes(KeyHashLength);
-                if (expectedKeyHash != null &&
-                    !AreEqual(storedKey, expectedKeyHash))
+                if (expectedKeyHash != null && !AreEqual(storedKey, expectedKeyHash))
                 {
                     errorMessage = "표면 보정 캐시 키가 일치하지 않습니다.";
-                    return false;
-                }
+                    return false; }
                 int payloadLength = reader.ReadInt32();
-                long expectedTotal = stream.Position + payloadLength +
-                    sizeof(uint);
+                long expectedTotal = stream.Position + payloadLength + sizeof(uint);
                 if (payloadLength < 0 || expectedTotal != bytes.Length)
                 {
                     errorMessage = "표면 보정 캐시 파일 길이가 손상됐습니다.";
-                    return false;
-                }
+                    return false; }
                 byte[] payload = reader.ReadBytes(payloadLength);
                 uint storedChecksum = reader.ReadUInt32();
                 if (Crc32.Compute(payload) != storedChecksum)
                 {
                     errorMessage = "표면 보정 캐시 체크섬이 일치하지 않습니다.";
-                    return false;
-                }
-
-                document = ReadPayload(payload);
-            }
-            return true;
-        }
+                    return false; }
+                document = ReadPayload(payload); }
+            return true; }
 
         private static byte[] WritePayload(
             NativeSkinningCorrectionCacheDocument document)
@@ -278,33 +254,23 @@ namespace Fbx2Vmd.FBXImporter
                 writer.Write(document.FallbackFrameCount);
                 writer.Write(document.CorrectionEntryCount);
                 writer.Write(document.Renderers.Length);
-                foreach (NativeSkinningCorrectionCacheRendererEntry entry in
-                         document.Renderers)
-                {
+                foreach (NativeSkinningCorrectionCacheRendererEntry entry in document.Renderers) {
                     writer.Write(entry.RendererPath ?? string.Empty);
                     writer.Write(entry.MeshAssetId ?? string.Empty);
                     writer.Write(entry.VertexCount);
                     writer.Write(entry.Frames.Length);
-                    foreach (NativeSkinningCorrectionCacheFrameData frame in
-                             entry.Frames)
-                    {
+                    foreach (NativeSkinningCorrectionCacheFrameData frame in entry.Frames) {
                         writer.Write(frame.FrameIndex);
                         writer.Write(frame.VertexIndices.Length);
-                        for (int index = 0;
-                             index < frame.VertexIndices.Length;
-                             index++)
-                        {
+                        for (int index = 0; index < frame.VertexIndices.Length; index++) {
                             writer.Write(frame.VertexIndices[index]);
                             Vector3 delta = frame.Deltas[index];
                             writer.Write(delta.x);
                             writer.Write(delta.y);
                             writer.Write(delta.z);
                         }
-                    }
-                }
-                return stream.ToArray();
-            }
-        }
+                    } }
+                return stream.ToArray(); } }
 
         private static NativeSkinningCorrectionCacheDocument ReadPayload(
             byte[] payload)
@@ -326,19 +292,14 @@ namespace Fbx2Vmd.FBXImporter
                     throw new InvalidDataException(
                         "표면 보정 캐시의 렌더러 수가 올바르지 않습니다.");
                 }
-                var renderers =
-                    new NativeSkinningCorrectionCacheRendererEntry[
-                        rendererCount];
+                var renderers = new NativeSkinningCorrectionCacheRendererEntry[ rendererCount];
                 for (int rendererIndex = 0;
                      rendererIndex < rendererCount;
                      rendererIndex++)
                 {
-                    renderers[rendererIndex] = ReadRendererEntry(reader);
-                }
+                    renderers[rendererIndex] = ReadRendererEntry(reader); }
                 document.Renderers = renderers;
-                return document;
-            }
-        }
+                return document; } }
 
         static NativeSkinningCorrectionCacheRendererEntry ReadRendererEntry(
             BinaryReader reader)
@@ -411,163 +372,48 @@ namespace Fbx2Vmd.FBXImporter
                 errorMessage = "표면 보정 캐시 프레임 수가 올바르지 않습니다.";
                 return false;
             }
-
             int totalEntries = 0;
             var seenPaths = new HashSet<string>(StringComparer.Ordinal);
             foreach (NativeSkinningCorrectionCacheRendererEntry entry in
                      document.Renderers)
             {
-                if (!TryValidateEntry(
-                        entry, document.FrameCount, seenPaths,
-                        ref totalEntries, out errorMessage))
+                if (!TryValidateEntry( entry, document.FrameCount, seenPaths, ref totalEntries, out errorMessage))
                 {
-                    return false;
-                }
-            }
-
+                    return false; } }
             if (totalEntries != document.CorrectionEntryCount)
             {
                 errorMessage = "표면 보정 캐시의 보정 항목 수가 일치하지 않습니다.";
-                return false;
-            }
+                return false; }
             errorMessage = string.Empty;
-            return true;
-        }
+            return true; }
 
         static bool TryValidateEntry(
-            NativeSkinningCorrectionCacheRendererEntry entry,
-            int documentFrameCount,
-            HashSet<string> seenPaths,
-            ref int totalEntries,
-            out string errorMessage)
+            NativeSkinningCorrectionCacheRendererEntry entry, int documentFrameCount, HashSet<string> seenPaths, ref int totalEntries, out string errorMessage)
         {
-            if (entry == null ||
-                entry.VertexCount <= 0 ||
-                entry.Frames == null ||
-                string.IsNullOrWhiteSpace(entry.RendererPath) ||
+            if (entry == null || entry.VertexCount <= 0 || entry.Frames == null || string.IsNullOrWhiteSpace(entry.RendererPath) ||
                 // 동일 경로의 렌더러 항목이 둘이면 재바인딩이 모호해진다.
                 !seenPaths.Add(entry.RendererPath))
             {
-                errorMessage =
-                    "표면 보정 캐시의 렌더러 항목이 올바르지 않습니다.";
-                return false;
-            }
+                errorMessage = "표면 보정 캐시의 렌더러 항목이 올바르지 않습니다.";
+                return false; }
             var seenFrames = new HashSet<int>();
-            foreach (NativeSkinningCorrectionCacheFrameData frame in
-                     entry.Frames)
-            {
-                if (frame == null ||
-                    frame.FrameIndex < 0 ||
-                    frame.FrameIndex >= documentFrameCount ||
-                    frame.VertexIndices == null ||
-                    frame.Deltas == null ||
-                    frame.VertexIndices.Length != frame.Deltas.Length ||
+            foreach (NativeSkinningCorrectionCacheFrameData frame in entry.Frames) {
+                if (frame == null || frame.FrameIndex < 0 || frame.FrameIndex >= documentFrameCount || frame.VertexIndices == null || frame.Deltas == null || frame.VertexIndices.Length != frame.Deltas.Length ||
                     // 중복 프레임 인덱스는 복원 시 생성자 예외를 만든다.
                     !seenFrames.Add(frame.FrameIndex))
                 {
-                    errorMessage =
-                        "표면 보정 캐시의 프레임 데이터가 올바르지 않습니다.";
-                    return false;
-                }
+                    errorMessage = "표면 보정 캐시의 프레임 데이터가 올바르지 않습니다.";
+                    return false; }
                 var seenIndices = new HashSet<int>();
-                for (int index = 0;
-                     index < frame.VertexIndices.Length;
-                     index++)
-                {
+                for (int index = 0; index < frame.VertexIndices.Length; index++) {
                     int vertexIndex = frame.VertexIndices[index];
                     Vector3 delta = frame.Deltas[index];
-                    if (vertexIndex < 0 ||
-                        vertexIndex >= entry.VertexCount ||
-                        !IsFinite(delta) ||
-                        !seenIndices.Add(vertexIndex))
+                    if (vertexIndex < 0 || vertexIndex >= entry.VertexCount || !IsFinite(delta) || !seenIndices.Add(vertexIndex))
                     {
-                        errorMessage =
-                            "표면 보정 캐시의 보정 항목이 올바르지 않습니다.";
-                        return false;
-                    }
-                }
-                totalEntries += frame.VertexIndices.Length;
-            }
+                        errorMessage = "표면 보정 캐시의 보정 항목이 올바르지 않습니다.";
+                        return false; } }
+                totalEntries += frame.VertexIndices.Length; }
             errorMessage = string.Empty;
-            return true;
-        }
-
-        private static bool IsFinite(Vector3 value)
-        {
-            return !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
-                !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
-                !float.IsNaN(value.z) && !float.IsInfinity(value.z);
-        }
-
-        private static bool AreEqual(byte[] first, byte[] second)
-        {
-            if (first.Length != second.Length)
-            {
-                return false;
-            }
-            for (int index = 0; index < first.Length; index++)
-            {
-                if (first[index] != second[index])
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private static void TryDeleteTemporaryFile(string temporaryPath)
-        {
-            if (string.IsNullOrWhiteSpace(temporaryPath) ||
-                !File.Exists(temporaryPath))
-            {
-                return;
-            }
-            try
-            {
-                File.Delete(temporaryPath);
-            }
-            catch (IOException)
-            {
-                // 저장 결과를 반환한 뒤 임시 파일 정리 실패로 결과를 뒤집지 않음.
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // 저장 결과를 반환한 뒤 임시 파일 정리 실패로 결과를 뒤집지 않음.
-            }
-        }
-
-        // 표준 CRC-32 (poly 0xEDB88320) — 저장 페이로드 손상 검출용.
-        private static class Crc32
-        {
-            private static readonly uint[] Table = BuildTable();
-
-            internal static uint Compute(byte[] data)
-            {
-                uint value = 0xFFFFFFFFu;
-                for (int index = 0; index < data.Length; index++)
-                {
-                    value = Table[(value ^ data[index]) & 0xFF] ^
-                        (value >> 8);
-                }
-                return ~value;
-            }
-
-            private static uint[] BuildTable()
-            {
-                var table = new uint[256];
-                for (uint index = 0; index < 256; index++)
-                {
-                    uint value = index;
-                    for (int bit = 0; bit < 8; bit++)
-                    {
-                        value = (value & 1) != 0
-                            ? 0xEDB88320u ^ (value >> 1)
-                            : value >> 1;
-                    }
-                    table[index] = value;
-                }
-                return table;
-            }
-        }
+            return true; }
     }
 }

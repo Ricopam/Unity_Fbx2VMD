@@ -28,31 +28,23 @@ namespace Fbx2Vmd.ClothPhysics
             var mesh = source.sharedMesh;
             if (mesh == null || attrs == null || attrs.Length != mesh.vertexCount)
                 return null;
-
             int subCount = mesh.subMeshCount;
             var extractTris = new List<int>[subCount];
             var remainTris = new List<int>[subCount];
             var topology = new MeshTopology[subCount];
             var used = new bool[mesh.vertexCount];
-            if (!ClassifySkirtTriangles(mesh, attrs, extractTris, remainTris, topology, used))
-                return null;
-
+            if (!ClassifySkirtTriangles(mesh, attrs, extractTris, remainTris, topology, used)) return null;
             int vcnt = mesh.vertexCount;
             int ncnt;
             var remap = BuildVertexRemap(used, out ncnt);
-            Mesh newMesh = BuildSkirtMesh(
-                mesh, attrs, extractTris, used, remap, ncnt, subCount, out remappedAttrs);
+            Mesh newMesh = BuildSkirtMesh( mesh, attrs, extractTris, used, remap, ncnt, subCount, out remappedAttrs);
             Mesh remainMesh = CloneRemainMesh(mesh, remainTris, topology);
-            return CreateExtractedRenderer(source, mesh, newMesh, remainMesh);
-        }
+            return CreateExtractedRenderer(source, mesh, newMesh, remainMesh); }
 
         // 서브메시별로 스커트/잔여 삼각형을 분류한다. 1개 이상의 스커트 버텍스를 가진
         // 삼각형도 추출 — 무효 버텍스는 추출본에서 Fixed로 격상돼 본 스키닝 위치를
         // 그대로 추적하므로 본체의 인접 삼각형과 이음매가 어긋나지 않는다 (균열 방지)
-        static bool ClassifySkirtTriangles(
-            Mesh mesh, VertexAttribute[] attrs,
-            List<int>[] extractTris, List<int>[] remainTris,
-            MeshTopology[] topology, bool[] used)
+        static bool ClassifySkirtTriangles( Mesh mesh, VertexAttribute[] attrs, List<int>[] extractTris, List<int>[] remainTris, MeshTopology[] topology, bool[] used)
         {
             int subCount = mesh.subMeshCount;
             bool any = false;
@@ -65,25 +57,18 @@ namespace Fbx2Vmd.ClothPhysics
                 {
                     // 비삼각형 서브메시는 스커트 추출 대상에서 제외하고 원형 유지
                     remainTris[s].AddRange(mesh.GetIndices(s));
-                    continue;
-                }
+                    continue; }
                 var tris = mesh.GetTriangles(s);
                 for (int i = 0; i < tris.Length; i += 3)
                 {
-                    bool skirt = !attrs[tris[i]].IsInvalid()
-                        || !attrs[tris[i + 1]].IsInvalid()
-                        || !attrs[tris[i + 2]].IsInvalid();
+                    bool skirt = !attrs[tris[i]].IsInvalid() || !attrs[tris[i + 1]].IsInvalid() || !attrs[tris[i + 2]].IsInvalid();
                     var dst = skirt ? extractTris[s] : remainTris[s];
                     dst.Add(tris[i]); dst.Add(tris[i + 1]); dst.Add(tris[i + 2]);
                     if (skirt)
                     {
                         used[tris[i]] = used[tris[i + 1]] = used[tris[i + 2]] = true;
-                        any = true;
-                    }
-                }
-            }
-            return any;
-        }
+                        any = true; } } }
+            return any; }
 
         static int[] BuildVertexRemap(bool[] used, out int ncnt)
         {
@@ -222,7 +207,7 @@ namespace Fbx2Vmd.ClothPhysics
         static void TryCopyBlendShape(
             Mesh mesh, Mesh newMesh, int s, bool[] used, int[] remap, int vcnt, int ncnt)
         {
-            (Vector3[] fdv, Vector3[] fdn, Vector3[] fdt, bool hasDelta) =
+            (Vector3[][] fdv, Vector3[][] fdn, Vector3[][] fdt, bool hasDelta) =
                 ReadShapeFrames(mesh, s, used, vcnt);
             if (!hasDelta)
                 return;
@@ -244,7 +229,7 @@ namespace Fbx2Vmd.ClothPhysics
             }
         }
 
-        static (Vector3[] fdv, Vector3[] fdn, Vector3[] fdt, bool hasDelta) ReadShapeFrames(
+        static (Vector3[][] fdv, Vector3[][] fdn, Vector3[][] fdt, bool hasDelta) ReadShapeFrames(
             Mesh mesh, int s, bool[] used, int vcnt)
         {
             int frames = mesh.GetBlendShapeFrameCount(s);
@@ -291,11 +276,8 @@ namespace Fbx2Vmd.ClothPhysics
                     dst.colors32 = dc;
                     break;
                 default:
-                    CopyUvChannel(src, dst, remap, used, vcnt,
-                        attr - UVertexAttribute.TexCoord0);
-                    break;
-            }
-        }
+                    CopyUvChannel(src, dst, remap, used, vcnt, attr - UVertexAttribute.TexCoord0);
+                    break; } }
 
         /// <summary>
         /// 추출로 생성된 렌더러를 제거하고 원본 메시를 복원한다.

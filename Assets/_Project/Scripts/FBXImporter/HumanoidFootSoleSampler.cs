@@ -145,53 +145,36 @@ namespace Fbx2Vmd.FBXImporter
             float back = float.PositiveInfinity, front = float.NegativeInfinity;
             foreach (SkinnedMeshRenderer renderer in renderers)
             {
-                if (renderer == null || renderer.sharedMesh == null || !seen.Add(renderer))
-                    continue;
+                if (renderer == null || renderer.sharedMesh == null || !seen.Add(renderer)) continue;
                 Mesh mesh = renderer.sharedMesh;
                 // Editor에서는 Read/Write가 꺼진 임포트 메시도 읽을 수 있어 실제 취득 결과로 판단함.
                 BoneWeight[] weights = mesh.boneWeights;
                 Transform[] bones = renderer.bones;
-                if (weights.Length != mesh.vertexCount)
-                    return false;
+                if (weights.Length != mesh.vertexCount) return false;
                 var vertices = new List<int>();
                 for (int i = 0; i < weights.Length; i++)
                 {
                     BoneWeight w = weights[i];
-                    float weight = GetFootWeight(bones, w.boneIndex0, w.weight0) +
-                        GetFootWeight(bones, w.boneIndex1, w.weight1) +
-                        GetFootWeight(bones, w.boneIndex2, w.weight2) +
-                        GetFootWeight(bones, w.boneIndex3, w.weight3);
-                    if (!IsFinite(weight))
-                        return false;
-                    if (weight >= 0.5f)
-                        vertices.Add(i);
-                }
-                if (vertices.Count == 0)
-                    continue;
+                    float weight = GetFootWeight(bones, w.boneIndex0, w.weight0) + GetFootWeight(bones, w.boneIndex1, w.weight1) + GetFootWeight(bones, w.boneIndex2, w.weight2) + GetFootWeight(bones, w.boneIndex3, w.weight3);
+                    if (!IsFinite(weight)) return false;
+                    if (weight >= 0.5f) vertices.Add(i); }
+                if (vertices.Count == 0) continue;
                 var surface = new Surface(renderer, mesh, bones);
                 _surfaces.Add(surface);
-                if (!surface.TryBake())
-                    return false;
+                if (!surface.TryBake()) return false;
                 foreach (int vertex in vertices)
                 {
                     Vector3 world = surface.GetWorldPoint(vertex);
-                    if (!IsFinite(world))
-                        return false;
+                    if (!IsFinite(world)) return false;
                     float height = Vector3.Dot(world, up), progress = Vector3.Dot(world, forward);
-                    if (!IsFinite(height) || !IsFinite(progress))
-                        return false;
+                    if (!IsFinite(height) || !IsFinite(progress)) return false;
                     minimumHeight = Mathf.Min(minimumHeight, height);
                     back = Mathf.Min(back, progress);
                     front = Mathf.Max(front, progress);
-                    candidates.Add(new Point(surface, vertex));
-                }
-            }
+                    candidates.Add(new Point(surface, vertex)); } }
             float length = front - back;
-            if (candidates.Count == 0 || !IsFinite(length) || length <= 0.000001f)
-                return false;
-
-            return FinalizePoints(candidates, up, forward, minimumHeight, length);
-        }
+            if (candidates.Count == 0 || !IsFinite(length) || length <= 0.000001f) return false;
+            return FinalizePoints(candidates, up, forward, minimumHeight, length); }
 
         bool FinalizePoints(
             List<Point> candidates, Vector3 up, Vector3 forward,

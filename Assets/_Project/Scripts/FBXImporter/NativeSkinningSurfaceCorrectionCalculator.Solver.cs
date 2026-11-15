@@ -71,21 +71,13 @@ namespace Fbx2Vmd.FBXImporter
                     }
                     continue;
                 }
-
                 if (NativeSkinningSurfaceContractBuilder.TryMeasureAngle(
                         currentVertices,
                         contract.FacePairs[pairIndex],
                         out float angleDegrees) &&
-                    angleDegrees > SharpFoldAngleDegrees &&
-                    IsSharpFoldCorrectionEligible(
-                        baselineVertices,
-                        contract,
-                        pairIndex))
+                    angleDegrees > SharpFoldAngleDegrees && IsSharpFoldCorrectionEligible( baselineVertices, contract, pairIndex))
                 {
-                    activePairIndices.Add(pairIndex);
-                }
-            }
-        }
+                    activePairIndices.Add(pairIndex); } } }
 
         private static float ResolveProjectionAngleDegrees(
             IReadOnlyList<Vector3> baselineVertices,
@@ -130,11 +122,7 @@ namespace Fbx2Vmd.FBXImporter
 
         private static LocalWorkset BuildLocalWorkset(
             IReadOnlyList<Vector3> baselineVertices,
-            NativeSkinningSurfaceContract contract,
-            IEnumerable<int> seedFacePairIndices,
-            int ringCount,
-            IReadOnlyList<FrameEdge> frameEdges,
-            SolverBuffers buffers)
+            NativeSkinningSurfaceContract contract, IEnumerable<int> seedFacePairIndices, int ringCount, IReadOnlyList<FrameEdge> frameEdges, SolverBuffers buffers)
         {
             var constrainedVertexSet = new HashSet<int>();
             foreach (int pairIndex in seedFacePairIndices)
@@ -143,48 +131,28 @@ namespace Fbx2Vmd.FBXImporter
                 constrainedVertexSet.Add(pair.FirstOpposite);
                 constrainedVertexSet.Add(pair.SecondOpposite);
                 constrainedVertexSet.Add(pair.FirstEdge);
-                constrainedVertexSet.Add(pair.SecondEdge);
-            }
+                constrainedVertexSet.Add(pair.SecondEdge); }
             int vertexCount = baselineVertices.Count;
             int faceCount = contract.Triangles.Length / 3;
-            buffers.EnsureWorksetSize(
-                vertexCount,
-                contract.FacePairs.Length,
-                faceCount);
+            buffers.EnsureWorksetSize( vertexCount, contract.FacePairs.Length, faceCount);
             int[] localIndexByVertex = buffers.LocalIndexByVertex;
             int[] faceMark = buffers.FaceMark;
             int[] facePairMark = buffers.FacePairMark;
             ExpandConstrainedVertices(contract, constrainedVertexSet, ringCount, buffers, faceMark);
-            int[] constrainedVertices = AssignLocalIndices(
-                constrainedVertexSet, localIndexByVertex, vertexCount);
-
+            int[] constrainedVertices = AssignLocalIndices( constrainedVertexSet, localIndexByVertex, vertexCount);
             int pairStamp = buffers.NextMarkStamp();
-            MarkByVertex(contract.FacePairIndicesByVertex, constrainedVertices,
-                facePairMark, pairStamp);
-            int[] facePairIndices = CollectMarked(
-                facePairMark, pairStamp, contract.FacePairs.Length);
-
+            MarkByVertex(contract.FacePairIndicesByVertex, constrainedVertices, facePairMark, pairStamp);
+            int[] facePairIndices = CollectMarked( facePairMark, pairStamp, contract.FacePairs.Length);
             int faceStamp = buffers.NextMarkStamp();
-            MarkByVertex(contract.AffectedFaceIndicesByVertex, constrainedVertices,
-                faceMark, faceStamp);
+            MarkByVertex(contract.AffectedFaceIndicesByVertex, constrainedVertices, faceMark, faceStamp);
             int[] faceIndices = CollectMarked(faceMark, faceStamp, faceCount);
-
             LocalEdge[] edges = BuildLocalEdges(frameEdges, localIndexByVertex);
-            return new LocalWorkset(
-                constrainedVertices,
-                localIndexByVertex,
-                facePairIndices,
-                faceIndices,
-                edges);
-        }
+            return new LocalWorkset( constrainedVertices, localIndexByVertex, facePairIndices, faceIndices, edges); }
 
         // 시드 정점에서 ringCount만큼 면 이웃을 확장한다. 스탬프로 중복 순회를 막는다.
         private static void ExpandConstrainedVertices(
             NativeSkinningSurfaceContract contract,
-            HashSet<int> constrainedVertexSet,
-            int ringCount,
-            SolverBuffers buffers,
-            int[] faceMark)
+            HashSet<int> constrainedVertexSet, int ringCount, SolverBuffers buffers, int[] faceMark)
         {
             var frontier = new HashSet<int>(constrainedVertexSet);
             for (int ring = 0; ring < ringCount && frontier.Count > 0; ring++)
@@ -199,24 +167,16 @@ namespace Fbx2Vmd.FBXImporter
                     {
                         if (faceMark[faceIndex] == ringStamp)
                         {
-                            continue;
-                        }
+                            continue; }
                         faceMark[faceIndex] = ringStamp;
                         int offset = faceIndex * 3;
                         for (int corner = 0; corner < 3; corner++)
                         {
-                            int vertexIndex =
-                                contract.Triangles[offset + corner];
+                            int vertexIndex = contract.Triangles[offset + corner];
                             if (constrainedVertexSet.Add(vertexIndex))
                             {
-                                nextFrontier.Add(vertexIndex);
-                            }
-                        }
-                    }
-                }
-                frontier = nextFrontier;
-            }
-        }
+                                nextFrontier.Add(vertexIndex); } } } }
+                frontier = nextFrontier; } }
 
         // 멤버십 표시 후 오름차순 스캔 — 정렬된 인덱스와 로컬 인덱스를 동시에 얻는다.
         private static int[] AssignLocalIndices(
@@ -306,15 +266,9 @@ namespace Fbx2Vmd.FBXImporter
                 }
                 edges[edgeWriteIndex] = new LocalEdge(
                     edge.FirstVertex,
-                    edge.SecondVertex,
-                    firstLocalIndex,
-                    secondLocalIndex,
-                    edge.BaselineLength,
-                    edge.RestLength);
-                edgeWriteIndex++;
-            }
-            return edges;
-        }
+                    edge.SecondVertex, firstLocalIndex, secondLocalIndex, edge.BaselineLength, edge.RestLength);
+                edgeWriteIndex++; }
+            return edges; }
 
         private static FrameEdge[] BuildFrameEdges(
             IReadOnlyList<Vector3> baselineVertices,
@@ -343,9 +297,7 @@ namespace Fbx2Vmd.FBXImporter
                         contract.RestVertices[edge.Second])))
                 .Where(edge =>
                     edge.BaselineLength > 0.00000001f &&
-                    edge.RestLength > 0.00000001f)
-                .ToArray();
-        }
+                    edge.RestLength > 0.00000001f) .ToArray(); }
 
         private static int[] GetFaceVertices(
             IReadOnlyList<int> triangles,

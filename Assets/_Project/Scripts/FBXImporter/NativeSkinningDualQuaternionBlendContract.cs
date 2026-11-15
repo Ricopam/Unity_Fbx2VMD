@@ -54,55 +54,29 @@ namespace Fbx2Vmd.FBXImporter
             out NativeSkinningDualQuaternionBlendContract blendContract)
         {
             blendContract = null;
-            if (boneWeights == null ||
-                surfaceContract == null ||
-                boneWeights.Count != surfaceContract.VertexCount ||
-                surfaceContract.LowerArmBoneIndex < 0)
+            if (boneWeights == null || surfaceContract == null || boneWeights.Count != surfaceContract.VertexCount || surfaceContract.LowerArmBoneIndex < 0)
             {
                 return false;
             }
 
-            NativeSkinningDualQuaternionBlendVertex[] vertices =
-                surfaceContract.EvaluatedVertexIndices
-                    .Select(vertexIndex => new NativeSkinningDualQuaternionBlendVertex(
-                        vertexIndex,
-                        boneWeights[vertexIndex],
-                        CalculateTransitionInfluence(
-                            boneWeights[vertexIndex],
-                            surfaceContract.LowerArmBoneIndex)))
-                    .Where(vertex => vertex.TransitionInfluence > MinimumWeight)
-                    .ToArray();
+            NativeSkinningDualQuaternionBlendVertex[] vertices = surfaceContract.EvaluatedVertexIndices
+                    .Select(vertexIndex => new NativeSkinningDualQuaternionBlendVertex( vertexIndex, boneWeights[vertexIndex], CalculateTransitionInfluence( boneWeights[vertexIndex],
+                            surfaceContract.LowerArmBoneIndex))) .Where(vertex => vertex.TransitionInfluence > MinimumWeight) .ToArray();
             if (vertices.Length == 0)
             {
                 return false;
             }
 
-            var vertexSet = new HashSet<int>(
-                vertices.Select(vertex => vertex.VertexIndex));
-            int[] qualityFaceIndices = surfaceContract.AffectedFaceIndices
-                .Where(faceIndex => IsConnectedToCandidate(
-                    surfaceContract,
-                    faceIndex,
-                    vertexSet))
-                .ToArray();
-            NativeSkinningEdgeKey[] qualityEdges = qualityFaceIndices
-                .SelectMany(faceIndex => CreateFaceEdges(
-                    surfaceContract,
-                    faceIndex))
-                .Distinct()
-                .OrderBy(edge => edge.First)
-                .ThenBy(edge => edge.Second)
-                .ToArray();
+            var vertexSet = new HashSet<int>( vertices.Select(vertex => vertex.VertexIndex));
+            int[] qualityFaceIndices = surfaceContract.AffectedFaceIndices .Where(faceIndex => IsConnectedToCandidate( surfaceContract, faceIndex, vertexSet)) .ToArray();
+            NativeSkinningEdgeKey[] qualityEdges = qualityFaceIndices .SelectMany(faceIndex => CreateFaceEdges( surfaceContract, faceIndex)) .Distinct() .OrderBy(edge => edge.First)
+                .ThenBy(edge => edge.Second) .ToArray();
             if (qualityFaceIndices.Length == 0 || qualityEdges.Length == 0)
             {
                 return false;
             }
 
-            blendContract = new NativeSkinningDualQuaternionBlendContract(
-                surfaceContract,
-                vertices,
-                qualityFaceIndices,
-                qualityEdges);
+            blendContract = new NativeSkinningDualQuaternionBlendContract( surfaceContract, vertices, qualityFaceIndices, qualityEdges);
             return true;
         }
 

@@ -6,38 +6,13 @@ namespace Fbx2Vmd.FBXImporter
     /// <summary>
     /// Editor smoke 엄지 진단 수치와 증거 충족 여부를 판정함.
     /// </summary>
-    internal static class FBXEditorDiagnosticRiskEvaluator
+    internal static partial class FBXEditorDiagnosticRiskEvaluator
     {
         internal enum Outcome
         {
             None,
             Fail,
             Warn
-        }
-
-        internal sealed class Input
-        {
-            internal string FbxName { get; set; }
-            internal bool HasProbe { get; set; }
-            internal bool RiskDiagnosticsEnabled { get; set; }
-            internal int RiskEvaluationFrameCount { get; set; }
-            internal bool HasFullThumbAnatomyCoverage { get; set; }
-            internal bool HasResolvedThumbHelperCoverage { get; set; }
-            internal bool LeftThumbCoreAnatomyObserved { get; set; }
-            internal bool RightThumbCoreAnatomyObserved { get; set; }
-            internal bool LeftThumbHelperCoverageRequired { get; set; }
-            internal bool RightThumbHelperCoverageRequired { get; set; }
-            internal bool LeftThumbHelperCoverageSatisfied { get; set; }
-            internal bool RightThumbHelperCoverageSatisfied { get; set; }
-            internal float MaxGenericThumbAnatomyRisk { get; set; }
-            internal float MaxYybDeformationRisk { get; set; }
-            internal float MaxThumbSpreadRisk { get; set; }
-            internal float MaxThumbProjectionRisk { get; set; }
-            internal float MaxThumbHelperSeparationRisk { get; set; }
-            internal float MaxThumbWebbingRisk { get; set; }
-            internal float MaxGenericThumbAnatomyRiskThreshold { get; set; }
-            internal float MaxYybDeformationRiskThreshold { get; set; }
-            internal int NonBlankScreenshotCount { get; set; }
         }
 
         internal readonly struct Evaluation
@@ -59,39 +34,25 @@ namespace Fbx2Vmd.FBXImporter
                 : input.FbxName;
             if (input == null || !input.HasProbe)
             {
-                return Fail(
-                    $"Editor smoke 실패: {fbxName} - MotionComparisonProbe가 없어 엄지 리스크 검증을 수행하지 못했습니다.");
+                return Fail( $"Editor smoke 실패: {fbxName} - MotionComparisonProbe가 없어 엄지 리스크 검증을 수행하지 못했습니다.");
             }
 
-            if (!input.RiskDiagnosticsEnabled ||
-                input.RiskEvaluationFrameCount <= 0 ||
-                !input.HasFullThumbAnatomyCoverage ||
-                !input.HasResolvedThumbHelperCoverage)
+            if (!input.RiskDiagnosticsEnabled || input.RiskEvaluationFrameCount <= 0 || !input.HasFullThumbAnatomyCoverage || !input.HasResolvedThumbHelperCoverage)
             {
                 return Fail(BuildDiagnosticUnavailableMessage(input, fbxName));
             }
 
-            bool genericExceeded =
-                IsFinite(input.MaxGenericThumbAnatomyRisk) &&
-                input.MaxGenericThumbAnatomyRisk > input.MaxGenericThumbAnatomyRiskThreshold;
-            bool yybExceeded =
-                IsFinite(input.MaxYybDeformationRisk) &&
-                input.MaxYybDeformationRisk > input.MaxYybDeformationRiskThreshold;
+            bool genericExceeded = IsFinite(input.MaxGenericThumbAnatomyRisk) && input.MaxGenericThumbAnatomyRisk > input.MaxGenericThumbAnatomyRiskThreshold;
+            bool yybExceeded = IsFinite(input.MaxYybDeformationRisk) && input.MaxYybDeformationRisk > input.MaxYybDeformationRiskThreshold;
             if (!genericExceeded && !yybExceeded)
             {
                 return new Evaluation(Outcome.None, string.Empty);
             }
 
-            string message = BuildRiskFailureMessage(
-                input,
-                fbxName,
-                genericExceeded,
-                yybExceeded);
+            string message = BuildRiskFailureMessage( input, fbxName, genericExceeded, yybExceeded);
             if (input.NonBlankScreenshotCount < 8)
             {
-                return Fail(
-                    $"{message}; same-frame visual evidence incomplete " +
-                    $"(nonblankScreenshots={input.NonBlankScreenshotCount})");
+                return Fail( $"{message}; same-frame visual evidence incomplete " + $"(nonblankScreenshots={input.NonBlankScreenshotCount})");
             }
 
             return new Evaluation(Outcome.Warn, message);

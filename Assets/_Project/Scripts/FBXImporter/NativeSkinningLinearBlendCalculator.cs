@@ -19,12 +19,7 @@ namespace Fbx2Vmd.FBXImporter
             IReadOnlyList<Matrix4x4> skinningMatrices,
             Vector3[] output)
         {
-            if (restVertices == null ||
-                boneWeights == null ||
-                skinningMatrices == null ||
-                output == null ||
-                output.Length != restVertices.Count ||
-                boneWeights.Count != restVertices.Count)
+            if (restVertices == null || boneWeights == null || skinningMatrices == null || output == null || output.Length != restVertices.Count || boneWeights.Count != restVertices.Count)
             {
                 return false;
             }
@@ -36,30 +31,8 @@ namespace Fbx2Vmd.FBXImporter
                 Vector3 rest = restVertices[vertexIndex];
                 BoneWeight weights = boneWeights[vertexIndex];
                 Vector3 sum = Vector3.zero;
-                if (!Accumulate(
-                        rest,
-                        weights.boneIndex0,
-                        weights.weight0,
-                        skinningMatrices,
-                        ref sum) ||
-                    !Accumulate(
-                        rest,
-                        weights.boneIndex1,
-                        weights.weight1,
-                        skinningMatrices,
-                        ref sum) ||
-                    !Accumulate(
-                        rest,
-                        weights.boneIndex2,
-                        weights.weight2,
-                        skinningMatrices,
-                        ref sum) ||
-                    !Accumulate(
-                        rest,
-                        weights.boneIndex3,
-                        weights.weight3,
-                        skinningMatrices,
-                        ref sum))
+                if (!Accumulate( rest, weights.boneIndex0, weights.weight0, skinningMatrices, ref sum) || !Accumulate( rest, weights.boneIndex1, weights.weight1, skinningMatrices, ref sum) ||
+                    !Accumulate( rest, weights.boneIndex2, weights.weight2, skinningMatrices, ref sum) || !Accumulate( rest, weights.boneIndex3, weights.weight3, skinningMatrices, ref sum))
                 {
                     return false;
                 }

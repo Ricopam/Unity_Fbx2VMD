@@ -246,22 +246,6 @@ namespace Fbx2Vmd.FBXImporter
         internal int RightRunCount;
     }
 
-    struct SampleArrays
-    {
-        internal Vector3[] SourceLeft;
-        internal Vector3[] SourceRight;
-        internal Vector3[] TargetLeft;
-        internal Vector3[] TargetRight;
-        internal Vector3[] SourceLeftFeet;
-        internal Vector3[] SourceLeftToes;
-        internal Vector3[] SourceRightFeet;
-        internal Vector3[] SourceRightToes;
-        internal Vector3[] TargetLeftFeet;
-        internal Vector3[] TargetLeftToes;
-        internal Vector3[] TargetRightFeet;
-        internal Vector3[] TargetRightToes;
-    }
-
     private static void ApplyContactRun(
         IReadOnlyList<Vector3> sourcePoints,
         IReadOnlyList<Vector3> targetPoints,
@@ -338,6 +322,44 @@ namespace Fbx2Vmd.FBXImporter
 
         ApplyReleaseBlend(corrections, contactFrames, runEnd, releaseFrames);
     }
+
+
+        private static Quaternion NormalizeRotation(Quaternion rotation)
+        {
+            if (!IsFinite(rotation) ||
+                rotation.x * rotation.x +
+                rotation.y * rotation.y +
+                rotation.z * rotation.z +
+                rotation.w * rotation.w <= MinimumQuaternionMagnitude)
+            {
+                throw new ArgumentException("원본과 대상 사이 회전은 유효해야 합니다.");
+            }
+
+            return rotation.normalized;
+        }
+
+        private static float HorizontalDistance(Vector3 first, Vector3 second)
+        {
+            return Vector2.Distance(
+                new Vector2(first.x, first.z),
+                new Vector2(second.x, second.z));
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+        }
+
+        private static bool IsFinite(Quaternion value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y) &&
+                IsFinite(value.z) && IsFinite(value.w);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
 
     }
 }

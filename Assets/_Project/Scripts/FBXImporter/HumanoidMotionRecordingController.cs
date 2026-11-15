@@ -68,67 +68,48 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        internal bool TryStart(
-            MotionVideoRecordingSettings settings,
-            out string errorMessage)
+        internal bool TryStart( MotionVideoRecordingSettings settings, out string errorMessage)
         {
             if (!_playbackController.IsPrepared)
             {
                 errorMessage = "재생할 FBX 모션이 준비되지 않았습니다.";
-                return false;
-            }
-
+                return false; }
             if (_videoRecorder.IsRecording)
             {
                 errorMessage = "이미 영상 녹화 중입니다.";
-                return false;
-            }
-
+                return false; }
             // 구간 해석은 어떤 부작용도 일으키기 전에 검증함 — 무효 설정은 재생 상태를 건드리지 않음.
             if (!TryResolveRange(settings, out errorMessage))
             {
-                return false;
-            }
-
+                return false; }
             // 이전 세션 계측 잔존 방지 — 실패 경로에서도 새 세션으로 초기화함.
             _slowTickCount = 0;
             _recordedTickCount = 0;
             _maxTickMilliseconds = 0.0;
             _hasLoggedTickSummary = false;
-
             if (!_videoRecorder.TryPrepare(settings, out errorMessage))
             {
                 _playbackController.Stop();
-                return false;
-            }
-
+                return false; }
             _playbackController.Stop();
             // 구간 녹화면 첫 캡처 프레임이 시작 자세가 되도록 녹화 시작 전에 해당 시각으로 이동함.
-            if (_rangeStartSeconds > 0f &&
-                !_playbackController.Seek(_rangeStartSeconds))
+            if (_rangeStartSeconds > 0f && !_playbackController.Seek(_rangeStartSeconds))
             {
                 _videoRecorder.Stop();
                 errorMessage = "녹화 구간 시작 위치로 이동하지 못했습니다.";
-                return false;
-            }
-
+                return false; }
             if (!_videoRecorder.TryStart(out errorMessage))
             {
                 _videoRecorder.Stop();
                 _playbackController.Stop();
-                return false;
-            }
-
+                return false; }
             if (_playbackController.Play())
             {
-                return BeginRecordingPlayback(settings);
-            }
-
+                return BeginRecordingPlayback(settings); }
             _videoRecorder.Stop();
             _playbackController.Stop();
             errorMessage = "영상 녹화 시작 후 FBX 모션을 재생하지 못했습니다.";
-            return false;
-        }
+            return false; }
 
         bool TryResolveRange(
             MotionVideoRecordingSettings settings, out string errorMessage)
@@ -167,27 +148,20 @@ namespace Fbx2Vmd.FBXImporter
             using var perfScope = PerfScope.Measure("HumanoidMotionRecordingController.Tick");
             if (!IsRecording)
                 return false;
-
             // 마지막 자세를 평가한 프레임의 렌더가 끝난 다음에 되감음.
             // timeScale=0 대기 중에도 종료 자세가 잡혔으면 바로 정지해 같은 자세의
             // 중복 캡처가 쌓이지 않게 함.
             if (_hasReachedLastFrame)
                 return Stop();
-
             // Recorder가 첫 0자세를 기록할 때까지 시뮬레이션을 정지하므로 함께 대기함.
             if (simulationDeltaTimeSeconds <= 0f)
                 return false;
-
             long tickStartTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
-            double timeSeconds =
-                _rangeStartSeconds + _nextRecordingFrame / (double)_recordingFrameRate;
+            double timeSeconds = _rangeStartSeconds + _nextRecordingFrame / (double)_recordingFrameRate;
             _playbackController.Seek((float)Math.Min(timeSeconds, _rangeEndSeconds));
-            _hasReachedLastFrame =
-                _playbackController.CurrentTimeSeconds >= _rangeEndSeconds;
+            _hasReachedLastFrame = _playbackController.CurrentTimeSeconds >= _rangeEndSeconds;
             _nextRecordingFrame++;
-
-            double tickMilliseconds =
-                (System.Diagnostics.Stopwatch.GetTimestamp() - tickStartTimestamp) *
+            double tickMilliseconds = (System.Diagnostics.Stopwatch.GetTimestamp() - tickStartTimestamp) *
                 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             _recordedTickCount++;
             _maxTickMilliseconds = Math.Max(_maxTickMilliseconds, tickMilliseconds);

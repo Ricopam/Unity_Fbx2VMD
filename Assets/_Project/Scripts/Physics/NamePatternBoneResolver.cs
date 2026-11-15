@@ -103,48 +103,32 @@ namespace Fbx2Vmd.ClothPhysics
             string lower = rawName.ToLowerInvariant();
             bool left = lower.Contains("left") || lower.Contains("hidari") || rawName.Contains("左");
             bool right = lower.Contains("right") || lower.Contains("migi") || rawName.Contains("右");
-            if (left && !right)
-                return Side.Left;
-            if (right && !left)
-                return Side.Right;
+            if (left && !right) return Side.Left;
+            if (right && !left) return Side.Right;
             if (left && right)
                 return Side.None; // 양쪽 표기가 섞인 이름은 판별 불가
-
             // "arm_l", "L_leg" 같은 토큰형 표기
             var tokens = lower.Split('_', '-', '.', ' ', '(', ')', '[', ']');
             foreach (var tok in tokens)
             {
-                if (tok == "l" || tok == "lt")
-                    left = true;
-                else if (tok == "r" || tok == "rt")
-                    right = true;
-            }
-            if (left != right)
-                return left ? Side.Left : Side.Right;
-
+                if (tok == "l" || tok == "lt") left = true;
+                else if (tok == "r" || tok == "rt") right = true; }
+            if (left != right) return left ? Side.Left : Side.Right;
             // "ArmL"/"RArm" 같은 무구분자 표기 — 대문자 L/R만 인정해
             // 'collar'·'shoulder' 같은 소문자 종료 오탐을 막는다.
             if (rawName.Length >= 2)
             {
                 char last = rawName[rawName.Length - 1];
-                if (last == 'L')
-                    left = true;
-                else if (last == 'R')
-                    right = true;
+                if (last == 'L') left = true;
+                else if (last == 'R') right = true;
                 // 접두 측면은 두 번째 글자가 대문자일 때만 (예: LArm은 허용, Left는 위 단어 검사가 담당)
                 char first = rawName[0];
                 if (char.IsUpper(rawName[1]))
                 {
-                    if (first == 'L')
-                        left = true;
-                    else if (first == 'R')
-                        right = true;
-                }
-            }
-            if (left == right)
-                return Side.None;
-            return left ? Side.Left : Side.Right;
-        }
+                    if (first == 'L') left = true;
+                    else if (first == 'R') right = true; } }
+            if (left == right) return Side.None;
+            return left ? Side.Left : Side.Right; }
 
         /// <summary>구분자를 제거한 소문자 비교용 이름.</summary>
         static string Normalize(string name)

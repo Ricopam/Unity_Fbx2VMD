@@ -105,8 +105,7 @@ namespace Fbx2Vmd.FBXImporter
             internal LegGeometry Leg(int side) => side == 0 ? Left : Right;
         }
 
-        internal HumanoidSupportCurveProblem(Sample[] samples, int captureStart, int first, int last,
-            int spacing, IReadOnlyList<int> boundaries)
+        internal HumanoidSupportCurveProblem(Sample[] samples, int captureStart, int first, int last, int spacing, IReadOnlyList<int> boundaries)
         {
             _samples = samples;
             _startFrame = first;
@@ -133,16 +132,12 @@ namespace Fbx2Vmd.FBXImporter
                     double error = baseline[index, side] - leg.ReferenceDegrees;
                     if (index >= _first && index <= _last) sourceError[side] += error * error;
                     if (index >= 1) steps[2 * (index - 1) + side] = baseline[index, side] - baseline[index - 1, side];
-                    if (index >= 2) acceleration[2 * (index - 2) + side] = baseline[index, side] -
-                        2 * baseline[index - 1, side] + baseline[index - 2, side];
-                }
-                if (index >= 2) hipAcceleration[index - 2] = math.length(samples[index].Hip - 2 * samples[index - 1].Hip + samples[index - 2].Hip);
-            }
+                    if (index >= 2) acceleration[2 * (index - 2) + side] = baseline[index, side] - 2 * baseline[index - 1, side] + baseline[index - 2, side]; }
+                if (index >= 2) hipAcceleration[index - 2] = math.length(samples[index].Hip - 2 * samples[index - 1].Hip + samples[index - 2].Hip); }
             _baselineRms = Array.ConvertAll(sourceError, value => Math.Sqrt(value / (_last - _first + 1)));
             _stepLimits = Limits(steps, 2, 1, .00125, captureStart, boundaries);
             _accelerationLimits = Limits(acceleration, 2, 2, .0003125, captureStart, boundaries);
-            _hipLimits = Limits(hipAcceleration, 1, 2, .0005, captureStart, boundaries);
-        }
+            _hipLimits = Limits(hipAcceleration, 1, 2, .0005, captureStart, boundaries); }
 
         internal bool TryGenerate(out Curve curve)
         {

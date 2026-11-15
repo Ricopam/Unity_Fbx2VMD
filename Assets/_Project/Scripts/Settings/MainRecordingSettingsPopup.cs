@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Fbx2Vmd.FBXImporter;
 using TMPro;
 using UnityEngine;
@@ -9,7 +9,7 @@ using UnityEngine.UI;
 namespace Fbx2Vmd.Settings
 {
     [DisallowMultipleComponent]
-    public sealed class MainRecordingSettingsPopup : MonoBehaviour, IBeginDragHandler, IDragHandler
+    public sealed partial class MainRecordingSettingsPopup : MonoBehaviour, IBeginDragHandler, IDragHandler
     {
         [SerializeField] private bool openOnStart = true;
         [FormerlySerializedAs("recodingSetting")]
@@ -80,7 +80,6 @@ namespace Fbx2Vmd.Settings
             {
                 return;
             }
-
             RectTransform root = EnsureRectTransform(gameObject);
             panelRoot = root;
             bool hadGeneratedHierarchy = MainRecordingSettingsGeneratedHierarchy.HasOwnedRootChildren(panelRoot);
@@ -93,19 +92,16 @@ namespace Fbx2Vmd.Settings
             {
                 return;
             }
-
             var elementBuilder = new MainRecordingSettingsElementBuilder(gameObject.layer);
             if (TryMigrateLegacyGeneratedHierarchy(elementBuilder))
             {
                 return;
             }
-
             RebuildGeneratedContent(
                 elementBuilder,
                 hadGeneratedHierarchy,
                 preservedNotification,
-                hadCanvasGroup);
-        }
+                hadCanvasGroup); }
 
         private bool HasCompleteOwnedHierarchy()
         {
@@ -147,28 +143,13 @@ namespace Fbx2Vmd.Settings
             string preservedNotification,
             bool hadCanvasGroup)
         {
-            int generatedContentSiblingIndex =
-                MainRecordingSettingsGeneratedHierarchy.FindOwnedSiblingIndex(panelRoot);
+            int generatedContentSiblingIndex = MainRecordingSettingsGeneratedHierarchy.FindOwnedSiblingIndex(panelRoot);
             RemoveOwnedGeneratedHierarchy();
-            generatedContentRoot = elementBuilder.CreateRectTransform(
-                MainRecordingSettingsGeneratedHierarchy.ContentObjectName,
-                panelRoot,
-                RectFull());
+            generatedContentRoot = elementBuilder.CreateRectTransform( MainRecordingSettingsGeneratedHierarchy.ContentObjectName, panelRoot, RectFull());
             MainRecordingSettingsGeneratedHierarchy.MarkOwned(generatedContentRoot);
-            MainRecordingSettingsGeneratedHierarchy.RestoreSiblingIndex(
-                generatedContentRoot,
-                generatedContentSiblingIndex);
-            Button[] builtCardButtons = MainRecordingSettingsPopupViewBuilder.Build(
-                generatedContentRoot,
-                elementBuilder,
-                out Button closeButton,
-                out notificationText);
-            AttachGeneratedControls(
-                closeButton,
-                builtCardButtons,
-                builtCardButtons.Length,
-                shouldBindListeners: true);
-
+            MainRecordingSettingsGeneratedHierarchy.RestoreSiblingIndex( generatedContentRoot, generatedContentSiblingIndex);
+            Button[] builtCardButtons = MainRecordingSettingsPopupViewBuilder.Build( generatedContentRoot, elementBuilder, out Button closeButton, out notificationText);
+            AttachGeneratedControls( closeButton, builtCardButtons, builtCardButtons.Length, shouldBindListeners: true);
             if (hadGeneratedHierarchy)
             {
                 if (!string.IsNullOrEmpty(preservedNotification))
@@ -176,7 +157,6 @@ namespace Fbx2Vmd.Settings
                     notificationText.text = preservedNotification;
                     KoreanUiTextFallback.Apply(notificationText);
                 }
-
                 if (!hadCanvasGroup)
                 {
                     SetVisible(isOpen);
@@ -184,9 +164,7 @@ namespace Fbx2Vmd.Settings
             }
             else
             {
-                SetVisible(false);
-            }
-        }
+                SetVisible(false); } }
 
         private bool TryRestoreGeneratedHierarchy()
         {
@@ -298,79 +276,5 @@ namespace Fbx2Vmd.Settings
             root.localScale = Vector3.one * MainRecordingSettingsLayoutSpec.DefaultDisplayScale;
         }
 
-        public void OnBeginDrag(PointerEventData eventData)
-        {
-            EnsureBuilt();
-            dragStartAnchoredPosition = panelRoot.anchoredPosition;
-            dragStartPointerPosition = eventData.position;
-        }
-
-        public void OnDrag(PointerEventData eventData)
-        {
-            EnsureBuilt();
-            Vector2 pointerDelta = eventData.position - dragStartPointerPosition;
-            panelRoot.anchoredPosition = dragStartAnchoredPosition + pointerDelta;
-        }
-
-        private void SetVisible(bool visible)
-        {
-            if (canvasGroup == null)
-            {
-                canvasGroup = gameObject.GetComponent<CanvasGroup>();
-                if (canvasGroup == null)
-                {
-                    canvasGroup = gameObject.AddComponent<CanvasGroup>();
-                }
-            }
-
-            canvasGroup.alpha = visible ? 1f : 0f;
-            canvasGroup.interactable = visible;
-            canvasGroup.blocksRaycasts = visible;
-        }
-
-        private void BindCloseButton(Button button)
-        {
-            button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(Close);
-        }
-
-        private void BindCardButton(Button button, MainRecordingSettingsActionType action)
-        {
-            button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(() => HandleCardAction(action));
-        }
-
-        private void HandleCardAction(MainRecordingSettingsActionType action)
-        {
-            if (action == MainRecordingSettingsActionType.Close)
-            {
-                Close();
-                return;
-            }
-
-            MainRecordingSettingsActions.Execute(action, recordingSetting, fileManager, ShowNotification);
-        }
-
-        private void ShowNotification(string message)
-        {
-            EnsureBuilt();
-            notificationText.text = message;
-            KoreanUiTextFallback.Apply(notificationText);
-        }
-
-        private static Rect RectFull()
-        {
-            return new Rect(
-                0f,
-                0f,
-                MainRecordingSettingsLayoutSpec.ReferenceWidth,
-                MainRecordingSettingsLayoutSpec.ReferenceHeight);
-        }
-
-        private static RectTransform EnsureRectTransform(GameObject target)
-        {
-            RectTransform rectTransform = target.GetComponent<RectTransform>();
-            return rectTransform != null ? rectTransform : target.AddComponent<RectTransform>();
-        }
     }
 }

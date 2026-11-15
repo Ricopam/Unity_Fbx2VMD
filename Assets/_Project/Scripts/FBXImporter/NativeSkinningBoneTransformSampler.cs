@@ -16,39 +16,26 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             Transform[] bones = renderer.bones;
             Matrix4x4[] bindPoses = renderer.sharedMesh.bindposes;
-            if (bones == null ||
-                bindPoses == null ||
-                bones.Length == 0 ||
-                bones.Length != bindPoses.Length)
+            if (bones == null || bindPoses == null || bones.Length == 0 || bones.Length != bindPoses.Length)
             {
                 return false;
             }
-
             Matrix4x4 rendererWorldToLocal = renderer.transform.worldToLocalMatrix;
             var sampledMatrices = new Matrix4x4[bones.Length];
             for (int boneIndex = 0; boneIndex < bones.Length; boneIndex++)
             {
                 if (bones[boneIndex] == null)
                 {
-                    return false;
-                }
-
-                Matrix4x4 matrix = rendererWorldToLocal *
-                    bones[boneIndex].localToWorldMatrix *
-                    bindPoses[boneIndex];
+                    return false; }
+                Matrix4x4 matrix = rendererWorldToLocal * bones[boneIndex].localToWorldMatrix * bindPoses[boneIndex];
                 if (!IsFinite(matrix))
                 {
-                    return false;
-                }
-                sampledMatrices[boneIndex] = matrix;
-            }
-
+                    return false; }
+                sampledMatrices[boneIndex] = matrix; }
             skinningMatrices = sampledMatrices;
-            return true;
-        }
+            return true; }
 
         private static bool IsFinite(Matrix4x4 matrix)
         {

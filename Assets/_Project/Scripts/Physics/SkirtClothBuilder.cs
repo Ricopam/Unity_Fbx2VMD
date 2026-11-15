@@ -123,6 +123,8 @@ namespace Fbx2Vmd.ClothPhysics
             var mesh = smr.sharedMesh;
             int vcnt = mesh.vertexCount;
             var attrs = new VertexAttribute[vcnt]; // 기본값 = Invalid (Flag 없음)
+            fixedCount = 0;
+            moveCount = 0;
 
             var bones = smr.bones;
             if (bones == null || bones.Length == 0)

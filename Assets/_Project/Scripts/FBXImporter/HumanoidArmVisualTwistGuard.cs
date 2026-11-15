@@ -100,36 +100,12 @@ namespace Fbx2Vmd.FBXImporter
         int ConfigureArmSegments()
         {
             int configuredCount = 0;
-            configuredCount += ConfigureSegment(
-                HumanBodyBones.LeftUpperArm,
-                HumanBodyBones.LeftLowerArm,
-                upperArmInfluence,
-                upperArmMaxDegrees,
-                "joint_LeftArmTwist");
-            configuredCount += ConfigureSegment(
-                HumanBodyBones.RightUpperArm,
-                HumanBodyBones.RightLowerArm,
-                upperArmInfluence,
-                upperArmMaxDegrees,
-                "joint_RightArmTwist");
-            configuredCount += ConfigureSegment(
-                HumanBodyBones.LeftLowerArm,
-                HumanBodyBones.LeftHand,
-                forearmInfluence,
-                forearmMaxDegrees,
-                "joint_LeftHandTwist",
-                "joint_LeftHandTwist1",
-                "!joint_LeftHandTwist2",
-                "joint_LeftHandTwist3");
-            configuredCount += ConfigureSegment(
-                HumanBodyBones.RightLowerArm,
-                HumanBodyBones.RightHand,
-                forearmInfluence,
-                forearmMaxDegrees,
-                "joint_RightHandTwist",
-                "joint_RightHandTwist1",
-                "!joint_RightHandTwist2",
-                "joint_RightHandTwist3");
+            configuredCount += ConfigureSegment( HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, upperArmInfluence, upperArmMaxDegrees, "joint_LeftArmTwist");
+            configuredCount += ConfigureSegment( HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, upperArmInfluence, upperArmMaxDegrees, "joint_RightArmTwist");
+            configuredCount += ConfigureSegment( HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, forearmInfluence, forearmMaxDegrees, "joint_LeftHandTwist", "joint_LeftHandTwist1",
+                "!joint_LeftHandTwist2", "joint_LeftHandTwist3");
+            configuredCount += ConfigureSegment( HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, forearmInfluence, forearmMaxDegrees, "joint_RightHandTwist", "joint_RightHandTwist1",
+                "!joint_RightHandTwist2", "joint_RightHandTwist3");
             return configuredCount;
         }
 
@@ -141,67 +117,39 @@ namespace Fbx2Vmd.FBXImporter
             _controlledTransforms.Clear();
         }
 
-        private int ConfigureSegment(
-            HumanBodyBones sourceBone,
-            HumanBodyBones endBone,
-            float influence,
-            float maxDegrees,
-            params string[] nodeNames)
+        private int ConfigureSegment( HumanBodyBones sourceBone, HumanBodyBones endBone, float influence, float maxDegrees, params string[] nodeNames)
         {
             Transform source = _animator.GetBoneTransform(sourceBone);
             Transform end = _animator.GetBoneTransform(endBone);
             if (source == null || end == null || nodeNames == null || nodeNames.Length == 0)
             {
-                return 0;
-            }
-
+                return 0; }
             var nodes = new List<Transform>();
             foreach (string nodeName in nodeNames)
             {
                 Transform node = FindDescendantByName(source, nodeName);
                 if (node != null && !nodes.Contains(node))
                 {
-                    nodes.Add(node);
-                }
-            }
-
+                    nodes.Add(node); } }
             if (nodes.Count == 0)
             {
-                return 0;
-            }
-
+                return 0; }
             Vector3 localEnd = source.InverseTransformPoint(end.position);
             float length = localEnd.magnitude;
             Vector3 localDirection = length > 0.0001f ? localEnd / length : Vector3.right;
-
             var segment = new SegmentCorrection
             {
-                Source = source,
-                End = end,
-                BaselineRelativeRotation = GetRelativeRotation(source, end),
-                LocalAxis = localDirection,
-                Influence = Mathf.Clamp01(influence),
-                MaxDegrees = Mathf.Clamp(maxDegrees, 0f, 120f)
-            };
-
-            nodes.Sort((a, b) =>
-            {
-                float wa = CalculateNodeWeight(source, a, localDirection, length);
-                float wb = CalculateNodeWeight(source, b, localDirection, length);
-                return wa.CompareTo(wb);
-            });
-
+                Source = source, End = end, BaselineRelativeRotation = GetRelativeRotation(source, end), LocalAxis = localDirection, Influence = Mathf.Clamp01(influence), MaxDegrees = Mathf.Clamp(maxDegrees, 0f, 120f) };
+            nodes.Sort((a, b) => {
+                float wa = CalculateNodeWeight(source, a, localDirection, length); float wb = CalculateNodeWeight(source, b, localDirection, length); return wa.CompareTo(wb); });
             foreach (Transform node in nodes)
             {
                 float weight = CalculateNodeWeight(source, node, localDirection, length);
                 Quaternion baselineSourceRelative = Quaternion.Inverse(source.rotation) * node.rotation;
                 segment.Nodes.Add(new NodeCorrection(node, node.localRotation, baselineSourceRelative, weight));
-                AddControlledTransform(node);
-            }
-
+                AddControlledTransform(node); }
             _segments.Add(segment);
-            return segment.Nodes.Count;
-        }
+            return segment.Nodes.Count; }
 
         private void AddControlledTransform(Transform targetTransform)
         {
@@ -217,34 +165,28 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return;
             }
-
             // 상완/전완 segment가 기준 자세에서 얼마나 비틀렸는지 상대 회전 차이로 구합니다.
             Quaternion currentRelative = GetRelativeRotation(segment.Source, segment.End);
             Quaternion delta = Quaternion.Inverse(segment.BaselineRelativeRotation) * currentRelative;
-
             // 팔 방향 전체 회전이 아니라 길이축 기준 twist 성분만 뽑아 소매 보조본에 나눠 줍니다.
             delta = ExtractTwist(delta, segment.LocalAxis);
             delta = LimitRotation(delta, segment.MaxDegrees);
-
             if (!IsFinite(delta))
             {
                 LogWarningOnce("계산된 보조본 회전값이 유효하지 않아 이 프레임의 시각 보정을 건너뜁니다.");
                 return;
             }
-
             foreach (NodeCorrection node in segment.Nodes)
             {
                 if (node.Transform == null)
                 {
                     continue;
                 }
-
                 // 보조본이 팔 길이 방향으로 어디에 있는지에 따라 twist 영향도를 분산합니다.
                 float weight = Mathf.Clamp01(node.Weight * segment.Influence);
                 Quaternion distributed = Quaternion.Slerp(Quaternion.identity, delta, weight);
                 ApplySourceRelativeRotation(segment.Source, node, distributed);
-            }
-        }
+            } }
 
         private static void ApplySourceRelativeRotation(
             Transform source,
@@ -382,19 +324,5 @@ namespace Fbx2Vmd.FBXImporter
             _warningLogged = true;
         }
 
-        private static bool IsFinite(Vector3 value)
-        {
-            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
-        }
-
-        private static bool IsFinite(Quaternion value)
-        {
-            return IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z) && IsFinite(value.w);
-        }
-
-        private static bool IsFinite(float value)
-        {
-            return !float.IsNaN(value) && !float.IsInfinity(value);
-        }
     }
 }

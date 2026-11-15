@@ -16,12 +16,6 @@ namespace Fbx2Vmd.FBXImporter
             public float LastLeftForearmStretchBefore { get; private set; } = float.NaN;
             public float LastLeftForearmStretchAfter { get; private set; } = float.NaN;
             public float LastLeftForearmStretchDelta { get; private set; } = float.NaN;
-            public int LastRightApplied { get; private set; }
-            public int LastRightHorizontalReachApplied { get; private set; }
-            public int LastRightRaisedReachApplied { get; private set; }
-            public float LastRightForearmStretchBefore { get; private set; } = float.NaN;
-            public float LastRightForearmStretchAfter { get; private set; } = float.NaN;
-            public float LastRightForearmStretchDelta { get; private set; } = float.NaN;
 
             private void LogOnce(string message)
             {

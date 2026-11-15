@@ -47,9 +47,7 @@ namespace Fbx2Vmd.FBXImporter
             return $"fast={fast:F0}ms strong={strong:F0}ms " +
                 $"lbs={lbs:F0}ms convert={convert:F0}ms " +
                 $"fallbackFrames={_fallbackFrameCount} | " +
-                $"lbsUsable={usable} lbsRejected={rejected} | " +
-                _solverTiming.Describe();
-        }
+                $"lbsUsable={usable} lbsRejected={rejected} | " + _solverTiming.Describe(); }
 
         private bool TryCalculateRendererFrame(
             int frameIndex,
@@ -68,7 +66,6 @@ namespace Fbx2Vmd.FBXImporter
                 errorMessage = "사전 계산 중 Renderer 토폴로지가 변경됐습니다.";
                 return false;
             }
-
             Vector3[] baselineVertices = _readFrameVertices(
                 frameIndex,
                 work.Renderer);
@@ -79,68 +76,36 @@ namespace Fbx2Vmd.FBXImporter
                 work,
                 out frame,
                 out usedFallback,
-                out errorMessage);
-        }
+                out errorMessage); }
 
         // 프레임 독립 계산부. Unity API에 접근하지 않아 워커 스레드에서도 실행 가능하다.
-        private bool TryCalculateRendererFrameCore(
-            int frameIndex,
-            Vector3[] baselineVertices,
-            Func<NativeSkinningDualQuaternionTransform[]> boneTransformsProvider,
-            RendererWork work,
-            out NativeSkinningCorrectionFrame frame,
-            out bool usedFallback,
-            out string errorMessage)
+        private bool TryCalculateRendererFrameCore( int frameIndex, Vector3[] baselineVertices, Func<NativeSkinningDualQuaternionTransform[]> boneTransformsProvider, RendererWork work, out NativeSkinningCorrectionFrame frame, out bool usedFallback, out string errorMessage)
         {
             frame = null;
             usedFallback = false;
             errorMessage = string.Empty;
             if (baselineVertices == null || baselineVertices.Length != work.VertexCount)
             {
-                errorMessage =
-                    $"frame {frameIndex}의 스키닝 정점 수가 계약과 다릅니다.";
-                return false;
-            }
-            if (!NativeSkinningSurfaceCorrectionCalculator.AreVerticesFinite(
-                    baselineVertices))
+                errorMessage = $"frame {frameIndex}의 스키닝 정점 수가 계약과 다릅니다.";
+                return false; }
+            if (!NativeSkinningSurfaceCorrectionCalculator.AreVerticesFinite( baselineVertices))
             {
-                errorMessage =
-                    $"frame {frameIndex}의 스키닝 정점에 유한하지 않은 값이 있습니다.";
-                return false;
-            }
-
+                errorMessage = $"frame {frameIndex}의 스키닝 정점에 유한하지 않은 값이 있습니다.";
+                return false; }
             var deltaByVertex = new Dictionary<int, Vector3>();
             var surfaceDeltaByVertex = new Dictionary<int, Vector3>();
-            if (!TryCalculateSurfaceCorrections(
-                    frameIndex,
-                    baselineVertices,
-                    work,
-                    boneTransformsProvider,
-                    out NativeSkinningSurfaceCorrectionResult[] surfaceCorrections,
-                    out bool surfaceUsedFallback,
-                    out NativeSkinningDualQuaternionTransform[] boneTransforms,
-                    out errorMessage))
+            if (!TryCalculateSurfaceCorrections( frameIndex, baselineVertices, work, boneTransformsProvider, out NativeSkinningSurfaceCorrectionResult[] surfaceCorrections, out bool surfaceUsedFallback, out NativeSkinningDualQuaternionTransform[] boneTransforms, out errorMessage))
             {
-                return false;
-            }
+                return false; }
             usedFallback |= surfaceUsedFallback;
-            if (!AccumulateContractCorrections(frameIndex, baselineVertices, work,
-                    surfaceCorrections, boneTransformsProvider, ref boneTransforms,
-                    deltaByVertex, surfaceDeltaByVertex, out errorMessage))
+            if (!AccumulateContractCorrections(frameIndex, baselineVertices, work, surfaceCorrections, boneTransformsProvider, ref boneTransforms, deltaByVertex, surfaceDeltaByVertex, out errorMessage))
             {
-                return false;
-            }
-
-            if (!TryValidateCombinedQuality(frameIndex, baselineVertices,
-                    ref deltaByVertex, surfaceDeltaByVertex, work.Contracts,
-                    ref usedFallback, out errorMessage))
+                return false; }
+            if (!TryValidateCombinedQuality(frameIndex, baselineVertices, ref deltaByVertex, surfaceDeltaByVertex, work.Contracts, ref usedFallback, out errorMessage))
             {
-                return false;
-            }
-
+                return false; }
             frame = BuildCorrectionFrame(frameIndex, deltaByVertex);
-            return true;
-        }
+            return true; }
 
         private static bool TryValidateCombinedQuality(int frameIndex,
             Vector3[] baselineVertices,
@@ -195,31 +160,17 @@ namespace Fbx2Vmd.FBXImporter
                  contractIndex < work.Contracts.Length;
                  contractIndex++)
             {
-                NativeSkinningSurfaceContract contract =
-                    work.Contracts[contractIndex];
-                NativeSkinningSurfaceCorrectionResult correction =
-                    surfaceCorrections[contractIndex];
-                IReadOnlyList<Vector3> correctedVertices =
-                    correction.CorrectedVertices;
-                IReadOnlyCollection<int> correctedVertexIndices =
-                    correction.CorrectedVertexIndices;
-                AddSparseCorrections(baselineVertices, correctedVertices,
-                    correctedVertexIndices, surfaceDeltaByVertex);
-
-                if (correction.UsedRestShapeRecovery &&
-                    !ApplyRestShapeRecovery(frameIndex, baselineVertices, work,
-                        contractIndex, correctedVertices, correctedVertexIndices,
-                        boneTransformsProvider, ref boneTransforms,
-                        out correctedVertices, out correctedVertexIndices,
-                        out errorMessage))
+                NativeSkinningSurfaceContract contract = work.Contracts[contractIndex];
+                NativeSkinningSurfaceCorrectionResult correction = surfaceCorrections[contractIndex];
+                IReadOnlyList<Vector3> correctedVertices = correction.CorrectedVertices;
+                IReadOnlyCollection<int> correctedVertexIndices = correction.CorrectedVertexIndices;
+                AddSparseCorrections(baselineVertices, correctedVertices, correctedVertexIndices, surfaceDeltaByVertex);
+                if (correction.UsedRestShapeRecovery && !ApplyRestShapeRecovery(frameIndex, baselineVertices, work, contractIndex, correctedVertices, correctedVertexIndices,
+                        boneTransformsProvider, ref boneTransforms, out correctedVertices, out correctedVertexIndices, out errorMessage))
                 {
                     return false;
                 }
-                AddSparseCorrections(
-                    baselineVertices,
-                    correctedVertices,
-                    correctedVertexIndices,
-                    deltaByVertex);
+                AddSparseCorrections( baselineVertices, correctedVertices, correctedVertexIndices, deltaByVertex);
             }
             return true;
         }
@@ -232,44 +183,26 @@ namespace Fbx2Vmd.FBXImporter
             Func<NativeSkinningDualQuaternionTransform[]> boneTransformsProvider,
             ref NativeSkinningDualQuaternionTransform[] boneTransforms,
             out IReadOnlyList<Vector3> outCorrectedVertices,
-            out IReadOnlyCollection<int> outCorrectedVertexIndices,
-            out string errorMessage)
+            out IReadOnlyCollection<int> outCorrectedVertexIndices, out string errorMessage)
         {
             errorMessage = string.Empty;
             outCorrectedVertices = correctedVertices;
             outCorrectedVertexIndices = correctedVertexIndices;
             if (boneTransforms == null)
             {
-                boneTransforms = boneTransformsProvider?.Invoke();
-            }
+                boneTransforms = boneTransformsProvider?.Invoke(); }
             if (boneTransforms == null)
             {
-                errorMessage =
-                    $"frame {frameIndex}의 Native 스키닝 본 자세를 변환하지 못했습니다.";
-                return false;
-            }
-
-            if (!NativeSkinningDualQuaternionBlendCalculator
-                    .TryCalculateWithPreparedTransforms(
-                        correctedVertices,
-                        work.RestVertices,
-                        boneTransforms,
-                        work.BlendContracts[contractIndex],
-                        out NativeSkinningDualQuaternionBlendResult
-                            volumeCorrection,
-                        baselineVertices))
+                errorMessage = $"frame {frameIndex}의 Native 스키닝 본 자세를 변환하지 못했습니다.";
+                return false; }
+            if (!NativeSkinningDualQuaternionBlendCalculator .TryCalculateWithPreparedTransforms( correctedVertices, work.RestVertices, boneTransforms, work.BlendContracts[contractIndex], out NativeSkinningDualQuaternionBlendResult
+                            volumeCorrection, baselineVertices))
             {
-                errorMessage =
-                    $"frame {frameIndex}의 Native 체적 보정을 계산하지 못했습니다.";
-                return false;
-            }
+                errorMessage = $"frame {frameIndex}의 Native 체적 보정을 계산하지 못했습니다.";
+                return false; }
             outCorrectedVertices = volumeCorrection.BlendedVertices;
-            outCorrectedVertexIndices = correctedVertexIndices
-                .Concat(volumeCorrection.ChangedVertexIndices)
-                .Distinct()
-                .ToArray();
-            return true;
-        }
+            outCorrectedVertexIndices = correctedVertexIndices .Concat(volumeCorrection.ChangedVertexIndices) .Distinct() .ToArray();
+            return true; }
 
         private static bool AreCombinedCorrectionsWithinQuality(
             Vector3[] baselineVertices,
@@ -317,28 +250,17 @@ namespace Fbx2Vmd.FBXImporter
             // 세션을 실패시켜 베이크 경로 재준비로 수렴시킨다.
             if (work.LbsVerdict != RendererWork.LbsUsable)
             {
-                fatalMessage =
-                    $"frame {frameIndex}은 LBS가 미검증·거부된 상태의 " +
-                    "행렬 전용 프레임이라 베이스라인을 복원할 수 없습니다.";
-                return false;
-            }
+                fatalMessage = $"frame {frameIndex}은 LBS가 미검증·거부된 상태의 " + "행렬 전용 프레임이라 베이스라인을 복원할 수 없습니다.";
+                return false; }
             // 베이크 베이스라인이 없으면 워커가 LBS로 직접 계산한다 —
             // 스키닝 행렬이 캡처돼 있으면 Unity API 없이 복원 가능하다.
             var lbsWatch = System.Diagnostics.Stopwatch.StartNew();
-            if (!TryComputeLbsBaseline(
-                    work,
-                    skinningMatrices,
-                    out baselineVertices))
+            if (!TryComputeLbsBaseline( work, skinningMatrices, out baselineVertices))
             {
-                fatalMessage =
-                    $"frame {frameIndex}의 LBS 베이스라인을 계산하지 못했습니다.";
-                return false;
-            }
-            System.Threading.Interlocked.Add(
-                ref _lbsTicks,
-                lbsWatch.ElapsedTicks);
-            return true;
-        }
+                fatalMessage = $"frame {frameIndex}의 LBS 베이스라인을 계산하지 못했습니다.";
+                return false; }
+            System.Threading.Interlocked.Add( ref _lbsTicks, lbsWatch.ElapsedTicks);
+            return true; }
 
         private Func<NativeSkinningDualQuaternionTransform[]> CreateBoneTransformsProvider(
             Matrix4x4[] skinningMatrices)
@@ -404,47 +326,26 @@ namespace Fbx2Vmd.FBXImporter
             Matrix4x4[] skinningMatrices,
             Vector3[] bakedBaselineVertices)
         {
-            if (work == null ||
-                skinningMatrices == null ||
-                work.LbsVerdict == RendererWork.LbsRejected)
+            if (work == null || skinningMatrices == null || work.LbsVerdict == RendererWork.LbsRejected)
             {
                 return;
             }
             var lbsWatch = System.Diagnostics.Stopwatch.StartNew();
-            bool withinTolerance =
-                TryComputeLbsBaseline(
-                    work,
-                    skinningMatrices,
-                    out Vector3[] lbsBaseline) &&
-                NativeSkinningLinearBlendCalculator.MaxDeviation(
-                    lbsBaseline,
-                    bakedBaselineVertices) <=
+            bool withinTolerance = TryComputeLbsBaseline( work, skinningMatrices, out Vector3[] lbsBaseline) && NativeSkinningLinearBlendCalculator.MaxDeviation( lbsBaseline, bakedBaselineVertices) <=
                     NativeSkinningLinearBlendCalculator
                         .BaselineMaxDeviationMeters;
-            System.Threading.Interlocked.Add(
-                ref _lbsTicks,
-                lbsWatch.ElapsedTicks);
+            System.Threading.Interlocked.Add( ref _lbsTicks, lbsWatch.ElapsedTicks);
             if (withinTolerance)
             {
                 // 사용 확정은 미결정 상태에서만 — 거부는 어느 표결보다 우선한다.
-                if (System.Threading.Interlocked.Increment(
-                        ref work.LbsComparedFrameCount) >=
-                    LbsCalibrationFrameCount)
+                if (System.Threading.Interlocked.Increment( ref work.LbsComparedFrameCount) >= LbsCalibrationFrameCount)
                 {
-                    System.Threading.Interlocked.CompareExchange(
-                        ref work.LbsVerdict,
-                        RendererWork.LbsUsable,
-                        RendererWork.LbsUndecided);
+                    System.Threading.Interlocked.CompareExchange( ref work.LbsVerdict, RendererWork.LbsUsable, RendererWork.LbsUndecided);
                 }
-            }
-            else
+            } else
             {
                 // 거부는 즉시 확정 — 동시 표결이 사용으로 되돌리지 못한다.
-                System.Threading.Interlocked.Exchange(
-                    ref work.LbsVerdict,
-                    RendererWork.LbsRejected);
-            }
-        }
+                System.Threading.Interlocked.Exchange( ref work.LbsVerdict, RendererWork.LbsRejected); } }
 
     }
 }

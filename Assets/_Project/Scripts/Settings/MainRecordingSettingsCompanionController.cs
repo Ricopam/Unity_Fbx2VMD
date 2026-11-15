@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace Fbx2Vmd.Settings
 {
     [DisallowMultipleComponent]
-    public sealed class MainRecordingSettingsCompanionController : MonoBehaviour
+    public sealed partial class MainRecordingSettingsCompanionController : MonoBehaviour
     {
         [SerializeField] private string settingsFilePathOverride;
         [SerializeField] private TMP_InputField fbxPathInput;
@@ -194,15 +194,6 @@ namespace Fbx2Vmd.Settings
             }
         }
 
-        private void ApplyReadableKoreanFonts()
-        {
-            TextMeshProUGUI[] labels = GetComponentsInChildren<TextMeshProUGUI>(true);
-            foreach (TextMeshProUGUI label in labels)
-            {
-                KoreanUiTextFallback.Apply(label);
-            }
-        }
-
         private static void SetInputText(TMP_InputField input, string value)
         {
             if (input != null)
@@ -239,19 +230,5 @@ namespace Fbx2Vmd.Settings
             return saveButton == null || saveButton.interactable;
         }
 
-        private bool HasReadableKoreanTextForTests()
-        {
-            ApplyReadableKoreanFonts();
-            TextMeshProUGUI[] labels = GetComponentsInChildren<TextMeshProUGUI>(true);
-            foreach (TextMeshProUGUI label in labels)
-            {
-                if (!KoreanUiTextFallback.IsReadable(label))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
     }
 }

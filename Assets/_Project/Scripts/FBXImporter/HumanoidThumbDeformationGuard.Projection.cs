@@ -112,8 +112,7 @@ namespace Fbx2Vmd.FBXImporter
                 limits.IndexSpreadGuardWeight = Mathf.Max(limits.IndexSpreadGuardWeight, 1f);
                 limits.ProjectionGuardWeight = Mathf.Max(limits.ProjectionGuardWeight, 1f);
             }
-            return limits;
-        }
+            return limits; }
 
         private static float ResolveManualOverrideMaxSpreadAngle(float configuredMaxSpreadAngle, float overrideMaxSpreadAngle)
         {
@@ -164,8 +163,7 @@ namespace Fbx2Vmd.FBXImporter
                 limits.MaxSpreadAngle,
                 limits.IndexSpreadGuardWeight,
                 limits.ProjectionGuardWeight,
-                out targetDirection);
-        }
+                out targetDirection); }
 
         private int StraightenThumbSegmentBend(Transform proximal, Transform intermediate, Transform distal, bool isRightThumb)
         {
@@ -238,13 +236,7 @@ namespace Fbx2Vmd.FBXImporter
         {
             thumbDirection = Vector3.zero;
             indexDirection = Vector3.zero;
-            ResolveHandChainBones(
-                isRightThumb,
-                out Transform hand,
-                out Transform thumbProximal,
-                out Transform thumbIntermediate,
-                out Transform indexProximal,
-                out Transform indexIntermediate);
+            ResolveHandChainBones( isRightThumb, out Transform hand, out Transform thumbProximal, out Transform thumbIntermediate, out Transform indexProximal, out Transform indexIntermediate);
 
             if (thumbProximal != null && thumbIntermediate != null)
             {
@@ -263,9 +255,7 @@ namespace Fbx2Vmd.FBXImporter
             {
                 indexDirection = indexIntermediate.position - indexProximal.position;
             }
-
-            return TryNormalize(thumbDirection, out thumbDirection) &&
-                TryNormalize(indexDirection, out indexDirection);
+            return TryNormalize(thumbDirection, out thumbDirection) && TryNormalize(indexDirection, out indexDirection);
         }
 
         private void ResolveHandChainBones(
@@ -292,7 +282,6 @@ namespace Fbx2Vmd.FBXImporter
             sideAxis = Vector3.zero;
             palmNormal = Vector3.zero;
             forwardAxis = Vector3.zero;
-
             Transform hand = targetAnimator.GetBoneTransform(isRightThumb ? HumanBodyBones.RightHand : HumanBodyBones.LeftHand);
             Transform index = targetAnimator.GetBoneTransform(isRightThumb ? HumanBodyBones.RightIndexProximal : HumanBodyBones.LeftIndexProximal);
             Transform middle = targetAnimator.GetBoneTransform(isRightThumb ? HumanBodyBones.RightMiddleProximal : HumanBodyBones.LeftMiddleProximal);
@@ -301,13 +290,11 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             Vector3 rawSide = index.position - little.position;
             if (isRightThumb)
             {
                 rawSide = -rawSide;
             }
-
             Vector3 rawForward = ((index.position + middle.position + little.position) / 3f) - hand.position;
             if (!TryNormalize(rawSide, out sideAxis) ||
                 !TryNormalize(rawForward, out forwardAxis) ||
@@ -316,7 +303,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             return true;
         }
 

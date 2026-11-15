@@ -16,48 +16,25 @@ namespace Fbx2Vmd.FBXImporter
         {
             float safeStart = Mathf.Max(0f, referenceClipStartSeconds);
             float safeDuration = Mathf.Max(0.1f, requestedDurationSeconds);
-            float localSampleScale =
-                candidateClipSecondsPerReferenceSecond <= 0f ||
-                float.IsNaN(candidateClipSecondsPerReferenceSecond) ||
-                float.IsInfinity(candidateClipSecondsPerReferenceSecond)
-                    ? 1f
-                    : candidateClipSecondsPerReferenceSecond;
+            float localSampleScale = candidateClipSecondsPerReferenceSecond <= 0f || float.IsNaN(candidateClipSecondsPerReferenceSecond) || float.IsInfinity(candidateClipSecondsPerReferenceSecond)
+                    ? 1f : candidateClipSecondsPerReferenceSecond;
             var absoluteSampleTimes = new List<float>();
-            AddLocalSamples(
-                absoluteSampleTimes,
-                safeStart,
-                safeDuration,
-                defaultLocalSampleSeconds,
-                localSampleScale);
-            AddLocalSamples(
-                absoluteSampleTimes,
-                safeStart,
-                safeDuration,
-                referenceLocalSampleSeconds,
-                localSampleScale);
-
+            AddLocalSamples( absoluteSampleTimes, safeStart, safeDuration, defaultLocalSampleSeconds, localSampleScale);
+            AddLocalSamples( absoluteSampleTimes, safeStart, safeDuration, referenceLocalSampleSeconds, localSampleScale);
             if (absoluteSampleTimes.Count <= 0)
             {
-                return Array.Empty<float>();
-            }
-
+                return Array.Empty<float>(); }
             absoluteSampleTimes.Sort();
             var deduplicated = new List<float>(absoluteSampleTimes.Count);
             float dedupeSeconds = (0.5f / Mathf.Max(0.0001f, frameRate)) + 0.0001f;
             foreach (float sampleTime in absoluteSampleTimes)
             {
-                if (deduplicated.Count > 0 &&
-                    Mathf.Abs(deduplicated[deduplicated.Count - 1] - sampleTime) <= dedupeSeconds)
+                if (deduplicated.Count > 0 && Mathf.Abs(deduplicated[deduplicated.Count - 1] - sampleTime) <= dedupeSeconds)
                 {
                     deduplicated[deduplicated.Count - 1] = sampleTime;
-                    continue;
-                }
-
-                deduplicated.Add(sampleTime);
-            }
-
-            return deduplicated.ToArray();
-        }
+                    continue; }
+                deduplicated.Add(sampleTime); }
+            return deduplicated.ToArray(); }
 
         private static void AddLocalSamples(
             List<float> absoluteSampleTimes,
@@ -81,7 +58,6 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     continue;
                 }
-
                 absoluteSampleTimes.Add(referenceClipStartSeconds + (Mathf.Clamp(
                     localSampleSecond,
                     0f,

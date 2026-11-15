@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using MagicaCloth2;
 using UnityEngine;
@@ -58,35 +59,111 @@ namespace Fbx2Vmd.ClothPhysics
                  "끄면 기존 수작업 파라미터 경로만 사용")]
         public bool usePresetBaseline = true;
 
-        [Tooltip("카메라 컬링 모드. AnimatorLinkage = 연동 Animator의 CullingMode를 따라감")]
-        public CullingSettings.CameraCullingMode cameraCullingMode =
-            CullingSettings.CameraCullingMode.AnimatorLinkage;
 
-        [Tooltip("이 거리(m)를 넘는 클로스 시뮬레이션을 끈다. 0 = 거리 컬링 끔(녹화·소규모 씬 기본값)")]
-        [Min(0f)]
-        public float distanceCullingMeters = 0f;
+        private void ReportSkirtPose(SkirtAnimationProbe.Verdict poseVerdict,
+            string poseDetail, bool isBonePath, List<string> report)
+        {
+            if (poseVerdict != SkirtAnimationProbe.Verdict.Static)
+                report.Add($"스커트 포즈 판정: {poseDetail}");
+            else if (!skirtSkinningFallback)
+                report.Add($"스커트 포즈 판정: {poseDetail} — 커스텀 스키닝 폴백 꺼짐");
+            else if (isBonePath)
+                // BoneCloth는 정점=본이라 애니메이션 포즈가 본 자체 —
+                // 커스텀 스키닝(메시 정점 재스키닝)은 의미 없음
+                report.Add($"스커트 포즈 판정: {poseDetail} — BoneCloth 경로는 커스텀 스키닝 불필요");
+            else
+                report.Add($"스커트 포즈 판정: {poseDetail} → 커스텀 스키닝 폴백");
+        }
 
-        [Tooltip("거리 컬링 종료 직전 페이드 구간 비율(0~1)")]
-        [Range(0f, 1f)]
-        public float distanceCullingFadeRatio = 0.2f;
 
-        [Header("런타임 옵션")]
-        [Tooltip("MC2 Pre-build 사용. 활성화하려면 생성된 MagicaCloth 인스펙터에서 Pre-build 데이터도 함께 생성해야 함")]
-        public bool usePreBuild = false;
+        private bool TryResolveByNamePattern(
+            Animator animator, List<string> report,
+            out System.Func<HumanBodyBones, Transform> resolver,
+            out HashSet<Transform> bodyBones, out float torso)
+        {
+            resolver = null;
+            bodyBones = null;
+            torso = 0f;
+            var nameMap = NamePatternBoneResolver.Resolve(animator.transform);
+            if (!nameMap.TryGetValue(HumanBodyBones.Head, out _) ||
+                !nameMap.TryGetValue(HumanBodyBones.Hips, out _))
+            {
+                lastReport = "실패: Avatar가 Humanoid가 아니고 본 이름 패턴으로도 " +
+                    "Head/Hips를 해석할 수 없습니다. (수동 본 지정 필요)\n" +
+                    string.Join("\n", report);
+                Debug.LogError(lastReport, this);
+                return false;
+            }
+            resolver = b => nameMap.TryGetValue(b, out var t) ? t : null;
+            bodyBones = new HashSet<Transform>(nameMap.Values);
+            torso = BodyColliderBuilder.MeasureTorso(
+                nameMap[HumanBodyBones.Hips], nameMap[HumanBodyBones.Head]);
+            report.Add($"Humanoid 아님 — 이름 패턴 폴백으로 신체 본 {nameMap.Count}개 해석");
+            return true;
+        }
 
-        [Tooltip("비활성→활성 전환 시 클로스가 무효면 자동 재설정. MC2는 비활성 시 팀을 해제해 재활성만으로는 복구되지 않으므로 기본 켜기")]
-        public bool autoRebuildOnEnable = true;
 
-        [Tooltip("다른 에셋이 PlayerLoop를 덮어써 MC2 시뮬레이션이 멈추는 경우를 대비해 " +
-                 "주기적으로 MagicaManager.InitCustomGameLoop()를 재호출한다 (등록 확인 후 누락 시에만 재등록)")]
-        public bool playerLoopGuard = true;
+        static List<Transform> GarmentAttachmentBones(Func<HumanBodyBones, Transform> resolver)
+        {
+            var list = new List<Transform>();
+            foreach (var b in new[]
+            {
+                HumanBodyBones.Hips, HumanBodyBones.Spine, HumanBodyBones.Chest,
+                HumanBodyBones.UpperChest, HumanBodyBones.Neck,
+                HumanBodyBones.LeftShoulder, HumanBodyBones.RightShoulder,
+            })
+            {
+                var t = resolver(b);
+                if (t != null && !list.Contains(t))
+                    list.Add(t);
+            }
+            return list;
+        }
 
-        [Header("결과 (읽기 전용)")]
-        public List<ColliderComponent> generatedColliders = new List<ColliderComponent>();
-        public List<MagicaCloth> generatedCloths = new List<MagicaCloth>();
-        public List<HairPart> generatedParts = new List<HairPart>();
-        public List<bool> generatedIsLong = new List<bool>();
-        [TextArea]
-        [System.NonSerialized] public string lastReport = "";
+        /// <summary>생성 클로스에 컬링 옵션을 적용한다 (프리셋 JSON은 컬링을 저장하지 않아 여기서 설정).</summary>
+        void ApplyCulling(MagicaCloth cloth)
+        {
+            var culling = cloth.SerializeData.cullingSettings;
+            culling.cameraCullingMode = cameraCullingMode;
+            culling.distanceCullingLength.SetValue(distanceCullingMeters > 0f, distanceCullingMeters);
+            culling.distanceCullingFadeRatio = Mathf.Clamp01(distanceCullingFadeRatio);
+        }
+
+        /// <summary>클로스 비동기 빌드 실패를 리포트에 남긴다.</summary>
+        void HandleClothBuildComplete(MagicaCloth cloth, bool success)
+        {
+            if (success)
+                return;
+            string clothName = cloth != null ? cloth.name : "?";
+            lastReport = $"클로스 비동기 빌드 실패 ({clothName}) — " +
+                "SerializeData/메시 상태를 확인하세요";
+            Debug.LogWarning("[CharacterPhysicsSetup] " + lastReport, this);
+        }
+
+        /// <summary>플레이 중 파라미터 변경을 MC2에 알린다 (공식 API).</summary>
+        static void NotifyParameterChange(MagicaCloth cloth)
+        {
+            if (!Application.isPlaying)
+                return;
+            cloth.SetParameterChange();
+        }
+
+        Animator ResolveAnimator()
+        {
+            if (targetAnimator != null)
+                return targetAnimator;
+            targetAnimator = GetComponent<Animator>();
+            if (targetAnimator == null)
+                targetAnimator = GetComponentInChildren<Animator>(true);
+            return targetAnimator;
+        }
+
+
+        void Finish(List<string> report)
+        {
+            lastReport = string.Join("\n", report);
+            Debug.Log("[CharacterPhysicsSetup]\n" + lastReport, this);
+        }
+
     }
 }

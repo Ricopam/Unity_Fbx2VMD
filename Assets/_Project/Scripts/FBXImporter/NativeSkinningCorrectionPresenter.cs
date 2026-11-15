@@ -17,53 +17,35 @@ namespace Fbx2Vmd.FBXImporter
         private readonly MeshRenderer _previewRenderer;
         private bool _isDisposed;
 
-        internal NativeSkinningCorrectionPresenter(
-            SkinnedMeshRenderer sourceRenderer,
-            NativeSkinningCorrectionCache cache)
+        internal NativeSkinningCorrectionPresenter( SkinnedMeshRenderer sourceRenderer, NativeSkinningCorrectionCache cache)
         {
             _sourceRenderer = sourceRenderer != null
-                ? sourceRenderer
-                : throw new ArgumentNullException(nameof(sourceRenderer));
+                ? sourceRenderer : throw new ArgumentNullException(nameof(sourceRenderer));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             if (_sourceRenderer.sharedMesh == null)
             {
-                throw new ArgumentException(
-                    "보정 표시 대상에 sharedMesh가 필요합니다.",
-                    nameof(sourceRenderer));
-            }
+                throw new ArgumentException( "보정 표시 대상에 sharedMesh가 필요합니다.", nameof(sourceRenderer)); }
             if (_sourceRenderer.sharedMesh.vertexCount != _cache.VertexCount)
             {
-                throw new ArgumentException(
-                    "보정 캐시와 대상 메시의 정점 수가 일치해야 합니다.",
-                    nameof(cache));
-            }
-
+                throw new ArgumentException( "보정 캐시와 대상 메시의 정점 수가 일치해야 합니다.", nameof(cache)); }
             _sourceWasEnabled = _sourceRenderer.enabled;
             _vertices = new List<Vector3>(_cache.VertexCount);
             PreviewMesh = new Mesh
             {
-                name = $"{_sourceRenderer.sharedMesh.name} Native Skinning Preview",
-                hideFlags = HideFlags.HideAndDontSave
-            };
+                name = $"{_sourceRenderer.sharedMesh.name} Native Skinning Preview", hideFlags = HideFlags.HideAndDontSave };
             PreviewMesh.MarkDynamic();
-
-            _previewObject = new GameObject(
-                $"{_sourceRenderer.name} Native Skinning Preview")
+            _previewObject = new GameObject( $"{_sourceRenderer.name} Native Skinning Preview")
             {
-                hideFlags = HideFlags.HideAndDontSave,
-                layer = _sourceRenderer.gameObject.layer
-            };
+                hideFlags = HideFlags.HideAndDontSave, layer = _sourceRenderer.gameObject.layer };
             _previewObject.transform.SetParent(_sourceRenderer.transform.parent, false);
             _previewObject.transform.localPosition = _sourceRenderer.transform.localPosition;
             _previewObject.transform.localRotation = _sourceRenderer.transform.localRotation;
             _previewObject.transform.localScale = _sourceRenderer.transform.localScale;
-
             MeshFilter previewFilter = _previewObject.AddComponent<MeshFilter>();
             previewFilter.sharedMesh = PreviewMesh;
             _previewRenderer = _previewObject.AddComponent<MeshRenderer>();
             CopyRendererSettings(_sourceRenderer, _previewRenderer);
-            _previewRenderer.enabled = false;
-        }
+            _previewRenderer.enabled = false; }
 
         internal Mesh PreviewMesh { get; }
 

@@ -13,14 +13,10 @@ namespace Fbx2Vmd.FBXImporter
         {
             leftNormal = Vector3.zero;
             rightNormal = Vector3.zero;
-            if (source == null || source.avatar == null || !source.avatar.isValid || !source.avatar.isHuman)
-                return false;
-
+            if (source == null || source.avatar == null || !source.avatar.isValid || !source.avatar.isHuman) return false;
             int leftStretch = Array.IndexOf(HumanTrait.MuscleName, "Left Lower Leg Stretch");
             int rightStretch = Array.IndexOf(HumanTrait.MuscleName, "Right Lower Leg Stretch");
-            if (leftStretch < 0 || rightStretch < 0)
-                return false;
-
+            if (leftStretch < 0 || rightStretch < 0) return false;
             GameObject temporaryRoot = null;
             try
             {
@@ -36,27 +32,14 @@ namespace Fbx2Vmd.FBXImporter
                     pose.muscles[leftStretch] = 0f;
                     pose.muscles[rightStretch] = 0f;
                     handler.SetHumanPose(ref pose);
-                    if (!TryReadNormal(animator, HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg,
-                        HumanBodyBones.LeftFoot, out Vector3 left) ||
-                        !TryReadNormal(animator, HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg,
-                        HumanBodyBones.RightFoot, out Vector3 right))
-                        return false;
-
+                    if (!TryReadNormal(animator, HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, HumanBodyBones.LeftFoot, out Vector3 left) || !TryReadNormal(animator, HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot, out Vector3 right)) return false;
                     leftNormal = left;
                     rightNormal = right;
-                    return true;
-                }
-            }
-            catch (UnityException)
+                    return true; } } catch (UnityException)
             {
-                return false;
-            }
-            finally
+                return false; } finally
             {
-                if (temporaryRoot != null)
-                    UnityEngine.Object.DestroyImmediate(temporaryRoot);
-            }
-        }
+                if (temporaryRoot != null) UnityEngine.Object.DestroyImmediate(temporaryRoot); } }
 
         private static bool TryReadNormal(Animator animator, HumanBodyBones upperBone,
             HumanBodyBones lowerBone, HumanBodyBones footBone, out Vector3 normal)

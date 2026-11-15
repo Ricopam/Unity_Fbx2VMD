@@ -146,7 +146,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return null;
             }
-
             try
             {
                 byte[] bytes = File.ReadAllBytes(texturePath);
@@ -154,12 +153,10 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     name = Path.GetFileName(texturePath)
                 };
-
                 if (texture.LoadImage(bytes))
                 {
                     return texture;
                 }
-
                 DestroyTexture(texture);
             }
             catch (IOException e)
@@ -170,9 +167,7 @@ namespace Fbx2Vmd.FBXImporter
             {
                 Debug.LogWarning($"[FBXImport] 텍스처 적용 실패함. 경로={texturePath}, 오류={e.Message}");
             }
-
-            return null;
-        }
+            return null; }
 
         private static void AssignMainTexture(UnityEngine.Material material, Texture2D texture, bool isToon)
         {

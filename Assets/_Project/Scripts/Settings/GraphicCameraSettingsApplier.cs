@@ -15,39 +15,27 @@ namespace Fbx2Vmd.Settings
         {
             if (camera == null)
             {
-                return;
-            }
-
+                return; }
             camera.allowMSAA = plan.EnableCameraMsaa;
-
             if (useUniversalRenderPipeline)
             {
                 UniversalAdditionalCameraData cameraData = camera.GetUniversalAdditionalCameraData();
                 cameraData.renderPostProcessing = plan.EnableCameraPostProcessing;
                 cameraData.antialiasing = ToUrpAntialiasingMode(plan.AntiAliasing);
                 cameraData.antialiasingQuality = plan.SmaaQuality;
-                return;
-            }
-
+                return; }
             PostProcessLayer layer = camera.GetComponent<PostProcessLayer>();
             if (layer == null)
             {
-                layer = camera.gameObject.AddComponent<PostProcessLayer>();
-            }
-
-            layer.enabled = plan.EnableCameraPostProcessing &&
-                plan.AntiAliasing != GraphicAntiAliasingMode.Off;
+                layer = camera.gameObject.AddComponent<PostProcessLayer>(); }
+            layer.enabled = plan.EnableCameraPostProcessing && plan.AntiAliasing != GraphicAntiAliasingMode.Off;
             layer.volumeLayer = ~0;
             layer.antialiasingMode = ToBuiltInAntialiasingMode(plan.AntiAliasing);
-            layer.subpixelMorphologicalAntialiasing.quality =
-                ToBuiltInSmaaQuality(plan.SmaaQuality);
-
+            layer.subpixelMorphologicalAntialiasing.quality = ToBuiltInSmaaQuality(plan.SmaaQuality);
             PostProcessResources resources = builtInPostProcessResourcesResolver?.Invoke();
             if (resources != null)
             {
-                layer.Init(resources);
-            }
-        }
+                layer.Init(resources); } }
 
         private static AntialiasingMode ToUrpAntialiasingMode(GraphicAntiAliasingMode mode)
         {

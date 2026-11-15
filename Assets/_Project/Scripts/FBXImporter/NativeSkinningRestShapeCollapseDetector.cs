@@ -61,41 +61,11 @@ namespace Fbx2Vmd.FBXImporter
             NativeSkinningFacePairRestLengths restLengths)
         {
             float maximumCompression = 0f;
-            maximumCompression = Mathf.Max(
-                maximumCompression,
-                CalculateCompressionRatio(
-                    posedVertices,
-                    pair.FirstEdge,
-                    pair.SecondEdge,
-                    restLengths.SharedEdge));
-            maximumCompression = Mathf.Max(
-                maximumCompression,
-                CalculateCompressionRatio(
-                    posedVertices,
-                    pair.FirstOpposite,
-                    pair.FirstEdge,
-                    restLengths.FirstOppositeToFirstEdge));
-            maximumCompression = Mathf.Max(
-                maximumCompression,
-                CalculateCompressionRatio(
-                    posedVertices,
-                    pair.FirstOpposite,
-                    pair.SecondEdge,
-                    restLengths.FirstOppositeToSecondEdge));
-            maximumCompression = Mathf.Max(
-                maximumCompression,
-                CalculateCompressionRatio(
-                    posedVertices,
-                    pair.SecondOpposite,
-                    pair.FirstEdge,
-                    restLengths.SecondOppositeToFirstEdge));
-            maximumCompression = Mathf.Max(
-                maximumCompression,
-                CalculateCompressionRatio(
-                    posedVertices,
-                    pair.SecondOpposite,
-                    pair.SecondEdge,
-                    restLengths.SecondOppositeToSecondEdge));
+            maximumCompression = Mathf.Max( maximumCompression, CalculateCompressionRatio( posedVertices, pair.FirstEdge, pair.SecondEdge, restLengths.SharedEdge));
+            maximumCompression = Mathf.Max( maximumCompression, CalculateCompressionRatio( posedVertices, pair.FirstOpposite, pair.FirstEdge, restLengths.FirstOppositeToFirstEdge));
+            maximumCompression = Mathf.Max( maximumCompression, CalculateCompressionRatio( posedVertices, pair.FirstOpposite, pair.SecondEdge, restLengths.FirstOppositeToSecondEdge));
+            maximumCompression = Mathf.Max( maximumCompression, CalculateCompressionRatio( posedVertices, pair.SecondOpposite, pair.FirstEdge, restLengths.SecondOppositeToFirstEdge));
+            maximumCompression = Mathf.Max( maximumCompression, CalculateCompressionRatio( posedVertices, pair.SecondOpposite, pair.SecondEdge, restLengths.SecondOppositeToSecondEdge));
             return maximumCompression;
         }
 

@@ -8,64 +8,34 @@ namespace Fbx2Vmd.FBXImporter
     internal static class ThumbPoseDirectionCalculator
     {
         internal static bool TryCalculateCorrectedDirection(
-            Vector3 sourceDirection,
-            Vector3 indexDirection,
-            bool hasIndexDirection,
-            Vector3 sideAxis,
-            Vector3 palmNormal,
-            Vector3 forwardAxis,
-            float minimumPalmNormal,
-            float maximumPalmNormal,
-            float maximumSpreadAngle,
-            float indexSpreadWeight,
-            float projectionWeight,
-            out Vector3 correctedDirection)
+            Vector3 sourceDirection, Vector3 indexDirection, bool hasIndexDirection, Vector3 sideAxis, Vector3 palmNormal, Vector3 forwardAxis, float minimumPalmNormal, float maximumPalmNormal, float maximumSpreadAngle, float indexSpreadWeight, float projectionWeight, out Vector3 correctedDirection)
         {
             Vector3 targetDirection = sourceDirection;
             float correctionWeight = 0f;
-
             // 두 제한이 서로를 다시 위반할 수 있어 기존 순서로 세 번까지 수렴시킴.
             for (int pass = 0; pass < 3; pass++)
             {
                 bool changed = false;
-                changed |= ApplySpreadConstraint(
-                    indexDirection, hasIndexDirection, indexSpreadWeight,
-                    maximumSpreadAngle, ref targetDirection, ref correctionWeight);
-                changed |= ApplyProjectionConstraint(
-                    sideAxis, palmNormal, forwardAxis,
-                    minimumPalmNormal, maximumPalmNormal, projectionWeight,
-                    ref targetDirection, ref correctionWeight);
-                changed |= ApplySpreadConstraint(
-                    indexDirection, hasIndexDirection, indexSpreadWeight,
-                    maximumSpreadAngle, ref targetDirection, ref correctionWeight);
+                changed |= ApplySpreadConstraint( indexDirection, hasIndexDirection, indexSpreadWeight, maximumSpreadAngle, ref targetDirection, ref correctionWeight);
+                changed |= ApplyProjectionConstraint( sideAxis, palmNormal, forwardAxis, minimumPalmNormal, maximumPalmNormal, projectionWeight, ref targetDirection, ref correctionWeight);
+                changed |= ApplySpreadConstraint( indexDirection, hasIndexDirection, indexSpreadWeight, maximumSpreadAngle, ref targetDirection, ref correctionWeight);
                 if (!TryNormalize(targetDirection, out targetDirection))
                 {
                     correctedDirection = sourceDirection;
-                    return false;
-                }
-
+                    return false; }
                 if (!changed)
                 {
-                    break;
-                }
-            }
-
+                    break; } }
             if (correctionWeight <= 0f)
             {
                 correctedDirection = sourceDirection;
-                return false;
-            }
-
+                return false; }
             correctedDirection = Vector3.Slerp(sourceDirection, targetDirection, correctionWeight);
-            if (!TryNormalize(correctedDirection, out correctedDirection) ||
-                Vector3.Angle(sourceDirection, correctedDirection) <= 0.1f)
+            if (!TryNormalize(correctedDirection, out correctedDirection) || Vector3.Angle(sourceDirection, correctedDirection) <= 0.1f)
             {
                 correctedDirection = sourceDirection;
-                return false;
-            }
-
-            return true;
-        }
+                return false; }
+            return true; }
 
         // 엄지가 검지에서 과하게 벌어진 경우에만 검지 방향으로 당김.
         static bool ApplySpreadConstraint(
@@ -79,13 +49,11 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             float spreadAngle = Vector3.Angle(candidateDirection, indexDirection);
             if (spreadAngle <= maximumSpreadAngle + 0.001f)
             {
                 return false;
             }
-
             Vector3 spreadCorrectedDirection = Vector3.RotateTowards(
                 candidateDirection,
                 indexDirection,
@@ -93,13 +61,10 @@ namespace Fbx2Vmd.FBXImporter
                 0f);
             if (!TryNormalize(spreadCorrectedDirection, out spreadCorrectedDirection))
             {
-                return false;
-            }
-
+                return false; }
             candidateDirection = spreadCorrectedDirection;
             correctionWeight = Mathf.Max(correctionWeight, Mathf.Clamp01(indexSpreadWeight));
-            return true;
-        }
+            return true; }
 
         // 손바닥 좌표계의 법선 성분만 허용 범위로 제한함.
         static bool ApplyProjectionConstraint(
@@ -111,7 +76,6 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             float side = Vector3.Dot(candidateDirection, sideAxis);
             float normal = Vector3.Dot(candidateDirection, palmNormal);
             float forward = Vector3.Dot(candidateDirection, forwardAxis);
@@ -120,20 +84,16 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             Vector3 projectionCorrectedDirection =
                 sideAxis * side +
                 palmNormal * clampedNormal +
                 forwardAxis * forward;
             if (!TryNormalize(projectionCorrectedDirection, out projectionCorrectedDirection))
             {
-                return false;
-            }
-
+                return false; }
             candidateDirection = projectionCorrectedDirection;
             correctionWeight = Mathf.Max(correctionWeight, Mathf.Clamp01(projectionWeight));
-            return true;
-        }
+            return true; }
 
         internal static bool TryCalculateStraightenedDirection(
             Vector3 proximalDirection,
@@ -147,13 +107,11 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false;
             }
-
             float bendAngle = Vector3.Angle(proximalDirection, intermediateDirection);
             if (bendAngle <= maximumBendAngle)
             {
                 return false;
             }
-
             correctedDirection = Vector3.Slerp(
                 intermediateDirection,
                 proximalDirection,
@@ -164,9 +122,7 @@ namespace Fbx2Vmd.FBXImporter
                 correctedDirection = intermediateDirection;
                 return false;
             }
-
-            return true;
-        }
+            return true; }
 
         private static bool TryNormalize(Vector3 value, out Vector3 normalized)
         {

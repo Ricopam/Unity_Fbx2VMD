@@ -43,39 +43,26 @@ namespace Fbx2Vmd.ClothPhysics
         public static ColliderCategory Map(HairPart part, float chainLength, float torsoLength)
         {
             bool isLong = torsoLength > 0f && chainLength >= torsoLength * LongChainRatio;
-
             switch (part)
             {
                 case HairPart.Front:
                 case HairPart.Ahoge:
                     // 앞머리는 머리·목만. 팔 콜라이더와의 불필요 상호작용 방지
                     return ColliderCategory.Head | ColliderCategory.Neck;
-
-                case HairPart.Side:
-                    return isLong
-                        ? ColliderCategory.UpperBody | ColliderCategory.Arms | ColliderCategory.Hands | ColliderCategory.Hips
-                        : ColliderCategory.Head | ColliderCategory.Neck | ColliderCategory.Chest | ColliderCategory.Shoulders | ColliderCategory.Arms;
-
-                case HairPart.Back:
-                    return isLong
-                        ? ColliderCategory.AllBody & ~ColliderCategory.Head
-                        : ColliderCategory.Neck | ColliderCategory.Chest | ColliderCategory.Waist | ColliderCategory.Shoulders | ColliderCategory.Arms;
-
+                case HairPart.Side: return isLong
+                        ? ColliderCategory.UpperBody | ColliderCategory.Arms | ColliderCategory.Hands | ColliderCategory.Hips : ColliderCategory.Head | ColliderCategory.Neck | ColliderCategory.Chest | ColliderCategory.Shoulders | ColliderCategory.Arms;
+                case HairPart.Back: return isLong
+                        ? ColliderCategory.AllBody & ~ColliderCategory.Head : ColliderCategory.Neck | ColliderCategory.Chest | ColliderCategory.Waist | ColliderCategory.Shoulders | ColliderCategory.Arms;
                 case HairPart.Tail:
                     // 트윈테일은 옆을 크게 흔들며 손·팔과 접촉 빈도가 높음
                     return isLong
-                        ? ColliderCategory.AllBody
-                        : ColliderCategory.Head | ColliderCategory.Neck | ColliderCategory.Chest | ColliderCategory.Shoulders | ColliderCategory.Arms | ColliderCategory.Hands;
-
+                        ? ColliderCategory.AllBody : ColliderCategory.Head | ColliderCategory.Neck | ColliderCategory.Chest | ColliderCategory.Shoulders | ColliderCategory.Arms | ColliderCategory.Hands;
                 case HairPart.Accessory:
                     // 장식물은 몸통 축 전체 — 넥타이는 가슴, 벨트·사시류는 허리/골반까지 닿는다.
                     // 팔/손은 접촉 빈도 대비 떨림 부작용이 커 제외한다.
                     return ColliderCategory.UpperBody | ColliderCategory.Hips;
-
-                default:
-                    return ColliderCategory.UpperBody;
-            }
-        }
+                default: return ColliderCategory.UpperBody;
+            } }
 
         /// <summary>
         /// 카테고리 목록에서 콜라이더를 선별한다. 32개 제한을 넘으면 상반신 우선으로 자른다.
@@ -102,12 +89,8 @@ namespace Fbx2Vmd.ClothPhysics
                     continue;
                 foreach (var c in list)
                 {
-                    if (selected.Count >= maxCount)
-                        return selected;
-                    selected.Add(c);
-                }
-            }
-            return selected;
-        }
+                    if (selected.Count >= maxCount) return selected;
+                    selected.Add(c); } }
+            return selected; }
     }
 }

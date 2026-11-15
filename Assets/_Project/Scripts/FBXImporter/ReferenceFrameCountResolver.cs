@@ -45,17 +45,9 @@ namespace Fbx2Vmd.FBXImporter
             out int referenceTargetFrameCount)
         {
             referenceTargetFrameCount = 0;
-            if (recordingFrameRate <= 0f ||
-                float.IsNaN(recordingFrameRate) ||
-                float.IsInfinity(recordingFrameRate) ||
-                requestedDurationSeconds <= 0f ||
-                float.IsNaN(requestedDurationSeconds) ||
-                float.IsInfinity(requestedDurationSeconds) ||
-                configuredTargetFrameCount <= 0 ||
-                referenceClipLengthSeconds <= 0f ||
-                float.IsNaN(referenceClipLengthSeconds) ||
-                float.IsInfinity(referenceClipLengthSeconds) ||
-                knownReferenceMaxFrameIndex < 0)
+            if (recordingFrameRate <= 0f || float.IsNaN(recordingFrameRate) || float.IsInfinity(recordingFrameRate) || requestedDurationSeconds <= 0f || float.IsNaN(requestedDurationSeconds) ||
+                float.IsInfinity(requestedDurationSeconds) || configuredTargetFrameCount <= 0 || referenceClipLengthSeconds <= 0f || float.IsNaN(referenceClipLengthSeconds) ||
+                float.IsInfinity(referenceClipLengthSeconds) || knownReferenceMaxFrameIndex < 0)
             {
                 return false;
             }

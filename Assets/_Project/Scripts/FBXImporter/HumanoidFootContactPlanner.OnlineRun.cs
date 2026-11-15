@@ -71,41 +71,28 @@ namespace Fbx2Vmd.FBXImporter
                 for (int index = runStart; index <= runEnd; index++)
                 {
                     bool pivot = _toePivot[index];
-                    bool wantsPin =
-                        _policies[index] == HumanoidFootAnchorPolicy.Pinned &&
-                        !_pinBlocked;
+                    bool wantsPin = _policies[index] == HumanoidFootAnchorPolicy.Pinned && !_pinBlocked;
                     bool released = _pinned && !wantsPin;
-
                     // 방침이 Pinned가 아닌 프레임에서는 핀이 풀림.
                     if (released)
                     {
-                        _pinned = false;
-                    }
-
+                        _pinned = false; }
                     // 순수 추종 궤적은 핀 여부와 무관하게 매 프레임 전진함.
                     // 핀 기간의 원본 이동까지 누적해야 해제 수렴 끝점이 맞음.
                     Vector3 step = _sourcePoints[index] - _previousSourceVertex;
                     step.y = 0f;
                     _followVertex += _sourceToTargetRotation * step;
                     _previousSourceVertex = _sourcePoints[index];
-
                     if (_pinned)
                     {
-                        ApplyPinnedFrame(index, pivot);
-                    }
-                    else
+                        ApplyPinnedFrame(index, pivot); } else
                     {
-                        ApplyUnpinnedFrame(index, pivot, wantsPin, released);
-                    }
-
+                        ApplyUnpinnedFrame(index, pivot, wantsPin, released); }
                     Vector3 worldCorrection = _desiredVertex - _targetPoints[index];
                     worldCorrection.y = 0f;
-                    Vector3 rootSpaceCorrection =
-                        _targetToSourceRotation * worldCorrection;
+                    Vector3 rootSpaceCorrection = _targetToSourceRotation * worldCorrection;
                     rootSpaceCorrection.y = 0f;
-                    _corrections[index] = rootSpaceCorrection;
-                }
-            }
+                    _corrections[index] = rootSpaceCorrection; } }
 
             void ApplyPinnedFrame(int index, bool pivot)
             {
@@ -120,18 +107,13 @@ namespace Fbx2Vmd.FBXImporter
                         ? _sourceToes[index]
                         : _sourcePoints[index];
                 }
-
                 // 발끝 핀은 중점 목표를 핀 발끝 - 세그먼트/2로 둬서
                 // 롤 중 발목 회전을 허용하면서 발끝만 고정함.
                 _desiredVertex = _pinPivot
-                    ? _pinnedVertex - _toeSegments[index] * 0.5f
-                    : _pinnedVertex;
+                    ? _pinnedVertex - _toeSegments[index] * 0.5f : _pinnedVertex;
                 Vector3 sourceVertex = _pinPivot
-                    ? _sourceToes[index]
-                    : _sourcePoints[index];
-                if (_pinReleaseDistance > 0f &&
-                    HorizontalDistance(sourceVertex, _pinSourceVertex) >=
-                        _pinReleaseDistance)
+                    ? _sourceToes[index] : _sourcePoints[index];
+                if (_pinReleaseDistance > 0f && HorizontalDistance(sourceVertex, _pinSourceVertex) >= _pinReleaseDistance)
                 {
                     // 원본 지지점이 핀 구간에서 실제로 움직이면 의도 추정
                     // 오류로 보고 추종을 재개함.
@@ -139,9 +121,7 @@ namespace Fbx2Vmd.FBXImporter
                     _pinBlocked = true;
                     // 이 프레임은 핀 목표로 적용되므로 잔차 캡처를 여기서 함.
                     _releaseResidual = _desiredVertex - _followVertex;
-                    _framesSinceRelease = 0;
-                }
-            }
+                    _framesSinceRelease = 0; } }
 
             void ApplyUnpinnedFrame(int index, bool pivot, bool wantsPin, bool released)
             {
@@ -150,28 +130,17 @@ namespace Fbx2Vmd.FBXImporter
                     // 핀이 풀린 프레임의 잔차를 잡아 추종 궤적까지
                     // 블렌드할 양으로 남김. 즉시 점프하면 팝이 됨.
                     _releaseResidual = _desiredVertex - _followVertex;
-                    _framesSinceRelease = 0;
-                }
-                else if (_framesSinceRelease <= _releaseFrames)
+                    _framesSinceRelease = 0; } else if (_framesSinceRelease <= _releaseFrames)
                 {
-                    _framesSinceRelease++;
-                }
-
+                    _framesSinceRelease++; }
                 if (_framesSinceRelease > _releaseFrames)
                 {
-                    _desiredVertex = _followVertex;
-                }
-                else
+                    _desiredVertex = _followVertex; } else
                 {
                     float blendT = _releaseFrames > 0
-                        ? Mathf.Clamp01(
-                            _framesSinceRelease / (_releaseFrames + 1f))
-                        : 1f;
+                        ? Mathf.Clamp01( _framesSinceRelease / (_releaseFrames + 1f)) : 1f;
                     float smooth = blendT * blendT * (3f - 2f * blendT);
-                    _desiredVertex =
-                        _followVertex + _releaseResidual * (1f - smooth);
-                }
-
+                    _desiredVertex = _followVertex + _releaseResidual * (1f - smooth); }
                 if (wantsPin)
                 {
                     // 핀 진입 시 추종 위치 그대로를 앵커로 삼아 경계 연속 유지.
@@ -179,13 +148,9 @@ namespace Fbx2Vmd.FBXImporter
                     _pinned = true;
                     _pinPivot = pivot;
                     _pinnedVertex = pivot
-                        ? _desiredVertex + _toeSegments[index] * 0.5f
-                        : _desiredVertex;
+                        ? _desiredVertex + _toeSegments[index] * 0.5f : _desiredVertex;
                     _pinSourceVertex = pivot
-                        ? _sourceToes[index]
-                        : _sourcePoints[index];
-                }
-            }
+                        ? _sourceToes[index] : _sourcePoints[index]; } }
         }
     }
 }

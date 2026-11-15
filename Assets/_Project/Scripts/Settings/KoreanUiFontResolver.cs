@@ -28,34 +28,27 @@ namespace Fbx2Vmd.Settings
                 fontAsset = cachedKoreanUiFont;
                 return true;
             }
-
             Font osFont = Font.CreateDynamicFontFromOSFont(KoreanUiFontNames, 32);
             if (osFont == null)
             {
                 fontAsset = null;
                 return false;
             }
-
             TMP_FontAsset createdFontAsset = TMP_FontAsset.CreateFontAsset(osFont);
             if (createdFontAsset == null)
             {
                 fontAsset = null;
-                return false;
-            }
-
+                return false; }
             createdFontAsset.name = "Main Recording Runtime Korean UI Font";
             createdFontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
             createdFontAsset.TryAddCharacters(KoreanUiTextSample, out _);
             if (!SupportsText(createdFontAsset, KoreanUiTextSample))
             {
                 fontAsset = null;
-                return false;
-            }
-
+                return false; }
             cachedKoreanUiFont = createdFontAsset;
             fontAsset = cachedKoreanUiFont;
-            return true;
-        }
+            return true; }
 
         internal static bool TryGetLegacyFont(out Font font)
         {
