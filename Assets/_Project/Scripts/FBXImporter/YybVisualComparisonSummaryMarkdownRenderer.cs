@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Fbx2Vmd.FBXImporter
 {
-    internal static class YybVisualComparisonSummaryMarkdownRenderer
+    internal static partial class YybVisualComparisonSummaryMarkdownRenderer
     {
         internal static string Render(
             YybVisualComparisonSummaryData summary,
@@ -110,6 +110,11 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- YYB arm direction forearm max degrees: `{summary.yyb_arm_direction_forearm_max_degrees:F3}`");
             builder.AppendLine($"- YYB arm direction left-side weight scale: `{summary.yyb_arm_direction_left_side_weight_scale:F3}`");
             builder.AppendLine($"- YYB arm direction right-side weight scale: `{summary.yyb_arm_direction_right_side_weight_scale:F3}`");
+            AppendYybArmAnchorLines(builder, summary);
+        }
+
+        private static void AppendYybArmAnchorLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- YYB arm sleeve anchor runtime settings override: `{summary.yyb_arm_sleeve_anchor_override}`");
             builder.AppendLine($"- YYB arm sleeve anchor runtime enabled: `{summary.yyb_arm_sleeve_anchor_enabled}`");
             builder.AppendLine($"- YYB arm sleeve anchor influence: `{summary.yyb_arm_sleeve_anchor_influence:F3}`");
@@ -171,6 +176,11 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- Pre-SetHumanPose endpoint bodyPosition invert X/Z: `{summary.pre_set_human_pose_endpoint_position_invert_body_position_x}/{summary.pre_set_human_pose_endpoint_position_invert_body_position_z}`");
             builder.AppendLine($"- Post-SetHumanPose right foot evaluator X/Z reference: `{summary.post_set_human_pose_right_foot_evaluator_xz_reference_enabled}`");
             builder.AppendLine($"- Post-SetHumanPose right foot evaluator X/Z target magnitude: `{summary.post_set_human_pose_right_foot_evaluator_xz_reference_target_magnitude:F3}`");
+            AppendBodyPositionLines(builder, summary);
+        }
+
+        private static void AppendBodyPositionLines(StringBuilder builder, YybVisualComparisonSummaryData summary)
+        {
             builder.AppendLine($"- Manual Animator BipedIK foot position runtime override: `{summary.manual_animator_biped_ik_foot_position_enabled}`");
             builder.AppendLine($"- Manual Animator BipedIK foot position weight: `{summary.manual_animator_biped_ik_foot_position_weight:F3}`");
             builder.AppendLine($"- Manual Animator BipedIK foot position max offset: `{summary.manual_animator_biped_ik_foot_position_max_offset:F3}`");
@@ -280,6 +290,13 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- candidate/ref keypoint-local crop-safe bbox-normalized keypoints: samples `{diagnostics.candidate_vs_reference_time_matched_keypoint_local_crop_safe_bbox_normalized_image_space_keypoint_sample_count}`, keypoints `{diagnostics.candidate_vs_reference_time_matched_keypoint_local_crop_safe_bbox_normalized_image_space_keypoint_count}`, excluded keypoints `{diagnostics.candidate_vs_reference_time_matched_keypoint_local_crop_safe_bbox_normalized_image_space_keypoint_excluded_count}`, avg L1 `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_keypoint_local_crop_safe_avg_bbox_normalized_image_space_keypoint_l1_delta)}`, max L1 `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_l1_delta)}`, max label `{EscapeMarkdown(diagnostics.candidate_vs_reference_time_matched_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_label)}`");
             builder.AppendLine($"- candidate/ref non-hair keypoint-local crop-safe bbox-normalized keypoints: samples `{diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_bbox_normalized_image_space_keypoint_sample_count}`, keypoints `{diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_bbox_normalized_image_space_keypoint_count}`, excluded keypoints `{diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_bbox_normalized_image_space_keypoint_excluded_count}`, avg L1 `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_avg_bbox_normalized_image_space_keypoint_l1_delta)}`, max L1 `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_l1_delta)}`, max label `{EscapeMarkdown(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_label)}`");
             builder.AppendLine($"- candidate/ref non-hair keypoint-local crop-safe max attribution: keypoint `{diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_index}`, x delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_x_delta)}`, y delta `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_y_delta)}`, candidate x/y `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_candidate_x)}`/`{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_candidate_y)}`, reference x/y `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_reference_x)}`/`{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_reference_y)}`, required x reduction to `{keypointDeltaThreshold:F2}` `{FormatQualityFloat(diagnostics.candidate_vs_reference_time_matched_non_hair_keypoint_local_crop_safe_max_bbox_normalized_image_space_keypoint_required_x_reduction_to_threshold)}`");
+            AppendCandidateRefBasisLines(builder, diagnostics);
+        }
+
+        private static void AppendCandidateRefBasisLines(
+            StringBuilder builder,
+            VisualComparisonFrameRoleDiagnosticsData diagnostics)
+        {
             builder.AppendLine($"- candidate vs ref framing deltas: avg height `{FormatQualityFloat(diagnostics.candidate_vs_reference_avg_bbox_height_ratio_delta)}`, avg width `{FormatQualityFloat(diagnostics.candidate_vs_reference_avg_bbox_width_ratio_delta)}`, center X range `{FormatQualityFloat(diagnostics.candidate_vs_reference_center_x_range_ratio_delta)}`, max bottom gap `{FormatQualityFloat(diagnostics.candidate_vs_reference_max_bottom_gap_ratio_delta)}`, avg bright area `{FormatQualityFloat(diagnostics.candidate_vs_reference_avg_bright_area_ratio_delta)}`");
             builder.AppendLine($"- candidate vs current-clip ref framing deltas: avg height `{FormatQualityFloat(diagnostics.candidate_vs_reference_current_clip_avg_bbox_height_ratio_delta)}`, avg width `{FormatQualityFloat(diagnostics.candidate_vs_reference_current_clip_avg_bbox_width_ratio_delta)}`, center X range `{FormatQualityFloat(diagnostics.candidate_vs_reference_current_clip_center_x_range_ratio_delta)}`, max bottom gap `{FormatQualityFloat(diagnostics.candidate_vs_reference_current_clip_max_bottom_gap_ratio_delta)}`, avg bright area `{FormatQualityFloat(diagnostics.candidate_vs_reference_current_clip_avg_bright_area_ratio_delta)}`");
             builder.AppendLine($"- candidate screenshot basis: {EscapeMarkdown(diagnostics.candidate_screenshot_frame_metrics_basis)}");
@@ -298,253 +315,6 @@ namespace Fbx2Vmd.FBXImporter
             builder.AppendLine($"- basis: {EscapeMarkdown(diagnostics.reference_mp4_analysis_metric_basis)}");
             builder.AppendLine();
         }
-
-        private static void AppendResults(
-            StringBuilder builder,
-            YybVisualComparisonCaptureResultData[] results)
-        {
-            builder.AppendLine("## Results");
-            builder.AppendLine();
-            builder.AppendLine("| job | scene | target | success | session | csv | frames | vmd |");
-            builder.AppendLine("|---|---|---|---|---|---|---|---|");
-            foreach (YybVisualComparisonCaptureResultData result in results ?? Array.Empty<YybVisualComparisonCaptureResultData>())
-            {
-                if (result == null)
-                {
-                    continue;
-                }
-
-                builder.AppendLine(
-                    $"| {EscapeMarkdown(result.jobDisplayName)} | {EscapeMarkdown(result.sceneName)} | {EscapeMarkdown(result.targetName)} | {result.success} | " +
-                    $"`{EscapeMarkdown(result.comparisonSessionId)}` | `{EscapeMarkdown(result.comparisonMetricsCsvPath)}` | " +
-                    $"`{EscapeMarkdown(result.comparisonFrameFolderPath)}` | `{EscapeMarkdown(result.vmdPath)}` |");
-            }
-        }
-
-        private static void AppendEffectiveSettings(
-            StringBuilder builder,
-            YybVisualComparisonCaptureResultData[] results)
-        {
-            bool hasEffectiveSettings = false;
-            foreach (YybVisualComparisonCaptureResultData result in results ?? Array.Empty<YybVisualComparisonCaptureResultData>())
-            {
-                if (result != null && result.hasFBXVmdPipelineEffectiveSettings)
-                {
-                    hasEffectiveSettings = true;
-                    break;
-                }
-            }
-
-            if (!hasEffectiveSettings)
-            {
-                return;
-            }
-
-            builder.AppendLine();
-            builder.AppendLine("## Main Scene Effective Settings");
-            builder.AppendLine();
-            builder.AppendLine("| job | foot local rot | full-body pose | body rot | lower segment | foot yaw | post-set endpoint | pre-set endpoint | evaluator X/Z | arm swing | sleeve | visual twist |");
-            builder.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|");
-            foreach (YybVisualComparisonCaptureResultData result in results)
-            {
-                if (result == null || !result.hasFBXVmdPipelineEffectiveSettings)
-                {
-                    continue;
-                }
-
-                builder.AppendLine(
-                    $"| {EscapeMarkdown(result.jobDisplayName)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeight(result.ShouldUseManualAnimatorFootLocalRotationReference, result.manualAnimatorFootLocalRotationReferenceWeight)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeight(result.ShouldUseManualAnimatorFullBodyPoseReference, result.manualAnimatorFullBodyPoseReferenceWeight)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeight(result.ShouldUseManualAnimatorBodyRotationReference, result.manualAnimatorBodyRotationReferenceWeight)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCap(result.ShouldUseManualAnimatorLowerBodySegmentDirectionReference, result.manualAnimatorLowerBodySegmentDirectionReferenceWeight, result.manualAnimatorLowerBodySegmentDirectionReferenceMaxAngle)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCap(result.ShouldUseManualAnimatorFootHipsAlignedResidualYawReference, result.manualAnimatorFootHipsAlignedResidualYawReferenceWeight, result.manualAnimatorFootHipsAlignedResidualYawReferenceMaxAngle)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCapScaleBlendGate(result.usePostSetHumanPoseRightEndpointPositionReference, result.postSetHumanPoseRightEndpointPositionReferenceWeight, result.postSetHumanPoseRightEndpointPositionReferenceMaxOffset, result.postSetHumanPoseRightEndpointPositionReferencePositiveZScale, result.postSetHumanPoseRightEndpointPositionReferenceToesBlendWeight, result.postSetHumanPoseRightEndpointPositionReferenceFrameGateStart, result.postSetHumanPoseRightEndpointPositionReferenceFrameGateEnd)} | " +
-                    $"{VisualComparisonSummaryValueFormatter.FormatEnabledWeightCapScaleBlendGate(result.usePreSetHumanPoseRightEndpointPositionReference, result.preSetHumanPoseRightEndpointPositionReferenceWeight, result.preSetHumanPoseRightEndpointPositionReferenceMaxOffset, result.preSetHumanPoseRightEndpointPositionReferencePositiveZScale, result.preSetHumanPoseRightEndpointPositionReferenceToesBlendWeight, result.preSetHumanPoseRightEndpointPositionReferenceFrameGateStart, result.preSetHumanPoseRightEndpointPositionReferenceFrameGateEnd)} | " +
-                    $"{FormatEvaluatorXzReferenceSettings(result)} | " +
-                    $"{FormatArmSwingSettings(result)} | " +
-                    $"{result.enableYybArmSleeveAnchorCorrection} | " +
-                    $"{result.enableYybArmVisualTwistCorrection} |");
-            }
-        }
-
-        private static void AppendSampleOrderingDiagnostics(
-            StringBuilder builder,
-            VisualComparisonSampleOrderingDiagnosticData[] diagnostics)
-        {
-            if (diagnostics == null || diagnostics.Length == 0)
-            {
-                return;
-            }
-
-            builder.AppendLine();
-            builder.AppendLine("## Sample Ordering Diagnostics");
-            builder.AppendLine();
-            builder.AppendLine("| job | scene | rows | first reason | first recorderFrame | first engine frame | recorder span | engine span | first clip time | first grounding step | first step/max | first step at max | grounding clamp delta | grounding smooth delta | finish recorderFrame | finish engine frame |");
-            builder.AppendLine("|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|");
-            foreach (VisualComparisonSampleOrderingDiagnosticData diagnostic in diagnostics)
-            {
-                if (diagnostic == null)
-                {
-                    continue;
-                }
-
-                builder.AppendLine(
-                    $"| {EscapeMarkdown(diagnostic.job_mode)} | {EscapeMarkdown(diagnostic.scene_name)} | {diagnostic.metric_row_count} | " +
-                    $"{EscapeMarkdown(diagnostic.first_metric_reason)} | {diagnostic.first_metric_recorder_frame} | " +
-                    $"{diagnostic.first_metric_engine_frame_count} | {diagnostic.recording_metric_recorder_frame_span} | " +
-                    $"{diagnostic.recording_metric_engine_frame_span} | {FormatQualityFloat(diagnostic.first_metric_animation_clip_time)} | " +
-                    $"{FormatQualityFloat(diagnostic.first_metric_grounding_vertical_step_last)} | " +
-                    $"{FormatQualityFloat(diagnostic.first_metric_grounding_vertical_step_to_max_ratio)} | " +
-                    $"{diagnostic.first_metric_grounding_vertical_step_at_max_step} | " +
-                    $"{diagnostic.recording_grounding_step_clamp_delta} | {diagnostic.recording_grounding_smoothed_delta} | " +
-                    $"{diagnostic.finish_metric_recorder_frame} | {diagnostic.finish_metric_engine_frame_count} |");
-            }
-        }
-
-        private static void AppendSelectedCandidate(
-            StringBuilder builder,
-            VisualComparisonCandidateArtifactSelectionData selectedCandidate)
-        {
-            if (selectedCandidate == null || string.IsNullOrWhiteSpace(selectedCandidate.selected_candidate_vmd_path))
-            {
-                return;
-            }
-
-            builder.AppendLine();
-            builder.AppendLine("## Selected Candidate Artifact");
-            builder.AppendLine();
-            builder.AppendLine("| selected role | output role | status | acceptance artifact | metrics | vmd | manifest | files | raw status | corrected status | preserves raw diagnostic | basis |");
-            builder.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|");
-            builder.AppendLine(
-                $"| {EscapeMarkdown(selectedCandidate.selected_candidate_role)} | {EscapeMarkdown(selectedCandidate.selected_candidate_output_role)} | " +
-                $"{EscapeMarkdown(selectedCandidate.selected_candidate_status)} | {selectedCandidate.selected_candidate_is_acceptance_artifact} | " +
-                $"`{EscapeMarkdown(selectedCandidate.selected_candidate_metrics_csv)}` | " +
-                $"`{EscapeMarkdown(selectedCandidate.selected_candidate_vmd_path)}` | " +
-                $"`{EscapeMarkdown(selectedCandidate.selected_candidate_manifest_path)}` | " +
-                $"vmd={selectedCandidate.selected_candidate_vmd_exists}, metrics={selectedCandidate.selected_candidate_metrics_exists}, manifest={selectedCandidate.selected_candidate_manifest_exists}, rawVmdDiff={selectedCandidate.selected_candidate_differs_from_raw_vmd}, rawMetricsDiff={selectedCandidate.selected_candidate_differs_from_raw_metrics} | " +
-                $"{EscapeMarkdown(selectedCandidate.raw_candidate_status)} | {EscapeMarkdown(selectedCandidate.corrected_candidate_status)} | " +
-                $"{selectedCandidate.selected_candidate_preserves_raw_diagnostic} | " +
-                $"{EscapeMarkdown(selectedCandidate.selected_candidate_acceptance_basis)}; {EscapeMarkdown(selectedCandidate.selection_basis)} |");
-        }
-
-        private static void AppendFrameQualityGate(
-            StringBuilder builder,
-            MotionComparisonFrameQualitySummary[] summaries)
-        {
-            if (summaries == null || summaries.Length == 0)
-            {
-                return;
-            }
-
-            builder.AppendLine();
-            builder.AppendLine("## Frame Quality Gate");
-            builder.AppendLine();
-            builder.AppendLine("| baseline | candidate | evaluation | status | mmd | compared frames | foot min Y | root delta | center step | local foot IK min Y | effective foot IK min Y | metrics | mmd screenshot | mmd report | vmd | reason |");
-            builder.AppendLine("|---|---|---|---|---:|---:|---:|---:|---:|---:|---|---|---|---|---|---|");
-            foreach (MotionComparisonFrameQualitySummary summary in summaries)
-            {
-                if (summary == null)
-                {
-                    continue;
-                }
-
-                builder.AppendLine(
-                    $"| {EscapeMarkdown(summary.baseline_label)} | {EscapeMarkdown(summary.candidate_label)} | {EscapeMarkdown(summary.frame_quality_evaluation_role)} | {EscapeMarkdown(summary.status)} | " +
-                    $"{EscapeMarkdown(summary.mmd_result_status)} | {summary.compared_frames} | {FormatQualityFloat(summary.min_candidate_foot_bottom_y)} | " +
-                    $"{FormatQualityFloat(summary.max_same_frame_root_position_delta)} | {FormatQualityFloat(summary.max_candidate_vmd_center_step)} | " +
-                    $"{FormatQualityFloat(summary.min_candidate_vmd_foot_ik_y)} | {FormatQualityFloat(summary.min_candidate_vmd_effective_foot_ik_y)} | " +
-                    $"`{EscapeMarkdown(summary.candidate_metrics_csv)}` | " +
-                    $"`{EscapeMarkdown(summary.mmd_after_play_screenshot_path)}` | `{EscapeMarkdown(summary.mmd_report_path)}` | " +
-                    $"`{EscapeMarkdown(summary.candidate_vmd_path)}` | " +
-                    $"{EscapeMarkdown(summary.status_reason)} |");
-            }
-        }
-
-        private static void AppendFailures(StringBuilder builder, string[] failures)
-        {
-            if (failures == null || failures.Length == 0)
-            {
-                return;
-            }
-
-            builder.AppendLine();
-            builder.AppendLine("## Failures");
-            builder.AppendLine();
-            foreach (string failure in failures)
-            {
-                builder.AppendLine($"- {EscapeMarkdown(failure)}");
-            }
-        }
-
-        private static string FormatQualityFloat(float value)
-        {
-            return VisualComparisonSummaryValueFormatter.FormatFloat(value);
-        }
-
-        private static string FormatEvaluatorXzReferenceSettings(YybVisualComparisonCaptureResultData result)
-        {
-            return result == null
-                ? "False/n/a"
-                : $"{result.usePostSetHumanPoseRightFootEvaluatorXzReference}/{FormatQualityFloat(result.postSetHumanPoseRightFootEvaluatorXzReferenceTargetMagnitude)}";
-        }
-
-        private static string FormatArmSwingSettings(YybVisualComparisonCaptureResultData result)
-        {
-            if (result == null)
-            {
-                return "n/a";
-            }
-
-            return
-                $"{result.enableYybArmSwingLimitCorrection}/" +
-                $"{FormatQualityFloat(result.yybArmSwingLimitWeight)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingMaxDownDot)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingMinHandHorizontalRatio)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingMaxHandBelowShoulderRatio)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingHorizontalReachLimitWeight)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingMaxHandHorizontalReachRatio)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingHorizontalReachMaxHandBelowShoulderRatio)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingHorizontalReachMinElbowAngleAfterApply)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingRaisedPoseHorizontalReachLimitWeight)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingRaisedPoseMinUpperArmDownDot)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingRaisedPoseMaxHandBelowShoulderRatio)}/" +
-                $"{FormatQualityFloat(result.yybArmSwingRaisedPoseMaxHandHorizontalReachRatio)}";
-        }
-
-        private static string FormatGeneratedAt(string generatedAt)
-        {
-            return DateTime.TryParse(
-                generatedAt,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.RoundtripKind,
-                out DateTime parsed)
-                ? parsed.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
-                : generatedAt ?? string.Empty;
-        }
-
-        private static string FormatRuntimeOverride(float value)
-        {
-            return VmdIkDeltaGuardRuntimeOverrideApplier.HasLimit(value)
-                ? value.ToString("0.###", CultureInfo.InvariantCulture)
-                : "none";
-        }
-
-        private static string FormatRuntimeOverride(int value)
-        {
-            return value > 0 ? value.ToString(CultureInfo.InvariantCulture) : "none";
-        }
-
-        private static string FormatFramingOverride(float value)
-        {
-            return VisualComparisonScreenshotOverridePolicy.HasFiniteFramingOverride(value)
-                ? value.ToString("0.###", CultureInfo.InvariantCulture)
-                : "none";
-        }
-
-        private static string EscapeMarkdown(string value)
-        {
-            return string.IsNullOrEmpty(value) ? string.Empty : value.Replace("|", "\\|");
-        }
     }
 }
+
