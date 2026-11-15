@@ -261,27 +261,10 @@ namespace Fbx2Vmd.FBXImporter
                 }
 
                 float before = muscles[i];
-                float after = before;
-
-                if (normalizedName.Contains("stretch"))
-                {
-                    if (!clampStretchMuscles)
-                    {
-                        continue;
-                    }
-
-                    after = Mathf.Clamp(before, -safeStretchLimit, safeStretchLimit);
-                }
-                else if (normalizedName.Contains("forearm") && normalizedName.Contains("twist"))
-                {
-                    after = Mathf.Clamp(before, -safeLowerTwistLimit, safeLowerTwistLimit);
-                }
-                else if (normalizedName.Contains("arm") && normalizedName.Contains("twist"))
-                {
-                    after = Mathf.Clamp(before, -safeUpperTwistLimit, safeUpperTwistLimit);
-                }
-
-                if (Mathf.Approximately(before, after))
+                if (!TryResolveArmMuscleClamp(normalizedName, before,
+                        safeStretchLimit, safeUpperTwistLimit, safeLowerTwistLimit,
+                        clampStretchMuscles, out float after) ||
+                    Mathf.Approximately(before, after))
                 {
                     continue;
                 }
@@ -290,6 +273,34 @@ namespace Fbx2Vmd.FBXImporter
                 changed++;
             }
             return changed;
+        }
+
+        private static bool TryResolveArmMuscleClamp(
+            string normalizedName, float before, float safeStretchLimit,
+            float safeUpperTwistLimit, float safeLowerTwistLimit,
+            bool clampStretchMuscles, out float after)
+        {
+            after = before;
+            if (normalizedName.Contains("stretch"))
+            {
+                if (!clampStretchMuscles)
+                {
+                    return false;
+                }
+                after = Mathf.Clamp(before, -safeStretchLimit, safeStretchLimit);
+                return true;
+            }
+            if (normalizedName.Contains("forearm") && normalizedName.Contains("twist"))
+            {
+                after = Mathf.Clamp(before, -safeLowerTwistLimit, safeLowerTwistLimit);
+                return true;
+            }
+            if (normalizedName.Contains("arm") && normalizedName.Contains("twist"))
+            {
+                after = Mathf.Clamp(before, -safeUpperTwistLimit, safeUpperTwistLimit);
+                return true;
+            }
+            return false;
         }
 
         private bool InitializeIfNeeded()
