@@ -3,9 +3,6 @@ using UnityEngine.Serialization;
 using System;
 using System.IO;
 using System.Linq;
-using Fbx2Vmd.FileSystem;
-using Fbx2Vmd.Recording;
-using Fbx2Vmd.Character;
 using Fbx2Vmd.Profiling;
 
 
@@ -42,49 +39,6 @@ namespace Fbx2Vmd.FBXImporter
             return !isProcessing && !hasActiveRetargeter;
         }
 
-        private HumanoidThumbDeformationGuardOptions CreateThumbDeformationGuardOptions()
-        {
-            return new HumanoidThumbDeformationGuardOptions
-            {
-                ProximalMaxLocalAngle = EffectiveThumbProximalMaxLocalAngle,
-                IntermediateMaxLocalAngle = ThumbIntermediateMaxLocalAngle,
-                DistalMaxLocalAngle = ThumbDistalMaxLocalAngle,
-                ProximalRotationOffset = ThumbRotationOffset,
-                MirrorRightProximalRotationOffset = mirrorRightThumbRotationOffset,
-                LeftProximalRotationOffset = LeftThumbRotationOffset,
-                RightProximalRotationOffset = RightThumbRotationOffset,
-                LogCorrections = logThumbLocalRotationGuardCorrections,
-                ClampHumanoidThumbRotations = EffectiveThumbLocalRotationGuard,
-                SyncDetachedBaseHelpers =
-                    syncDetachedThumbBaseHelpers && detachedThumbBaseHelperSyncWeight > 0f,
-                SyncDetachedBaseHelperPositions = EffectiveDetachedThumbBaseHelperPositionSync,
-                DetachedBaseHelperSyncWeight = detachedThumbBaseHelperSyncWeight,
-                DetachedBaseHelperMaxLocalAngle = detachedThumbBaseHelperMaxLocalAngle,
-                DetachedBaseHelperMaxPositionOffset = detachedThumbBaseHelperMaxPositionOffset,
-                LeftDetachedBaseHelperDeltaAxisOffset = LeftDetachedThumbBaseHelperDeltaAxisOffset,
-                RightDetachedBaseHelperDeltaAxisOffset = RightDetachedThumbBaseHelperDeltaAxisOffset,
-                LeftDetachedBaseHelperTargetRotationOffset = LeftDetachedThumbBaseHelperTargetRotationOffset,
-                RightDetachedBaseHelperTargetRotationOffset = RightDetachedThumbBaseHelperTargetRotationOffset,
-                StabilizeDetachedBasePalm =
-                    stabilizeDetachedThumbBasePalm && detachedThumbBasePalmStabilizeWeight > 0f,
-                DetachedBasePalmStabilizeWeight = detachedThumbBasePalmStabilizeWeight,
-                DetachedBasePalmMaxLocalAngle = detachedThumbBasePalmMaxLocalAngle,
-                EnableVisualLengthGuard = enableThumbVisualLengthGuard,
-                ProjectionMinPalmNormal = EffectiveThumbProjectionMinPalmNormal,
-                ProjectionMaxPalmNormal = ThumbProjectionMaxPalmNormal,
-                ProjectionGuardWeight = ThumbProjectionGuardWeight,
-                IndexMaxSpreadAngle = ThumbIndexMaxSpreadAngle,
-                IndexSpreadGuardWeight = ThumbIndexSpreadGuardWeight,
-                MaxSegmentBendAngle = ThumbMaxSegmentBendAngle,
-                SegmentStraightenWeight = ThumbSegmentStraightenWeight,
-                SuppressPoseShapingWithManualReference = PreserveManualThumbPoseWithReference,
-                StabilizeWebbingCrease =
-                    stabilizeThumbWebbingCrease && thumbWebbingCreaseStabilizeWeight > 0f,
-                WebbingCreaseStabilizeWeight = thumbWebbingCreaseStabilizeWeight,
-                WebbingCreaseMaxLocalAngle = thumbWebbingCreaseMaxLocalAngle,
-                WebbingCreaseMaxPositionOffset = thumbWebbingCreaseMaxPositionOffset
-            };
-        }
 
         private bool EffectiveDetachedThumbBaseHelperPositionSync
         {
@@ -151,6 +105,14 @@ namespace Fbx2Vmd.FBXImporter
                 Debug.Log($"[FBXImport] 상태 변경됨. 상태={state}, 메시지={message}");
             }
 
+            ApplyRecorderSessionState(state, message, progress);
+        }
+
+        private void ApplyRecorderSessionState(
+            FBXSessionState state,
+            string message,
+            float progress)
+        {
             HumanoidSampleCode recorder = GetRecorderController();
             if (recorder == null)
             {
@@ -190,21 +152,7 @@ namespace Fbx2Vmd.FBXImporter
 
             HumanoidMotionPlaybackState previousState =
                 _humanoidMotionPlaybackController.State;
-            bool completedRecording = false;
-            if (_humanoidMotionRecordingController?.IsRecording == true)
-            {
-                // 녹화 시작 프레임에는 deltaTime이 갱신 전일 수 있어 현재 정지 상태도 확인함.
-                completedRecording = _humanoidMotionRecordingController.Tick(
-                    Time.timeScale > 0f ? Time.deltaTime : 0f);
-                if (!completedRecording)
-                {
-                    UpdateRecordingSessionProgress();
-                }
-            }
-            else
-            {
-                _humanoidMotionPlaybackController.Tick(deltaTimeSeconds);
-            }
+            bool completedRecording = TickRecordingOrPlayback(deltaTimeSeconds);
             if (completedRecording ||
                 (previousState == HumanoidMotionPlaybackState.Playing &&
                  _humanoidMotionPlaybackController.State == HumanoidMotionPlaybackState.Ready))
@@ -217,6 +165,24 @@ namespace Fbx2Vmd.FBXImporter
                         : "FBX 모션 재생 완료",
                     1f);
             }
+        }
+
+        private bool TickRecordingOrPlayback(float deltaTimeSeconds)
+        {
+            if (_humanoidMotionRecordingController?.IsRecording == true)
+            {
+                // 녹화 시작 프레임에는 deltaTime이 갱신 전일 수 있어 현재 정지 상태도 확인함.
+                bool completedRecording = _humanoidMotionRecordingController.Tick(
+                    Time.timeScale > 0f ? Time.deltaTime : 0f);
+                if (!completedRecording)
+                {
+                    UpdateRecordingSessionProgress();
+                }
+                return completedRecording;
+            }
+
+            _humanoidMotionPlaybackController.Tick(deltaTimeSeconds);
+            return false;
         }
 
         // 프레임 정확도 녹화는 실시간보다 느리게 보이므로 진행률을 주기 갱신해
@@ -237,112 +203,11 @@ namespace Fbx2Vmd.FBXImporter
                 shouldLog: false);
         }
 
-        private bool TryPrepareNativeSkinningCorrection(
-            NativeSkinningPendingPlaybackRequest request,
-            out bool shouldStartImmediately)
-        {
-            shouldStartImmediately = false;
-            if (!IsNativeSkinningCorrectionEnabled)
-            {
-                shouldStartImmediately = request == NativeSkinningPendingPlaybackRequest.Play;
-                if (!shouldStartImmediately)
-                {
-                    SetSessionState(FBXSessionState.Ready, "비교 재생 상태입니다. 녹화하려면 표면 보정을 켜 주세요.", 0f);
-                }
-                return shouldStartImmediately;
-            }
-            if (!string.IsNullOrWhiteSpace(_nativeSkinningCorrectionSetupError))
-            {
-                SetSessionState(
-                    FBXSessionState.Failed,
-                    _nativeSkinningCorrectionSetupError,
-                    0f);
-                return false;
-            }
-            if (_nativeSkinningCorrectionPlaybackDriver == null ||
-                _nativeSkinningCorrectionPlaybackDriver.IsReady)
-            {
-                shouldStartImmediately = true;
-                return true;
-            }
-            if (_nativeSkinningCorrectionPlaybackDriver.IsFaulted)
-            {
-                SetSessionState(
-                    FBXSessionState.Failed,
-                    _nativeSkinningCorrectionPlaybackDriver.FailureMessage,
-                    0f);
-                return false;
-            }
-            if (_nativeSkinningCorrectionPlaybackDriver.IsPreparing)
-            {
-                return _pendingNativeSkinningPlaybackRequest == request;
-            }
-            if (!_nativeSkinningCorrectionPlaybackDriver.BeginPreparation())
-            {
-                SetSessionState(
-                    FBXSessionState.Failed,
-                    _nativeSkinningCorrectionPlaybackDriver.FailureMessage,
-                    0f);
-                return false;
-            }
-
-            _pendingNativeSkinningPlaybackRequest = request;
-            SetSessionState(
-                FBXSessionState.Retargeting,
-                "FBX 팔 표면 보정 준비 중",
-                0f);
-            return true;
-        }
-
-        private bool TickNativeSkinningCorrectionPreparation()
-        {
-            using var perfScope = PerfScope.Measure("FBXVmdPipeline.TickNativeSkinningCorrectionPreparation");
-            if (_nativeSkinningCorrectionPlaybackDriver == null)
-            {
-                return false;
-            }
-            if (_nativeSkinningCorrectionPlaybackDriver.IsPreparing)
-            {
-                return HandlePreparationInProgress();
-            }
-            if (_pendingNativeSkinningPlaybackRequest ==
-                NativeSkinningPendingPlaybackRequest.None)
-            {
-                return false;
-            }
-            return DispatchPendingPlaybackRequest();
-        }
-
-        private bool HandlePreparationInProgress()
-        {
-            // 방어적 불변식: 정상 호출 경로에선 녹화 중 재준비가 성립하지 않지만,
-            // 성립하면 재생 틱만 스킵된 채 Recorder가 렌더러 숨김 상태를 계속
-            // 캡처해 영상이 오염되므로 조용히 두지 않고 중단함.
-            if (IsImportedMotionRecording)
-            {
-                Debug.LogWarning(
-                    "[FBXImport] 영상 녹화 중 보정 재준비가 발생해 녹화를 중단합니다.");
-                TryStopImportedMotionRecording();
-            }
-            SetSessionState(
-                FBXSessionState.Retargeting,
-                $"FBX 팔 표면 보정 준비 중: " +
-                $"{ImportedMotionCorrectionProcessedFrameCount} / " +
-                $"{ImportedMotionCorrectionTotalFrameCount}",
-                ImportedMotionCorrectionPreparationProgress,
-                shouldLog: false);
-            return true;
-        }
 
         private bool DispatchPendingPlaybackRequest()
         {
-            if (_nativeSkinningCorrectionPlaybackDriver.IsFaulted)
+            if (TryHandleSkinningDriverFault())
             {
-                string failureMessage =
-                    _nativeSkinningCorrectionPlaybackDriver.FailureMessage;
-                _pendingNativeSkinningPlaybackRequest =
-                    NativeSkinningPendingPlaybackRequest.None;
-                SetSessionState(FBXSessionState.Failed, failureMessage, 0f);
                 return true;
             }
             if (!_nativeSkinningCorrectionPlaybackDriver.IsReady)
@@ -351,16 +216,8 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             NativeSkinningPendingPlaybackRequest request =
-                _pendingNativeSkinningPlaybackRequest;
-            _pendingNativeSkinningPlaybackRequest =
-                NativeSkinningPendingPlaybackRequest.None;
-            bool started = request == NativeSkinningPendingPlaybackRequest.Record
-#if UNITY_EDITOR
-                ? TryStartImportedMotionRecordingNow()
-#else
-                ? false
-#endif
-                : TryStartImportedMotionPlaybackNow();
+                ConsumePendingPlaybackRequest();
+            bool started = StartPendingPlaybackRequest(request);
             if (!started)
             {
                 SetSessionState(
@@ -369,6 +226,42 @@ namespace Fbx2Vmd.FBXImporter
                     0f);
             }
             return true;
+        }
+
+        private bool TryHandleSkinningDriverFault()
+        {
+            if (!_nativeSkinningCorrectionPlaybackDriver.IsFaulted)
+            {
+                return false;
+            }
+
+            string failureMessage =
+                _nativeSkinningCorrectionPlaybackDriver.FailureMessage;
+            _pendingNativeSkinningPlaybackRequest =
+                NativeSkinningPendingPlaybackRequest.None;
+            SetSessionState(FBXSessionState.Failed, failureMessage, 0f);
+            return true;
+        }
+
+        private NativeSkinningPendingPlaybackRequest ConsumePendingPlaybackRequest()
+        {
+            NativeSkinningPendingPlaybackRequest request =
+                _pendingNativeSkinningPlaybackRequest;
+            _pendingNativeSkinningPlaybackRequest =
+                NativeSkinningPendingPlaybackRequest.None;
+            return request;
+        }
+
+        private bool StartPendingPlaybackRequest(
+            NativeSkinningPendingPlaybackRequest request)
+        {
+            return request == NativeSkinningPendingPlaybackRequest.Record
+#if UNITY_EDITOR
+                ? TryStartImportedMotionRecordingNow()
+#else
+                ? false
+#endif
+                : TryStartImportedMotionPlaybackNow();
         }
 
         private float ResolveHumanoidPlaybackProgress()
@@ -394,6 +287,29 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            if (!ValidateCorrectionMotionName(document, out errorMessage))
+            {
+                return false;
+            }
+
+            if (!ValidateCorrectionFrameRate(document, out errorMessage))
+            {
+                return false;
+            }
+
+            if (!ValidateCorrectionFrameRange(document, out errorMessage))
+            {
+                return false;
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        private bool ValidateCorrectionMotionName(
+            HumanoidPoseCorrectionDocument document,
+            out string errorMessage)
+        {
             if (!string.Equals(
                     document.MotionName,
                     _preparedMotionName,
@@ -405,6 +321,14 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            errorMessage = null;
+            return true;
+        }
+
+        private bool ValidateCorrectionFrameRate(
+            HumanoidPoseCorrectionDocument document,
+            out string errorMessage)
+        {
             if (Mathf.Abs(
                     document.SourceFrameRate -
                     _humanoidMotionPlaybackController.ClipFrameRate) > 0.001f)
@@ -416,6 +340,14 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            errorMessage = null;
+            return true;
+        }
+
+        private bool ValidateCorrectionFrameRange(
+            HumanoidPoseCorrectionDocument document,
+            out string errorMessage)
+        {
             if (document.LastCorrectionFrameIndex >
                 _humanoidMotionPlaybackController.LastFrameIndex)
             {
@@ -426,7 +358,7 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            errorMessage = string.Empty;
+            errorMessage = null;
             return true;
         }
 
@@ -482,41 +414,6 @@ namespace Fbx2Vmd.FBXImporter
             _activeRetargeter = null;
         }
 
-
-        private EditorManualPoseReferenceOptions CreateEditorManualPoseReferenceOptions()
-        {
-            return new EditorManualPoseReferenceOptions
-            {
-                ReferencePrefab = manualFingerReferencePrefab,
-                ReferenceController = manualFingerReferenceController,
-                ShouldUseFingerPoseReference = _shouldUseManualAnimatorFingerPoseReference,
-                ShouldUseFullBodyPoseReference = _shouldUseManualAnimatorFullBodyPoseReference,
-                FullBodyPoseReferenceWeight = manualAnimatorFullBodyPoseReferenceWeight,
-                ShouldExcludeFullBodyLowerMuscles = _shouldExcludeManualAnimatorFullBodyLowerMuscles,
-                ShouldApplyFullBodyLowerMusclesOnly = _shouldApplyManualAnimatorFullBodyLowerMusclesOnly,
-                ShouldApplyFullBodyLegTwistMusclesOnly = _shouldApplyManualAnimatorFullBodyLegTwistMusclesOnly,
-                ShouldApplyFullBodyRightArmMusclesOnly = manualAnimatorFullBodyPoseRightArmMusclesOnly,
-                ShouldApplyFullBodyLeftArmMusclesOnly = manualAnimatorFullBodyPoseLeftArmMusclesOnly,
-                ShouldApplyFullBodyRightSleeveChainMusclesOnly = manualAnimatorFullBodyPoseRightSleeveChainMusclesOnly,
-                FullBodyPoseFrameGateStart = manualAnimatorFullBodyPoseFrameGateStart,
-                FullBodyPoseFrameGateEnd = manualAnimatorFullBodyPoseFrameGateEnd,
-                ShouldUseHipsLocalPositionReference = _shouldUseManualAnimatorHipsLocalPositionReference,
-                ShouldUseBodyRotationReference = _shouldUseManualAnimatorBodyRotationReference,
-                ShouldUseHandLocalRotationReference = useManualAnimatorHandLocalRotationReference,
-                ShouldUseFootLocalRotationReference = _shouldUseManualAnimatorFootLocalRotationReference,
-                ShouldUseLowerBodySegmentDirectionReference = _shouldUseManualAnimatorLowerBodySegmentDirectionReference,
-                ShouldUseFootHipsAlignedResidualYawReference = _shouldUseManualAnimatorFootHipsAlignedResidualYawReference,
-                ShouldUsePostSetHumanPoseRightEndpointPositionReference = usePostSetHumanPoseRightEndpointPositionReference,
-                ShouldUsePostSetHumanPoseRightFootEvaluatorXzReference = usePostSetHumanPoseRightFootEvaluatorXzReference,
-                ShouldUsePreSetHumanPoseRightEndpointPositionReference = usePreSetHumanPoseRightEndpointPositionReference,
-                ShouldUseBodyPositionXzReference = _shouldUseManualAnimatorBodyPositionXzReference,
-                ShouldUseRightSleeveSilhouetteOffsetReference = useYybRightSleeveSilhouetteLocalOffsetReference,
-                RightSleeveSilhouetteOffsetX = yybRightSleeveSilhouetteLocalOffsetX,
-                RightSleeveSilhouetteFrameGateStart = yybRightSleeveSilhouetteLocalOffsetFrameGateStart,
-                RightSleeveSilhouetteFrameGateEnd = yybRightSleeveSilhouetteLocalOffsetFrameGateEnd,
-                ShouldUseBipedIkFootPositionReference = useManualAnimatorBipedIkFootPositionReference
-            };
-        }
 
     }
 }
