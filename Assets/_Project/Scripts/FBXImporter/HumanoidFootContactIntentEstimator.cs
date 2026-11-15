@@ -8,7 +8,7 @@ namespace Fbx2Vmd.FBXImporter
     /// 원본 FBX 궤적에서만 지지·자유발·불확실 구간과 접지 의도를 추정함.
     /// 분류 상수와 구간 병합 규칙은 오프라인 분석기 `analyze-contact-events.mjs`와 같게 유지함.
     /// </summary>
-    internal static class HumanoidFootContactIntentEstimator
+    internal static partial class HumanoidFootContactIntentEstimator
     {
         private enum FrameClass { Uncertain, Support, Slide, Airborne }
 
@@ -109,18 +109,11 @@ namespace Fbx2Vmd.FBXImporter
             Tuning tuning,
             out List<Vector2Int> uncertainSpans)
         {
-            int count = feet.Length;
-            float floorFoot = Percentile(feet, FloorPercentile);
-            float floorToes = Percentile(toes, FloorPercentile);
-            float supportHeight = humanScale * tuning.SupportHeightPerHumanScale;
-            float supportSpeed = humanScale * tuning.SupportSpeedPerHumanScale;
-            float airborneHeight = humanScale * tuning.AirborneHeightPerHumanScale;
-            float airborneSpeed = humanScale * tuning.AirborneSpeedPerHumanScale;
-            int minimumFrames = Mathf.Max(2, Mathf.CeilToInt(frameRate * MinimumSupportDurationSeconds));
+            SupportThresholds thresholds = ResolveThresholds(feet, toes, frameRate, humanScale, tuning);
 
-            var classes = new FrameClass[count];
-            ClassifyFrames( feet, toes, frameRate, floorFoot, floorToes, supportHeight, supportSpeed, airborneHeight, airborneSpeed, classes);
-            FrameClass[] preMerge = StabilizeAndMerge( classes, minimumFrames, hasClipMotion);
+            var classes = new FrameClass[feet.Length];
+            ClassifyFrames( feet, toes, frameRate, thresholds, classes);
+            FrameClass[] preMerge = StabilizeAndMerge( classes, thresholds.MinimumFrames, hasClipMotion);
 
             // 사람 확정 표식은 자동 정리를 모두 거친 뒤 마지막에 덮어씀.
             // 병합 판정(preMerge)에도 같은 표식을 입혀 표식 구간이 확신을 깎지 않게 함.
@@ -130,7 +123,19 @@ namespace Fbx2Vmd.FBXImporter
                 ApplyHumanLabels(preMerge, labels);
             }
 
-            var intents = new List<HumanoidFootContactIntent>();
+            CollectSpanIntents(classes, feet, toes, preMerge, humanScale, isLeft, labels, tuning,
+                out List<HumanoidFootContactIntent> intents, out uncertainSpans);
+            return intents;
+        }
+
+        // 분류된 프레임 범위를 지지/슬라이드 인텐트와 불확실 스팬으로 변환한다.
+        static void CollectSpanIntents(
+            FrameClass[] classes, Vector3[] feet, Vector3[] toes, FrameClass[] preMerge,
+            float humanScale, bool isLeft, IReadOnlyList<HumanoidFootContactIntentLabel> labels,
+            Tuning tuning, out List<HumanoidFootContactIntent> intents,
+            out List<Vector2Int> uncertainSpans)
+        {
+            intents = new List<HumanoidFootContactIntent>();
             uncertainSpans = new List<Vector2Int>();
             foreach (IntRange span in Ranges(classes))
             {
@@ -143,21 +148,27 @@ namespace Fbx2Vmd.FBXImporter
                     uncertainSpans.Add(new Vector2Int(span.Start, span.End + 1));
                 }
             }
+        }
 
-            return intents;
+
+        static SupportThresholds ResolveThresholds(
+            Vector3[] feet, Vector3[] toes, float frameRate, float humanScale, Tuning tuning)
+        {
+            return new SupportThresholds
+            {
+                FloorFoot = Percentile(feet, FloorPercentile),
+                FloorToes = Percentile(toes, FloorPercentile),
+                SupportHeight = humanScale * tuning.SupportHeightPerHumanScale,
+                SupportSpeed = humanScale * tuning.SupportSpeedPerHumanScale,
+                AirborneHeight = humanScale * tuning.AirborneHeightPerHumanScale,
+                AirborneSpeed = humanScale * tuning.AirborneSpeedPerHumanScale,
+                MinimumFrames = Mathf.Max(2, Mathf.CeilToInt(frameRate * MinimumSupportDurationSeconds)),
+            };
         }
 
         static void ClassifyFrames(
-            Vector3[] feet,
-            Vector3[] toes,
-            float frameRate,
-            float floorFoot,
-            float floorToes,
-            float supportHeight,
-            float supportSpeed,
-            float airborneHeight,
-            float airborneSpeed,
-            FrameClass[] classes)
+            Vector3[] feet, Vector3[] toes, float frameRate,
+            SupportThresholds thresholds, FrameClass[] classes)
         {
             for (int index = 0; index < classes.Length; index++)
             {
@@ -169,66 +180,63 @@ namespace Fbx2Vmd.FBXImporter
                 }
 
                 classes[index] = ClassifyFrame(
-                    feet, toes, index, frameRate, floorFoot, floorToes,
-                    supportHeight, supportSpeed, airborneHeight, airborneSpeed);
+                    feet, toes, index, frameRate, thresholds);
             }
         }
+
 
         static FrameClass ClassifyFrame(
             Vector3[] feet,
             Vector3[] toes,
             int index,
             float frameRate,
-            float floorFoot,
-            float floorToes,
-            float supportHeight,
-            float supportSpeed,
-            float airborneHeight,
-            float airborneSpeed)
+            SupportThresholds th)
         {
-            float footHeight = feet[index].y - floorFoot;
-            float toesHeight = toes[index].y - floorToes;
-            float footSpeed = Vector3.Distance(feet[index - 1], feet[index]) * frameRate;
-            float toesSpeed = Vector3.Distance(toes[index - 1], toes[index]) * frameRate;
-            // 발끝이 실제 지지 기관임. 발끝이 낮고 정지한 동안 발목도
-            // 정지했으면 평지지, 발목이 발끝 위로 들린(피치 간극) 상태는
-            // 발끝 축 롤로 보고 둘 다 지지로 인정함.
-            // 발이 평평한데 발목만 움직이는 끌기·정착은 지지로 보지 않음.
-            bool footPlanted = footHeight <= supportHeight && footSpeed <= supportSpeed;
-            float segmentLength = Vector3.Distance(feet[index], toes[index]);
-            bool rollEvidence = segmentLength > 0.0001f && (feet[index].y - toes[index].y) / segmentLength >= RollPitchRatio;
-            // 발끝이 바닥에 닿은 채 수평으로 미끄러지는 프레임은 접촉이지만
-            // 고정 지지가 아니므로 별도 Slide로 분류해 핀을 걸지 않음.
-            float toesHorizontalSpeed = HorizontalDelta(toes[index - 1], toes[index]).magnitude *
-                frameRate;
-            bool toeSliding = toesHeight <= supportHeight && toesSpeed <= airborneSpeed && toesHorizontalSpeed > supportSpeed;
-            if (toesHeight <= supportHeight && toesSpeed <= supportSpeed && (footPlanted || rollEvidence))
+            ContactEvidence ev = MeasureContactEvidence(feet, toes, index, frameRate, th);
+            if (ev.ToesHeight <= th.SupportHeight && ev.ToesSpeed <= th.SupportSpeed && (ev.FootPlanted || ev.RollEvidence))
             {
                 return FrameClass.Support;
             }
-            if (toeSliding)
+            if (ev.ToeSliding)
             {
                 return FrameClass.Slide;
             }
-            if (footHeight >= airborneHeight && toesHeight >= airborneHeight && footSpeed >= airborneSpeed && toesSpeed >= airborneSpeed)
+            if (ev.FootHeight >= th.AirborneHeight && ev.ToesHeight >= th.AirborneHeight &&
+                ev.FootSpeed >= th.AirborneSpeed && ev.ToesSpeed >= th.AirborneSpeed)
             {
                 return FrameClass.Airborne;
             }
             return FrameClass.Uncertain;
         }
 
+        static ContactEvidence MeasureContactEvidence(
+            Vector3[] feet, Vector3[] toes, int index, float frameRate, SupportThresholds th)
+        {
+            var ev = new ContactEvidence
+            {
+                FootHeight = feet[index].y - th.FloorFoot,
+                ToesHeight = toes[index].y - th.FloorToes,
+                FootSpeed = Vector3.Distance(feet[index - 1], feet[index]) * frameRate,
+                ToesSpeed = Vector3.Distance(toes[index - 1], toes[index]) * frameRate,
+            };
+            // 발끝이 실제 지지 기관임. 발끝이 낮고 정지한 동안 발목도
+            // 정지했으면 평지지, 발목이 발끝 위로 들린(피치 간극) 상태는
+            // 발끝 축 롤로 보고 둘 다 지지로 인정함.
+            // 발이 평평한데 발목만 움직이는 끌기·정착은 지지로 보지 않음.
+            ev.FootPlanted = ev.FootHeight <= th.SupportHeight && ev.FootSpeed <= th.SupportSpeed;
+            float segmentLength = Vector3.Distance(feet[index], toes[index]);
+            ev.RollEvidence = segmentLength > 0.0001f && (feet[index].y - toes[index].y) / segmentLength >= RollPitchRatio;
+            // 발끝이 바닥에 닿은 채 수평으로 미끄러지는 프레임은 접촉이지만
+            // 고정 지지가 아니므로 별도 Slide로 분류해 핀을 걸지 않음.
+            float toesHorizontalSpeed = HorizontalDelta(toes[index - 1], toes[index]).magnitude * frameRate;
+            ev.ToeSliding = ev.ToesHeight <= th.SupportHeight && ev.ToesSpeed <= th.AirborneSpeed &&
+                toesHorizontalSpeed > th.SupportSpeed;
+            return ev;
+        }
+
         static FrameClass[] StabilizeAndMerge( FrameClass[] classes, int minimumFrames, bool hasClipMotion)
         {
-            bool hasStableFloor = hasClipMotion;
-            if (hasStableFloor)
-            {
-                hasStableFloor = false;
-                foreach (IntRange span in Ranges(classes))
-                {
-                    if (span.Classification == FrameClass.Support && span.Length >= minimumFrames)
-                    {
-                        hasStableFloor = true;
-                        break; } } }
+            bool hasStableFloor = HasLongSupportSpan(classes, minimumFrames, hasClipMotion);
             if (!hasStableFloor)
             {
                 for (int index = 0; index < classes.Length; index++)
@@ -244,14 +252,31 @@ namespace Fbx2Vmd.FBXImporter
                         Fill(classes, span.Start, span.End, FrameClass.Uncertain); } }
                 // 최소 지지 길이 이하의 불확실 틈새는 의미 있는 반대 위상을 담을 수
                 // 없으므로 같은 분류끼리 이어진 틈새는 잡음으로 보고 흡수함.
-                List<IntRange> spans = Ranges(classes);
-                for (int index = 1; index + 1 < spans.Count; index++)
-                {
-                    IntRange gap = spans[index];
-                    if (gap.Classification == FrameClass.Uncertain && gap.Length <= minimumFrames && spans[index - 1].Classification == spans[index + 1].Classification && spans[index - 1].Classification != FrameClass.Uncertain)
-                    {
-                        Fill(classes, gap.Start, gap.End, spans[index - 1].Classification); } } }
+                AbsorbShortUncertainGaps(classes, minimumFrames); }
             return preMerge; }
+
+        static bool HasLongSupportSpan(FrameClass[] classes, int minimumFrames, bool hasClipMotion)
+        {
+            if (!hasClipMotion)
+                return false;
+            foreach (IntRange span in Ranges(classes))
+            {
+                if (span.Classification == FrameClass.Support && span.Length >= minimumFrames)
+                    return true;
+            }
+            return false;
+        }
+
+        static void AbsorbShortUncertainGaps(FrameClass[] classes, int minimumFrames)
+        {
+            List<IntRange> spans = Ranges(classes);
+            for (int index = 1; index + 1 < spans.Count; index++)
+            {
+                IntRange gap = spans[index];
+                if (gap.Classification == FrameClass.Uncertain && gap.Length <= minimumFrames && spans[index - 1].Classification == spans[index + 1].Classification && spans[index - 1].Classification != FrameClass.Uncertain)
+                {
+                    Fill(classes, gap.Start, gap.End, spans[index - 1].Classification); } }
+        }
 
         static bool CollectFootTrajectories(
             IReadOnlyList<HumanoidFootContactSample> samples,
@@ -367,20 +392,6 @@ namespace Fbx2Vmd.FBXImporter
             return selected;
         }
 
-        private readonly struct IntRange
-        {
-            internal IntRange(int start, int end, FrameClass classification)
-            {
-                Start = start;
-                End = end;
-                Classification = classification;
-            }
-
-            internal int Start { get; }
-            internal int End { get; }
-            internal int Length => End - Start + 1;
-            internal FrameClass Classification { get; }
-        }
 
         private static List<IntRange> Ranges(FrameClass[] classes)
         {
@@ -410,28 +421,5 @@ namespace Fbx2Vmd.FBXImporter
                 classes[index] = value;
             }
         }
-
-        private static float Percentile(Vector3[] points, float fraction)
-        {
-            var heights = new float[points.Length];
-            for (int index = 0; index < points.Length; index++)
-            {
-                heights[index] = points[index].y;
-            }
-
-            Array.Sort(heights);
-            return heights[(int)((heights.Length - 1) * fraction)];
-        }
-
-        private static Vector2 HorizontalDelta(Vector3 from, Vector3 to)
-        {
-            return new Vector2(to.x - from.x, to.z - from.z);
-        }
-
-        private static bool IsFinite(Vector3 value) =>
-            IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
-
-        private static bool IsFinite(float value) =>
-            !float.IsNaN(value) && !float.IsInfinity(value);
     }
 }

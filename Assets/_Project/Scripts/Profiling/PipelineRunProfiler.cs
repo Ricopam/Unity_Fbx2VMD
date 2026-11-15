@@ -82,8 +82,20 @@ namespace Fbx2Vmd.Profiling
             long nowGc = GC.GetAllocatedBytesForCurrentThread();
 
             // 같은 스테이지의 연속 호출(프레임 단위 진행률 하트비트)은 마지막 샘플에 병합한다.
-            // 스키마 불변식 sinceRunStartMs - deltaMs = 구간 시작을 유지하기 위해
-            // 누적 시각을 구간 끝으로 갱신하고 소요·GC를 합산한다.
+            RecordStageSample(stage, message, isTerminal, nowMs, nowGc);
+            _lastStageMarkMs = nowMs;
+            _lastStageGcBytes = nowGc;
+
+            if (isTerminal)
+            {
+                EndRun(stage);
+            }
+        }
+
+        // 스키마 불변식 sinceRunStartMs - deltaMs = 구간 시작을 유지하기 위해
+        // 누적 시각을 구간 끝으로 갱신하고 소요·GC를 합산한다.
+        static void RecordStageSample(string stage, string message, bool isTerminal, float nowMs, long nowGc)
+        {
             int stageCount = _current.stages.Count;
             ProfilingStageSample last = stageCount > 0 ? _current.stages[stageCount - 1] : null;
             if (!isTerminal && last != null && string.Equals(last.stage, stage ?? string.Empty, StringComparison.Ordinal))
@@ -99,13 +111,6 @@ namespace Fbx2Vmd.Profiling
                 _current.stages.Add(new ProfilingStageSample {
                     stage = stage ?? string.Empty, message = message ?? string.Empty, sinceRunStartMs = nowMs, deltaMs = nowMs - _lastStageMarkMs, gcDeltaBytes = nowGc - _lastStageGcBytes, calls = 1,
                 });
-            }
-            _lastStageMarkMs = nowMs;
-            _lastStageGcBytes = nowGc;
-
-            if (isTerminal)
-            {
-                EndRun(stage);
             }
         }
 

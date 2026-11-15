@@ -26,6 +26,12 @@ namespace Fbx2Vmd.CharacterLibrary
             if (document.entries == null)
             {
                 document.entries = new List<CharacterLibraryEntry>(); }
+            DeduplicateEntries(document);
+            return document; }
+
+        // null·빈 id·중복 id 엔트리를 걸러 유효 엔트리만 유지함.
+        private static void DeduplicateEntries(CharacterLibraryDocument document)
+        {
             var seenIds = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < document.entries.Count; i++)
             {
@@ -44,8 +50,7 @@ namespace Fbx2Vmd.CharacterLibrary
                 {
                     // 동일 id 중복은 첫 항목만 유지한다.
                     document.entries.RemoveAt(i);
-                    i--; } }
-            return document; }
+                    i--; } } }
 
         private static void NormalizeEntry(CharacterLibraryEntry entry)
         {

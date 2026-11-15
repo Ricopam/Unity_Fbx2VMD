@@ -46,18 +46,7 @@ namespace Fbx2Vmd.Profiling
             var sb = new StringBuilder(8192);
             sb.Append("<!DOCTYPE html><html lang=\"ko\"><head><meta charset=\"utf-8\">");
             sb.Append("<title>FBX2VMD 프로파일링 리포트</title><style>");
-            sb.Append("body{font-family:Segoe UI,Malgun Gothic,sans-serif;margin:24px;color:#222;background:#fafafa}");
-            sb.Append(".run{background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px;margin:12px 0}");
-            sb.Append(".head{font-weight:600;margin-bottom:6px}");
-            sb.Append(".meta{color:#666;font-size:12px;margin-bottom:8px}");
-            sb.Append(".badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;color:#fff;margin-left:6px}");
-            sb.Append(".ok{background:#2e7d32}.fail{background:#c62828}.other{background:#757575}");
-            sb.Append("table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}");
-            sb.Append("th,td{border-bottom:1px solid #eee;text-align:left;padding:4px 8px 4px 0;vertical-align:top}");
-            sb.Append(".bar{height:10px;background:#1565c0;border-radius:2px;display:inline-block;min-width:1px}");
-            sb.Append(".f{padding:6px 8px;border-left:3px solid #999;background:#f5f5f5;margin:4px 0;font-size:12px}");
-            sb.Append(".f.Error{border-color:#c62828}.f.Warning{border-color:#ef6c00}.f.Info{border-color:#1565c0}");
-            sb.Append(".mono{font-family:Consolas,monospace;font-size:11px;color:#555}");
+            AppendStyles(sb);
             sb.Append("</style></head><body>");
             sb.Append("<h1>FBX2VMD 프로파일링 리포트</h1>");
             sb.Append("<p class=\"meta\">생성: ").Append(Escape(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")));
@@ -78,6 +67,23 @@ namespace Fbx2Vmd.Profiling
             return sb.ToString();
         }
 
+        // 리포트 레이아웃용 CSS 규칙을 출력함.
+        private static void AppendStyles(StringBuilder sb)
+        {
+            sb.Append("body{font-family:Segoe UI,Malgun Gothic,sans-serif;margin:24px;color:#222;background:#fafafa}");
+            sb.Append(".run{background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px;margin:12px 0}");
+            sb.Append(".head{font-weight:600;margin-bottom:6px}");
+            sb.Append(".meta{color:#666;font-size:12px;margin-bottom:8px}");
+            sb.Append(".badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;color:#fff;margin-left:6px}");
+            sb.Append(".ok{background:#2e7d32}.fail{background:#c62828}.other{background:#757575}");
+            sb.Append("table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}");
+            sb.Append("th,td{border-bottom:1px solid #eee;text-align:left;padding:4px 8px 4px 0;vertical-align:top}");
+            sb.Append(".bar{height:10px;background:#1565c0;border-radius:2px;display:inline-block;min-width:1px}");
+            sb.Append(".f{padding:6px 8px;border-left:3px solid #999;background:#f5f5f5;margin:4px 0;font-size:12px}");
+            sb.Append(".f.Error{border-color:#c62828}.f.Warning{border-color:#ef6c00}.f.Info{border-color:#1565c0}");
+            sb.Append(".mono{font-family:Consolas,monospace;font-size:11px;color:#555}");
+        }
+
         private static void AppendRun(StringBuilder sb, ProfilingRunRecord run)
         {
             string outcomeClass = run.outcome == "Success" ? "ok" : run.outcome == "Failed" || run.outcome == "Cancelled" ? "fail" : "other";
@@ -85,6 +91,15 @@ namespace Fbx2Vmd.Profiling
             sb.Append(Escape(string.IsNullOrEmpty(run.label) ? "(이름 없음)" : run.label));
             sb.Append("<span class=\"badge ").Append(outcomeClass).Append("\">") .Append(Escape(run.outcome ?? string.Empty)).Append("</span>");
             sb.Append(" <span class=\"mono\">").Append(F(run.totalMs)).Append("ms</span></div>");
+            AppendRunMeta(sb, run);
+            AppendFindings(sb, run);
+            AppendStageTable(sb, run);
+            AppendMetricTable(sb, run);
+            sb.Append("</div>"); }
+
+        // 런의 환경·프레임·메모리·입력 메타 라인을 출력한다 — 미기록(-1) 필드는 표시하지 않음.
+        private static void AppendRunMeta(StringBuilder sb, ProfilingRunRecord run)
+        {
             sb.Append("<div class=\"meta\">");
             sb.Append(Escape(run.startedUtc ?? string.Empty)).Append(" | Unity ").Append(Escape(run.unityVersion ?? string.Empty));
             sb.Append(" | ").Append(Escape(run.deviceModel ?? string.Empty));
@@ -100,7 +115,6 @@ namespace Fbx2Vmd.Profiling
             if (run.gcReservedBytes > 0 || run.systemUsedBytes > 0)
             {
                 sb.Append(" | 메모리 피크 GC ").Append(F(run.gcReservedBytes / (1024f * 1024f))) .Append("MB / System ").Append(F(run.systemUsedBytes / (1024f * 1024f))).Append("MB"); }
-            // 미기록(-1) 필드는 표시하지 않는다.
             if (run.inputBytes >= 0)
             {
                 sb.Append(" | 입력 ").Append(F(run.inputBytes / (1024f * 1024f))).Append("MB"); }
@@ -111,10 +125,7 @@ namespace Fbx2Vmd.Profiling
             {
                 sb.Append(" | 본 ").Append(run.boneCount).Append("개"); }
             sb.Append("</div>");
-            AppendFindings(sb, run);
-            AppendStageTable(sb, run);
-            AppendMetricTable(sb, run);
-            sb.Append("</div>"); }
+        }
 
         private static void AppendFindings(StringBuilder sb, ProfilingRunRecord run)
         {

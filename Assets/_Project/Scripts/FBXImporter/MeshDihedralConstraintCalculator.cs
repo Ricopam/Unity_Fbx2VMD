@@ -53,6 +53,23 @@ namespace Fbx2Vmd.FBXImporter
             if (!IsFinite(currentAngleRadians) || currentAngleRadians <= maximumAngleRadians)
             {
                 return false; }
+            return TryBuildCorrections(
+                geometry, currentAngleRadians, maximumAngleRadians, stiffness,
+                out opposite0Correction, out opposite1Correction,
+                out edge0Correction, out edge1Correction);
+        }
+
+        // 람다를 풀어 네 정점의 보정 벡터를 만들고 유한성을 검증함.
+        static bool TryBuildCorrections(
+            DihedralGeometry geometry, float currentAngleRadians,
+            float maximumAngleRadians, float stiffness,
+            out Vector3 opposite0Correction, out Vector3 opposite1Correction,
+            out Vector3 edge0Correction, out Vector3 edge1Correction)
+        {
+            opposite0Correction = Vector3.zero;
+            opposite1Correction = Vector3.zero;
+            edge0Correction = Vector3.zero;
+            edge1Correction = Vector3.zero;
             if (!TrySolveLambda( geometry, currentAngleRadians, maximumAngleRadians, stiffness, out float lambda))
             {
                 return false; }

@@ -41,6 +41,21 @@ namespace Fbx2Vmd.FBXImporter
         internal static HumanoidFootContactIntentLabelSet Load(string sourceKey)
         {
             if (string.IsNullOrWhiteSpace(sourceKey)) return HumanoidFootContactIntentLabelSet.Empty;
+            List<string> files = CollectLabelFiles();
+            var left = new List<HumanoidFootContactIntentLabel>();
+            var right = new List<HumanoidFootContactIntentLabel>();
+            int fileCount = 0, rowCount = 0;
+            foreach (string file in files)
+            {
+                // 표식은 같은 입력 FBX의 증거 폴더와 짝지었을 때만 유효함.
+                string statePath = Path.Combine(Path.GetDirectoryName(file), "state.json");
+                if (!TryReadInput(statePath, out string input) || !MatchesInput(input, sourceKey)) continue;
+                fileCount += ReadLabelFile(file, left, right, ref rowCount); }
+            return new HumanoidFootContactIntentLabelSet(left, right, fileCount, rowCount); }
+
+        // 검색 루트 전체에서 human-labels.csv를 재귀 수집하고 순서를 고정한다.
+        static List<string> CollectLabelFiles()
+        {
             var files = new List<string>();
             foreach (string root in GetSearchRoots())
             {
@@ -53,27 +68,26 @@ namespace Fbx2Vmd.FBXImporter
                 } }
             // 파일 순서를 고정해 겹치는 표식의 해석이 실행마다 달라지지 않게 함.
             files.Sort(StringComparer.Ordinal);
-            var left = new List<HumanoidFootContactIntentLabel>();
-            var right = new List<HumanoidFootContactIntentLabel>();
-            int fileCount = 0, rowCount = 0;
-            foreach (string file in files)
+            return files;
+        }
+
+        // 한 CSV 파일의 유효 행을 좌/우 목록에 적재한다. 수용된 파일이면 1, 아니면 0.
+        static int ReadLabelFile(string file, List<HumanoidFootContactIntentLabel> left,
+            List<HumanoidFootContactIntentLabel> right, ref int rowCount)
+        {
+            try
             {
-                // 표식은 같은 입력 FBX의 증거 폴더와 짝지었을 때만 유효함.
-                string statePath = Path.Combine(Path.GetDirectoryName(file), "state.json");
-                if (!TryReadInput(statePath, out string input) || !MatchesInput(input, sourceKey)) continue;
-                try
+                bool accepted = false;
+                foreach (string line in File.ReadLines(file))
                 {
-                    bool accepted = false;
-                    foreach (string line in File.ReadLines(file))
-                    {
-                        if (!TryParseRow(line, out bool isLeft, out HumanoidFootContactIntentLabel label)) continue;
-                        (isLeft ? left : right).Add(label);
-                        rowCount++;
-                        accepted = true; }
-                    if (accepted) fileCount++; } catch (IOException)
-                {
-                    continue; } }
-            return new HumanoidFootContactIntentLabelSet(left, right, fileCount, rowCount); }
+                    if (!TryParseRow(line, out bool isLeft, out HumanoidFootContactIntentLabel label)) continue;
+                    (isLeft ? left : right).Add(label);
+                    rowCount++;
+                    accepted = true; }
+                return accepted ? 1 : 0; } catch (IOException)
+            {
+                return 0; }
+        }
 
         private static bool TryReadInput(string path, out string input)
         {

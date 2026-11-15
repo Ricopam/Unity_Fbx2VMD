@@ -7,29 +7,9 @@ namespace Fbx2Vmd.FBXImporter
 {
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(CorrectionPassOrder.ArmTwistRigging)]
-    public class HumanoidArmTwistRiggingGuard : MonoBehaviour
+    public partial class HumanoidArmTwistRiggingGuard : MonoBehaviour
     {
         private const string RigRootName = "__AutoArmTwistRig";
-
-        [Header("Animation Rigging Arm Twist")]
-        [FormerlySerializedAs("enableTwistRigging")]
-        [SerializeField] private bool _enableTwistRigging= true;
-        public bool enableTwistRigging { get => _enableTwistRigging; set => _enableTwistRigging = value; }
-        [Range(0f, 1f)] [FormerlySerializedAs("rigWeight")]
-        [SerializeField] private float _rigWeight= 0.65f;
-        public float rigWeight { get => _rigWeight; private set => _rigWeight = value; }
-        [Range(0f, 1f)] [FormerlySerializedAs("upperArmTwistWeight")]
-        [SerializeField] private float _upperArmTwistWeight= 0.45f;
-        public float upperArmTwistWeight { get => _upperArmTwistWeight; private set => _upperArmTwistWeight = value; }
-        [Range(0f, 1f)] [FormerlySerializedAs("forearmTwistWeight")]
-        [SerializeField] private float _forearmTwistWeight= 0.85f;
-        public float forearmTwistWeight { get => _forearmTwistWeight; private set => _forearmTwistWeight = value; }
-        [FormerlySerializedAs("fallbackTwistAxis")]
-        [SerializeField] private TwistCorrectionData.Axis _fallbackTwistAxis= TwistCorrectionData.Axis.X;
-        public TwistCorrectionData.Axis fallbackTwistAxis { get => _fallbackTwistAxis; private set => _fallbackTwistAxis = value; }
-        [FormerlySerializedAs("logConfiguration")]
-        [SerializeField] private bool _logConfiguration= false;
-        public bool logConfiguration { get => _logConfiguration; private set => _logConfiguration = value; }
 
         private readonly List<Transform> _controlledTransforms = new List<Transform>();
         private Animator _animator;
@@ -299,65 +279,6 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             return nextRig;
-        }
-
-        private static Transform GetOrCreateChild(Transform parent, string childName)
-        {
-            Transform child = parent.Find(childName);
-            if (child != null)
-            {
-                return child;
-            }
-
-            GameObject childObject = new GameObject(childName);
-            child = childObject.transform;
-            child.SetParent(parent, false);
-            return child;
-        }
-
-        private List<Transform> FindExactChildren(Transform root, params string[] names)
-        {
-            var results = new List<Transform>();
-            if (root == null || names == null)
-            {
-                return results;
-            }
-
-            foreach (string exactName in names)
-            {
-                Transform found = FindDescendantByName(root, exactName);
-                if (found != null && !results.Contains(found))
-                {
-                    results.Add(found);
-                }
-            }
-
-            return results;
-        }
-
-        private static Transform FindDescendantByName(Transform root, string targetName)
-        {
-            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-            {
-                if (child != root && IsMatchingBoneName(child.name, targetName))
-                {
-                    return child;
-                }
-            }
-
-            return null;
-        }
-
-        private static bool IsMatchingBoneName(string boneName, string targetName)
-        {
-            if (string.IsNullOrEmpty(boneName) || string.IsNullOrEmpty(targetName))
-            {
-                return false;
-            }
-
-            return boneName == targetName ||
-                   boneName.EndsWith("." + targetName, System.StringComparison.Ordinal) ||
-                   boneName.EndsWith(targetName, System.StringComparison.Ordinal);
         }
 
         private TwistCorrectionData.Axis DetectTwistAxis(Transform source, Transform endBone)

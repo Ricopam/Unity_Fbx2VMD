@@ -80,31 +80,7 @@ namespace Fbx2Vmd.ClothPhysics
             var sb = new StringBuilder();
             try
             {
-                if (setup == null) setup = GetComponent<CharacterPhysicsSetup>();
-                var cloths = setup != null ? setup.generatedCloths .Where(c => c != null && c.IsValid()).ToList() : null;
-                if (cloths == null || cloths.Count == 0)
-                {
-                    sb.Append("[SelfCollisionPerfProbe] 유효 클로스 없음");
-                    yield break; }
-                // 원래 설정 백업 — BoneSpring은 selfMode가 강제 None이라 측정 대상에서 제외
-                savedParams = cloths.Where(c => !c.SerializeData.IsBoneSpring()) .Select(c => (c, c.SerializeData.selfCollisionConstraint.selfMode, c.SerializeData.selfCollisionConstraint.syncMode)).ToList();
-                paramsPatched = true;
-                // 계측 중 외부가 공용 필드를 바꿔도 일관되도록 스냅샷
-                int measure = measureFrames, settle = settleFrames;
-                sb.AppendLine($"[SelfCollisionPerfProbe] 대상 {savedParams.Count}클로스");
-                recorder = ProfilerRecorder.StartNew( ProfilerCategory.Scripts, "StartClothUpdate.Time", 1);
-                if (!recorder.Valid) sb.AppendLine("경고: StartClothUpdate 마커 레코더 무효 — 마커값 0 기록");
-                // ON: 저장된 원래 설정 그대로 먼저 측정
-                yield return Measure("ON", sb, measure, settle);
-                // OFF: 자기·상호 충돌을 끄고 동일 프레임 계측
-                foreach (var (c, _, _) in savedParams)
-                {
-                    if (c == null) continue;
-                    var p = c.SerializeData.selfCollisionConstraint;
-                    p.selfMode = SelfCollisionConstraint.SelfCollisionMode.None;
-                    p.syncMode = SelfCollisionConstraint.SelfCollisionMode.None;
-                    c.SetParameterChange(); }
-                yield return Measure("OFF", sb, measure, settle); } finally
+                yield return RunMeasureSequence(sb); } finally
             {
                 RestoreParams();
                 if (recorder.Valid) recorder.Dispose();
@@ -113,6 +89,36 @@ namespace Fbx2Vmd.ClothPhysics
                 Debug.Log(lastSummary, this);
                 isRunning = false;
                 routine = null; } }
+
+        // 유효 클로스 수집 → 설정 백업 → ON/OFF 순서로 계측을 실행함.
+        IEnumerator RunMeasureSequence(StringBuilder sb)
+        {
+            if (setup == null) setup = GetComponent<CharacterPhysicsSetup>();
+            var cloths = setup != null ? setup.generatedCloths .Where(c => c != null && c.IsValid()).ToList() : null;
+            if (cloths == null || cloths.Count == 0)
+            {
+                sb.Append("[SelfCollisionPerfProbe] 유효 클로스 없음");
+                yield break; }
+            // 원래 설정 백업 — BoneSpring은 selfMode가 강제 None이라 측정 대상에서 제외
+            savedParams = cloths.Where(c => !c.SerializeData.IsBoneSpring()) .Select(c => (c, c.SerializeData.selfCollisionConstraint.selfMode, c.SerializeData.selfCollisionConstraint.syncMode)).ToList();
+            paramsPatched = true;
+            // 계측 중 외부가 공용 필드를 바꿔도 일관되도록 스냅샷
+            int measure = measureFrames, settle = settleFrames;
+            sb.AppendLine($"[SelfCollisionPerfProbe] 대상 {savedParams.Count}클로스");
+            recorder = ProfilerRecorder.StartNew( ProfilerCategory.Scripts, "StartClothUpdate.Time", 1);
+            if (!recorder.Valid) sb.AppendLine("경고: StartClothUpdate 마커 레코더 무효 — 마커값 0 기록");
+            // ON: 저장된 원래 설정 그대로 먼저 측정
+            yield return Measure("ON", sb, measure, settle);
+            // OFF: 자기·상호 충돌을 끄고 동일 프레임 계측
+            foreach (var (c, _, _) in savedParams)
+            {
+                if (c == null) continue;
+                var p = c.SerializeData.selfCollisionConstraint;
+                p.selfMode = SelfCollisionConstraint.SelfCollisionMode.None;
+                p.syncMode = SelfCollisionConstraint.SelfCollisionMode.None;
+                c.SetParameterChange(); }
+            yield return Measure("OFF", sb, measure, settle);
+        }
 
         /// <summary>계측이 바꾼 selfMode/syncMode를 백업값으로 원복한다.</summary>
         void RestoreParams()

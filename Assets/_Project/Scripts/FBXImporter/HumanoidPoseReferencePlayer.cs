@@ -75,6 +75,17 @@ namespace Fbx2Vmd.FBXImporter
             DisableRuntimeComponents(_referenceInstance);
             _referenceInstance.SetActive(true);
 
+            ResolveReferenceBones();
+            InitialRootRotation = _referenceAnimator.transform.rotation;
+            if (!TryInitializeAvatarFootReference(_referenceAnimator.avatar.humanDescription.skeleton))
+                TryInitializeFootReference();
+            _animationPlayer.Initialize(_referenceAnimator, clip);
+            _poseHandler = new HumanPoseHandler( _referenceAnimator.avatar, _referenceAnimator.transform);
+        }
+
+        // 기준 인스턴스의 Animator와 골반·양발 본을 해석한다.
+        private void ResolveReferenceBones()
+        {
             _referenceAnimator = _referenceInstance.GetComponent<Animator>() ?? _referenceInstance.GetComponentInChildren<Animator>(true);
             if (_referenceAnimator == null)
             {
@@ -92,19 +103,35 @@ namespace Fbx2Vmd.FBXImporter
             {
                 throw new InvalidOperationException( "Native Humanoid 기준 모델에 양발 본이 필요합니다.");
             }
-            InitialRootRotation = _referenceAnimator.transform.rotation;
-            if (!TryInitializeAvatarFootReference(_referenceAnimator.avatar.humanDescription.skeleton))
-                TryInitializeFootReference();
-            _animationPlayer.Initialize(_referenceAnimator, clip);
-            _poseHandler = new HumanPoseHandler( _referenceAnimator.avatar, _referenceAnimator.transform);
         }
 
         private bool TryInitializeAvatarFootReference(SkeletonBone[] skeleton)
         {
             Transform root = _referenceAnimator.transform;
             if (skeleton == null || skeleton.Length == 0 || _leftToes == null || _rightToes == null) return false;
-            var bones = new List<Transform>();
-            var names = new HashSet<string>(StringComparer.Ordinal);
+            if (!TryCollectToeBoneChain(root, out List<Transform> bones, out HashSet<string> names)) return false;
+            var reference = new Dictionary<string, SkeletonBone>(StringComparer.Ordinal);
+            foreach (SkeletonBone pose in skeleton)
+            {
+                if (pose.name == null || !names.Contains(pose.name)) continue;
+                if (reference.ContainsKey(pose.name) || !IsFinite(pose.position) || !IsFinite(pose.rotation) || !IsFinite(pose.scale) || pose.scale.x <= 0f || pose.scale.y <= 0f || pose.scale.z <= 0f || Mathf.Abs(Quaternion.Dot(pose.rotation, pose.rotation) - 1f) > 0.0001f) return false;
+                reference.Add(pose.name, pose); }
+            if (reference.Count != bones.Count) return false;
+            SkeletonBone[] original = CaptureBoneLocals(bones);
+            try
+            {
+                // 첫 동작의 기울기를 중립으로 삼지 않도록 Avatar 기준에서 발 축과 길이를 함께 취득함.
+                ApplySkeletonPose(bones, reference);
+                return TryInitializeFootReference(); } finally
+            {
+                // 재생기와 HumanPoseHandler가 임시 자세를 초기 상태로 기억하지 않도록 먼저 복원함.
+                RestoreBoneLocals(bones, original); } }
+
+        // 양 발가락부터 루트까지의 본 체인을 수집하고 이름 충돌을 검증한다.
+        private bool TryCollectToeBoneChain(Transform root, out List<Transform> bones, out HashSet<string> names)
+        {
+            bones = new List<Transform>();
+            names = new HashSet<string>(StringComparer.Ordinal);
             foreach (Transform toes in new[] { _leftToes, _rightToes })
             {
                 if (!toes.IsChildOf(root)) return false;
@@ -114,32 +141,33 @@ namespace Fbx2Vmd.FBXImporter
                     if (!names.Add(bone.name)) return false;
                     bones.Add(bone); } }
             foreach (Transform bone in root.GetComponentsInChildren<Transform>(true)) if (bone != root && names.Contains(bone.name) && !bones.Contains(bone)) return false;
-            var reference = new Dictionary<string, SkeletonBone>(StringComparer.Ordinal);
-            foreach (SkeletonBone pose in skeleton)
-            {
-                if (pose.name == null || !names.Contains(pose.name)) continue;
-                if (reference.ContainsKey(pose.name) || !IsFinite(pose.position) || !IsFinite(pose.rotation) || !IsFinite(pose.scale) || pose.scale.x <= 0f || pose.scale.y <= 0f || pose.scale.z <= 0f || Mathf.Abs(Quaternion.Dot(pose.rotation, pose.rotation) - 1f) > 0.0001f) return false;
-                reference.Add(pose.name, pose); }
-            if (reference.Count != bones.Count) return false;
+            return true;
+        }
+
+        static SkeletonBone[] CaptureBoneLocals(List<Transform> bones)
+        {
             var original = new SkeletonBone[bones.Count];
             for (int i = 0; i < bones.Count; i++) original[i] = new SkeletonBone { position = bones[i].localPosition, rotation = bones[i].localRotation, scale = bones[i].localScale };
-            try
+            return original;
+        }
+
+        static void ApplySkeletonPose(List<Transform> bones, Dictionary<string, SkeletonBone> reference)
+        {
+            foreach (Transform bone in bones)
             {
-                // 첫 동작의 기울기를 중립으로 삼지 않도록 Avatar 기준에서 발 축과 길이를 함께 취득함.
-                foreach (Transform bone in bones)
-                {
-                    SkeletonBone pose = reference[bone.name];
-                    bone.localPosition = pose.position;
-                    bone.localRotation = pose.rotation;
-                    bone.localScale = pose.scale; }
-                return TryInitializeFootReference(); } finally
+                SkeletonBone pose = reference[bone.name];
+                bone.localPosition = pose.position;
+                bone.localRotation = pose.rotation;
+                bone.localScale = pose.scale; }
+        }
+
+        static void RestoreBoneLocals(List<Transform> bones, SkeletonBone[] original)
+        {
+            for (int i = 0; i < bones.Count; i++)
             {
-                // 재생기와 HumanPoseHandler가 임시 자세를 초기 상태로 기억하지 않도록 먼저 복원함.
-                for (int i = 0; i < bones.Count; i++)
-                {
-                    bones[i].localPosition = original[i].position;
-                    bones[i].localRotation = original[i].rotation;
-                    bones[i].localScale = original[i].scale; } } }
+                bones[i].localPosition = original[i].position;
+                bones[i].localRotation = original[i].rotation;
+                bones[i].localScale = original[i].scale; } }
 
         private bool TryInitializeFootReference()
         {
@@ -155,126 +183,7 @@ namespace Fbx2Vmd.FBXImporter
             return true;
         }
 
-        internal bool TryEvaluateFootFramesAt(float timeSeconds,
-            out Quaternion leftFrame, out Quaternion rightFrame)
-        {
-            leftFrame = rightFrame = Quaternion.identity;
-            if (!IsInitialized || !HasFootRotationReference)
-                return false;
-            _animationPlayer.EvaluateAt(timeSeconds);
-            return _leftFootRotation.TryCaptureWorldFrame(out leftFrame) &&
-                _rightFootRotation.TryCaptureWorldFrame(out rightFrame);
-        }
 
-        internal bool TryCaptureFootSupportReference(out Vector2 heights,
-            out Quaternion leftFrame, out Quaternion rightFrame)
-        {
-            heights = Vector2.zero;
-            leftFrame = rightFrame = Quaternion.identity;
-            if (!IsInitialized || !HasFootRotationReference ||
-                !_leftFootRotation.TryCaptureWorldFrame(out leftFrame) ||
-                !_rightFootRotation.TryCaptureWorldFrame(out rightFrame))
-                return false;
-            // 재평가 없이 같은 원본 표본을 읽고, 기준 평면은 초기 자세에 고정함.
-            Vector3 referenceUp = InitialRootRotation * Vector3.up;
-            heights = new Vector2(
-                Vector3.Dot(leftFrame * Vector3.forward, referenceUp) * _footForwardLengths.x,
-                Vector3.Dot(rightFrame * Vector3.forward, referenceUp) * _footForwardLengths.y);
-            return IsFinite(heights.x) && IsFinite(heights.y);
-        }
-
-        // 재평가 없이 마지막 평가 시점의 원본 골반 포즈를 읽음. 루트 모션이 골반에 실리므로
-        // goal 스트림의 루트 상대 정규화 기준으로 씀.
-        internal bool TryCaptureHipsPose(out Vector3 position, out Quaternion rotation)
-        {
-            position = Vector3.zero;
-            rotation = Quaternion.identity;
-            if (!IsInitialized || _hips == null)
-            {
-                return false;
-            }
-            position = _hips.position;
-            rotation = _hips.rotation;
-            return IsFinite(position) && IsFinite(rotation);
-        }
-
-        internal bool TryEvaluateAt(float timeSeconds, ref HumanPose pose)
-        {
-            if (!IsInitialized)
-            {
-                return false;
-            }
-
-            _animationPlayer.EvaluateAt(timeSeconds);
-            _poseHandler.GetHumanPose(ref pose);
-            return IsFinite(pose);
-        }
-
-        internal bool TryEvaluateArmDirectionsAt(
-            float timeSeconds,
-            out HumanoidArmDirectionReference reference)
-        {
-            reference = default;
-            if (!IsInitialized)
-            {
-                return false;
-            }
-
-            _animationPlayer.EvaluateAt(timeSeconds);
-            return TryCaptureArmDirectionReference(_referenceAnimator, out reference);
-        }
-
-        internal bool TryEvaluateFootContactPointsAt(
-            float timeSeconds,
-            out Vector3 left,
-            out Vector3 right)
-        {
-            left = Vector3.zero;
-            right = Vector3.zero;
-            if (!IsInitialized || _leftFoot == null || _rightFoot == null)
-            {
-                return false;
-            }
-
-            if (!TryEvaluateFootSupportPointsAt(
-                    timeSeconds,
-                    out Vector3 leftFoot,
-                    out Vector3 leftToes,
-                    out Vector3 rightFoot,
-                    out Vector3 rightToes))
-            {
-                return false;
-            }
-
-            left = (leftFoot + leftToes) * 0.5f;
-            right = (rightFoot + rightToes) * 0.5f;
-            return IsFinite(left) && IsFinite(right);
-        }
-
-        internal bool TryEvaluateFootSupportPointsAt(
-            float timeSeconds,
-            out Vector3 leftFoot,
-            out Vector3 leftToes,
-            out Vector3 rightFoot,
-            out Vector3 rightToes)
-        {
-            leftFoot = Vector3.zero;
-            leftToes = Vector3.zero;
-            rightFoot = Vector3.zero;
-            rightToes = Vector3.zero;
-            if (!IsInitialized || _leftFoot == null || _rightFoot == null)
-            {
-                return false;
-            }
-
-            _animationPlayer.EvaluateAt(timeSeconds);
-            leftFoot = _leftFoot.position;
-            leftToes = _leftToes == null ? leftFoot : _leftToes.position;
-            rightFoot = _rightFoot.position;
-            rightToes = _rightToes == null ? rightFoot : _rightToes.position;
-            return IsFinite(leftFoot) && IsFinite(leftToes) &&
-                IsFinite(rightFoot) && IsFinite(rightToes);
-        }
 
         internal bool TryApplyHumanoidBoneLocalRotationsTo(Animator targetAnimator)
         {

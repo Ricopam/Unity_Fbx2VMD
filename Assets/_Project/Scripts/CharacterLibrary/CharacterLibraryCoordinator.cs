@@ -11,7 +11,7 @@ namespace Fbx2Vmd.CharacterLibrary
     /// 단일 비행 잠금으로 동시 로드를 막고, 실패 시 기존 타겟을 보존한다.
     /// 에디터 창은 EnsureExists()로 이 매니저에 위임해 잠금과 레지스트리를 공유한다.
     /// </summary>
-    public sealed class CharacterLibraryCoordinator : MonoBehaviour
+    public sealed partial class CharacterLibraryCoordinator : MonoBehaviour
     {
         public enum LoadState
         {
@@ -37,9 +37,6 @@ namespace Fbx2Vmd.CharacterLibrary
         private CharacterLibraryRegistry _registry;
         private CharacterLoader _loader;
         private CancellationTokenSource _cancellation;
-        private LoadState _state = LoadState.Idle;
-        private string _lastError = string.Empty;
-        private string _activeEntryId = string.Empty;
 
         public LoadState State => _state;
         public string LastError => _lastError;
@@ -199,6 +196,12 @@ namespace Fbx2Vmd.CharacterLibrary
                 return false;
             }
 
+            return TryRefreshSelection(entryId, ref entry);
+        }
+
+        // 리로드된 문서 기준으로 엔트리를 다시 잡아 존재·파일 유효성을 재검증한다.
+        bool TryRefreshSelection(string entryId, ref CharacterLibraryEntry entry)
+        {
             Registry.RefreshEntry(entry);
             // 외부 변경으로 문서가 리로드됐을 수 있으므로 최신 엔트리를 다시 잡는다.
             entry = Registry.FindById(entryId);
@@ -266,18 +269,22 @@ namespace Fbx2Vmd.CharacterLibrary
             if (!result.success)
             {
                 _lastError = result.error;
-                // await 중 문서가 리로드됐을 수 있으니 최신 엔트리에 기록한다.
-                CharacterLibraryEntry failedEntry = Registry.FindById(entry.id);
-                if (failedEntry != null)
-                {
-                    failedEntry.lastError = result.error;
-                    failedEntry.status = CharacterLibraryEntryStatus.Error;
-                    TrySaveRegistry();
-                }
+                RecordEntryLoadFailure(entry.id, result.error);
                 SetState(LoadState.Failed);
                 return false;
             }
             return true;
+        }
+
+        // await 중 문서가 리로드됐을 수 있으니 최신 엔트리에 실패를 기록한다.
+        void RecordEntryLoadFailure(string entryId, string error)
+        {
+            CharacterLibraryEntry failedEntry = Registry.FindById(entryId);
+            if (failedEntry == null)
+                return;
+            failedEntry.lastError = error;
+            failedEntry.status = CharacterLibraryEntryStatus.Error;
+            TrySaveRegistry();
         }
 
         bool CommitAndFinalize(CharacterLibraryEntry entry, CharacterLoader.Result result)
@@ -294,17 +301,7 @@ namespace Fbx2Vmd.CharacterLibrary
                 _lastError = $"캐릭터 적용 실패: {error.Message}";
                 SetState(LoadState.Failed);
                 return false; }
-            CharacterLibraryEntry committedEntry = Registry.FindById(entry.id);
-            if (committedEntry != null)
-            {
-                committedEntry.compatibility.humanoidValid = true;
-                committedEntry.compatibility.checkedAtUtc = System.DateTime.UtcNow.ToString("O");
-                committedEntry.status = CharacterLibraryEntryStatus.Ready; }
-            _activeEntryId = entry.id;
-            // 기본 프리셋이 지정돼 있으면 커밋된 캐릭터에 자동 적용한다(실패해도 로드는 유지).
-            if (committedEntry != null && !string.IsNullOrEmpty(committedEntry.defaultPresetId))
-            {
-                TryApplyDefaultPreset(committedEntry, result.Root); }
+            ApplyCommittedEntry(entry.id, result.Root);
             // 저장 실패가 로드 성공 상태를 덮지 않게 격리한다.
             try
             {
@@ -314,6 +311,21 @@ namespace Fbx2Vmd.CharacterLibrary
                 _lastError = $"라이브러리 기록 저장 실패: {error.Message}"; }
             SetState(LoadState.Active);
             return true; }
+
+        // 커밋된 엔트리를 Ready로 갱신하고 기본 프리셋이 있으면 자동 적용한다(실패해도 로드는 유지).
+        void ApplyCommittedEntry(string entryId, GameObject root)
+        {
+            CharacterLibraryEntry committedEntry = Registry.FindById(entryId);
+            _activeEntryId = entryId;
+            if (committedEntry == null)
+                return;
+            committedEntry.compatibility.humanoidValid = true;
+            committedEntry.compatibility.checkedAtUtc = System.DateTime.UtcNow.ToString("O");
+            committedEntry.status = CharacterLibraryEntryStatus.Ready;
+            // 기본 프리셋이 지정돼 있으면 커밋된 캐릭터에 자동 적용한다(실패해도 로드는 유지).
+            if (!string.IsNullOrEmpty(committedEntry.defaultPresetId))
+                TryApplyDefaultPreset(committedEntry, root);
+        }
 
         /// <summary>
         /// 라이브러리 캐릭터를 제거하고 스왑 전 씬 캐릭터로 되돌린다.
@@ -416,29 +428,5 @@ namespace Fbx2Vmd.CharacterLibrary
             return _pipeline != null;
         }
 
-        private void SetState(LoadState state)
-        {
-            if (_state == state)
-            {
-                return;
-            }
-
-            _state = state;
-            StateChanged?.Invoke(state);
-        }
-
-        private void OnDestroy()
-        {
-            CancelLoading();
-            if (_cancellation != null)
-            {
-                _cancellation.Dispose();
-                _cancellation = null;
-            }
-            if (_current == this)
-            {
-                _current = null;
-            }
-        }
     }
 }

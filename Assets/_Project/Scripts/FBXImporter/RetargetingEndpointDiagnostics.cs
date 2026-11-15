@@ -94,6 +94,7 @@ namespace Fbx2Vmd.FBXImporter
             Vector3 desiredOffset = desiredFootPosition - pivotPosition;
             currentOffset.y = 0f;
             desiredOffset.y = 0f;
+            desiredDirection = default;
             return TryNormalize(currentOffset, out currentDirection) &&
                    TryNormalize(desiredOffset, out desiredDirection);
         }

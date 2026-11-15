@@ -39,24 +39,27 @@ public static class GraphicMaterialShaderController
                     skippedMaterials++;
                     continue; }
                 processedMaterials++;
-                int changedBeforeMaterial = changedProperties;
-                if (plan.ApplyOutline)
-                {
-                    SetFloatIfSupported(material, EdgeScaleProperty, plan.OutlineScale, ref changedProperties, ref skippedProperties);
-                    SetFloatIfSupported(material, EdgeSizeProperty, plan.OutlineSize, ref changedProperties, ref skippedProperties); }
-                if (plan.ApplyAlphaCutoff)
-                {
-                    SetFloatIfSupported(material, CutoffProperty, plan.AlphaCutoff, ref changedProperties, ref skippedProperties); }
-                if (plan.SurfaceMode != GraphicMaterialSurfaceMode.Keep)
-                {
-                    ApplySurfaceMode(material, plan.SurfaceMode, ref changedProperties, ref skippedProperties); }
-                if (plan.EnableAlphaToCoverage)
-                {
-                    SetAlphaToCoverageIfSupported(material, ref changedProperties, ref skippedProperties); }
-                if (changedProperties > changedBeforeMaterial)
-                {
-                    changedMaterials++; } }
+                changedMaterials += ApplyPlanToMaterial(plan, material, ref changedProperties, ref skippedProperties); }
             return new GraphicMaterialShaderApplyResult( processedMaterials, changedMaterials, changedProperties, skippedMaterials, skippedProperties); }
+
+        // 한 머티리얼에 계획된 프로퍼티를 모두 적용하고 변경 여부(0/1)를 반환한다.
+        static int ApplyPlanToMaterial( GraphicMaterialShaderPlan plan, Material material, ref int changedProperties, ref int skippedProperties)
+        {
+            int changedBeforeMaterial = changedProperties;
+            if (plan.ApplyOutline)
+            {
+                SetFloatIfSupported(material, EdgeScaleProperty, plan.OutlineScale, ref changedProperties, ref skippedProperties);
+                SetFloatIfSupported(material, EdgeSizeProperty, plan.OutlineSize, ref changedProperties, ref skippedProperties); }
+            if (plan.ApplyAlphaCutoff)
+            {
+                SetFloatIfSupported(material, CutoffProperty, plan.AlphaCutoff, ref changedProperties, ref skippedProperties); }
+            if (plan.SurfaceMode != GraphicMaterialSurfaceMode.Keep)
+            {
+                ApplySurfaceMode(material, plan.SurfaceMode, ref changedProperties, ref skippedProperties); }
+            if (plan.EnableAlphaToCoverage)
+            {
+                SetAlphaToCoverageIfSupported(material, ref changedProperties, ref skippedProperties); }
+            return changedProperties > changedBeforeMaterial ? 1 : 0; }
 
         private static void ApplySurfaceMode(
             Material material,

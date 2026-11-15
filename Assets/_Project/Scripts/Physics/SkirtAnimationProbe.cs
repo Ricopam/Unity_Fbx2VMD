@@ -100,6 +100,20 @@ namespace Fbx2Vmd.ClothPhysics
                 detail = "클립 없음";
                 return Verdict.NoClip; }
 #if UNITY_EDITOR
+            return EvaluateClipBindings(clipList, characterRoot, skirtBones, out detail);
+#else
+            // 빌드에서는 바인딩 조회 불가 — 에디터에서의 설정 결과를 사용
+            detail = "플레이어 빌드에서는 클립 분석 불가";
+            return Verdict.NoClip;
+#endif
+        }
+
+#if UNITY_EDITOR
+        // 에디터 전용 — 클립 바인딩이 스커트 본 경로를 구동하는지 분석함.
+        private static Verdict EvaluateClipBindings(
+            List<AnimationClip> clipList, Transform characterRoot,
+            ICollection<Transform> skirtBones, out string detail)
+        {
             var bonePaths = new HashSet<string>( skirtBones.Where(b => b != null).Select( b => UnityEditor.AnimationUtility.CalculateTransformPath(b, characterRoot)));
             int humanoidClips = 0, boundClips = 0;
             foreach (var clip in clipList)
@@ -118,12 +132,8 @@ namespace Fbx2Vmd.ClothPhysics
             detail = humanoidClips > 0
                 ? $"휴머노이드 클립 {humanoidClips}개 — 스커트 본 비구동" : $"{clipList.Count}개 클립에 스커트 본 바인딩 없음";
             return Verdict.Static;
-#else
-            // 빌드에서는 바인딩 조회 불가 — 에디터에서의 설정 결과를 사용
-            detail = "플레이어 빌드에서는 클립 분석 불가";
-            return Verdict.NoClip;
-#endif
         }
+#endif
 
         /// <summary>
         /// 커스텀 스키닝 폴백을 클로스 데이터에 적용한다.

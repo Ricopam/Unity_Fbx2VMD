@@ -33,6 +33,20 @@ namespace Fbx2Vmd.FBXImporter
                 return true;
             }
 
+            return TryRestShapeRecovery(
+                baselineVertices, contract, allPairs, originalPairs, edges, timing,
+                initial, ref previous, ref displayRepairSeed, ref result);
+        }
+
+        // 휴지 형상 회복 후보 쌍으로 재시도·관절 투영을 수행함.
+        private static bool TryRestShapeRecovery(
+            IReadOnlyList<Vector3> baselineVertices, NativeSkinningSurfaceContract contract,
+            IEnumerable<int> allPairs, HashSet<int> originalPairs, FrameEdge[] edges,
+            NativeSkinningSolverTiming timing, NativeSkinningSurfaceCorrectionResult initial,
+            ref NativeSkinningSurfaceCorrectionResult previous,
+            ref NativeSkinningSurfaceCorrectionResult displayRepairSeed,
+            ref NativeSkinningSurfaceCorrectionResult result)
+        {
             int[] recoveryPairs = originalPairs.Where(pairIndex =>
                 IsRestShapeRecoveryPair(baselineVertices, contract, pairIndex)).ToArray();
             if (TryResidualRetryImprove(

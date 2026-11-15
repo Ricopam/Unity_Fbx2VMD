@@ -281,34 +281,33 @@ namespace Fbx2Vmd.ClothPhysics
             // 프리빌드 경로는 InitCloth를 타지 않고 역직렬화 마커를 탄다 — 별도 계측 필요
             var initRecorder = StartRecorder("InitCloth");
             var preBuildRecorder = StartRecorder("ClothProcess.PreBuild");
-            var simRecorder = default(ProfilerRecorder);
-            var meshRecorder = default(ProfilerRecorder);
+            // 이터레이터는 ref 전달 불가 — 2슬롯 배열로 레코더를 반환한다(0=sim, 1=mesh).
+            var measureRecorders = new ProfilerRecorder[2];
             try
             {
                 if (!RunBuildPhase(tag, usePreBuild, reuseBaked, summary)) yield break;
                 long memBefore = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong();
                 PipelineRunProfiler.NoteStage($"Physics.InitWait.{tag}", $"cloths={setup.generatedCloths.Count}", false);
                 yield return WaitForClothBuild(tag, summary, initRecorder, preBuildRecorder, memBefore);
-                yield return WarmupAndMeasure(tag, summary, ref simRecorder, ref meshRecorder); } finally
+                yield return WarmupAndMeasure(tag, summary, measureRecorders); } finally
             {
                 // 정상 종료·조기 break·예외 어느 경로로 빠져도 레코더를 해제한다.
                 DisposeRecorder(ref initRecorder);
                 DisposeRecorder(ref preBuildRecorder);
-                DisposeRecorder(ref simRecorder);
-                DisposeRecorder(ref meshRecorder); } }
+                DisposeRecorder(ref measureRecorders[0]);
+                DisposeRecorder(ref measureRecorders[1]); } }
 
         // 워밍업 프레임 소화 후 본 계측 레코더를 시작하고 루프를 실행함.
         IEnumerator WarmupAndMeasure(
-            string tag, StringBuilder summary,
-            ref ProfilerRecorder simRecorder, ref ProfilerRecorder meshRecorder)
+            string tag, StringBuilder summary, ProfilerRecorder[] recorders)
         {
             for (int i = 0; i < warmupFrames; i++)
             {
                 PipelineRunProfiler.SampleFrame(Time.deltaTime);
                 yield return null; }
-            simRecorder = StartRecorder("StartClothUpdate.Time");
-            meshRecorder = StartRecorder("WriteMesh");
-            yield return RunMeasureLoop(tag, summary, simRecorder, meshRecorder);
+            recorders[0] = StartRecorder("StartClothUpdate.Time");
+            recorders[1] = StartRecorder("WriteMesh");
+            yield return RunMeasureLoop(tag, summary, recorders[0], recorders[1]);
         }
 
         // Setup() 또는 베이크된 프리빌드 재사용을 수행한다.
@@ -396,43 +395,6 @@ namespace Fbx2Vmd.ClothPhysics
                 $"meshNsTotal={(long)meshNsSum} markerFrames={simFrames}";
             PipelineRunProfiler.NoteStage($"Physics.MeasureDone.{tag}", measureInfo, false);
             summary.AppendLine($"{tag} 계측: {measureInfo}");
-        }
-
-        static ProfilerRecorder StartRecorder(string markerName)
-        {
-            try
-            {
-                var rec = ProfilerRecorder.StartNew(ProfilerCategory.Scripts, markerName, 1);
-                if (!rec.Valid)
-                    Debug.LogWarning(
-                        $"[PhysicsPerfRunner] 마커 '{markerName}' 미검출 — " +
-                        "Development Build가 아니면 0으로 기록됩니다.");
-                return rec;
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[PhysicsPerfRunner] 레코더 시작 실패({markerName}): {e.Message}");
-                return default;
-            }
-        }
-
-        static double ReadNs(ProfilerRecorder rec)
-        {
-            try
-            {
-                return rec.Valid ? rec.LastValue : 0;
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-
-        static void DisposeRecorder(ref ProfilerRecorder rec)
-        {
-            if (rec.Valid)
-                rec.Dispose();
-            rec = default;
         }
     }
 }

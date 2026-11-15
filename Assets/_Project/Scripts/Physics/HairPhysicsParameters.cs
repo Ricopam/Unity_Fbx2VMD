@@ -175,22 +175,8 @@ namespace Fbx2Vmd.ClothPhysics
             s.tetherConstraint.distanceCompression = 0.1f;
             s.distanceConstraint.stiffness.SetValue(1.0f);
 
-            var rest = s.angleRestorationConstraint;
-            rest.useAngleRestoration = true;
-            rest.stiffness.SetValue(0.15f, 1.0f, 0.3f);
-            rest.velocityAttenuation = 0.7f;
-            rest.gravityFalloff = 0.5f;
-
-            // 얼굴 방향 꺾임 제한 15° — 관통의 주 원인 차단
-            s.angleLimitConstraint.useAngleLimit = true;
-            s.angleLimitConstraint.limitAngle.SetValue(15f, 0f, 1f);
-            s.angleLimitConstraint.stiffness = 0.5f;
-
-            var motion = s.motionConstraint;
-            motion.useBackstop = true;
-            motion.backstopRadius = 0.1f * unit;    // 백스톱 구 반경 (프리셋 기본 10은 비활성용)
-            motion.backstopDistance.SetValue(0.005f * unit, 1.0f, 1.0f);
-            motion.stiffness = 1.0f;
+            ApplyFrontHairConstraints(s);
+            ApplyFrontHairMotion(s, unit);
 
             if (headBone != null)
             {
@@ -200,6 +186,30 @@ namespace Fbx2Vmd.ClothPhysics
 
             s.colliderCollisionConstraint.mode = ColliderCollisionConstraint.Mode.Point;
             ApplyCommon(s, unit, 3.0f, 360f, 4.0f);
+        }
+
+        // 각도 복원·꺾임 제한 제약 — 얼굴 방향 꺾임 15° 제한이 관통의 주 원인 차단.
+        static void ApplyFrontHairConstraints(ClothSerializeData s)
+        {
+            var rest = s.angleRestorationConstraint;
+            rest.useAngleRestoration = true;
+            rest.stiffness.SetValue(0.15f, 1.0f, 0.3f);
+            rest.velocityAttenuation = 0.7f;
+            rest.gravityFalloff = 0.5f;
+
+            s.angleLimitConstraint.useAngleLimit = true;
+            s.angleLimitConstraint.limitAngle.SetValue(15f, 0f, 1f);
+            s.angleLimitConstraint.stiffness = 0.5f;
+        }
+
+        // 백스톱 모션 제약 — 백스톱 구 반경 (프리셋 기본 10은 비활성용).
+        static void ApplyFrontHairMotion(ClothSerializeData s, float unit)
+        {
+            var motion = s.motionConstraint;
+            motion.useBackstop = true;
+            motion.backstopRadius = 0.1f * unit;
+            motion.backstopDistance.SetValue(0.005f * unit, 1.0f, 1.0f);
+            motion.stiffness = 1.0f;
         }
 
         /// <summary>

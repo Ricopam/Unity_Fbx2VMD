@@ -79,20 +79,30 @@ namespace Fbx2Vmd.FBXImporter
                         _pinned = false; }
                     // 순수 추종 궤적은 핀 여부와 무관하게 매 프레임 전진함.
                     // 핀 기간의 원본 이동까지 누적해야 해제 수렴 끝점이 맞음.
-                    Vector3 step = _sourcePoints[index] - _previousSourceVertex;
-                    step.y = 0f;
-                    _followVertex += _sourceToTargetRotation * step;
-                    _previousSourceVertex = _sourcePoints[index];
+                    AdvanceFollowVertex(index);
                     if (_pinned)
                     {
                         ApplyPinnedFrame(index, pivot); } else
                     {
                         ApplyUnpinnedFrame(index, pivot, wantsPin, released); }
-                    Vector3 worldCorrection = _desiredVertex - _targetPoints[index];
-                    worldCorrection.y = 0f;
-                    Vector3 rootSpaceCorrection = _targetToSourceRotation * worldCorrection;
-                    rootSpaceCorrection.y = 0f;
-                    _corrections[index] = rootSpaceCorrection; } }
+                    StoreCorrection(index); } }
+
+            void AdvanceFollowVertex(int index)
+            {
+                Vector3 step = _sourcePoints[index] - _previousSourceVertex;
+                step.y = 0f;
+                _followVertex += _sourceToTargetRotation * step;
+                _previousSourceVertex = _sourcePoints[index];
+            }
+
+            void StoreCorrection(int index)
+            {
+                Vector3 worldCorrection = _desiredVertex - _targetPoints[index];
+                worldCorrection.y = 0f;
+                Vector3 rootSpaceCorrection = _targetToSourceRotation * worldCorrection;
+                rootSpaceCorrection.y = 0f;
+                _corrections[index] = rootSpaceCorrection;
+            }
 
             void ApplyPinnedFrame(int index, bool pivot)
             {

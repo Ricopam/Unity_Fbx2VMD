@@ -222,12 +222,6 @@ namespace Fbx2Vmd.FBXImporter
                 Mathf.Abs(_left.KneeAngle - baseline.Knees.x) <= MaximumReleaseKneeChange && Mathf.Abs(_right.KneeAngle - baseline.Knees.y) <= MaximumReleaseKneeChange;
         }
 
-        private static bool ReadRegions(Leg leg, out Vector2 heights)
-        {
-            heights = default;
-            return !leg.HasGround || leg.TryGetRegionHeights(out heights);
-        }
-
         // 원본 진행축에 한정해 최대 발 스텝을 줄일 수 있는 프레임별 오프셋을 찾음.
         private static bool TryBuildReleaseOffsets(Vector3[] targets, Vector3 direction, float bound, out float[] offsets)
         {

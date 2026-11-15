@@ -83,28 +83,12 @@ namespace Fbx2Vmd.FBXImporter
             string temporaryPath = string.Empty;
             try
             {
-                if (string.IsNullOrWhiteSpace(filePath))
-                {
-                    errorMessage = "보정 캐시 경로가 필요합니다.";
-                    return false;
-                }
-                if (keyHash == null || keyHash.Length != KeyHashLength)
-                {
-                    errorMessage = "보정 캐시 키 해시가 올바르지 않습니다.";
-                    return false;
-                }
-                if (!TryValidateDocument(document, out errorMessage))
+                if (!TryValidateSaveInputs(filePath, keyHash, document, out errorMessage))
                 {
                     return false;
                 }
 
-                string resolvedPath = Path.GetFullPath(filePath.Trim());
-                string directoryPath = Path.GetDirectoryName(resolvedPath);
-                if (!string.IsNullOrWhiteSpace(directoryPath))
-                {
-                    Directory.CreateDirectory(directoryPath);
-                }
-
+                string resolvedPath = ResolveCachePath(filePath);
                 WriteCacheFileAtomically( resolvedPath, keyHash, document, ref temporaryPath);
 
                 errorMessage = string.Empty;
@@ -130,25 +114,14 @@ namespace Fbx2Vmd.FBXImporter
             document = null;
             try
             {
-                if (string.IsNullOrWhiteSpace(filePath))
+                if (!TryResolveExistingPath(filePath, out string resolvedPath, out errorMessage))
                 {
-                    errorMessage = "보정 캐시 경로가 필요합니다.";
-                    return false;
-                }
-                string resolvedPath = Path.GetFullPath(filePath.Trim());
-                if (!File.Exists(resolvedPath))
-                {
-                    errorMessage = $"표면 보정 캐시를 찾지 못했습니다: {resolvedPath}";
                     return false;
                 }
 
                 byte[] bytes = File.ReadAllBytes(resolvedPath);
-                if (!TryReadDocument( bytes, expectedKeyHash, out document, out errorMessage))
-                {
-                    return false;
-                }
-
-                if (!TryValidateDocument(document, out errorMessage))
+                if (!TryReadDocument( bytes, expectedKeyHash, out document, out errorMessage) ||
+                    !TryValidateDocument(document, out errorMessage))
                 {
                     document = null;
                     return false;
@@ -163,6 +136,55 @@ namespace Fbx2Vmd.FBXImporter
                 errorMessage = $"표면 보정 캐시를 불러오지 못했습니다: {exception.Message}";
                 return false;
             }
+        }
+
+        // 읽기용으로 절대 경로를 정규화하고 파일 존재를 확인한다.
+        static bool TryResolveExistingPath(string filePath, out string resolvedPath, out string errorMessage)
+        {
+            resolvedPath = null;
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                errorMessage = "보정 캐시 경로가 필요합니다.";
+                return false;
+            }
+            resolvedPath = Path.GetFullPath(filePath.Trim());
+            if (!File.Exists(resolvedPath))
+            {
+                errorMessage = $"표면 보정 캐시를 찾지 못했습니다: {resolvedPath}";
+                return false;
+            }
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        // 경로·키 해시·문서 유효성을 순서대로 검증한다.
+        static bool TryValidateSaveInputs(
+            string filePath, byte[] keyHash,
+            NativeSkinningCorrectionCacheDocument document, out string errorMessage)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                errorMessage = "보정 캐시 경로가 필요합니다.";
+                return false;
+            }
+            if (keyHash == null || keyHash.Length != KeyHashLength)
+            {
+                errorMessage = "보정 캐시 키 해시가 올바르지 않습니다.";
+                return false;
+            }
+            return TryValidateDocument(document, out errorMessage);
+        }
+
+        // 절대 경로로 정규화하고 상위 디렉터리를 만든다.
+        static string ResolveCachePath(string filePath)
+        {
+            string resolvedPath = Path.GetFullPath(filePath.Trim());
+            string directoryPath = Path.GetDirectoryName(resolvedPath);
+            if (!string.IsNullOrWhiteSpace(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            return resolvedPath;
         }
 
         static void WriteCacheFileAtomically(
@@ -204,29 +226,13 @@ namespace Fbx2Vmd.FBXImporter
             document = null;
             errorMessage = string.Empty;
             int minimumLength = Magic.Length + sizeof(int) + KeyHashLength + sizeof(int) + sizeof(uint);
-            if (bytes.Length < minimumLength)
-            {
-                errorMessage = "표면 보정 캐시 파일이 손상됐습니다.";
-                return false; }
-            for (int index = 0; index < Magic.Length; index++)
-            {
-                if (bytes[index] != Magic[index])
-                {
-                    errorMessage = "표면 보정 캐시 파일 형식이 아닙니다.";
-                    return false; } }
+            if (!HasMagicHeader(bytes, minimumLength, ref errorMessage)) return false;
             using (var stream = new MemoryStream(bytes))
             using (var reader = new BinaryReader(stream, Encoding.UTF8))
             {
                 reader.BaseStream.Position = Magic.Length;
-                int version = reader.ReadInt32();
-                if (version != FormatVersion)
+                if (!TryReadDocumentHeader(reader, expectedKeyHash, ref errorMessage))
                 {
-                    errorMessage = $"표면 보정 캐시 형식 버전이 다릅니다: {version}";
-                    return false; }
-                byte[] storedKey = reader.ReadBytes(KeyHashLength);
-                if (expectedKeyHash != null && !AreEqual(storedKey, expectedKeyHash))
-                {
-                    errorMessage = "표면 보정 캐시 키가 일치하지 않습니다.";
                     return false; }
                 int payloadLength = reader.ReadInt32();
                 long expectedTotal = stream.Position + payloadLength + sizeof(uint);
@@ -242,6 +248,38 @@ namespace Fbx2Vmd.FBXImporter
                     return false; }
                 document = ReadPayload(payload); }
             return true; }
+
+        // 길이 하한과 매직 바이트를 검사한다.
+        static bool HasMagicHeader(byte[] bytes, int minimumLength, ref string errorMessage)
+        {
+            if (bytes.Length < minimumLength)
+            {
+                errorMessage = "표면 보정 캐시 파일이 손상됐습니다.";
+                return false; }
+            for (int index = 0; index < Magic.Length; index++)
+            {
+                if (bytes[index] != Magic[index])
+                {
+                    errorMessage = "표면 보정 캐시 파일 형식이 아닙니다.";
+                    return false; } }
+            return true;
+        }
+
+        // 형식 버전과 저장된 키 해시를 판독해 검증한다.
+        static bool TryReadDocumentHeader(BinaryReader reader, byte[] expectedKeyHash, ref string errorMessage)
+        {
+            int version = reader.ReadInt32();
+            if (version != FormatVersion)
+            {
+                errorMessage = $"표면 보정 캐시 형식 버전이 다릅니다: {version}";
+                return false; }
+            byte[] storedKey = reader.ReadBytes(KeyHashLength);
+            if (expectedKeyHash != null && !AreEqual(storedKey, expectedKeyHash))
+            {
+                errorMessage = "표면 보정 캐시 키가 일치하지 않습니다.";
+                return false; }
+            return true;
+        }
 
         private static byte[] WritePayload(
             NativeSkinningCorrectionCacheDocument document)

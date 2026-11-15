@@ -25,6 +25,17 @@ namespace Fbx2Vmd.FBXImporter
                 return gateApplied;
             }
 
+            return FinalizeGate(
+                goalDriverActive, driverClaims, gateApplied,
+                leftBendNormal, rightBendNormal, out earlyResolved);
+        }
+
+        // 게이트 적용 후 지지 검증·드라이버 오버레이·상태 반영을 수행함.
+        private bool FinalizeGate(
+            bool goalDriverActive, bool driverClaims, bool gateApplied,
+            Vector3 leftBendNormal, Vector3 rightBendNormal, out bool earlyResolved)
+        {
+            earlyResolved = false;
             if (goalDriverActive && _footGrounding.RawGatePass)
             {
                 _footGoalDriver.CaptureValidatedSupport( _footGrounding.LeftDiagnostic.has_ground && _footGrounding.LeftDiagnostic.supported_contact_count > 0,
@@ -72,38 +83,47 @@ namespace Fbx2Vmd.FBXImporter
         {
             if (goalDriverActive)
             {
-                _footGoalDriver.TryApply(CurrentTimeSeconds, _footGoalAlpha, leftBendNormal, rightBendNormal, _isGroundResponseEnabled ? _groundResponse : null);
-                // 주장 프레임의 골반 오프셋은 gate+드라이버 누적값을 보고함.
-                if (driverClaims)
-                {
-                    LastGroundingGate.pelvis_offset_m += _footGoalDriver.LastAppliedPelvisOffset; }
-                // 지면 하방 침투 차단은 goal 경로에도 동일하게 적용 — 발 하단이
-                // 지면 아래일 때만 작동해 pin 프레임의 IK 결과는 건드리지 않음.
-                // 굽힘 법선은 드라이버의 해부학 정합 결과를 사용 — 원시 자세
-                // cross는 무릎이 거의 펴진 구간에서 부호가 뒤집혀 상승 IK가
-                // 무릎을 반대편에 배치함. 미solve 다리는 자세 cross 폴백으로
-                // 드라이버 이후의 현재 자세 기준 방향을 유지함.
-                if ((isApplied || gateApplied) && _isGroundResponseEnabled) _groundResponse.Apply( _footGoalDriver.LastUsedLeftBendNormal, _footGoalDriver.LastUsedRightBendNormal, _footGrounding);
-                // goal 경로는 gate 보정 대신 평가 전용 갱신으로 지면·지지 가중치·
-                // 밑창 측정을 현재 프레임 기준으로 채움 — 스냅샷이 마지막 gate 평가나
-                // 초기값을 재사용하지 않게 함. gate 판정 열은 계속 비움(measured=false).
-                // 기권 프레임은 gate가 이미 진단을 채웠으므로 평가 갱신을 건너뜀.
-                // grounding이 준비되지 않은 구성에서는 스냅샷을 만들 수 없으므로
-                // Unavailable을 유지해 측정 불가를 정직하게 신호함.
-                if (driverClaims && _footGrounding != null && _footGrounding.IsPrepared)
-                {
-                    bool evaluated = _footGrounding.TryEvaluate( CurrentTimeSeconds, _groundResponse);
-                    LastGroundingGate.evaluation_stage = evaluated
-                        ? "ik_goal_drive" : $"ik_goal_{_footGrounding.EvaluationStage}";
-                    LastGroundingGate.left = _footGrounding.LeftDiagnostic;
-                    LastGroundingGate.right = _footGrounding.RightDiagnostic;
-                    LastGroundingStatus = !evaluated
-                        ? HumanoidFootGroundingStatus.Fallback : _footGrounding.HasGround
-                            ? HumanoidFootGroundingStatus.Applied : HumanoidFootGroundingStatus.NoGround; } }
+                ApplyGoalDriverPin(driverClaims, gateApplied, isApplied, leftBendNormal, rightBendNormal);
+            }
             else if (isApplied && _isGroundResponseEnabled)
             {
                 _groundResponse.Apply(leftBendNormal, rightBendNormal, _footGrounding);
             }
+        }
+
+        // 드라이버 활성 구간의 pin 적용·밑창 제약·평가 갱신을 수행함.
+        private void ApplyGoalDriverPin(
+            bool driverClaims, bool gateApplied, bool isApplied,
+            Vector3 leftBendNormal, Vector3 rightBendNormal)
+        {
+            _footGoalDriver.TryApply(CurrentTimeSeconds, _footGoalAlpha, leftBendNormal, rightBendNormal, _isGroundResponseEnabled ? _groundResponse : null);
+            // 주장 프레임의 골반 오프셋은 gate+드라이버 누적값을 보고함.
+            if (driverClaims)
+            {
+                LastGroundingGate.pelvis_offset_m += _footGoalDriver.LastAppliedPelvisOffset; }
+            // 지면 하방 침투 차단은 goal 경로에도 동일하게 적용 — 발 하단이
+            // 지면 아래일 때만 작동해 pin 프레임의 IK 결과는 건드리지 않음.
+            // 굽힘 법선은 드라이버의 해부학 정합 결과를 사용 — 원시 자세
+            // cross는 무릎이 거의 펴진 구간에서 부호가 뒤집혀 상승 IK가
+            // 무릎을 반대편에 배치함. 미solve 다리는 자세 cross 폴백으로
+            // 드라이버 이후의 현재 자세 기준 방향을 유지함.
+            if ((isApplied || gateApplied) && _isGroundResponseEnabled) _groundResponse.Apply( _footGoalDriver.LastUsedLeftBendNormal, _footGoalDriver.LastUsedRightBendNormal, _footGrounding);
+            // goal 경로는 gate 보정 대신 평가 전용 갱신으로 지면·지지 가중치·
+            // 밑창 측정을 현재 프레임 기준으로 채움 — 스냅샷이 마지막 gate 평가나
+            // 초기값을 재사용하지 않게 함. gate 판정 열은 계속 비움(measured=false).
+            // 기권 프레임은 gate가 이미 진단을 채웠으므로 평가 갱신을 건너뜀.
+            // grounding이 준비되지 않은 구성에서는 스냅샷을 만들 수 없으므로
+            // Unavailable을 유지해 측정 불가를 정직하게 신호함.
+            if (driverClaims && _footGrounding != null && _footGrounding.IsPrepared)
+            {
+                bool evaluated = _footGrounding.TryEvaluate( CurrentTimeSeconds, _groundResponse);
+                LastGroundingGate.evaluation_stage = evaluated
+                    ? "ik_goal_drive" : $"ik_goal_{_footGrounding.EvaluationStage}";
+                LastGroundingGate.left = _footGrounding.LeftDiagnostic;
+                LastGroundingGate.right = _footGrounding.RightDiagnostic;
+                LastGroundingStatus = !evaluated
+                    ? HumanoidFootGroundingStatus.Fallback : _footGrounding.HasGround
+                        ? HumanoidFootGroundingStatus.Applied : HumanoidFootGroundingStatus.NoGround; }
         }
 
     }

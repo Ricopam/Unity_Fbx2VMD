@@ -31,6 +31,19 @@ namespace Fbx2Vmd.CharacterLibrary
             GameObject previousTarget = pipeline.targetCharacter;
             CharacterLibraryInstance previousLibrary = FindMarkerOn(previousTarget);
 
+            bool previousDeactivated = ResolveCommitMarker(
+                newRoot, entryId, previousTarget, previousLibrary);
+
+            ApplyCommitSwap(pipeline, newRoot, previousTarget, previousDeactivated, gltfInstance);
+            CleanupLibraryLeftovers(pipeline, newRoot);
+        }
+
+        // 신규 루트에 마커를 보장하고 이전 타겟 계승·보존을 처리함.
+        // 반환값은 이전 씬 타겟을 비활성화했는지 여부.
+        private static bool ResolveCommitMarker(
+            GameObject newRoot, string entryId, GameObject previousTarget,
+            CharacterLibraryInstance previousLibrary)
+        {
             var marker = newRoot.GetComponent<CharacterLibraryInstance>();
             if (marker == null)
             {
@@ -38,22 +51,20 @@ namespace Fbx2Vmd.CharacterLibrary
             }
             marker.entryId = entryId ?? string.Empty;
 
-            bool previousDeactivated = false;
             if (previousLibrary != null)
             {
                 // 다른 라이브러리 캐릭터를 교체하는 경우 원본 씬 캐릭터를 계승한다.
                 marker.previousSceneTarget = previousLibrary.previousSceneTarget;
+                return false;
             }
-            else if (previousTarget != null && previousTarget != newRoot)
+            if (previousTarget != null && previousTarget != newRoot)
             {
                 // 씬 소유 캐릭터는 파괴하지 않고 비활성화로 보존한다.
                 previousTarget.SetActive(false);
-                previousDeactivated = true;
                 marker.previousSceneTarget = previousTarget;
+                return true;
             }
-
-            ApplyCommitSwap(pipeline, newRoot, previousTarget, previousDeactivated, gltfInstance);
-            CleanupLibraryLeftovers(pipeline, newRoot);
+            return false;
         }
 
         static void ApplyCommitSwap(
@@ -62,19 +73,7 @@ namespace Fbx2Vmd.CharacterLibrary
         {
             try
             {
-                newRoot.name = "Library Character";
-                newRoot.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-                gltfInstance?.ShowMeshes();
-
-                // VRM은 MToon 머티리얼로 로드되므로 다른 캐릭터 경로와 같은 툰 룩을 입힌다.
-                // 프리셋이 없으면 0을 돌려 원본 머티리얼이 유지된다.
-                ToonMaterialConverter.ApplyTo(newRoot);
-
-                newRoot.SetActive(true);
-
-                // 검증·배치가 모두 끝난 뒤에 타겟을 한 번만 교체한다.
-                pipeline.targetCharacter = newRoot;
-                pipeline.RebindIdlePoseGuard();
+                ApplySwapVisuals(pipeline, newRoot, gltfInstance);
             }
             catch
             {
@@ -89,6 +88,25 @@ namespace Fbx2Vmd.CharacterLibrary
                 }
                 throw;
             }
+        }
+
+        // 배치·툰 룩·활성화·타겟 교체를 한 번에 적용함.
+        private static void ApplySwapVisuals(
+            FBXVmdPipeline pipeline, GameObject newRoot, RuntimeGltfInstance gltfInstance)
+        {
+            newRoot.name = "Library Character";
+            newRoot.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            gltfInstance?.ShowMeshes();
+
+            // VRM은 MToon 머티리얼로 로드되므로 다른 캐릭터 경로와 같은 툰 룩을 입힌다.
+            // 프리셋이 없으면 0을 돌려 원본 머티리얼이 유지된다.
+            ToonMaterialConverter.ApplyTo(newRoot);
+
+            newRoot.SetActive(true);
+
+            // 검증·배치가 모두 끝난 뒤에 타겟을 한 번만 교체한다.
+            pipeline.targetCharacter = newRoot;
+            pipeline.RebindIdlePoseGuard();
         }
 
         // 같은 씬의 이전 라이브러리 캐릭터가 남아 있으면 정리한다.

@@ -93,25 +93,28 @@ namespace Fbx2Vmd.FBXImporter
                 bool integer = tick % TouchdownSamplesPerFrame == 0;
                 bool checkBoundary = integer && frame > window.Start && frame <= window.Full;
                 TouchdownPose beforeBaseline = default, beforeCandidate = default;
-                if (checkBoundary && !Sample(frame - 0.001f, out beforeBaseline, out beforeCandidate)) return false;
-                if (!Sample(frame, out var currentBaseline, out var currentCandidate)) return false;
+                if (checkBoundary && !SampleTransition(frame - 0.001f, clip, evaluate, ground, window, out beforeBaseline, out beforeCandidate)) return false;
+                if (!SampleTransition(frame, clip, evaluate, ground, window, out var currentBaseline, out var currentCandidate)) return false;
                 if (checkBoundary && !currentCandidate.PreservesBoundary(beforeCandidate, currentBaseline, beforeBaseline))
                     return false;
                 baseline.Add(currentBaseline, integer);
                 candidate.Add(currentCandidate, integer);
             }
             return candidate.Improves(baseline);
+        }
 
-            bool Sample(float frame, out TouchdownPose baselinePose, out TouchdownPose candidatePose)
-            {
-                candidatePose = default;
-                float time = Mathf.Min(frame / _frameRate, clip.length);
-                evaluate(time);
-                if (!TryApplyCore(time, ground, window, false, out bool rejected, out baselinePose) || rejected)
-                    return false;
-                candidatePose = ReadTouchdownPose();
-                return true;
-            }
+        // 한 표본 시각에서 기준·후보 자세를 평가해 착지 보존 판정 입력을 채운다.
+        private bool SampleTransition(float frame, AnimationClip clip, Action<float> evaluate,
+            HumanoidGroundResponse ground, TouchdownWindow window,
+            out TouchdownPose baselinePose, out TouchdownPose candidatePose)
+        {
+            candidatePose = default;
+            float time = Mathf.Min(frame / _frameRate, clip.length);
+            evaluate(time);
+            if (!TryApplyCore(time, ground, window, false, out bool rejected, out baselinePose) || rejected)
+                return false;
+            candidatePose = ReadTouchdownPose();
+            return true;
         }
 
         private TouchdownPose ReadTouchdownPose() => new TouchdownPose(_hips.position.y,
@@ -163,25 +166,31 @@ namespace Fbx2Vmd.FBXImporter
                 }
                 if (integer)
                 {
-                    if (_integerCount > 0)
-                    {
-                        _maxLeftStep = Mathf.Max(_maxLeftStep, Vector3.Distance(_previousInteger.LeftFoot, pose.LeftFoot));
-                        _maxRightStep = Mathf.Max(_maxRightStep, Vector3.Distance(_previousInteger.RightFoot, pose.RightFoot));
-                        Vector2 kneeStep = pose.Knees - _previousInteger.Knees;
-                        if (_integerCount > 1)
-                        {
-                            // 분수 표본의 개선이 실제 정수 프레임 사이 급변을 가리지 않게 함.
-                            Vector2 acceleration = kneeStep - _previousIntegerKneeStep;
-                            _maxIntegerKneeAcceleration = Mathf.Max(_maxIntegerKneeAcceleration, Mathf.Max(Mathf.Abs(acceleration.x), Mathf.Abs(acceleration.y)));
-                        }
-                        _previousIntegerKneeStep = kneeStep;
-                    }
-                    _previousInteger = pose;
-                    _integerCount++;
+                    AddIntegerSample(pose);
                 }
                 _beforePrevious = _previous;
                 _previous = pose;
                 _count++;
+            }
+
+            // 정수 프레임 표본의 발 스텝·무릎 가속 상한을 누적한다 — 분수 표본의
+            // 개선이 실제 정수 프레임 사이 급변을 가리지 않게 별도 계측함.
+            void AddIntegerSample(TouchdownPose pose)
+            {
+                if (_integerCount > 0)
+                {
+                    _maxLeftStep = Mathf.Max(_maxLeftStep, Vector3.Distance(_previousInteger.LeftFoot, pose.LeftFoot));
+                    _maxRightStep = Mathf.Max(_maxRightStep, Vector3.Distance(_previousInteger.RightFoot, pose.RightFoot));
+                    Vector2 kneeStep = pose.Knees - _previousInteger.Knees;
+                    if (_integerCount > 1)
+                    {
+                        Vector2 acceleration = kneeStep - _previousIntegerKneeStep;
+                        _maxIntegerKneeAcceleration = Mathf.Max(_maxIntegerKneeAcceleration, Mathf.Max(Mathf.Abs(acceleration.x), Mathf.Abs(acceleration.y)));
+                    }
+                    _previousIntegerKneeStep = kneeStep;
+                }
+                _previousInteger = pose;
+                _integerCount++;
             }
 
             internal bool Improves(TouchdownMotion baseline)

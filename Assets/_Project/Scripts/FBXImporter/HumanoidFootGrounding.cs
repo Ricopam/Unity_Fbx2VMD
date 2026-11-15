@@ -293,5 +293,12 @@ namespace Fbx2Vmd.FBXImporter
             _right.Sampler.Dispose();
         }
 
+        // 지면이 없으면 기본값, 있으면 영역 높이를 읽음.
+        private static bool ReadRegions(Leg leg, out Vector2 heights)
+        {
+            heights = default;
+            return !leg.HasGround || leg.TryGetRegionHeights(out heights);
+        }
+
     }
 }

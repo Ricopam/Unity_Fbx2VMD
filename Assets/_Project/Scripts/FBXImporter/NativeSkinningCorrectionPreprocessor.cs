@@ -55,24 +55,30 @@ namespace Fbx2Vmd.FBXImporter
                 if (!ProcessRendererFrames(frameIndex, pendingFrames, ref usedFallback, ref frameCorrectionEntryCount))
                 {
                     return false; }
-                foreach (PendingRendererFrame pending in pendingFrames)
-                {
-                    pending.Work.Frames.Add(pending.Frame); }
-                if (pendingFrames.Count > 0)
-                {
-                    _correctedFrameCount++;
-                    _correctionEntryCount += frameCorrectionEntryCount; }
-                if (usedFallback)
-                {
-                    _fallbackFrameCount++; }
-                _processedFrameCount++;
-                _reportProgress?.Invoke(_processedFrameCount, _frameCount);
-                if (_processedFrameCount == _frameCount)
-                {
-                    Complete(); }
+                CommitProcessedFrame(pendingFrames, usedFallback, frameCorrectionEntryCount);
                 return true; } catch (Exception exception)
             {
                 return Fail( $"Native 보정 사전 계산 중 예외가 발생했습니다: {exception.Message}"); } }
+
+        // 처리된 프레임을 렌더러별 결과에 커밋하고 진행·완료 상태를 갱신한다.
+        void CommitProcessedFrame(List<PendingRendererFrame> pendingFrames, bool usedFallback, int frameCorrectionEntryCount)
+        {
+            foreach (PendingRendererFrame pending in pendingFrames)
+            {
+                pending.Work.Frames.Add(pending.Frame); }
+            if (pendingFrames.Count > 0)
+            {
+                _correctedFrameCount++;
+                _correctionEntryCount += frameCorrectionEntryCount; }
+            if (usedFallback)
+            {
+                _fallbackFrameCount++; }
+            _processedFrameCount++;
+            _reportProgress?.Invoke(_processedFrameCount, _frameCount);
+            if (_processedFrameCount == _frameCount)
+            {
+                Complete(); }
+        }
 
         private bool ProcessRendererFrames(int frameIndex,
             List<PendingRendererFrame> pendingFrames,

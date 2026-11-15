@@ -169,20 +169,26 @@ namespace Fbx2Vmd.FBXImporter
                 if (float.IsNaN(leftValue) || float.IsNaN(rightValue)) return false;
                 if (leftValue * rightValue <= 0f)
                 {
-                    float left = step - 1f, right = step, value = leftValue;
-                    for (int iteration = 0; iteration < 18; iteration++)
-                    {
-                        float middle = (left + right) * 0.5f;
-                        float middleValue = Evaluate(middle, out _, out _);
-                        if (value * middleValue <= 0f) right = middle;
-                        else { left = middle; value = middleValue; } }
-                    float angle = (left + right) * 0.5f;
+                    float angle = BisectSupportAngle((float a) => Evaluate(a, out _, out _), step - 1f, step, leftValue);
                     if (Mathf.Abs(angle) < Mathf.Abs(best)) best = angle; }
                 leftValue = rightValue; }
             if (float.IsInfinity(best)) return false;
             Evaluate(best, out rear, out front);
             rotation = Quaternion.AngleAxis(best, axis) * original;
             return true; }
+
+        // 부호가 바뀌는 구간을 이분 탐색해 지지 자세 각도를 수렴시킨다.
+        static float BisectSupportAngle(System.Func<float, float> evaluate, float left, float right, float value)
+        {
+            for (int iteration = 0; iteration < 18; iteration++)
+            {
+                float middle = (left + right) * 0.5f;
+                float middleValue = evaluate(middle);
+                if (value * middleValue <= 0f) right = middle;
+                else { left = middle; value = middleValue; }
+            }
+            return (left + right) * 0.5f;
+        }
 
         // 추종 지연은 갭 비율로 회수하되 프레임 이동 절대 상한을 넘기지 않음.
         private static Vector3 MoveEmittedAnchor(Vector3 emitted, Vector3 target, float trackStep)

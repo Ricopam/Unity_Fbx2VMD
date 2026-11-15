@@ -7,7 +7,7 @@ namespace Fbx2Vmd.FBXImporter
     /// <summary>
     /// 급접힘과 휴식 형상 붕괴를 교대 투영으로 함께 완화함.
     /// </summary>
-    internal static class NativeSkinningCoupledDihedralProjectionCalculator
+    internal static partial class NativeSkinningCoupledDihedralProjectionCalculator
     {
         private const int ProjectionIterations = 128;
         private const float ProjectionStiffness = 1f;
@@ -18,15 +18,11 @@ namespace Fbx2Vmd.FBXImporter
         private const float MinimumNormalSquaredMagnitude = 0.0000000000000001f;
 
         internal static bool TryProject(
-            IReadOnlyList<Vector3> baselineVertices,
-            IReadOnlyList<Vector3> initialVertices,
+            IReadOnlyList<Vector3> baselineVertices, IReadOnlyList<Vector3> initialVertices,
             NativeSkinningSurfaceContract contract,
-            IReadOnlyList<int> restShapeRecoveryPairIndices,
-            IReadOnlyList<int> sharpFoldPairIndices,
-            float maximumRestSmoothAngleDegrees,
-            float sharpFoldActivationAngleDegrees,
-            float sharpFoldTargetAngleDegrees,
-            out Vector3[] projectedVertices)
+            IReadOnlyList<int> restShapeRecoveryPairIndices, IReadOnlyList<int> sharpFoldPairIndices,
+            float maximumRestSmoothAngleDegrees, float sharpFoldActivationAngleDegrees,
+            float sharpFoldTargetAngleDegrees, out Vector3[] projectedVertices)
         {
             projectedVertices = null;
             if (baselineVertices == null || initialVertices == null || contract == null || baselineVertices.Count != contract.VertexCount || initialVertices.Count != contract.VertexCount ||
@@ -67,23 +63,30 @@ namespace Fbx2Vmd.FBXImporter
                  iteration++)
             {
                 bool projectedConstraint = false;
-                if (!TryProjectCollapsedEdges( projectedVertices, contract, restShapeRecoveryPairIndices, ref projectedConstraint))
+                if (!TryProjectCollapsedEdges( projectedVertices, contract, restShapeRecoveryPairIndices, ref projectedConstraint) ||
+                    !RunIterationProjectionChain( baselineVertices, projectedVertices, contract, localPairIndices, localFaceIndices, restStrainEdges, activeSharpFoldPairIndices,
+                        maximumRestSmoothAngleDegrees, sharpFoldActivationAngleDegrees, sharpFoldTargetAngleDegrees, ref projectedConstraint))
                 {
-                    return false;
-                }
-                ActivateSharpFoldPairs( projectedVertices, contract, localPairIndices, maximumRestSmoothAngleDegrees, sharpFoldActivationAngleDegrees, activeSharpFoldPairIndices);
-                if (!TryProjectPairs( projectedVertices, contract, activeSharpFoldPairIndices, _ => sharpFoldTargetAngleDegrees, ref projectedConstraint) || !TryProjectRestStrainEdges(
-                        projectedVertices, restStrainEdges, ref projectedConstraint) || !TryProjectFaceOrientations( baselineVertices, projectedVertices, contract, localFaceIndices,
-                        ref projectedConstraint))
-                {
-                    return false;
-                }
+                    return false; }
                 if (!projectedConstraint)
                 {
-                    break;
-                }
+                    break; }
             }
             return true;
+        }
+
+        // 한 이터레이션의 샤프폴드 활성화와 쌍·변형률·면 방향 투영 체인을 실행한다.
+        static bool RunIterationProjectionChain(
+            IReadOnlyList<Vector3> baselineVertices, Vector3[] projectedVertices,
+            NativeSkinningSurfaceContract contract, int[] localPairIndices, int[] localFaceIndices,
+            RestStrainEdge[] restStrainEdges, HashSet<int> activeSharpFoldPairIndices,
+            float maximumRestSmoothAngleDegrees, float sharpFoldActivationAngleDegrees,
+            float sharpFoldTargetAngleDegrees, ref bool projectedConstraint)
+        {
+            ActivateSharpFoldPairs( projectedVertices, contract, localPairIndices, maximumRestSmoothAngleDegrees, sharpFoldActivationAngleDegrees, activeSharpFoldPairIndices);
+            return TryProjectPairs( projectedVertices, contract, activeSharpFoldPairIndices, _ => sharpFoldTargetAngleDegrees, ref projectedConstraint) && TryProjectRestStrainEdges(
+                    projectedVertices, restStrainEdges, ref projectedConstraint) && TryProjectFaceOrientations( baselineVertices, projectedVertices, contract, localFaceIndices,
+                    ref projectedConstraint);
         }
 
         private static int[] BuildLocalFaceIndices(
@@ -166,32 +169,13 @@ namespace Fbx2Vmd.FBXImporter
             IEnumerable<int> constrainedFaceIndices)
         {
             return constrainedFaceIndices
-                .SelectMany(faceIndex =>
-                {
-                    int offset = faceIndex * 3;
-                    int first = contract.Triangles[offset];
-                    int second = contract.Triangles[offset + 1];
-                    int third = contract.Triangles[offset + 2];
-                    return new[]
-                    {
-                        new NativeSkinningEdgeKey(first, second),
-                        new NativeSkinningEdgeKey(second, third),
-                        new NativeSkinningEdgeKey(third, first)
-                    };
-                })
+                .SelectMany(faceIndex => EnumerateFaceEdges(contract, faceIndex))
                 .Distinct()
-                .Select(edge => new RestStrainEdge(
-                    edge.First,
-                    edge.Second,
-                    Vector3.Distance(
-                        baselineVertices[edge.First],
-                        baselineVertices[edge.Second]),
-                    Vector3.Distance(
-                        contract.RestVertices[edge.First],
-                        contract.RestVertices[edge.Second])))
+                .Select(edge => CreateRestStrainEdge(edge, baselineVertices, contract))
                 .Where(edge => edge.RestLength > MinimumEdgeLength)
                 .ToArray();
         }
+
 
         private static bool TryProjectFaceOrientations(
             IReadOnlyList<Vector3> baselineVertices,
@@ -202,36 +186,56 @@ namespace Fbx2Vmd.FBXImporter
         {
             foreach (int faceIndex in faceIndices)
             {
-                int offset = faceIndex * 3;
-                int firstIndex = contract.Triangles[offset];
-                int secondIndex = contract.Triangles[offset + 1];
-                int thirdIndex = contract.Triangles[offset + 2];
-                Vector3 baselineNormal = Vector3.Cross( baselineVertices[secondIndex] - baselineVertices[firstIndex], baselineVertices[thirdIndex] - baselineVertices[firstIndex]);
-                float baselineArea = baselineNormal.magnitude;
-                if (baselineNormal.sqrMagnitude < MinimumNormalSquaredMagnitude)
+                if (!TryProjectFace(baselineVertices, vertices, contract, faceIndex, ref projectedConstraint))
                 {
-                    continue; }
-                baselineNormal /= baselineArea;
-                Vector3 first = vertices[firstIndex];
-                Vector3 second = vertices[secondIndex];
-                Vector3 third = vertices[thirdIndex];
-                float signedArea = Vector3.Dot( Vector3.Cross(second - first, third - first), baselineNormal);
-                float minimumSignedArea = baselineArea * MinimumSignedAreaRatio;
-                if (signedArea >= minimumSignedArea)
-                {
-                    continue; }
-                Vector3 firstGradient = Vector3.Cross( second - third, baselineNormal);
-                Vector3 secondGradient = Vector3.Cross( third - first, baselineNormal);
-                Vector3 thirdGradient = Vector3.Cross( baselineNormal, second - first);
-                float squaredGradientMagnitude = firstGradient.sqrMagnitude + secondGradient.sqrMagnitude + thirdGradient.sqrMagnitude;
-                if (squaredGradientMagnitude < MinimumNormalSquaredMagnitude)
-                {
-                    return false; }
-                float correctionScale = (minimumSignedArea - signedArea) / squaredGradientMagnitude;
-                vertices[firstIndex] += firstGradient * correctionScale;
-                vertices[secondIndex] += secondGradient * correctionScale;
-                vertices[thirdIndex] += thirdGradient * correctionScale;
-                projectedConstraint = true; }
+                    return false; } }
+            return true;
+        }
+
+        // 한 삼각 면의 부호 면적이 기저선 비율 아래로 내려가지 않게 정점을 투영한다.
+        static bool TryProjectFace(
+            IReadOnlyList<Vector3> baselineVertices, IList<Vector3> vertices,
+            NativeSkinningSurfaceContract contract, int faceIndex, ref bool projectedConstraint)
+        {
+            int offset = faceIndex * 3;
+            int firstIndex = contract.Triangles[offset];
+            int secondIndex = contract.Triangles[offset + 1];
+            int thirdIndex = contract.Triangles[offset + 2];
+            Vector3 baselineNormal = Vector3.Cross( baselineVertices[secondIndex] - baselineVertices[firstIndex], baselineVertices[thirdIndex] - baselineVertices[firstIndex]);
+            float baselineArea = baselineNormal.magnitude;
+            if (baselineNormal.sqrMagnitude < MinimumNormalSquaredMagnitude)
+            {
+                return true; }
+            baselineNormal /= baselineArea;
+            Vector3 first = vertices[firstIndex];
+            Vector3 second = vertices[secondIndex];
+            Vector3 third = vertices[thirdIndex];
+            float signedArea = Vector3.Dot( Vector3.Cross(second - first, third - first), baselineNormal);
+            float minimumSignedArea = baselineArea * MinimumSignedAreaRatio;
+            if (signedArea >= minimumSignedArea)
+            {
+                return true; }
+            return TryApplySignedAreaCorrection( vertices, firstIndex, secondIndex, thirdIndex, first, second, third, baselineNormal, minimumSignedArea - signedArea, ref projectedConstraint);
+        }
+
+        // 부호 있는 면적의 각 정점 그래디언트 방향으로 보정을 적용한다 — 그래디언트 소실 시 false.
+        static bool TryApplySignedAreaCorrection(
+            IList<Vector3> vertices, int firstIndex, int secondIndex, int thirdIndex,
+            Vector3 first, Vector3 second, Vector3 third, Vector3 baselineNormal,
+            float areaDeficit, ref bool projectedConstraint)
+        {
+            Vector3 firstGradient = Vector3.Cross( second - third, baselineNormal);
+            Vector3 secondGradient = Vector3.Cross( third - first, baselineNormal);
+            Vector3 thirdGradient = Vector3.Cross( baselineNormal, second - first);
+            float squaredGradientMagnitude = firstGradient.sqrMagnitude + secondGradient.sqrMagnitude + thirdGradient.sqrMagnitude;
+            if (squaredGradientMagnitude < MinimumNormalSquaredMagnitude)
+            {
+                return false; }
+            float correctionScale = areaDeficit / squaredGradientMagnitude;
+            vertices[firstIndex] += firstGradient * correctionScale;
+            vertices[secondIndex] += secondGradient * correctionScale;
+            vertices[thirdIndex] += thirdGradient * correctionScale;
+            projectedConstraint = true;
             return true;
         }
 

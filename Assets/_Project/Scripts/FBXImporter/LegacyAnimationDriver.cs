@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Fbx2Vmd.FBXImporter
 {
     // NotThreadSafe: Unity Animation 객체를 메인 스레드에서만 소유하고 호출함.
-    internal sealed class LegacyAnimationDriver
+    internal sealed partial class LegacyAnimationDriver
     {
         private const string LegacyClipStateName = "__PoseSpaceRetargeter_GhostClip";
 
@@ -12,12 +12,6 @@ namespace Fbx2Vmd.FBXImporter
         private bool _ghostAnimatorWasEnabled;
         private bool _addedAnimationComponent;
         private AnimationClip _ownedClip;
-        private bool _hasPreviousTime;
-        private float _previousTime;
-        private float _lastStep = float.NaN;
-        private float _maxStep;
-        private int _stepSpikeCount;
-        private bool _stepSpikeThisFrame;
 
         public float CurrentTime
         {
@@ -72,6 +66,12 @@ namespace Fbx2Vmd.FBXImporter
                 _animation = ghostRoot.AddComponent<Animation>();
             }
 
+            SetupLegacyClip(clip);
+        }
+
+        // 레거시 클립을 유일 상태로 등록하고 시작 자세로 재생한다.
+        void SetupLegacyClip(AnimationClip clip)
+        {
             _animation.Stop();
             AnimationClip legacyClip = CreateLegacyClip(clip);
             RemoveClipStateIfPresent(_animation, LegacyClipStateName);
@@ -112,22 +112,34 @@ namespace Fbx2Vmd.FBXImporter
                 _previousTime = currentTime;
                 _lastStep = 0f;
                 return true; }
+            return AccumulateStepAndClamp(state, ref currentTime, length, maxStep, clampStep); }
+
+        // 전방 진행 스텝을 지표에 누적하고 상한 초과 시 스파이크 처리 — 역방향 이동이 아닐 때만 호출.
+        private bool AccumulateStepAndClamp(
+            AnimationState state, ref float currentTime, float length, float maxStep, bool clampStep)
+        {
             float step = currentTime - _previousTime;
             _lastStep = step;
             _maxStep = Mathf.Max(_maxStep, step);
             float spikeTolerance = Mathf.Max(0.001f, maxStep * 0.05f);
             if (step > maxStep + spikeTolerance)
             {
-                _stepSpikeThisFrame = true;
-                _stepSpikeCount++;
-                if (clampStep)
-                {
-                    currentTime = Mathf.Min(_previousTime + maxStep, length);
-                    state.time = currentTime;
-                    _animation.Sample();
-                    _lastStep = currentTime - _previousTime; } }
+                RegisterStepSpike(state, length, maxStep, ref currentTime, clampStep); }
             _previousTime = currentTime;
             return false; }
+
+        // 스텝 상한 초과를 지표에 기록하고 필요 시 시간을 클램프한다.
+        void RegisterStepSpike(AnimationState state, float length, float maxStep, ref float currentTime, bool clampStep)
+        {
+            _stepSpikeThisFrame = true;
+            _stepSpikeCount++;
+            if (!clampStep)
+            {
+                return; }
+            currentTime = Mathf.Min(_previousTime + maxStep, length);
+            state.time = currentTime;
+            _animation.Sample();
+            _lastStep = currentTime - _previousTime; }
 
         void ApplyManualTimeIfNeeded(
             AnimationState state, float length, float deltaTime,

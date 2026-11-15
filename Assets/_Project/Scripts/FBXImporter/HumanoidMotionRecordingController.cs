@@ -83,10 +83,30 @@ namespace Fbx2Vmd.FBXImporter
             {
                 return false; }
             // 이전 세션 계측 잔존 방지 — 실패 경로에서도 새 세션으로 초기화함.
+            ResetTickMetrics();
+            if (!PrepareAndStartRecorder(settings, out errorMessage))
+            {
+                return false; }
+            if (_playbackController.Play())
+            {
+                return BeginRecordingPlayback(settings); }
+            _videoRecorder.Stop();
+            _playbackController.Stop();
+            errorMessage = "영상 녹화 시작 후 FBX 모션을 재생하지 못했습니다.";
+            return false; }
+
+        // 세션 계측 카운터를 초기 상태로 되돌림.
+        void ResetTickMetrics()
+        {
             _slowTickCount = 0;
             _recordedTickCount = 0;
             _maxTickMilliseconds = 0.0;
             _hasLoggedTickSummary = false;
+        }
+
+        // 레코더 준비 → 구간 시작 위치 이동 → 녹화 시작 순서를 수행함.
+        bool PrepareAndStartRecorder(MotionVideoRecordingSettings settings, out string errorMessage)
+        {
             if (!_videoRecorder.TryPrepare(settings, out errorMessage))
             {
                 _playbackController.Stop();
@@ -103,13 +123,8 @@ namespace Fbx2Vmd.FBXImporter
                 _videoRecorder.Stop();
                 _playbackController.Stop();
                 return false; }
-            if (_playbackController.Play())
-            {
-                return BeginRecordingPlayback(settings); }
-            _videoRecorder.Stop();
-            _playbackController.Stop();
-            errorMessage = "영상 녹화 시작 후 FBX 모션을 재생하지 못했습니다.";
-            return false; }
+            return true;
+        }
 
         bool TryResolveRange(
             MotionVideoRecordingSettings settings, out string errorMessage)

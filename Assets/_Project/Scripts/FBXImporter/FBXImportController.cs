@@ -12,7 +12,7 @@ namespace Fbx2Vmd.FBXImporter
     /// FBXVmdPipeline의 FBX 파일 선택 및 임포트 진입점을 담당하는 컴패니언 컨트롤러입니다.
     /// 파일 다이얼로그, Import_FBX 폴더 로드, SharedSettings 연동을 캡슐화합니다.
     /// </summary>
-    public class FBXImportController
+    public partial class FBXImportController
     {
         internal const string BONE_MAPPING_FILE = "BoneMapping_Data.txt";
 
@@ -97,22 +97,8 @@ namespace Fbx2Vmd.FBXImporter
             _pipeline.SetSessionState( FBXVmdPipeline.FBXSessionState.Selected, $"선택됨: {Path.GetFileName(sourcePath)}", 0.05f);
             string targetPath = CopyToControlledImportFolder(sourcePath);
             string outputBaseName = Path.GetFileNameWithoutExtension(targetPath);
-            if (shouldRecordVmdAfterImport)
-            {
-                Debug.Log($"[Recording] 자동 VMD 출력명 고정됨. VMD={outputBaseName}.vmd, 입력 FBX={Path.GetFileName(sourcePath)}");
-            }
-            else
-            {
-                Debug.Log($"[FBXImport] Unity 촬영 전용 모드 선택됨. 출력={outputBaseName}, VMD 자동 녹화=생략");
-            }
-
-            _pipeline.SetSessionState( FBXVmdPipeline.FBXSessionState.Copied, $"복제 완료: {Path.GetFileName(targetPath)}", 0.15f);
-            try
-            {
-                PipelineRunProfiler.SetContext(inputBytes: new FileInfo(targetPath).Length);
-            }
-            catch { /* 계측 컨텍스트 실패는 변환을 막지 않음 */ }
-
+            ReportImportModeAndCopy(sourcePath, targetPath, outputBaseName, shouldRecordVmdAfterImport);
+            SetProfilerInputContext(targetPath);
             ConfigureEditorImportSettingsIfNeeded(sourcePath, targetPath);
 
             _pipeline.SetSessionState( FBXVmdPipeline.FBXSessionState.LoadingFbx, "FBX 로드 중", 0.25f);
@@ -130,6 +116,33 @@ namespace Fbx2Vmd.FBXImporter
             return FBXModelImportResult.Succeed(importedModel, targetPath, outputBaseName);
         }
 
+        // VMD 자동 녹화 여부에 따라 출력명 로그와 복제 완료 상태를 보고함.
+        private void ReportImportModeAndCopy(
+            string sourcePath, string targetPath, string outputBaseName,
+            bool shouldRecordVmdAfterImport)
+        {
+            if (shouldRecordVmdAfterImport)
+            {
+                Debug.Log($"[Recording] 자동 VMD 출력명 고정됨. VMD={outputBaseName}.vmd, 입력 FBX={Path.GetFileName(sourcePath)}");
+            }
+            else
+            {
+                Debug.Log($"[FBXImport] Unity 촬영 전용 모드 선택됨. 출력={outputBaseName}, VMD 자동 녹화=생략");
+            }
+
+            _pipeline.SetSessionState( FBXVmdPipeline.FBXSessionState.Copied, $"복제 완료: {Path.GetFileName(targetPath)}", 0.15f);
+        }
+
+        // 계측 컨텍스트에 입력 파일 크기를 기록함. 실패해도 변환을 막지 않음.
+        private static void SetProfilerInputContext(string targetPath)
+        {
+            try
+            {
+                PipelineRunProfiler.SetContext(inputBytes: new FileInfo(targetPath).Length);
+            }
+            catch { /* 계측 컨텍스트 실패는 변환을 막지 않음 */ }
+        }
+
         internal static Dictionary<string, string> LoadBoneMappingRuntime()
         {
             using var perfScope = PerfScope.Measure("FBXImportController.LoadBoneMappingRuntime");
@@ -142,6 +155,12 @@ namespace Fbx2Vmd.FBXImporter
                 return mapping; }
             Debug.Log($"[FBXImport] BoneMapping 로드 성공 (Resources/{loadName})");
             string[] lines = mappingAsset.text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            ParseBoneMappingLines(lines, mapping);
+            return mapping; }
+
+        // m_BoneTemplate 블록 안의 key:value 항목만 매핑에 수집함.
+        private static void ParseBoneMappingLines(string[] lines, Dictionary<string, string> mapping)
+        {
             bool insideBoneTemplate = false;
             foreach (string line in lines)
             {
@@ -164,8 +183,7 @@ namespace Fbx2Vmd.FBXImporter
                 string value = trimmedLine[(colonIndex + 1)..].Trim();
                 if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
                 {
-                    mapping[key] = value; } }
-            return mapping; }
+                    mapping[key] = value; } } }
 
         internal static bool ValidateGhostAvatar(GameObject importedModel)
         {
@@ -275,85 +293,6 @@ namespace Fbx2Vmd.FBXImporter
         internal void ConfigureEditorImportSettingsIfNeeded(string sourcePath, string targetPath)
         {
             FbxImportEditorHooks.ConfigureEditorImportSettings?.Invoke(sourcePath, targetPath);
-        }
-
-        public void ImportFromDialog()
-        {
-            TryImportFromDialog();
-        }
-
-        internal bool TryImportFromDialog()
-        {
-            _pipeline.EnsureServicesInitialized();
-
-            if (_pipeline._isProcessing)
-            {
-                _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.LoadingFbx, "이미 FBX 처리 중입니다.", 0.1f);
-                return true;
-            }
-
-            _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.Idle, "FBX 파일 선택 대기", 0f);
-            string[] paths = _fileBrowserService.OpenFilePanel(
-                "Import FBX", "", FBXVmdPipeline.FBX_EXTENSION, false);
-            if (paths.Length == 0 || string.IsNullOrEmpty(paths[0]))
-            {
-                _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.Cancelled, "파일 선택이 취소됨.", 0f);
-                return true;
-            }
-
-            string sourcePath = paths[0];
-            Debug.Log($"[FBXImport] 파일 선택됨. 경로={sourcePath}");
-            _pipeline.ProcessFBXAsync(sourcePath);
-            return true;
-        }
-
-        public void LoadFromImportFolder()
-        {
-            TryLoadFromImportFolder();
-        }
-
-        internal bool TryLoadFromImportFolder()
-        {
-            if (_pipeline._isProcessing)
-            {
-                _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.LoadingFbx, "이미 FBX 처리 중입니다.", 0.1f);
-                return true;
-            }
-
-            string targetDir = GetControlledImportDirectory();
-            if (!Directory.Exists(targetDir))
-            {
-                _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.Failed, $"Import_FBX 폴더가 없습니다: {targetDir}", 0f);
-                return true;
-            }
-
-            string[] fbxFiles = Directory.GetFiles(targetDir, "*.fbx", SearchOption.TopDirectoryOnly);
-            if (fbxFiles.Length == 0)
-            {
-                _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.Failed, "Import_FBX 폴더에 FBX 파일이 없습니다", 0f);
-                return true;
-            }
-
-            string selectedFile = fbxFiles[0];
-            _pipeline.ProcessFBXAsync(selectedFile);
-            return true;
-        }
-
-        public bool TryImportFromSharedSettings(string sourcePath)
-        {
-            if (_pipeline._isProcessing)
-            {
-                _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.LoadingFbx, "이미 FBX 처리 중입니다.", 0.1f);
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(sourcePath))
-            {
-                return false;
-            }
-
-            _pipeline.ProcessFBXAsync(sourcePath.Trim());
-            return true;
         }
     }
 }

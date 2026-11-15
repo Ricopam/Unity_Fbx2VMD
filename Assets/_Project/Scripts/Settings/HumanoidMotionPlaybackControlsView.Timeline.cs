@@ -30,6 +30,18 @@ namespace Fbx2Vmd.Settings
             var (fill, handle) = BuildSliderVisuals(sliderRect);
 
             Slider slider = sliderObject.GetComponent<Slider>();
+            ConfigureTimelineSlider(slider, fill, handle, onValueChanged);
+
+            BuildTimelineLabelBackground(sliderRect);
+            CreateTimelineLabels(template, sliderRect, out timelineLabel, out legacyTimelineLabel);
+            return slider;
+        }
+
+        // 정수 프레임 단위 슬라이더로 구성하고 값 변경 리스너를 연결한다.
+        private static void ConfigureTimelineSlider(
+            Slider slider, Image fill, Image handle,
+            UnityEngine.Events.UnityAction<float> onValueChanged)
+        {
             slider.fillRect = fill.rectTransform;
             slider.handleRect = handle.rectTransform;
             slider.targetGraphic = handle;
@@ -38,10 +50,6 @@ namespace Fbx2Vmd.Settings
             slider.maxValue = 0f;
             slider.wholeNumbers = true;
             slider.onValueChanged.AddListener(onValueChanged);
-
-            BuildTimelineLabelBackground(sliderRect);
-            CreateTimelineLabels(template, sliderRect, out timelineLabel, out legacyTimelineLabel);
-            return slider;
         }
 
         private static (Image fill, Image handle) BuildSliderVisuals(RectTransform sliderRect)

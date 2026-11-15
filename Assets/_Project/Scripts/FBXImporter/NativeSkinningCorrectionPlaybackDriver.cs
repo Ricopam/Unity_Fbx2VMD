@@ -93,14 +93,7 @@ namespace Fbx2Vmd.FBXImporter
             // 완료 직후 틱이 소비하기 전에 재요청되면 완료 처리부터 수행해 재계산을 막는다.
             if (_preprocessSession != null)
             {
-                if (_preprocessSession.IsFaulted)
-                {
-                    return Fail(_preprocessSession.FailureMessage); }
-                if (!_preprocessSession.IsComplete)
-                {
-                    return false; }
-                CompletePreparation(_preprocessSession.Result);
-                return IsReady; }
+                return HandleOngoingSession(); }
             ResetTransientState();
             // 디스크 캐시 히트 시 캡처·솔버를 전부 건너뛰고 결과만 복원한다.
             _prepWallWatch.Restart();
@@ -108,6 +101,23 @@ namespace Fbx2Vmd.FBXImporter
             {
                 CompletePreparation(cachedResult);
                 return IsReady; }
+            return BeginFreshSession(); }
+
+        // 진행 중 사전 계산 세션의 결함·완료 상태를 처리한다.
+        bool HandleOngoingSession()
+        {
+            if (_preprocessSession.IsFaulted)
+            {
+                return Fail(_preprocessSession.FailureMessage); }
+            if (!_preprocessSession.IsComplete)
+            {
+                return false; }
+            CompletePreparation(_preprocessSession.Result);
+            return IsReady; }
+
+        // 캐시 미스 이후 메시 베이크·세션 생성·렌더러 캡처로 새 사전 계산을 연다.
+        bool BeginFreshSession()
+        {
             _prepWallWatch.Reset();
             if (!PrepareBakedMeshes())
             {

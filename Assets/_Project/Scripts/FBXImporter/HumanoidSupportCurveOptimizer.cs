@@ -102,6 +102,17 @@ namespace Fbx2Vmd.FBXImporter
             rowNorm = new double[sample.Slack.Length];
             var normals = new List<double[]>();
             var offsets = new List<double>();
+            double recovery = CollectConstraintNormals(
+                lower, sample, rowNorm, count, radius, normals, offsets);
+            return TryProjectDirection(
+                desired, lower, count, radius, recovery, normals, offsets, out direction);
+        }
+
+        // 활성 제약의 증분 법선을 수집하고 복원 하한을 계산함.
+        private static double CollectConstraintNormals(
+            double[,] lower, Evaluation sample, double[] rowNorm, int count, double radius,
+            List<double[]> normals, List<double> offsets)
+        {
             double recovery = 0;
             for (int row = 0; row < sample.Slack.Length; row++)
             {
@@ -117,6 +128,15 @@ namespace Fbx2Vmd.FBXImporter
                 normals.Add(augmented);
                 offsets.Add(distance / augmentedLength);
                 recovery = Math.Max(recovery, -distance / RecoveryWeight); }
+            return recovery;
+        }
+
+        // 수직 제약을 추가하고 목표 방향을 실행 가능 영역에 투영함.
+        private static bool TryProjectDirection(
+            double[] desired, double[,] lower, int count, double radius, double recovery,
+            List<double[]> normals, List<double> offsets, out double[] direction)
+        {
+            direction = null;
             var vertical = new double[count + 1];
             vertical[count] = 1;
             normals.Add(vertical);

@@ -94,6 +94,21 @@ namespace Fbx2Vmd.FBXImporter
                     {
                         active.Add(edge.FirstVertex);
                         active.Add(edge.SecondVertex); } }
+                CollectFoldViolations(active);
+                for (int ring = 0; ring < JointProjectionRingCount; ring++)
+                {
+                    var frontier = new HashSet<int>(active);
+                    foreach (LocalEdge edge in edges)
+                    {
+                        if (frontier.Contains(edge.FirstVertex) || frontier.Contains(edge.SecondVertex))
+                        {
+                            active.Add(edge.FirstVertex);
+                            active.Add(edge.SecondVertex); } } }
+                return active; }
+
+            // 폴드 코사인이 임계 아래인 면 쌍의 네 정점을 활성 집합에 추가한다.
+            void CollectFoldViolations(HashSet<int> active)
+            {
                 foreach (NativeSkinningFacePair pair in pairs)
                 {
                     double3 first = ToDouble(seed[pair.FirstOpposite]);
@@ -106,16 +121,7 @@ namespace Fbx2Vmd.FBXImporter
                         active.Add(pair.SecondOpposite);
                         active.Add(pair.FirstEdge);
                         active.Add(pair.SecondEdge); } }
-                for (int ring = 0; ring < JointProjectionRingCount; ring++)
-                {
-                    var frontier = new HashSet<int>(active);
-                    foreach (LocalEdge edge in edges)
-                    {
-                        if (frontier.Contains(edge.FirstVertex) || frontier.Contains(edge.SecondVertex))
-                        {
-                            active.Add(edge.FirstVertex);
-                            active.Add(edge.SecondVertex); } } }
-                return active; }
+            }
 
             private List<(int First, int Second, int Third, double3 Reference)> CollectFaces()
             {

@@ -82,21 +82,7 @@ namespace Fbx2Vmd.ClothPhysics
             bool completed = false;
             try
             {
-                if (setup == null) setup = GetComponent<CharacterPhysicsSetup>();
-                if (probe == null) probe = GetComponent<PhysicsValidationProbe>();
-                if (probe != null)
-                {
-                    probe.ResetStats();
-                    probe.RebuildTracking(); }
-                SuppressAnimator(report);
-                // 1. 몸 회전 — 긴 머리카락 관성 침투 유발
-                // 루트도 movedBones에 넣어 중단(Stop) 시에도 원위치 복원되게 한다.
-                // 첫 yield는 RunPhase 열거자여야 한다 — 수동 펌프 테스트가 직접 꺼내 쓴다.
-                Quaternion bodyRest = TrackRest(transform);
-                yield return RunPhase("몸 회전", phaseDuration, t => {
-                    float a = Mathf.Sin(t * Mathf.PI * 2f) * rotateDegrees * 0.5f; transform.rotation = bodyRest * Quaternion.Euler(0, a, 0); });
-                yield return RunArmSwingPhase(report);
-                yield return RunBendPhase();
+                yield return RunCoreSteps(report);
                 completed = true; } finally
             {
                 // 예외·외부 중단 어느 경로든 본과 Animator를 반드시 원위치시키고 실행 플래그를 해제한다.
@@ -114,6 +100,26 @@ namespace Fbx2Vmd.ClothPhysics
             AppendProbeReport(report);
             lastReport = report.ToString();
             Debug.Log(lastReport, this); }
+
+        // 프로브 초기화 후 회전→팔 흔들기→굽힘 단계를 순서대로 실행함.
+        IEnumerator RunCoreSteps(StringBuilder report)
+        {
+            if (setup == null) setup = GetComponent<CharacterPhysicsSetup>();
+            if (probe == null) probe = GetComponent<PhysicsValidationProbe>();
+            if (probe != null)
+            {
+                probe.ResetStats();
+                probe.RebuildTracking(); }
+            SuppressAnimator(report);
+            // 1. 몸 회전 — 긴 머리카락 관성 침투 유발
+            // 루트도 movedBones에 넣어 중단(Stop) 시에도 원위치 복원되게 한다.
+            // 첫 yield는 RunPhase 열거자여야 한다 — 수동 펌프 테스트가 직접 꺼내 쓴다.
+            Quaternion bodyRest = TrackRest(transform);
+            yield return RunPhase("몸 회전", phaseDuration, t => {
+                float a = Mathf.Sin(t * Mathf.PI * 2f) * rotateDegrees * 0.5f; transform.rotation = bodyRest * Quaternion.Euler(0, a, 0); });
+            yield return RunArmSwingPhase(report);
+            yield return RunBendPhase();
+        }
 
         // Animator가 Update 단계에서 본 회전을 덮어쓰므로 시퀀스 중에는 비활성화한다.
         // 비활성화해도 isHuman/GetBoneTransform의 Avatar 매핑은 유지된다.

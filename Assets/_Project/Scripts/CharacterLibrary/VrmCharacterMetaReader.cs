@@ -35,35 +35,45 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 using (GltfData data = new AutoGltfFileParser(path).Parse())
                 {
-                    VRMData vrm;
-                    try
+                    if (!TryReadVrm0Meta(data, result))
                     {
-                        vrm = new VRMData(data); } catch (NotVrm0Exception)
-                    {
-                        result.error = IsVrm10(data)
-                            ? "VRM 1.0 파일은 현재 지원하지 않습니다. (UniVRM10 패키지가 필요합니다)" : "VRM 0.x 형식이 아닌 파일입니다.";
                         return result; }
-                    result.specVersion = vrm.VrmExtension != null
-                        ? (vrm.VrmExtension.specVersion ?? string.Empty) : string.Empty;
-                    using (var context = new VRMImporterContext(vrm))
-                    {
-                        VRMMetaObject meta = context.ReadMeta(createThumbnail: true);
-                        try
-                        {
-                            CopyMeta(meta, result.meta);
-                            result.thumbnailPng = TryEncodeThumbnail(meta); } finally
-                        {
-                            // 메타 읽기 경로에서 만든 오브젝트는 명시적으로 해제한다.
-                            if (meta != null)
-                            {
-                                if (meta.Thumbnail != null)
-                                {
-                                    Object.DestroyImmediate(meta.Thumbnail); }
-                                Object.DestroyImmediate(meta); } } } }
+                }
                 result.success = true; } catch (Exception error)
             {
                 result.error = $"VRM 메타 읽기 실패: {error.Message}"; }
             return result; }
+
+        // VRM 0.x 메타와 썸네일을 읽어 결과에 채움. VRM0이 아니면 false.
+        private static bool TryReadVrm0Meta(GltfData data, VrmCharacterMetaResult result)
+        {
+            VRMData vrm;
+            try
+            {
+                vrm = new VRMData(data); } catch (NotVrm0Exception)
+            {
+                result.error = IsVrm10(data)
+                    ? "VRM 1.0 파일은 현재 지원하지 않습니다. (UniVRM10 패키지가 필요합니다)" : "VRM 0.x 형식이 아닌 파일입니다.";
+                return false; }
+            result.specVersion = vrm.VrmExtension != null
+                ? (vrm.VrmExtension.specVersion ?? string.Empty) : string.Empty;
+            using (var context = new VRMImporterContext(vrm))
+            {
+                VRMMetaObject meta = context.ReadMeta(createThumbnail: true);
+                try
+                {
+                    CopyMeta(meta, result.meta);
+                    result.thumbnailPng = TryEncodeThumbnail(meta); } finally
+                {
+                    // 메타 읽기 경로에서 만든 오브젝트는 명시적으로 해제한다.
+                    if (meta != null)
+                    {
+                        if (meta.Thumbnail != null)
+                        {
+                            Object.DestroyImmediate(meta.Thumbnail); }
+                        Object.DestroyImmediate(meta); } } }
+            return true;
+        }
 
         private static void CopyMeta(VRMMetaObject source, CharacterLibraryEntryMeta target)
         {

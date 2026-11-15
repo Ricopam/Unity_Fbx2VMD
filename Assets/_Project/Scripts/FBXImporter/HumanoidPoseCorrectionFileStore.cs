@@ -124,6 +124,7 @@ namespace Fbx2Vmd.FBXImporter
         private static bool TryParseDocument(
             string json, out HumanoidPoseCorrectionDocument document, out string errorMessage)
         {
+            errorMessage = null;
             document = JsonUtility.FromJson<HumanoidPoseCorrectionDocument>(json);
             if (document == null || !document.TryValidate(out errorMessage))
             {

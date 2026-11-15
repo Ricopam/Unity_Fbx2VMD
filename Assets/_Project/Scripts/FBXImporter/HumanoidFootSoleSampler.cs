@@ -7,7 +7,7 @@ namespace Fbx2Vmd.FBXImporter
     /// <summary>
     /// 발 가중치로 선정한 밑창 영역과 현재 자세의 접촉점 좌표를 취득함.
     /// </summary>
-    internal sealed class HumanoidFootSoleSampler : IDisposable
+    internal sealed partial class HumanoidFootSoleSampler : IDisposable
     {
         private readonly Transform _foot;
         private readonly List<Surface> _surfaces = new List<Surface>();
@@ -151,30 +151,47 @@ namespace Fbx2Vmd.FBXImporter
                 BoneWeight[] weights = mesh.boneWeights;
                 Transform[] bones = renderer.bones;
                 if (weights.Length != mesh.vertexCount) return false;
-                var vertices = new List<int>();
-                for (int i = 0; i < weights.Length; i++)
-                {
-                    BoneWeight w = weights[i];
-                    float weight = GetFootWeight(bones, w.boneIndex0, w.weight0) + GetFootWeight(bones, w.boneIndex1, w.weight1) + GetFootWeight(bones, w.boneIndex2, w.weight2) + GetFootWeight(bones, w.boneIndex3, w.weight3);
-                    if (!IsFinite(weight)) return false;
-                    if (weight >= 0.5f) vertices.Add(i); }
+                if (!TryCollectFootVertices(bones, weights, out List<int> vertices)) return false;
                 if (vertices.Count == 0) continue;
                 var surface = new Surface(renderer, mesh, bones);
                 _surfaces.Add(surface);
                 if (!surface.TryBake()) return false;
-                foreach (int vertex in vertices)
-                {
-                    Vector3 world = surface.GetWorldPoint(vertex);
-                    if (!IsFinite(world)) return false;
-                    float height = Vector3.Dot(world, up), progress = Vector3.Dot(world, forward);
-                    if (!IsFinite(height) || !IsFinite(progress)) return false;
-                    minimumHeight = Mathf.Min(minimumHeight, height);
-                    back = Mathf.Min(back, progress);
-                    front = Mathf.Max(front, progress);
-                    candidates.Add(new Point(surface, vertex)); } }
+                if (!AccumulateSurfacePoints(surface, vertices, up, forward, candidates,
+                    ref minimumHeight, ref back, ref front)) return false; }
             float length = front - back;
             if (candidates.Count == 0 || !IsFinite(length) || length <= 0.000001f) return false;
             return FinalizePoints(candidates, up, forward, minimumHeight, length); }
+
+        // 발 본 가중치 합이 절반 이상인 정점 인덱스를 수집한다 — 비유한 값 발견 시 false.
+        private bool TryCollectFootVertices(Transform[] bones, BoneWeight[] weights, out List<int> vertices)
+        {
+            vertices = new List<int>();
+            for (int i = 0; i < weights.Length; i++)
+            {
+                BoneWeight w = weights[i];
+                float weight = GetFootWeight(bones, w.boneIndex0, w.weight0) + GetFootWeight(bones, w.boneIndex1, w.weight1) + GetFootWeight(bones, w.boneIndex2, w.weight2) + GetFootWeight(bones, w.boneIndex3, w.weight3);
+                if (!IsFinite(weight)) return false;
+                if (weight >= 0.5f) vertices.Add(i); }
+            return true;
+        }
+
+        // 굽힘 완료된 표면의 발 소유 정점을 월드 좌표로 누적하고 높이·진행 범위를 갱신한다.
+        private bool AccumulateSurfacePoints(
+            Surface surface, List<int> vertices, Vector3 up, Vector3 forward,
+            List<Point> candidates, ref float minimumHeight, ref float back, ref float front)
+        {
+            foreach (int vertex in vertices)
+            {
+                Vector3 world = surface.GetWorldPoint(vertex);
+                if (!IsFinite(world)) return false;
+                float height = Vector3.Dot(world, up), progress = Vector3.Dot(world, forward);
+                if (!IsFinite(height) || !IsFinite(progress)) return false;
+                minimumHeight = Mathf.Min(minimumHeight, height);
+                back = Mathf.Min(back, progress);
+                front = Mathf.Max(front, progress);
+                candidates.Add(new Point(surface, vertex)); }
+            return true;
+        }
 
         bool FinalizePoints(
             List<Point> candidates, Vector3 up, Vector3 forward,
@@ -244,42 +261,5 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        private sealed class Surface : IDisposable
-        {
-            internal readonly SkinnedMeshRenderer Renderer;
-            private readonly Mesh _source;
-            private readonly Transform[] _bones;
-            private readonly int _vertexCount;
-            private readonly Mesh _baked;
-            private readonly List<Vector3> _vertices;
-
-            internal Surface(SkinnedMeshRenderer renderer, Mesh source, Transform[] bones)
-            {
-                Renderer = renderer;
-                _source = source;
-                _bones = bones;
-                _vertexCount = source.vertexCount;
-                _baked = new Mesh { hideFlags = HideFlags.HideAndDontSave };
-                _vertices = new List<Vector3>(source.vertexCount);
-            }
-
-            internal bool TryBake()
-            {
-                if (Renderer == null || _source == null || Renderer.sharedMesh != _source || _source.vertexCount != _vertexCount)
-                    return false;
-                Transform[] bones = Renderer.bones;
-                if (bones.Length != _bones.Length)
-                    return false;
-                for (int i = 0; i < bones.Length; i++)
-                    if (bones[i] != _bones[i])
-                        return false;
-                Renderer.BakeMesh(_baked);
-                _baked.GetVertices(_vertices);
-                return _vertices.Count == _source.vertexCount;
-            }
-
-            internal Vector3 GetWorldPoint(int vertex) => Renderer.localToWorldMatrix.MultiplyPoint3x4(_vertices[vertex]);
-            public void Dispose() => UnityEngine.Object.DestroyImmediate(_baked);
-        }
     }
 }

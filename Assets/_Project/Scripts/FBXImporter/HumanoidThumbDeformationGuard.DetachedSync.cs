@@ -25,27 +25,33 @@ namespace Fbx2Vmd.FBXImporter
                 if (helperTransform == null || sourceTransform == null)
                 {
                     continue; }
-                Quaternion targetRotation = CalculateDetachedThumbBaseHelperTargetRotation(helperTransform, sourceTransform);
-                if (Quaternion.Angle(helperTransform.localRotation, targetRotation) > 0.001f)
-                {
-                    helperTransform.localRotation = targetRotation;
-                    changed++; }
-                if (!syncDetachedThumbBaseHelperPositions)
-                {
-                    if ((stabilizeDetachedThumbBasePalm || useWebbingGuard) && _initialLocalPositions.TryGetValue(helperTransform, out Vector3 anchoredPosition) && (helperTransform.localPosition - anchoredPosition).sqrMagnitude > 0.00000001f)
-                    {
-                        // YYB 손꿈치 스킨용 Thumb0 보조본은 위치까지 움직이면 엄지 뿌리 메시가 손바닥 밖으로 끌려간다.
-                        // 실제 엄지 구동본은 별도로 움직이고, 보조본 위치는 초기 손바닥 앵커에 고정한다.
-                        helperTransform.localPosition = anchoredPosition;
-                        changed++; }
-                    continue; }
-                Vector3 targetPosition = ResolveDetachedHelperTargetPosition( helperTransform, sourceTransform, useWebbingGuard);
-                if ((helperTransform.localPosition - targetPosition).sqrMagnitude <= 0.00000001f)
-                {
-                    continue; }
-                helperTransform.localPosition = targetPosition;
-                changed++; }
+                changed += SyncDetachedHelperPair(helperTransform, sourceTransform, useWebbingGuard); }
             return changed; }
+
+        // 한 보조본의 회전·위치를 소스 기준으로 동기화하고 변경 개수를 반환한다.
+        private int SyncDetachedHelperPair(Transform helperTransform, Transform sourceTransform, bool useWebbingGuard)
+        {
+            int changed = 0;
+            Quaternion targetRotation = CalculateDetachedThumbBaseHelperTargetRotation(helperTransform, sourceTransform);
+            if (Quaternion.Angle(helperTransform.localRotation, targetRotation) > 0.001f)
+            {
+                helperTransform.localRotation = targetRotation;
+                changed++; }
+            if (!syncDetachedThumbBaseHelperPositions)
+            {
+                if ((stabilizeDetachedThumbBasePalm || useWebbingGuard) && _initialLocalPositions.TryGetValue(helperTransform, out Vector3 anchoredPosition) && (helperTransform.localPosition - anchoredPosition).sqrMagnitude > 0.00000001f)
+                {
+                    // YYB 손꿈치 스킨용 Thumb0 보조본은 위치까지 움직이면 엄지 뿌리 메시가 손바닥 밖으로 끌려간다.
+                    // 실제 엄지 구동본은 별도로 움직이고, 보조본 위치는 초기 손바닥 앵커에 고정한다.
+                    helperTransform.localPosition = anchoredPosition;
+                    changed++; }
+                return changed; }
+            Vector3 targetPosition = ResolveDetachedHelperTargetPosition( helperTransform, sourceTransform, useWebbingGuard);
+            if ((helperTransform.localPosition - targetPosition).sqrMagnitude <= 0.00000001f)
+            {
+                return changed; }
+            helperTransform.localPosition = targetPosition;
+            return changed + 1; }
 
         private Vector3 ResolveDetachedHelperTargetPosition(
             Transform helperTransform, Transform sourceTransform, bool useWebbingGuard)

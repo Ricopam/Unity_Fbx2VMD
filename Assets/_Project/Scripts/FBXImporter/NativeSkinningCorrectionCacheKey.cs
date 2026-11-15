@@ -15,7 +15,7 @@ namespace Fbx2Vmd.FBXImporter
     /// 표면 보정 캐시의 재사용 키를 계산함. 캐릭터·모션·메시·알고리즘 버전이
     /// 전부 일치할 때만 같은 키가 나오도록 해시 입력을 구성한다.
     /// </summary>
-    internal static class NativeSkinningCorrectionCacheKey
+    internal static partial class NativeSkinningCorrectionCacheKey
     {
         // 표면 솔버와 지지 해제 계산을 독립적으로 버전 관리함.
         internal const int AlgorithmVersion = 35;
@@ -58,31 +58,20 @@ namespace Fbx2Vmd.FBXImporter
         {
             keyHash = null;
             errorMessage = string.Empty;
-            if (animator == null || contracts == null || contracts.Length == 0)
+            if (!TryValidateComputeInputs(animator, contracts, motionClip, ref errorMessage))
             {
-                errorMessage = "보정 캐시 키를 계산할 대상이 없습니다.";
                 return false;
             }
 
             try
             {
-                // 비영속 클립(런타임 생성 등)은 파일 해시를 잡을 수 없어 캐시 비활성.
-                if (motionClip != null && string.IsNullOrEmpty(AssetDatabase.GetAssetPath(motionClip)))
-                {
-                    errorMessage = "모션 클립이 에셋이 아니라 보정 캐시를 사용할 수 없습니다.";
-                    return false;
-                }
-
                 var segments = BuildBaseSegments( poseIdentity, motionName, frameCount, frameRate, motionClip, sourceModelAsset, animator);
 
                 // 렌더러 — 경로·메시 에셋·정점 내용. 경로 정렬로 순서를 고정한다.
-                RendererIdentity[] identities = CollectRendererIdentities(animator, contracts);
-                if (identities.Length == 0)
+                if (!TryAppendRendererSegments(segments, animator, contracts, ref errorMessage))
                 {
-                    errorMessage = "보정 캐시 키를 계산할 Renderer가 없습니다.";
                     return false;
                 }
-                AppendRendererSegments(segments, identities);
 
                 keyHash = ComputeKeyHash(segments);
                 return true;
@@ -92,6 +81,39 @@ namespace Fbx2Vmd.FBXImporter
                 errorMessage = $"보정 캐시 키를 계산하지 못했습니다: {exception.Message}";
                 return false;
             }
+        }
+
+        // 계산 대상과 클립 영속성을 검증한다 — 비영속 클립은 파일 해시를 잡을 수 없어 캐시 비활성.
+        static bool TryValidateComputeInputs(
+            Animator animator, NativeSkinningSurfaceContract[] contracts,
+            AnimationClip motionClip, ref string errorMessage)
+        {
+            if (animator == null || contracts == null || contracts.Length == 0)
+            {
+                errorMessage = "보정 캐시 키를 계산할 대상이 없습니다.";
+                return false;
+            }
+            if (motionClip != null && string.IsNullOrEmpty(AssetDatabase.GetAssetPath(motionClip)))
+            {
+                errorMessage = "모션 클립이 에셋이 아니라 보정 캐시를 사용할 수 없습니다.";
+                return false;
+            }
+            return true;
+        }
+
+        // 렌더러 정체성을 수집해 세그먼트에 추가한다 — 대상이 없으면 false.
+        static bool TryAppendRendererSegments(
+            List<string> segments, Animator animator,
+            NativeSkinningSurfaceContract[] contracts, ref string errorMessage)
+        {
+            RendererIdentity[] identities = CollectRendererIdentities(animator, contracts);
+            if (identities.Length == 0)
+            {
+                errorMessage = "보정 캐시 키를 계산할 Renderer가 없습니다.";
+                return false;
+            }
+            AppendRendererSegments(segments, identities);
+            return true;
         }
 
         static List<string> BuildBaseSegments(
@@ -268,83 +290,5 @@ namespace Fbx2Vmd.FBXImporter
                 ComputeVertexHash(mesh));
         }
 
-        // 파일 내용 해시 — 소스 FBX 변경 감지의 공용 수단.
-        internal static string ComputeFileHash(string fullPath)
-        {
-            if (string.IsNullOrEmpty(fullPath) || !File.Exists(fullPath))
-            {
-                return string.Empty;
-            }
-            using (var hash = SHA256.Create())
-            using (FileStream stream = File.OpenRead(fullPath))
-            {
-                return Convert.ToBase64String(hash.ComputeHash(stream)) +
-                    ":" + stream.Length;
-            }
-        }
-
-#if UNITY_EDITOR
-        internal static string GetAssetIdentity(UnityEngine.Object asset)
-        {
-            if (asset == null)
-            {
-                return string.Empty;
-            }
-            string path = AssetDatabase.GetAssetPath(asset);
-            if (string.IsNullOrEmpty(path))
-            {
-                // 비영속 자산은 이름+내용 해시(정점 해시)가 실체를 대표한다.
-                return "nonasset:" + asset.name;
-            }
-            // 같은 FBX도 Avatar·클립 임포트 설정에 따라 평가 자세가 달라져 결과 해시를 함께 식별함.
-            return "guid:" + AssetDatabase.AssetPathToGUID(path) +
-                ",path:" + path +
-                ",dependency:" + AssetDatabase.GetAssetDependencyHash(path);
-        }
-
-        // 모션 FBX 같은 소스 파일은 내용 해시로 변경을 감지한다.
-        private static string GetAssetFileHash(UnityEngine.Object asset)
-        {
-            if (asset == null)
-            {
-                return string.Empty;
-            }
-            string path = AssetDatabase.GetAssetPath(asset);
-            if (string.IsNullOrEmpty(path))
-            {
-                return string.Empty;
-            }
-            return ComputeFileHash(Path.GetFullPath(path));
-        }
-#endif
-
-        private static string ComputeVertexHash(Mesh mesh)
-        {
-            // 정점 인덱스 재배열·임포트 설정·토폴로지 변경을 감지하기 위해
-            // 정점 위치와 삼각형 인덱스를 함께 해시한다.
-            Vector3[] vertices = mesh.vertices;
-            int[] triangles = mesh.triangles;
-            using (var stream = new MemoryStream(
-                       vertices.Length * 12 + triangles.Length * 4 + 8))
-            using (var writer = new BinaryWriter(stream))
-            {
-                writer.Write(vertices.Length);
-                foreach (Vector3 vertex in vertices)
-                {
-                    writer.Write(vertex.x);
-                    writer.Write(vertex.y);
-                    writer.Write(vertex.z);
-                }
-                writer.Write(triangles.Length);
-                foreach (int index in triangles)
-                {
-                    writer.Write(index);
-                }
-                writer.Flush();
-                using (var hash = SHA256.Create())
-                {
-                    return Convert.ToBase64String(
-                        hash.ComputeHash(stream.GetBuffer(), 0,
-                            (int)stream.Length)); } } }
     }
 }

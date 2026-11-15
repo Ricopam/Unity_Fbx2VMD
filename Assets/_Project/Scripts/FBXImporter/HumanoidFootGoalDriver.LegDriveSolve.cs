@@ -47,30 +47,38 @@ namespace Fbx2Vmd.FBXImporter
                     SupportedPosition = Foot.position;
                     _supportedFrame = currentFrame;
                 }
-                if (HasValidatedSupport && separationWeight > 0f)
-                {
-                    float separationFraction = 1f - Weight / SourceSolveWeight;
-                    Vector3 supportNormal = Vector3.up;
-                    if (ground != null && ground.TryFindGround(SupportedPosition, out RaycastHit supportGround))
-                    {
-                        supportNormal = supportGround.normal;
-                        Vector3 projectedGoal = SupportedPosition + Vector3.ProjectOnPlane( sourceGoal - SupportedPosition, supportNormal);
-                        // 같은 지지면에서는 핀이 접지 자세를 덮지 않도록 발 모임 가중치만큼 보호함.
-                        if (ground.TryFindGround(projectedGoal, out RaycastHit goalGround) && (goalGround.normal - supportNormal).sqrMagnitude <= 0.00000001f &&
-                            Mathf.Abs(Vector3.Dot(goalGround.point - supportGround.point, supportNormal)) <= Reach * HumanoidFootGrounding.SoleClearancePerHumanScale)
-                            separationFraction = Mathf.Max(separationFraction, separationWeight);
-                    }
-                    if (separationFraction > 0f)
-                    {
-                        sourceGoal = Vector3.Lerp(sourceGoal, SupportedPosition + Vector3.ProjectOnPlane( sourceGoal - SupportedPosition, supportNormal), separationFraction);
-                        rawSourceGoal = Vector3.Lerp(rawSourceGoal, SupportedPosition + Vector3.ProjectOnPlane( rawSourceGoal - SupportedPosition, supportNormal), separationFraction);
-                        goalFrame = Quaternion.Slerp(goalFrame, _supportedFrame, separationFraction);
-                    }
-                }
+                ApplySupportSeparation(ref sourceGoal, ref rawSourceGoal, ref goalFrame, separationWeight, ground);
                 Quaternion sourceFrame = Quaternion.Slerp(currentFrame, goalFrame, sourceFraction);
                 LastSolveGoal = Vector3.Lerp(rawSourceGoal, SupportedPosition, SupportWeight);
                 EffectiveGoal = Vector3.Lerp(sourceGoal, SupportedPosition, SupportWeight);
                 _effectiveFrame = Quaternion.Slerp(sourceFrame, _supportedFrame, SupportWeight);
+            }
+
+            // 검증된 지지 위치 쪽으로 목표·프레임을 분리 가중치만큼 끌어당긴다.
+            void ApplySupportSeparation(ref Vector3 sourceGoal, ref Vector3 rawSourceGoal,
+                ref Quaternion goalFrame, float separationWeight, HumanoidGroundResponse ground)
+            {
+                if (!HasValidatedSupport || separationWeight <= 0f)
+                {
+                    return;
+                }
+                float separationFraction = 1f - Weight / SourceSolveWeight;
+                Vector3 supportNormal = Vector3.up;
+                if (ground != null && ground.TryFindGround(SupportedPosition, out RaycastHit supportGround))
+                {
+                    supportNormal = supportGround.normal;
+                    Vector3 projectedGoal = SupportedPosition + Vector3.ProjectOnPlane( sourceGoal - SupportedPosition, supportNormal);
+                    // 같은 지지면에서는 핀이 접지 자세를 덮지 않도록 발 모임 가중치만큼 보호함.
+                    if (ground.TryFindGround(projectedGoal, out RaycastHit goalGround) && (goalGround.normal - supportNormal).sqrMagnitude <= 0.00000001f &&
+                        Mathf.Abs(Vector3.Dot(goalGround.point - supportGround.point, supportNormal)) <= Reach * HumanoidFootGrounding.SoleClearancePerHumanScale)
+                        separationFraction = Mathf.Max(separationFraction, separationWeight);
+                }
+                if (separationFraction > 0f)
+                {
+                    sourceGoal = Vector3.Lerp(sourceGoal, SupportedPosition + Vector3.ProjectOnPlane( sourceGoal - SupportedPosition, supportNormal), separationFraction);
+                    rawSourceGoal = Vector3.Lerp(rawSourceGoal, SupportedPosition + Vector3.ProjectOnPlane( rawSourceGoal - SupportedPosition, supportNormal), separationFraction);
+                    goalFrame = Quaternion.Slerp(goalFrame, _supportedFrame, separationFraction);
+                }
             }
 
             private bool TryResolveGoalSample(int frame,
@@ -158,13 +166,7 @@ namespace Fbx2Vmd.FBXImporter
                 {
                     if (!_pinAnchorValid || _pinReleased)
                     {
-                        // 감쇠 중 재핀이면 현재 유효 목표(블렌드 위치)로 앵커를
-                        // 이어 잡아 정박 지점이 생목표로 단발 점프하지 않게 함.
-                        _pinAnchor = _pinReleased && _pinAnchorValid
-                            ? new Vector3( Mathf.Lerp(goalWorld.x, _pinAnchor.x, Weight), goalWorld.y, Mathf.Lerp(goalWorld.z, _pinAnchor.z, Weight))
-                            : goalWorld;
-                        _pinAnchorValid = true;
-                        _pinReleased = false;
+                        ReanchorPin(goalWorld);
                     }
                     goalWorld.x = _pinAnchor.x;
                     goalWorld.z = _pinAnchor.z;
@@ -183,6 +185,17 @@ namespace Fbx2Vmd.FBXImporter
                     _pinReleased = false;
                 }
                 return goalWorld;
+            }
+
+            // 감쇠 중 재핀이면 현재 유효 목표(블렌드 위치)로 앵커를 이어 잡아
+            // 정박 지점이 생목표로 단발 점프하지 않게 함.
+            void ReanchorPin(Vector3 goalWorld)
+            {
+                _pinAnchor = _pinReleased && _pinAnchorValid
+                    ? new Vector3( Mathf.Lerp(goalWorld.x, _pinAnchor.x, Weight), goalWorld.y, Mathf.Lerp(goalWorld.z, _pinAnchor.z, Weight))
+                    : goalWorld;
+                _pinAnchorValid = true;
+                _pinReleased = false;
             }
 
             private void UpdateSmoothedGoal(Vector3 goalWorld, float dt)
@@ -223,13 +236,7 @@ namespace Fbx2Vmd.FBXImporter
                 DebugTargetError = targetError;
                 if (solved && SolveWeight < 1f)
                 {
-                    // 부모 회전 적용이 자식의 보간 목표에 다시 섞이지 않도록 IK 결과를 고정함.
-                    Quaternion solvedUpperRotation = Upper.rotation;
-                    Quaternion solvedLowerRotation = Lower.rotation;
-                    Quaternion solvedFootRotation = Foot.rotation;
-                    Upper.rotation = Quaternion.Slerp(upperRotation, solvedUpperRotation, SolveWeight);
-                    Lower.rotation = Quaternion.Slerp(lowerRotation, solvedLowerRotation, SolveWeight);
-                    Foot.rotation = Quaternion.Slerp(footRotation, solvedFootRotation, SolveWeight); }
+                    BlendSolvedRotations(upperRotation, lowerRotation, footRotation); }
                 // 발 회전 — 목표 프레임(grounded 시 정렬+soft-cap 반영됨)을 가중 적용.
                 if (!hasInputFrame)
                 {
@@ -237,6 +244,17 @@ namespace Fbx2Vmd.FBXImporter
                 // 부모 IK가 만든 회전을 보간 시작값에 섞지 않도록 입력 발 회전을 유지함.
                 Quaternion blended = Quaternion.Slerp(inputFrame, goalFrame, SolveWeight);
                 _binding.TryApplyWorldFrame(blended); }
+
+            // 부모 회전 적용이 자식의 보간 목표에 다시 섞이지 않도록 IK 결과를 고정해 가중 보간한다.
+            void BlendSolvedRotations(Quaternion upperRotation, Quaternion lowerRotation, Quaternion footRotation)
+            {
+                Quaternion solvedUpperRotation = Upper.rotation;
+                Quaternion solvedLowerRotation = Lower.rotation;
+                Quaternion solvedFootRotation = Foot.rotation;
+                Upper.rotation = Quaternion.Slerp(upperRotation, solvedUpperRotation, SolveWeight);
+                Lower.rotation = Quaternion.Slerp(lowerRotation, solvedLowerRotation, SolveWeight);
+                Foot.rotation = Quaternion.Slerp(footRotation, solvedFootRotation, SolveWeight);
+            }
 
             private Vector3 ResolveBendNormal(Quaternion upperRotation, Vector3 bendNormal)
             {

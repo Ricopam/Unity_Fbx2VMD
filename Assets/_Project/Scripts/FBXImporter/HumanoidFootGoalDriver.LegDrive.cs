@@ -117,14 +117,7 @@ namespace Fbx2Vmd.FBXImporter
                 float target = alpha * (pinned ? 1f : 0f);
                 if (reset)
                 {
-                    Weight = target;
-                    // 시드 자체는 TrySolve가 담당 — 여기서 true로 두면 평활 목표가
-                    // Vector3.zero로 남아 IK가 월드 원점으로 접힘.
-                    _hasSmoothedGoal = false;
-                    // 시간 점프는 핀 에피소드도 끊음 — 이전 위치의 앵커가
-                    // 새 위치의 골반 계산·해제 블렌드로 번지지 않게 함.
-                    _pinAnchorValid = false;
-                    _pinReleased = false;
+                    ResetWeightState(target);
                     return; }
                 if (dt <= 0f)
                 {
@@ -140,12 +133,30 @@ namespace Fbx2Vmd.FBXImporter
                 // 이전 구간의 평활 잔여가 슬라이드로 보이지 않게 함.
                 if (Weight <= 0f && target <= 0f)
                 {
-                    Weight = 0f;
-                    _hasSmoothedGoal = false;
-                    // 핀 에피소드 종료 — weight 소실 후 TrySolve가 다시 안 불려도
-                    // 앵커가 남아 다음 재진입의 골반 계산을 오염하지 않게 함.
-                    _pinAnchorValid = false;
-                    _pinReleased = false; } }
+                    ReleasePinEpisode(); } }
+
+            // 시간 점프·리셋 시 핀 에피소드를 끊고 평활 목표를 버린다.
+            void ResetWeightState(float target)
+            {
+                Weight = target;
+                // 시드 자체는 TrySolve가 담당 — 여기서 true로 두면 평활 목표가
+                // Vector3.zero로 남아 IK가 월드 원점으로 접힘.
+                _hasSmoothedGoal = false;
+                // 시간 점프는 핀 에피소드도 끊음 — 이전 위치의 앵커가
+                // 새 위치의 골반 계산·해제 블렌드로 번지지 않게 함.
+                _pinAnchorValid = false;
+                _pinReleased = false;
+            }
+
+            // weight 소실로 핀 에피소드를 종료한다 — TrySolve가 다시 안 불려도
+            // 앵커가 남아 다음 재진입의 골반 계산을 오염하지 않게 함.
+            void ReleasePinEpisode()
+            {
+                Weight = 0f;
+                _hasSmoothedGoal = false;
+                _pinAnchorValid = false;
+                _pinReleased = false;
+            }
 
             internal void Clear()
             {

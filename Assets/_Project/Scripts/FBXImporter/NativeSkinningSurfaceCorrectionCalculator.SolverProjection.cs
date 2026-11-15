@@ -61,6 +61,18 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            ApplySingleEdgeCorrection(edge, delta, length, targetLength, first, second,
+                currentVertices, constrainedVertices, proposedLocalPositions);
+            return true;
+        }
+
+        // 한 에지의 길이 보정을 이동 가능한 양단 정점에 분배하고 변위를 상한 내로 고정한다.
+        static void ApplySingleEdgeCorrection(
+            LocalEdge edge, Vector3 delta, float length, float targetLength,
+            Vector3 first, Vector3 second,
+            IReadOnlyList<Vector3> currentVertices, IReadOnlyList<int> constrainedVertices,
+            IList<Vector3> proposedLocalPositions)
+        {
             Vector3 correction = delta * ((length - targetLength) / length);
             bool movesFirst = edge.FirstLocalIndex >= 0;
             bool movesSecond = edge.SecondLocalIndex >= 0;
@@ -75,7 +87,6 @@ namespace Fbx2Vmd.FBXImporter
                 proposedLocalPositions[edge.SecondLocalIndex] = ClampDisplacementFromBaseline( currentVertices[ constrainedVertices[edge.SecondLocalIndex]], second - correction * share,
                         MaximumAbsoluteStep);
             }
-            return true;
         }
 
         private static void ProjectRestShapeRecoveryConstraints(
@@ -116,35 +127,45 @@ namespace Fbx2Vmd.FBXImporter
             int projectionCount = 0;
             foreach (LocalEdge edge in workset.Edges)
             {
-                bool canMoveFirst = edge.FirstLocalIndex >= 0;
-                bool canMoveSecond = edge.SecondLocalIndex >= 0;
-                if (!canMoveFirst && !canMoveSecond)
+                if (TryProjectRestStrainEdge(edge, currentVertices, proposedLocalPositions))
                 {
-                    continue; }
-                Vector3 currentEdge = currentVertices[edge.SecondVertex] - currentVertices[edge.FirstVertex];
-                Vector3 proposedFirst = canMoveFirst
-                    ? proposedLocalPositions[edge.FirstLocalIndex] : currentVertices[edge.FirstVertex];
-                Vector3 proposedSecond = canMoveSecond
-                    ? proposedLocalPositions[edge.SecondLocalIndex] : currentVertices[edge.SecondVertex];
-                Vector3 proposedEdge = proposedSecond - proposedFirst;
-                float currentLength = currentEdge.magnitude;
-                float proposedLength = proposedEdge.magnitude;
-                if (currentLength <= 0.00000001f || proposedLength <= 0.00000001f)
-                {
-                    continue; }
-                float baselineRatio = edge.BaselineLength / edge.RestLength;
-                // 계산용 스키닝과 재생 정점의 반올림 차이로 경계를 넘지 않도록 출력 여유를 남김.
-                float maximumAbsoluteStrain = Mathf.Abs(baselineRatio - 1f) + NativeSkinningRestShapeRecoveryCalculator .MaximumRestStrainIncrease - EdgeLengthProjectionMargin;
-                float minimumRatio = Mathf.Max(0f, 1f - maximumAbsoluteStrain);
-                float maximumRatio = 1f + maximumAbsoluteStrain;
-                float currentRatio = currentLength / edge.RestLength;
-                float proposedRatio = proposedLength / edge.RestLength;
-                if (!TryResolveStrainTargetRatio( currentRatio, proposedRatio, minimumRatio, maximumRatio, out float targetRatio))
-                {
-                    continue; }
-                ApplyStrainCorrection( edge, proposedEdge, proposedLength, targetRatio, canMoveFirst, canMoveSecond, proposedLocalPositions);
-                projectionCount++; }
+                    projectionCount++; } }
             return projectionCount;
+        }
+
+        // 한 에지의 현재·제안 길이 비율을 임계로 투영해 변형률 보정을 적용한다.
+        static bool TryProjectRestStrainEdge(
+            LocalEdge edge, IReadOnlyList<Vector3> currentVertices,
+            IList<Vector3> proposedLocalPositions)
+        {
+            bool canMoveFirst = edge.FirstLocalIndex >= 0;
+            bool canMoveSecond = edge.SecondLocalIndex >= 0;
+            if (!canMoveFirst && !canMoveSecond)
+            {
+                return false; }
+            Vector3 currentEdge = currentVertices[edge.SecondVertex] - currentVertices[edge.FirstVertex];
+            Vector3 proposedFirst = canMoveFirst
+                ? proposedLocalPositions[edge.FirstLocalIndex] : currentVertices[edge.FirstVertex];
+            Vector3 proposedSecond = canMoveSecond
+                ? proposedLocalPositions[edge.SecondLocalIndex] : currentVertices[edge.SecondVertex];
+            Vector3 proposedEdge = proposedSecond - proposedFirst;
+            float currentLength = currentEdge.magnitude;
+            float proposedLength = proposedEdge.magnitude;
+            if (currentLength <= 0.00000001f || proposedLength <= 0.00000001f)
+            {
+                return false; }
+            float baselineRatio = edge.BaselineLength / edge.RestLength;
+            // 계산용 스키닝과 재생 정점의 반올림 차이로 경계를 넘지 않도록 출력 여유를 남김.
+            float maximumAbsoluteStrain = Mathf.Abs(baselineRatio - 1f) + NativeSkinningRestShapeRecoveryCalculator .MaximumRestStrainIncrease - EdgeLengthProjectionMargin;
+            float minimumRatio = Mathf.Max(0f, 1f - maximumAbsoluteStrain);
+            float maximumRatio = 1f + maximumAbsoluteStrain;
+            float currentRatio = currentLength / edge.RestLength;
+            float proposedRatio = proposedLength / edge.RestLength;
+            if (!TryResolveStrainTargetRatio( currentRatio, proposedRatio, minimumRatio, maximumRatio, out float targetRatio))
+            {
+                return false; }
+            ApplyStrainCorrection( edge, proposedEdge, proposedLength, targetRatio, canMoveFirst, canMoveSecond, proposedLocalPositions);
+            return true;
         }
 
         private static void ApplyStrainCorrection(

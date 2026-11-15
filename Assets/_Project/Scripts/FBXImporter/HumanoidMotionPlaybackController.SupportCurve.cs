@@ -84,10 +84,7 @@ namespace Fbx2Vmd.FBXImporter
                     int first = Math.Max(0, window.Start - 1);
                     TryPrepareSupportCurve(first, window.Start, window.FadeEnd, 4, window.Boundaries);
 
-                    int heldEnd = window.FadeEnd;
-                    int limit = Math.Min(window.SupportEnd, window.FadeEnd + MaximumHeldSupportFrames);
-                    for (int frame = window.FadeEnd; frame <= limit && IsExtensionLimitedAt(frame, window.Side); frame++)
-                        heldEnd = frame;
+                    int heldEnd = ResolveHeldSupportEnd(window);
                     if (heldEnd - window.FadeEnd >= 12)
                         TryPrepareSupportCurve(first, window.FadeEnd, heldEnd, 12, window.Boundaries);
                 }
@@ -98,6 +95,16 @@ namespace Fbx2Vmd.FBXImporter
                 _isPreparingSupportCurves = false;
                 Seek(savedTime);
             }
+        }
+
+        // 페이드 이후 확장 한계가 유지되는 마지막 프레임을 찾는다.
+        private int ResolveHeldSupportEnd(HumanoidFootGrounding.SupportCurveWindow window)
+        {
+            int heldEnd = window.FadeEnd;
+            int limit = Math.Min(window.SupportEnd, window.FadeEnd + MaximumHeldSupportFrames);
+            for (int frame = window.FadeEnd; frame <= limit && IsExtensionLimitedAt(frame, window.Side); frame++)
+                heldEnd = frame;
+            return heldEnd;
         }
 
         private bool IsExtensionLimitedAt(int frame, int side)
@@ -168,6 +175,11 @@ namespace Fbx2Vmd.FBXImporter
             {
                 if (boundary - 1 < first || boundary + 1 > last) continue;
                 if (!PreservesMotion(baseline, corrected, baselineHips, correctedHips, (boundary - 1 - first) * SupportCurveSamplesPerFrame, (boundary + 1 - first) * SupportCurveSamplesPerFrame + 1)) return false; }
+            return PreservesCurveBoundaries(curve); }
+
+        // 커브 구간의 모든 프레임 경계에서 후보 변화가 기준 이하로 유지되는지 검증한다.
+        private bool PreservesCurveBoundaries(HumanoidSupportCurveProblem.Curve curve)
+        {
             PreRollSupportCurve(curve.Start);
             for (int frame = curve.Start + 1; frame <= curve.End; frame++)
             {

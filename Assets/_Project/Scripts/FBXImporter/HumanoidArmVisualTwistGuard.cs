@@ -124,13 +124,7 @@ namespace Fbx2Vmd.FBXImporter
             if (source == null || end == null || nodeNames == null || nodeNames.Length == 0)
             {
                 return 0; }
-            var nodes = new List<Transform>();
-            foreach (string nodeName in nodeNames)
-            {
-                Transform node = FindDescendantByName(source, nodeName);
-                if (node != null && !nodes.Contains(node))
-                {
-                    nodes.Add(node); } }
+            List<Transform> nodes = CollectSegmentNodes(source, nodeNames);
             if (nodes.Count == 0)
             {
                 return 0; }
@@ -150,6 +144,18 @@ namespace Fbx2Vmd.FBXImporter
                 AddControlledTransform(node); }
             _segments.Add(segment);
             return segment.Nodes.Count; }
+
+        // 이름 목록으로 세그먼트 하위 노드를 중복 없이 수집한다.
+        List<Transform> CollectSegmentNodes(Transform source, string[] nodeNames)
+        {
+            var nodes = new List<Transform>();
+            foreach (string nodeName in nodeNames)
+            {
+                Transform node = FindDescendantByName(source, nodeName);
+                if (node != null && !nodes.Contains(node))
+                {
+                    nodes.Add(node); } }
+            return nodes; }
 
         private void AddControlledTransform(Transform targetTransform)
         {

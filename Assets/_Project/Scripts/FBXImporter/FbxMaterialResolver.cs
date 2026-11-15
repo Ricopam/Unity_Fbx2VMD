@@ -51,18 +51,23 @@ namespace Fbx2Vmd.FBXImporter
                 return string.Empty;
             }
 
+            return FindTextureInCandidateDirs(sourceDirectory, materialToken);
+        }
+
+        // 후보 디렉터리 순서대로 베이스명 일치 텍스처를 탐색한다.
+        static string FindTextureInCandidateDirs(string sourceDirectory, string baseName)
+        {
             foreach (string candidateDirectory in TextureCandidateDirectories)
             {
                 string directory = string.IsNullOrEmpty(candidateDirectory)
                     ? sourceDirectory
                     : Path.Combine(sourceDirectory, candidateDirectory);
-                string candidate = FindTextureByBaseName(directory, materialToken);
+                string candidate = FindTextureByBaseName(directory, baseName);
                 if (!string.IsNullOrEmpty(candidate))
                 {
                     return candidate;
                 }
             }
-
             return string.Empty;
         }
 
@@ -85,6 +90,11 @@ namespace Fbx2Vmd.FBXImporter
             if (IsInsideDirectory(sourceDirectory, relativeCandidate) && File.Exists(relativeCandidate))
             {
                 return relativeCandidate; }
+            return ResolveByFileName(sourceDirectory, normalizedReference); }
+
+        // 상대 참조의 파일명으로 후보 디렉터리를 순회해 텍스처를 찾는다.
+        static string ResolveByFileName(string sourceDirectory, string normalizedReference)
+        {
             string textureFileName = Path.GetFileName(normalizedReference);
             if (string.IsNullOrWhiteSpace(textureFileName))
             {

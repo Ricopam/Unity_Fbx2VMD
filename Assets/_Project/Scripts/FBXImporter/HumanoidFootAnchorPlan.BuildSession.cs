@@ -159,17 +159,9 @@ namespace Fbx2Vmd.FBXImporter
             {
                 if (!TrySample()) return false;
                 int primary = _states[0].StartFrame <= _states[1].StartFrame ? 0 : 1;
-                if (_frame > 0 && _emittedValid[primary] && _emittedContact[primary] == _states[primary])
-                {
-                    _evaluate(Mathf.Min((_frame - 1) / _frameRate, _clipLength));
-                    if (_sampler.TrySample() && _sampler.TryGetLocalPoint(_states[primary].Point, out Vector3 previousLocalPoint))
-                    {
-                        _previousPrimaryPoint = _foot.TransformPoint(previousLocalPoint);
-                        _hasPreviousPrimaryPoint = true;
-                    }
-                    _evaluate(Mathf.Min(_frame / _frameRate, _clipLength));
-                    if (!_sampler.TrySample()) return false;
-                }
+                if (_frame > 0 && _emittedValid[primary] && _emittedContact[primary] == _states[primary] &&
+                    !RecapturePreviousPrimaryPoint(primary))
+                    return false;
                 Vector3 previousRear = SourcePoint(0), previousFront = SourcePoint(1);
                 if (!TryCreatePair(_foot, _sampler, _states, _source, _frame, _sourceRotation, out _pair))
                     _result.RecordIssue(_frame, "공동 접촉 자세 또는 지상 방향을 준비하지 못함");
@@ -189,6 +181,19 @@ namespace Fbx2Vmd.FBXImporter
                 return true;
             }
 
+            // 이전 프레임의 주 접촉 로컬 포인트를 재평가해 월드 위치로 보관한다.
+            bool RecapturePreviousPrimaryPoint(int primary)
+            {
+                _evaluate(Mathf.Min((_frame - 1) / _frameRate, _clipLength));
+                if (_sampler.TrySample() && _sampler.TryGetLocalPoint(_states[primary].Point, out Vector3 previousLocalPoint))
+                {
+                    _previousPrimaryPoint = _foot.TransformPoint(previousLocalPoint);
+                    _hasPreviousPrimaryPoint = true;
+                }
+                _evaluate(Mathf.Min(_frame / _frameRate, _clipLength));
+                return _sampler.TrySample();
+            }
+
             void AlignPair()
             {
                 Vector3 direction = Vector3.ProjectOnPlane(_sourceRotation * (_source[1][_frame] - _source[0][_frame]), Vector3.up);
@@ -198,15 +203,7 @@ namespace Fbx2Vmd.FBXImporter
                     Vector3 anchor = _states[_pair.Primary].GetAnchor(SourcePoint(_pair.Primary), _sourceRotation, _scaleRatio);
                     HumanoidFootAnchorPolicy primaryPolicy = _anchorPolicies == null
                         ? HumanoidFootAnchorPolicy.Free : _anchorPolicies[_frame];
-                    if (_hasPreviousPrimaryPoint && _result._frames[_pair.Primary][_frame - 1].Point != _states[_pair.Primary].Point &&
-                        _sampler.TryGetLocalPoint(_states[_pair.Primary].Point, out Vector3 currentLocalPoint))
-                    {
-                        Vector3 anchorShift = Vector3.ProjectOnPlane(anchor - _emitted[_pair.Primary], Vector3.up);
-                        Vector3 pointShift = Vector3.ProjectOnPlane( _foot.TransformPoint(currentLocalPoint) - _previousPrimaryPoint, Vector3.up);
-                        // 정점 교체의 실제 이동과 맞는 앵커 이동만 발목 자세 보상으로 허용함.
-                        if (Vector3.Distance(anchorShift, pointShift) <= _foot.lossyScale.x * 0.005f)
-                            _preservedPrimary = _pair.Primary;
-                    }
+                    TryPreservePrimaryOnPointSwap(anchor);
                     if (_anchorTrackStep > 0f && _emittedValid[_pair.Primary] && _emittedContact[_pair.Primary] == _states[_pair.Primary] && _preservedPrimary != _pair.Primary)
                         anchor = MoveEmittedAnchor(_emitted[_pair.Primary], anchor, _anchorTrackStep);
                     int secondary = 1 - _pair.Primary;
@@ -227,6 +224,18 @@ namespace Fbx2Vmd.FBXImporter
                     _result.RecordIssue(_frame, "원본 발 방향의 지상 투영이 소실됨");
                     _pair = null;
                 }
+            }
+
+            // 정점 교체의 실제 이동과 맞는 앵커 이동만 발목 자세 보상으로 허용해 주 채널 보존을 표시한다.
+            void TryPreservePrimaryOnPointSwap(Vector3 anchor)
+            {
+                if (!_hasPreviousPrimaryPoint || _result._frames[_pair.Primary][_frame - 1].Point == _states[_pair.Primary].Point ||
+                    !_sampler.TryGetLocalPoint(_states[_pair.Primary].Point, out Vector3 currentLocalPoint))
+                    return;
+                Vector3 anchorShift = Vector3.ProjectOnPlane(anchor - _emitted[_pair.Primary], Vector3.up);
+                Vector3 pointShift = Vector3.ProjectOnPlane( _foot.TransformPoint(currentLocalPoint) - _previousPrimaryPoint, Vector3.up);
+                if (Vector3.Distance(anchorShift, pointShift) <= _foot.lossyScale.x * 0.005f)
+                    _preservedPrimary = _pair.Primary;
             }
 
             void EmitFrames()

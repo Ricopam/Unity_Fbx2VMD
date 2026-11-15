@@ -75,26 +75,32 @@ namespace Fbx2Vmd.ClothPhysics
                     continue;
                 Side side = DetectSide(t.name);
                 string norm = Normalize(t.name);
-
-                HumanBodyBones best = HumanBodyBones.LastBone;
-                int bestLen = 0;
-                foreach (var e in Table)
-                {
-                    if (e.side != Side.None && e.side != side)
-                        continue;
-                    foreach (var key in e.keys)
-                    {
-                        if (key.Length > bestLen && norm.Contains(key))
-                        {
-                            best = e.bone;
-                            bestLen = key.Length;
-                        }
-                    }
-                }
+                HumanBodyBones best = FindBestBoneMatch(norm, side);
                 if (best != HumanBodyBones.LastBone && !map.ContainsKey(best))
                     map[best] = t;
             }
             return map;
+        }
+
+        // 가장 긴 키 매칭을 우선해 최적의 본 후보를 고름.
+        private static HumanBodyBones FindBestBoneMatch(string norm, Side side)
+        {
+            HumanBodyBones best = HumanBodyBones.LastBone;
+            int bestLen = 0;
+            foreach (var e in Table)
+            {
+                if (e.side != Side.None && e.side != side)
+                    continue;
+                foreach (var key in e.keys)
+                {
+                    if (key.Length > bestLen && norm.Contains(key))
+                    {
+                        best = e.bone;
+                        bestLen = key.Length;
+                    }
+                }
+            }
+            return best;
         }
 
         /// <summary>좌/우 쪽 구분을 이름에서 추출한다. 판별 불가면 None.</summary>
@@ -107,7 +113,12 @@ namespace Fbx2Vmd.ClothPhysics
             if (right && !left) return Side.Right;
             if (left && right)
                 return Side.None; // 양쪽 표기가 섞인 이름은 판별 불가
-            // "arm_l", "L_leg" 같은 토큰형 표기
+            return DetectSideFromTokens(lower, rawName); }
+
+        // 토큰형("arm_l")·무구분자("ArmL") 표기에서 측면을 판별함.
+        static Side DetectSideFromTokens(string lower, string rawName)
+        {
+            bool left = false, right = false;
             var tokens = lower.Split('_', '-', '.', ' ', '(', ')', '[', ']');
             foreach (var tok in tokens)
             {

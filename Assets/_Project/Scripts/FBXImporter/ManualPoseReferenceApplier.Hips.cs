@@ -81,15 +81,10 @@ namespace Fbx2Vmd.FBXImporter
                 if (hasReferenceRestLocalPosition && !IsFinite(referenceRestLocalPosition))
                 {
                     return false; }
-                Vector3 desiredLocalPosition;
-                if (hasReferenceRestLocalPosition)
-                {
-                    Vector3 referenceDelta = referenceCurrentLocalPosition - referenceRestLocalPosition;
-                    Vector3 anchorLocalPosition = hasTargetRestLocalPosition && IsFinite(targetRestLocalPosition)
-                        ? targetRestLocalPosition : currentLocalPosition;
-                    desiredLocalPosition = anchorLocalPosition + referenceDelta; } else
-                {
-                    desiredLocalPosition = referenceCurrentLocalPosition; }
+                Vector3 desiredLocalPosition = ResolveDesiredHipsPosition(
+                    referenceCurrentLocalPosition, referenceRestLocalPosition,
+                    hasReferenceRestLocalPosition, targetRestLocalPosition,
+                    hasTargetRestLocalPosition, currentLocalPosition);
                 Vector3 delta = desiredLocalPosition - currentLocalPosition;
                 if (!IsFinite(delta) || delta.sqrMagnitude <= 0.00000001f)
                 {
@@ -104,6 +99,20 @@ namespace Fbx2Vmd.FBXImporter
                     nextLocalPosition = currentLocalPosition;
                     return false; }
                 return true; }
+
+            // 휴지 기준 델타를 앵커 위치에 더해 목표 로컬 위치를 구함.
+            static Vector3 ResolveDesiredHipsPosition(
+                Vector3 referenceCurrentLocalPosition, Vector3 referenceRestLocalPosition,
+                bool hasReferenceRestLocalPosition, Vector3 targetRestLocalPosition,
+                bool hasTargetRestLocalPosition, Vector3 currentLocalPosition)
+            {
+                if (!hasReferenceRestLocalPosition)
+                {
+                    return referenceCurrentLocalPosition; }
+                Vector3 referenceDelta = referenceCurrentLocalPosition - referenceRestLocalPosition;
+                Vector3 anchorLocalPosition = hasTargetRestLocalPosition && IsFinite(targetRestLocalPosition)
+                    ? targetRestLocalPosition : currentLocalPosition;
+                return anchorLocalPosition + referenceDelta; }
 
             internal static bool TryResolveHipsAlignedEndpointPositionReference(
                 Animator referenceAnimator,

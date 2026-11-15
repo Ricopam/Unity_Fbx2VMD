@@ -27,6 +27,12 @@ namespace Fbx2Vmd.Settings
                 return;
             }
 
+            TryAssignKoreanFont(label);
+        }
+
+        // OS 한글 폰트를 해석해 TMP 라벨에 적용하거나 미설치 경고를 남김.
+        private static void TryAssignKoreanFont(TextMeshProUGUI label)
+        {
             if (!KoreanUiFontResolver.TryGetTmpFont(out TMP_FontAsset koreanFont) || !KoreanUiFontResolver.SupportsText(koreanFont, label.text))
             {
                 if (!warnedMissingKoreanUiFont)
@@ -88,7 +94,13 @@ namespace Fbx2Vmd.Settings
             fallbackRect.offsetMin = Vector2.zero;
             fallbackRect.offsetMax = Vector2.zero;
             fallbackRect.localScale = Vector3.one;
-            Text fallbackText = fallbackObject.GetComponent<Text>();
+            ConfigureLegacyFallbackText(fallbackObject.GetComponent<Text>(), label, legacyFont);
+            label.enabled = false;
+            return true; }
+
+        // TMP 라벨의 시각 속성을 레거시 Text로 이관하고 폴백 렌더링을 활성화한다.
+        private static void ConfigureLegacyFallbackText(Text fallbackText, TextMeshProUGUI label, Font legacyFont)
+        {
             fallbackText.text = label.text;
             fallbackText.font = legacyFont;
             fallbackText.fontSize = Mathf.Max(1, Mathf.RoundToInt(label.fontSize));
@@ -104,8 +116,7 @@ namespace Fbx2Vmd.Settings
             fallbackText.raycastTarget = false;
             fallbackText.supportRichText = true;
             fallbackText.enabled = true;
-            label.enabled = false;
-            return true; }
+        }
 
         private static TextAnchor ConvertToLegacyAlignment(TextAlignmentOptions alignment)
         {

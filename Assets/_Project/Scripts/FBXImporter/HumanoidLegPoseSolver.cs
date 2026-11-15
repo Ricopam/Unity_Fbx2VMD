@@ -21,16 +21,10 @@ namespace Fbx2Vmd.FBXImporter
             float distance = upperToTarget.magnitude;
             Vector3 originalUpperToFoot = originalUpperToKnee + originalKneeToFoot;
             if (!IsPositive(upperLength) || !IsPositive(lowerLength) || !IsPositive(distance) || !IsPositive(originalUpperToFoot.magnitude)) return false;
-            double upper = upperLength;
-            double lower = lowerLength;
-            double reach = upper + lower;
-            if (distance > reach * 1.000001d || distance < Math.Abs(upper - lower) - reach * 0.000001d) return false;
-            double along = (distance * (double)distance + upper * upper - lower * lower) / (2d * distance);
-            double targetRadius = Math.Sqrt(Math.Max(0d, upper * upper - along * along));
             Vector3 originalCross = Vector3.Cross(originalUpperToKnee, originalKneeToFoot);
-            double originalRadius = Vector3.Cross(originalUpperToKnee, originalUpperToFoot).magnitude / originalUpperToFoot.magnitude;
-            float weight = 1f - (float)Math.Min(1d, targetRadius > reach * 0.0000000001d ? originalRadius / targetRadius : 1d);
-            Vector3 axis = upperToTarget / distance;
+            if (!TryResolveBendGeometry(upperLength, lowerLength, distance, upperToTarget,
+                originalUpperToKnee, originalKneeToFoot, originalUpperToFoot, originalCross,
+                out Vector3 axis, out float weight)) return false;
             Vector3 current = Vector3.ProjectOnPlane(originalCross, axis);
             float currentLength = current.magnitude;
             if (currentLength == 0f && IsPositive(originalCross.sqrMagnitude)) return false;
@@ -47,6 +41,26 @@ namespace Fbx2Vmd.FBXImporter
                 if (weight < 1f) reference = Vector3.Slerp(current, reference, weight).normalized; }
             bendNormal = reference;
             referenceWeight = weight;
+            return true; }
+
+        // 삼각형 굽힘 기하(축·목표 반경·원본 반경)로 기준 법선 정합 가중치를 계산한다.
+        static bool TryResolveBendGeometry(
+            float upperLength, float lowerLength, float distance, Vector3 upperToTarget,
+            Vector3 originalUpperToKnee, Vector3 originalKneeToFoot,
+            Vector3 originalUpperToFoot, Vector3 originalCross,
+            out Vector3 axis, out float weight)
+        {
+            axis = default;
+            weight = 0f;
+            double upper = upperLength;
+            double lower = lowerLength;
+            double reach = upper + lower;
+            if (distance > reach * 1.000001d || distance < Math.Abs(upper - lower) - reach * 0.000001d) return false;
+            double along = (distance * (double)distance + upper * upper - lower * lower) / (2d * distance);
+            double targetRadius = Math.Sqrt(Math.Max(0d, upper * upper - along * along));
+            double originalRadius = Vector3.Cross(originalUpperToKnee, originalUpperToFoot).magnitude / originalUpperToFoot.magnitude;
+            weight = 1f - (float)Math.Min(1d, targetRadius > reach * 0.0000000001d ? originalRadius / targetRadius : 1d);
+            axis = upperToTarget / distance;
             return true; }
 
         internal static bool TrySolve(Transform upperLeg, Transform lowerLeg, Transform foot,
