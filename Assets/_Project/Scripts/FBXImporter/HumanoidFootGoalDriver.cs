@@ -105,23 +105,10 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            _animator = targetAnimator;
-            _hips = targetAnimator.GetBoneTransform(HumanBodyBones.Hips);
-            if (_hips == null ||
-                !_left.Initialize(targetAnimator, true) ||
-                !_right.Initialize(targetAnimator, false))
+            if (!InitializeRig(targetAnimator))
             {
                 Clear();
                 return false;
-            }
-            // gate와 같은 해부학 기준 법선 — 무릎이 거의 펴진 구간의 자세 cross는
-            // 잡음성이고 부호가 뒤집혀 무릎을 반대쪽으로 붕괴시키므로 기준 법선과의
-            // 가중 정합으로 굽힘면을 고정함. 취득 실패 시 기존 캐시 경로로 폴백함.
-            if (HumanoidLegBendCalibration.TryCapture(targetAnimator,
-                    out Vector3 leftReference, out Vector3 rightReference))
-            {
-                _left.SetBendReference(leftReference);
-                _right.SetBendReference(rightReference);
             }
 
             _frameRate = frameRate;
@@ -136,6 +123,28 @@ namespace Fbx2Vmd.FBXImporter
             BuildPinArrays(samples, hipsPositions, hipsRotations, intents,
                 labels, frameRate, sourceHumanScale);
             IsInitialized = true;
+            return true;
+        }
+
+        // gate와 같은 해부학 기준 법선 — 무릎이 거의 펴진 구간의 자세 cross는
+        // 잡음성이고 부호가 뒤집혀 무릎을 반대쪽으로 붕괴시키므로 기준 법선과의
+        // 가중 정합으로 굽힘면을 고정함. 취득 실패 시 기존 캐시 경로로 폴백함.
+        private bool InitializeRig(Animator targetAnimator)
+        {
+            _animator = targetAnimator;
+            _hips = targetAnimator.GetBoneTransform(HumanBodyBones.Hips);
+            if (_hips == null ||
+                !_left.Initialize(targetAnimator, true) ||
+                !_right.Initialize(targetAnimator, false))
+            {
+                return false;
+            }
+            if (HumanoidLegBendCalibration.TryCapture(targetAnimator,
+                    out Vector3 leftReference, out Vector3 rightReference))
+            {
+                _left.SetBendReference(leftReference);
+                _right.SetBendReference(rightReference);
+            }
             return true;
         }
 
@@ -254,27 +263,9 @@ namespace Fbx2Vmd.FBXImporter
             out bool confident, out bool slide, out bool uncertain)
         {
             confident = false; slide = false; uncertain = false;
-            IReadOnlyList<HumanoidFootContactIntent> sideIntents =
-                isLeft ? intents?.Left : intents?.Right;
-            if (sideIntents != null)
-            {
-                foreach (HumanoidFootContactIntent intent in sideIntents)
-                {
-                    if (frame < intent.StartFrame || frame >= intent.EndFrameExclusive) continue;
-                    if (intent.Certainty == HumanoidFootContactIntentCertainty.Uncertain)
-                    {
-                        uncertain = true;
-                    }
-                    else if (intent.Mode == HumanoidFootContactIntentMode.Plant)
-                    {
-                        confident = true;
-                    }
-                    else
-                    {
-                        slide = true;
-                    }
-                }
-            }
+            ClassifyIntentList(
+                isLeft ? intents?.Left : intents?.Right, frame,
+                ref confident, ref slide, ref uncertain);
             IReadOnlyList<Vector2Int> uncertainSpans =
                 isLeft ? intents?.LeftUncertainSpans : intents?.RightUncertainSpans;
             if (uncertainSpans != null)
@@ -282,6 +273,32 @@ namespace Fbx2Vmd.FBXImporter
                 foreach (Vector2Int span in uncertainSpans)
                 {
                     if (frame >= span.x && frame < span.y) uncertain = true;
+                }
+            }
+        }
+
+        private static void ClassifyIntentList(
+            IReadOnlyList<HumanoidFootContactIntent> sideIntents, int frame,
+            ref bool confident, ref bool slide, ref bool uncertain)
+        {
+            if (sideIntents == null)
+            {
+                return;
+            }
+            foreach (HumanoidFootContactIntent intent in sideIntents)
+            {
+                if (frame < intent.StartFrame || frame >= intent.EndFrameExclusive) continue;
+                if (intent.Certainty == HumanoidFootContactIntentCertainty.Uncertain)
+                {
+                    uncertain = true;
+                }
+                else if (intent.Mode == HumanoidFootContactIntentMode.Plant)
+                {
+                    confident = true;
+                }
+                else
+                {
+                    slide = true;
                 }
             }
         }
@@ -387,18 +404,28 @@ namespace Fbx2Vmd.FBXImporter
             float dt = firstEval || jumped ? 0f :
                 Mathf.Max(0f, timeSeconds - _lastTimeSeconds);
             _lastTimeSeconds = timeSeconds;
+            bool reset = jumped || firstEval;
 
             // 첫 평가는 전이 맥락이 없으므로 스냅으로 즉시 적용 — 같은 시각 재평가는
             // UpdateWeights의 dt<=0 조기 반환으로 상태를 유지해 멱등 재적용이 됨.
-            UpdateSolveWeights(frame, alpha, jumped || firstEval, dt);
+            UpdateSolveWeights(frame, alpha, reset, dt);
             if (_left.SolveWeight <= 0f && _right.SolveWeight <= 0f)
             {
                 return true;
             }
 
-            // 목표 골반은 소스 골반 궤적에서 가져옴 — rootSpace가 소스 골반 기준으로
-            // 구워졌으므로 같은 프레임의 소스 골반으로 복원해야 원본 월드 발 위치가
-            // 정확히 나옴. 타겟 골반은 골반 드롭의 영향을 받아 목표가 흔들림.
+            SolvePreparedGoals(frame, dt, leftBendNormal, rightBendNormal, ground);
+            return true;
+        }
+
+        // 목표 골반은 소스 골반 궤적에서 가져옴 — rootSpace가 소스 골반 기준으로
+        // 구워졌으므로 같은 프레임의 소스 골반으로 복원해야 원본 월드 발 위치가
+        // 정확히 나옴. 타겟 골반은 골반 드롭의 영향을 받아 목표가 흔들림.
+        private void SolvePreparedGoals(
+            int frame, float dt,
+            Vector3 leftBendNormal, Vector3 rightBendNormal,
+            HumanoidGroundResponse ground)
+        {
             Vector3 goalHipsPosition = _sourceHipsPositions[frame];
             Quaternion goalHipsRotation = _sourceHipsRotations[frame];
             // 골반 드롭은 양다리 공유 — 한쪽이라도 목표가 신장 한계를 넘으면 함께 계산함.
@@ -418,7 +445,6 @@ namespace Fbx2Vmd.FBXImporter
             // 대상 밑창 상승은 TrySolve에서 실제 지면을 우선 조회함.
             _left.SolvePreparedGoal(leftBendNormal);
             _right.SolvePreparedGoal(rightBendNormal);
-            return true;
         }
 
         private void UpdateSolveWeights(int frame, float alpha, bool reset, float dt)
