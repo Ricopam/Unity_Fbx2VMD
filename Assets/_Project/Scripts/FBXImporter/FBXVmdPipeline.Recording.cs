@@ -1,3 +1,4 @@
+using Fbx2Vmd.Recording;
 using UnityEngine;
 using UnityEngine.Serialization;
 using System;
@@ -387,6 +388,7 @@ namespace Fbx2Vmd.FBXImporter
             CopyProbeRiskFields(input, probe);
             return input;
         }
+#endif
 
 #if UNITY_EDITOR
         private void CopyProbeRiskFields(

@@ -395,6 +395,7 @@ namespace Fbx2Vmd.CharacterLibrary
             out string contentHash,
             out string error)
         {
+            error = null;
             if (!CharacterFileHasher.TryCaptureFileStat(
                     normalizedPath, out fileSize, out lastWriteTimeUtc,
                     out contentHash))
@@ -456,5 +457,6 @@ namespace Fbx2Vmd.CharacterLibrary
         /// 마지막 읽기가 IO 오류로 실패해 문서가 기본값인지.
         /// 이 상태에서 Save하면 정상 파일이 소실되므로 호출자가 먼저 확인할 수 있다.
         /// </summary>
+        public bool LastReadFailed => _store.LastReadFailed;
     }
 }

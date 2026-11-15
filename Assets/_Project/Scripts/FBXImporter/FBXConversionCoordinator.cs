@@ -48,6 +48,9 @@ namespace Fbx2Vmd.FBXImporter
             _importController = importController;
         }
 
+        /// <summary>
+        /// 요청을 검증하고 세션 기반 흐름에 위임함.
+        /// </summary>
         public async Task<FBXConversionResult> ConvertAsync(FBXConversionRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.SourcePath))

@@ -8,6 +8,7 @@ namespace Fbx2Vmd.FBXImporter
 {
     public static partial class HumanoidAvatarBuilder
     {
+        // 스마트 매핑: 정확한 이름 매칭 우선, 실패 시 normalized 매칭 시도
         private static Dictionary<string, Transform> SmartMapTransforms(Transform root, Dictionary<string, string> nameData)
         {
             var result = new Dictionary<string, Transform>();

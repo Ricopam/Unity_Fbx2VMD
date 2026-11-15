@@ -364,8 +364,5 @@ namespace Fbx2Vmd.FBXImporter
             }
         }
 
-        /// <summary>
-        /// 요청을 검증하고 세션 기반 흐름에 위임함.
-        /// </summary>
     }
 }

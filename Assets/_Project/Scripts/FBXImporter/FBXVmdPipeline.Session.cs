@@ -280,8 +280,6 @@ namespace Fbx2Vmd.FBXImporter
                 showGhostSkeletonWhenNoRenderers);
         }
 
-
-#endif
         #endregion
     }
 }

@@ -258,6 +258,5 @@ namespace Fbx2Vmd.FBXImporter
             foreach (Transform child in t) AddBonesRecursive(child, bones);
         }
 
-        // 스마트 매핑: 정확한 이름 매칭 우선, 실패 시 normalized 매칭 시도
     }
 }

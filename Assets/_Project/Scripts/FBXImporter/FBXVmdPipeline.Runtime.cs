@@ -32,6 +32,7 @@ namespace Fbx2Vmd.FBXImporter
 #endif
         }
 
+        /// <summary>
         /// Legacy reflection entry point for FBXVmdPipelineEditorSmokePathTests.
         /// </summary>
         internal static bool ShouldApplyTargetIdlePoseGuardThisFrame(bool isProcessing, bool hasActiveRetargeter)

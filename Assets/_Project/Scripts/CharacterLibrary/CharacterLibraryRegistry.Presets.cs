@@ -247,7 +247,5 @@ namespace Fbx2Vmd.CharacterLibrary
             Save();
         }
 
-        /// <summary>
-        /// 엔트리의 썸네일 PNG 절대 경로. 없으면 빈 문자열.
     }
 }

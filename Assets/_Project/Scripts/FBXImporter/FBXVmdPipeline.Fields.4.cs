@@ -8,6 +8,7 @@ namespace Fbx2Vmd.FBXImporter
 {
     public partial class FBXVmdPipeline
     {
+        #region Public 필드
         [Tooltip("Runtime diagnostic: apply the post-SetHumanPose endpoint correction to the left foot row instead of the right foot row.")]
         [FormerlySerializedAs("postSetHumanPoseEndpointPositionUseLeftSide")] [SerializeField] private bool _shouldUseLeftSideForPostSetHumanPoseEndpointPosition = false;
 
