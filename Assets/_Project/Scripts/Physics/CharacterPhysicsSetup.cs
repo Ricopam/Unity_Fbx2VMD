@@ -198,30 +198,52 @@ namespace Fbx2Vmd.ClothPhysics
                 Finish(report);
                 return;
             }
+            var context = CollectClothChains(
+                animator, resolver, bodyBones, boneVerts, externalOwned,
+                head, detect, report);
+            int headHairChainCount = context.headHairChainCount;
+            var skirtBoneDepths = context.skirtBoneDepths;
 
-            // 스커트 본은 미리 수집 — 장식물 토폴로지 탐지의 소유 집합에도 포함한다
-            var skirtBoneDepths = SkirtClothBuilder.CollectSkirtBoneDepths(animator.transform);
+            BuildDynamicsAndFinish(
+                animator, resolver, smrs, torso, head, detect,
+                headHairChainCount, skirtBoneDepths, colResult, report);
+        }
 
-            // 머리 측 체인 수 — 신체측 장식물 체인이 뒤에 추가되므로 마스크 대상 구간을 구분한다
-            int headHairChainCount = detect.chains.Count;
-
-            CollectAccessoryChains(animator, resolver, bodyBones, boneVerts,
-                externalOwned, skirtBoneDepths, head, detect,
-                ref headHairChainCount, report);
-
+        // 카운트는 머리카락 클로스만 — 스커트/VRM 변환 클로스도 generatedCloths에 들어간다
+        private void BuildDynamicsAndFinish(
+            Animator animator, System.Func<HumanBodyBones, Transform> resolver,
+            SkinnedMeshRenderer[] smrs, float torso, Transform head,
+            HairChainDetector.Result detect, int headHairChainCount,
+            Dictionary<Transform, int> skirtBoneDepths,
+            BodyColliderBuilder.BuildResult colResult, List<string> report)
+        {
             BuildSkirtCloth(animator, resolver, smrs, torso,
                 skirtBoneDepths, colResult, report);
-
             bool springPath = BuildHairDynamics(detect, headHairChainCount,
                 torso, head, colResult, report);
-
-            // 카운트는 머리카락 클로스만 — 스커트/VRM 변환 클로스도 generatedCloths에 들어간다
             int hairClothCount = generatedCloths.Count(IsHairCloth);
             report.Add($"머리카락 다이내믹스 생성: {(springPath ? "본 스프링 에셋 1개" : $"BoneCloth {hairClothCount}개")}");
             graceUntilFrame = Time.frameCount + RebuildGraceFrames;
             Finish(report);
         }
 
+
+        // 스커트 본은 미리 수집 — 장식물 토폴로지 탐지의 소유 집합에도 포함한다.
+        // 머리 측 체인 수 — 신체측 장식물 체인이 뒤에 추가되므로 마스크 대상 구간을 구분한다.
+        private (int headHairChainCount, Dictionary<Transform, int> skirtBoneDepths) CollectClothChains(
+            Animator animator, System.Func<HumanBodyBones, Transform> resolver,
+            HashSet<Transform> bodyBones,
+            Dictionary<Transform, List<Vector3>> boneVerts,
+            HashSet<Transform> externalOwned, Transform head,
+            HairChainDetector.Result detect, List<string> report)
+        {
+            var skirtBoneDepths = SkirtClothBuilder.CollectSkirtBoneDepths(animator.transform);
+            int headHairChainCount = detect.chains.Count;
+            CollectAccessoryChains(animator, resolver, bodyBones, boneVerts,
+                externalOwned, skirtBoneDepths, head, detect,
+                ref headHairChainCount, report);
+            return (headHairChainCount, skirtBoneDepths);
+        }
 
         /// <summary>생성물 전체 제거 (재실행 안전). 추출된 스커트 메시도 복원한다.</summary>
         [ContextMenu("자동 생성 물리 제거")]
@@ -315,22 +337,19 @@ namespace Fbx2Vmd.ClothPhysics
                 Debug.LogWarning(lastReport, this);
                 return;
             }
-            Animator animator = ResolveAnimator();
-            float torso = 0.6f;
-            Transform head = null;
-            if (animator != null && animator.isHuman)
-            {
-                torso = BodyColliderBuilder.MeasureTorso(animator);
-                head = animator.GetBoneTransform(HumanBodyBones.Head);
-            }
-            else if (animator != null)
-            {
-                var nameMap = NamePatternBoneResolver.Resolve(animator.transform);
-                nameMap.TryGetValue(HumanBodyBones.Head, out head);
-                if (head != null && nameMap.TryGetValue(HumanBodyBones.Hips, out var hips))
-                    torso = BodyColliderBuilder.MeasureTorso(hips, head);
-            }
+            ResolveTorsoAndHead(out float torso, out Transform head);
 
+            int applied = ApplyTuningToHairCloths(torso, head);
+            var wireReport = new List<string>();
+            WireHairMutualCollision(wireReport);
+            lastReport = $"튜닝 재적용 완료: {applied}개 클로스 " +
+                $"(sway={tuning.sway:F2}, damp={tuning.dampingScale:F2}, grav={tuning.gravityScale:F2})" +
+                (wireReport.Count > 0 ? "\n" + string.Join("\n", wireReport) : "");
+            Debug.Log("[CharacterPhysicsSetup] " + lastReport, this);
+        }
+
+        private int ApplyTuningToHairCloths(float torso, Transform head)
+        {
             int applied = 0;
             for (int i = 0; i < generatedCloths.Count; i++)
             {
@@ -345,12 +364,26 @@ namespace Fbx2Vmd.ClothPhysics
                 NotifyParameterChange(cloth);
                 applied++;
             }
-            var wireReport = new List<string>();
-            WireHairMutualCollision(wireReport);
-            lastReport = $"튜닝 재적용 완료: {applied}개 클로스 " +
-                $"(sway={tuning.sway:F2}, damp={tuning.dampingScale:F2}, grav={tuning.gravityScale:F2})" +
-                (wireReport.Count > 0 ? "\n" + string.Join("\n", wireReport) : "");
-            Debug.Log("[CharacterPhysicsSetup] " + lastReport, this);
+            return applied;
+        }
+
+        private void ResolveTorsoAndHead(out float torso, out Transform head)
+        {
+            torso = 0.6f;
+            head = null;
+            Animator animator = ResolveAnimator();
+            if (animator != null && animator.isHuman)
+            {
+                torso = BodyColliderBuilder.MeasureTorso(animator);
+                head = animator.GetBoneTransform(HumanBodyBones.Head);
+            }
+            else if (animator != null)
+            {
+                var nameMap = NamePatternBoneResolver.Resolve(animator.transform);
+                nameMap.TryGetValue(HumanBodyBones.Head, out head);
+                if (head != null && nameMap.TryGetValue(HumanBodyBones.Hips, out var hips))
+                    torso = BodyColliderBuilder.MeasureTorso(hips, head);
+            }
         }
 
         /// <summary>
@@ -378,12 +411,7 @@ namespace Fbx2Vmd.ClothPhysics
             var hairs = generatedCloths.Where(IsHairCloth).ToList();
 
             // 재적용 대비 — 기존 상호 충돌 연결을 먼저 해제
-            foreach (var c in hairs)
-            {
-                var sc = c.SerializeData.selfCollisionConstraint;
-                sc.syncMode = SelfCollisionConstraint.SelfCollisionMode.None;
-                sc.syncPartner = null;
-            }
+            UnlinkHairMutualCollision(hairs);
             bool mutualOn = springProfile.enabled
                 ? springProfile.interChainCollision
                 : tuning.useMutualCollision;
@@ -413,6 +441,16 @@ namespace Fbx2Vmd.ClothPhysics
         /// keepPose=true면 현재 자세를 유지한 채 재개, false면 바인드 포즈로 리셋.
         /// </summary>
         /// <param name="keepPose">true=자세 유지 리셋(순간이동 폭주 방지)</param>
+        static void UnlinkHairMutualCollision(List<MagicaCloth> hairs)
+        {
+            foreach (var c in hairs)
+            {
+                var sc = c.SerializeData.selfCollisionConstraint;
+                sc.syncMode = SelfCollisionConstraint.SelfCollisionMode.None;
+                sc.syncPartner = null;
+            }
+        }
+
         public void ResetPhysics(bool keepPose = false)
         {
             foreach (var cloth in generatedCloths)
@@ -424,73 +462,6 @@ namespace Fbx2Vmd.ClothPhysics
 
         /// <summary>
         /// 비활성→활성 전환 시 생성된 클로스의 무결성을 확인한다.
-        /// OnEnable 직후에는 MC2 비동기 빌드가 진행 중일 수 있으므로
-        /// 짧은 유예 시간 뒤 Update에서 판정한다.
-        /// </summary>
-        int integrityCheckDelay;
-
-        /// <summary>씬 직렬화 클로스에 현재 컴포넌트 파라미터 재적용 예약.</summary>
-        bool pendingParamApply;
-
-        void OnEnable()
-        {
-            if (Application.isPlaying && generatedCloths.Count > 0)
-            {
-                graceUntilFrame = Time.frameCount + RebuildGraceFrames;
-                integrityCheckDelay = RebuildGraceFrames + 5; // 유예 종료 후 무결성 판정
-                // 씬에 직렬화된 클로스는 생성 시점 파라미터를 갖는다 —
-                // 튜닝/springProfile 변경이 반영되도록 빌드 완료 후 한 번 재적용한다
-                pendingParamApply = true;
-            }
-        }
-
-        void Update()
-        {
-            // 다른 에셋이 PlayerLoop를 덮어쓰면 MC2 시뮬레이션이 조용히 멈춘다.
-            // InitCustomGameLoop는 이미 등록돼 있으면 즉시 반환하는 멱등 호출.
-            if (playerLoopGuard && Application.isPlaying && Time.frameCount % 120 == 0)
-                MagicaManager.InitCustomGameLoop();
-
-            // 빌드 완료를 기다리던 지연 셋업 — 빌드 중 클로스가 없어지면 실행
-            if (deferredSetup && !generatedCloths.Any(c =>
-                    c != null && c.Process.IsState(ClothProcess.State_Build)))
-            {
-                deferredSetup = false;
-                SetupInternal();
-                return;
-            }
-            if (integrityCheckDelay <= 0)
-                return;
-            if (--integrityCheckDelay > 0)
-                return;
-
-            int invalid = 0;
-            foreach (var cloth in generatedCloths)
-                if (!IsClothAlive(cloth))
-                    invalid++;
-            if (invalid == 0)
-            {
-                // 무결성 확인 시점 — 씬 직렬화 클로스의 구 파라미터를 현재 설정으로 한 번 재적용
-                if (pendingParamApply)
-                {
-                    pendingParamApply = false;
-                    ReapplyParameters();
-                }
-                return;
-            }
-            pendingParamApply = false; // 재생성 경로는 생성 시점 파라미터를 직접 쓴다
-            if (autoRebuildOnEnable)
-            {
-                Debug.Log($"[CharacterPhysicsSetup] 무효 클로스 {invalid}개 — 자동 재설정 실행", this);
-                Rebuild();
-            }
-            else
-            {
-                Debug.LogWarning($"[CharacterPhysicsSetup] 무효 클로스 {invalid}개 감지. " +
-                    "ContextMenu '자동 물리 설정 실행'으로 재설정하거나 autoRebuildOnEnable을 켜세요.", this);
-            }
-        }
-
         /// <summary>
         /// 장식물이 매달릴 수 있는 신체 본을 해석한다 — 허리/척추/가슴/윗가슴/목/어깨.
         /// 해석 실패 본은 건너뛰고 중복은 제거한다.
@@ -550,132 +521,6 @@ namespace Fbx2Vmd.ClothPhysics
             return targetAnimator;
         }
 
-        private void ReapplySpringBackend()
-        {
-            if (SpringHairBackend.ReapplyExisting(transform, springProfile))
-            {
-                lastReport = "본 스프링 에셋 파라미터 재적용 완료";
-                Debug.Log("[CharacterPhysicsSetup] " + lastReport, this);
-            }
-            else
-            {
-                lastReport = SpringHairBackend.Available
-                    ? "재적용할 본 스프링 에셋 생성물이 없습니다. 자동 물리 설정을 먼저 실행하세요."
-                    : "본 스프링 에셋 미설치 — 현재 MC2 경로가 동작 중입니다.";
-                Debug.LogWarning(lastReport, this);
-            }
-        }
-
-#if UNITY_EDITOR
-        /// <summary>
-        /// 현재 생성된 클로스 파라미터를 캐릭터 전용 프리셋 JSON으로 저장한다.
-        /// 저장 위치: Assets/Resources/PhysicsPresets/Character/{키}_{클로스명}.json
-        /// tuning/skirtTuning의 characterPresetKey에 같은 키를 입력하면 이 파일이
-        /// 공식 프리셋보다 우선 로드된다 (튜닝 결과의 캐릭터별 라이브러리화).
-        /// </summary>
-        [ContextMenu("생성 클로스를 캐릭터 프리셋으로 저장")]
-        void ExportCharacterPresets()
-        {
-            if (generatedCloths.Count == 0)
-            {
-                lastReport = "저장할 클로스가 없습니다. 자동 물리 설정을 먼저 실행하세요.";
-                Debug.LogWarning(lastReport, this);
-                return;
-            }
-            string key = tuning.characterPresetKey;
-            if (string.IsNullOrEmpty(key))
-                key = skirtTuning.characterPresetKey;
-            if (string.IsNullOrEmpty(key))
-                key = name;
-            string dir = System.IO.Path.Combine(
-                Application.dataPath, "Resources/PhysicsPresets/Character");
-            System.IO.Directory.CreateDirectory(dir);
-            int saved = 0;
-            foreach (var cloth in generatedCloths)
-            {
-                if (cloth == null)
-                    continue;
-                System.IO.File.WriteAllText(
-                    System.IO.Path.Combine(dir, $"{key}_{cloth.name}.json"),
-                    cloth.SerializeData.ExportJson());
-                saved++;
-            }
-            UnityEditor.AssetDatabase.Refresh();
-            lastReport = $"캐릭터 프리셋 {saved}개 저장 (키 '{key}') — " +
-                "Resources/PhysicsPresets/Character/. 적용하려면 " +
-                "characterPresetKey에 같은 키를 입력하세요.";
-            Debug.Log("[CharacterPhysicsSetup] " + lastReport, this);
-        }
-
-        /// <summary>
-        /// Avatar가 비어있을 때 모델 원본에서 Humanoid Avatar를 찾아 할당한다.
-        /// 1순위: SkinnedMeshRenderer.sharedMesh의 원본 에셋(FBX) 안의 Avatar
-        /// 2순위: 프리팹 소스와 같은 폴더의 Avatar
-        /// 할당 후 Head 본 해결로 호환성을 검증하고, 실패 시 원복한다.
-        /// </summary>
-        bool TryAssignAvatarFromPrefabSource(Animator animator)
-        {
-            if (animator.avatar != null)
-                return animator.avatar.isHuman;
-
-            var candidatePaths = CollectAvatarCandidatePaths(animator);
-
-            var tried = new List<Avatar>();
-            foreach (var path in candidatePaths)
-            {
-                foreach (var asset in UnityEditor.AssetDatabase.LoadAllAssetsAtPath(path))
-                {
-                    if (asset is Avatar avatar && avatar.isHuman && !tried.Contains(avatar))
-                        tried.Add(avatar);
-                }
-            }
-
-            foreach (var avatar in tried)
-            {
-                animator.avatar = avatar;
-                // 호환성 검증: Head 본이 해결되지 않으면 다른 스켈레톤의 Avatar
-                if (animator.isHuman && animator.GetBoneTransform(HumanBodyBones.Head) != null)
-                    return true;
-            }
-            animator.avatar = null;
-            return false;
-        }
-
-        private List<string> CollectAvatarCandidatePaths(Animator animator)
-        {
-            var candidatePaths = new List<string>();
-
-            // 1) SMR 메시의 원본 에셋 경로 — 프리팹 연결 없이도 정확
-            foreach (var smr in animator.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-            {
-                if (smr.sharedMesh == null)
-                    continue;
-                string p = UnityEditor.AssetDatabase.GetAssetPath(smr.sharedMesh);
-                if (!string.IsNullOrEmpty(p))
-                    candidatePaths.Add(p);
-            }
-
-            // 2) 프리팹 소스와 같은 폴더
-            string prefabPath = UnityEditor.PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(gameObject);
-            if (string.IsNullOrEmpty(prefabPath))
-            {
-                var src = UnityEditor.PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
-                if (src != null)
-                    prefabPath = UnityEditor.AssetDatabase.GetAssetPath(src);
-            }
-            if (!string.IsNullOrEmpty(prefabPath))
-            {
-                string dir = System.IO.Path.GetDirectoryName(prefabPath).Replace('\\', '/');
-                foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:Avatar", new[] { dir }))
-                {
-                    string p = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-                    if (!candidatePaths.Contains(p))
-                        candidatePaths.Add(p);
-                }
-            }
-            return candidatePaths;
-        }
-#endif
 
         void Finish(List<string> report)
         {

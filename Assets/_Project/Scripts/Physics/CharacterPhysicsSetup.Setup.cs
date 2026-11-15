@@ -26,46 +26,61 @@ namespace Fbx2Vmd.ClothPhysics
         {
             // 3. 부위별 머리카락 다이내믹스 생성 — 백엔드에 따라 MC2 BoneCloth 또는 본 스프링 에셋.
             //    마스크로 끈 머리 부위는 클로스 미생성(본이 애니메이션 추종) — 신체측 체인은 대상 아님
-            var hairChains = detect.chains;
-            if (hairPhysicsParts != HairPartMask.All)
-            {
-                hairChains = detect.chains
-                    .Where((c, i) => i >= headHairChainCount
-                        || hairPhysicsParts.HasFlag(c.part.ToMask()))
-                    .ToList();
-                foreach (var p in detect.chains.Take(headHairChainCount)
-                    .Select(c => c.part).Distinct()
-                    .Where(p => !hairPhysicsParts.HasFlag(p.ToMask())))
-                    report.Add($"{p}: 부위 마스크로 스킵 — 본이 애니메이션 포즈를 추종");
-            }
+            var hairChains = FilterHairChains(detect, headHairChainCount, report);
             var groups = hairChains.GroupBy(c => c.part);
-            bool springPath = hairBackend == HairDynamicsBackend.SpringBones;
-            if (springPath)
-            {
-                var springGo = SpringHairBackend.Build(
-                    transform, hairChains, springProfile, report, colResult.colliders);
-                if (springGo == null)
-                {
-                    report.Add(SpringHairBackend.Available
-                        ? "본 스프링용 머리카락 체인이 없음 — MC2 BoneCloth로 폴백"
-                        : "본 스프링 에셋 미설치 — MC2 BoneCloth로 폴백");
-                    springPath = false;
-                }
-            }
+            bool springPath = hairBackend == HairDynamicsBackend.SpringBones &&
+                TryBuildSpringPath(hairChains, colResult, report);
             if (!springPath)
             {
-                foreach (var group in groups)
-                {
-                    var cloth = CreateHairCloth(
-                        group.Key, group.ToList(), colResult.byCategory, torso, head, report);
-                    if (cloth != null)
-                        generatedCloths.Add(cloth);
-                }
-
+                BuildMc2HairCloths(groups, colResult, torso, head, report);
                 // 4. 머리카락 클로스 간 상호 충돌 배선 (꼬임 방지)
                 WireHairMutualCollision(report);
             }
             return springPath;
+        }
+
+        private List<HairChain> FilterHairChains(
+            HairChainDetector.Result detect, int headHairChainCount, List<string> report)
+        {
+            if (hairPhysicsParts == HairPartMask.All)
+                return detect.chains;
+            var filtered = detect.chains
+                .Where((c, i) => i >= headHairChainCount
+                    || hairPhysicsParts.HasFlag(c.part.ToMask()))
+                .ToList();
+            foreach (var p in detect.chains.Take(headHairChainCount)
+                .Select(c => c.part).Distinct()
+                .Where(p => !hairPhysicsParts.HasFlag(p.ToMask())))
+                report.Add($"{p}: 부위 마스크로 스킵 — 본이 애니메이션 포즈를 추종");
+            return filtered;
+        }
+
+        private bool TryBuildSpringPath(
+            List<HairChain> hairChains,
+            BodyColliderBuilder.BuildResult colResult, List<string> report)
+        {
+            var springGo = SpringHairBackend.Build(
+                transform, hairChains, springProfile, report, colResult.colliders);
+            if (springGo != null)
+                return true;
+            report.Add(SpringHairBackend.Available
+                ? "본 스프링용 머리카락 체인이 없음 — MC2 BoneCloth로 폴백"
+                : "본 스프링 에셋 미설치 — MC2 BoneCloth로 폴백");
+            return false;
+        }
+
+        private void BuildMc2HairCloths(
+            IEnumerable<IGrouping<HairPart, HairChain>> groups,
+            BodyColliderBuilder.BuildResult colResult, float torso, Transform head,
+            List<string> report)
+        {
+            foreach (var group in groups)
+            {
+                var cloth = CreateHairCloth(
+                    group.Key, group.ToList(), colResult.byCategory, torso, head, report);
+                if (cloth != null)
+                    generatedCloths.Add(cloth);
+            }
         }
 
         private bool ResolveBoneContext(Animator animator, List<string> report,
@@ -81,14 +96,8 @@ namespace Fbx2Vmd.ClothPhysics
                 Debug.LogError(lastReport, this);
                 return false;
             }
-            if (!animator.isHuman)
-            {
-                // 프리팹 Animator에 Avatar가 비어있으면 원본 모델에서 복구 시도 (에디터 전용)
-#if UNITY_EDITOR
-                if (TryAssignAvatarFromPrefabSource(animator))
-                    report.Add("Avatar를 원본 모델에서 복구해 할당했습니다.");
-#endif
-            }
+            // 프리팹 Animator에 Avatar가 비어있으면 원본 모델에서 복구 시도 (에디터 전용)
+            TryRecoverAvatarFromPrefab(animator, report);
 
             // Humanoid면 Avatar 매핑으로, 아니면 본 이름 패턴으로 해석한다.
             bool humanoid = animator.isHuman;
@@ -98,24 +107,46 @@ namespace Fbx2Vmd.ClothPhysics
                 bodyBones = BodyColliderBuilder.CollectBodyBoneSet(animator);
                 torso = BodyColliderBuilder.MeasureTorso(animator);
             }
-            else
+            else if (!TryResolveByNamePattern(
+                    animator, report,
+                    out resolver, out bodyBones, out torso))
             {
-                var nameMap = NamePatternBoneResolver.Resolve(animator.transform);
-                if (!nameMap.TryGetValue(HumanBodyBones.Head, out _) ||
-                    !nameMap.TryGetValue(HumanBodyBones.Hips, out _))
-                {
-                    lastReport = "실패: Avatar가 Humanoid가 아니고 본 이름 패턴으로도 " +
-                        "Head/Hips를 해석할 수 없습니다. (수동 본 지정 필요)\n" +
-                        string.Join("\n", report);
-                    Debug.LogError(lastReport, this);
-                    return false;
-                }
-                resolver = b => nameMap.TryGetValue(b, out var t) ? t : null;
-                bodyBones = new HashSet<Transform>(nameMap.Values);
-                torso = BodyColliderBuilder.MeasureTorso(
-                    nameMap[HumanBodyBones.Hips], nameMap[HumanBodyBones.Head]);
-                report.Add($"Humanoid 아님 — 이름 패턴 폴백으로 신체 본 {nameMap.Count}개 해석");
+                return false;
             }
+            return true;
+        }
+
+        private void TryRecoverAvatarFromPrefab(Animator animator, List<string> report)
+        {
+#if UNITY_EDITOR
+            if (!animator.isHuman && TryAssignAvatarFromPrefabSource(animator))
+                report.Add("Avatar를 원본 모델에서 복구해 할당했습니다.");
+#endif
+        }
+
+        private bool TryResolveByNamePattern(
+            Animator animator, List<string> report,
+            out System.Func<HumanBodyBones, Transform> resolver,
+            out HashSet<Transform> bodyBones, out float torso)
+        {
+            resolver = null;
+            bodyBones = null;
+            torso = 0f;
+            var nameMap = NamePatternBoneResolver.Resolve(animator.transform);
+            if (!nameMap.TryGetValue(HumanBodyBones.Head, out _) ||
+                !nameMap.TryGetValue(HumanBodyBones.Hips, out _))
+            {
+                lastReport = "실패: Avatar가 Humanoid가 아니고 본 이름 패턴으로도 " +
+                    "Head/Hips를 해석할 수 없습니다. (수동 본 지정 필요)\n" +
+                    string.Join("\n", report);
+                Debug.LogError(lastReport, this);
+                return false;
+            }
+            resolver = b => nameMap.TryGetValue(b, out var t) ? t : null;
+            bodyBones = new HashSet<Transform>(nameMap.Values);
+            torso = BodyColliderBuilder.MeasureTorso(
+                nameMap[HumanBodyBones.Hips], nameMap[HumanBodyBones.Head]);
+            report.Add($"Humanoid 아님 — 이름 패턴 폴백으로 신체 본 {nameMap.Count}개 해석");
             return true;
         }
 
@@ -134,28 +165,7 @@ namespace Fbx2Vmd.ClothPhysics
                 : new HashSet<Transform>();
             if (vrmConversionMode == VrmConversionMode.ConvertToMc2)
             {
-                // C-2 변환 — 제작자 튜닝을 MC2 클로스로 이식하고 원본을 비활성.
-                // 비활성 스프링은 ClearGenerated가 복원하므로 재실행·GuardOnly
-                // 복귀 모두 안전하다.
-                float unit = torso > 0f ? torso / 0.6f : 1f;
-                var conv = VrmSpringBoneConverter.ConvertAll(
-                    transform, animator.transform, unit, report);
-                foreach (var cloth in conv.cloths)
-                {
-                    cloth.GetSerializeData2().preBuildData.enabled = usePreBuild;
-                    ApplyCulling(cloth);
-                    cloth.OnBuildComplete += HandleClothBuildComplete;
-                    generatedCloths.Add(cloth);
-                    generatedParts.Add(HairPart.Unknown);
-                    generatedIsLong.Add(false);
-                }
-                generatedColliders.AddRange(conv.colliders);
-                convertedSprings.AddRange(conv.disabledSprings);
-                foreach (var u in conv.unsupported)
-                    report.Add($"VRM 미지원: {u}");
-                if (conv.disabledSprings.Count == 0)
-                    report.Add("주의: ConvertToMc2인데 변환된 스프링이 없음 — " +
-                        "네이티브 소유 본 제외는 유지되므로 해당 체인에 클로스가 생성되지 않을 수 있음");
+                ApplyVrmConversion(animator, torso, report);
             }
             return externalOwned;
         }
@@ -188,6 +198,31 @@ namespace Fbx2Vmd.ClothPhysics
             return detect;
         }
 
+        // C-2 변환 — 제작자 튜닝을 MC2 클로스로 이식하고 원본을 비활성.
+        // 비활성 스프링은 ClearGenerated가 복원하므로 재실행·GuardOnly 복귀 모두 안전하다.
+        private void ApplyVrmConversion(Animator animator, float torso, List<string> report)
+        {
+            float unit = torso > 0f ? torso / 0.6f : 1f;
+            var conv = VrmSpringBoneConverter.ConvertAll(
+                transform, animator.transform, unit, report);
+            foreach (var cloth in conv.cloths)
+            {
+                cloth.GetSerializeData2().preBuildData.enabled = usePreBuild;
+                ApplyCulling(cloth);
+                cloth.OnBuildComplete += HandleClothBuildComplete;
+                generatedCloths.Add(cloth);
+                generatedParts.Add(HairPart.Unknown);
+                generatedIsLong.Add(false);
+            }
+            generatedColliders.AddRange(conv.colliders);
+            convertedSprings.AddRange(conv.disabledSprings);
+            foreach (var u in conv.unsupported)
+                report.Add($"VRM 미지원: {u}");
+            if (conv.disabledSprings.Count == 0)
+                report.Add("주의: ConvertToMc2인데 변환된 스프링이 없음 — " +
+                    "네이티브 소유 본 제외는 유지되므로 해당 체인에 클로스가 생성되지 않을 수 있음");
+        }
+
         private void CollectAccessoryChains(Animator animator,
             System.Func<HumanBodyBones, Transform> resolver,
             HashSet<Transform> bodyBones,
@@ -200,8 +235,34 @@ namespace Fbx2Vmd.ClothPhysics
             // 2.5. 신체 측(허리/가슴 등)에 매달린 장식물 체인 탐지 — 머리 외 부착점
             var accRoots = new List<Transform>();
             var accClaimed = new HashSet<Transform>();
-            // 헤어 체인 본 집합 — 명시 루트가 Head 밖을 가리키는 경우 acc 스캔과의
-            // 중복 채택(같은 본이 두 클로스 루트)을 막는다
+            CollectAccessoryRootsByName(
+                animator, head, bodyBones, externalOwned, detect,
+                accRoots, accClaimed);
+
+            // 2.6. 이름에 안 잡힌 신체측 체인 — 토폴로지+스키닝 폴백 (일반 FBX/VRM용)
+            if (detectGarmentChainsByTopology)
+                AppendTopologyAccessoryRoots(resolver, bodyBones, accClaimed,
+                    externalOwned, skirtBoneDepths, detect, boneVerts,
+                    accRoots, report);
+
+            // 중첩 루트 제거 — 상위 루트 서브트리에 속한 루트를 빼 같은 본의 이중 시뮬레이션을 막는다
+            var accRootSet = new HashSet<Transform>(accRoots);
+            accRoots.RemoveAll(r => accRootSet.Any(o => o != r && r.IsChildOf(o)));
+
+            if (accRoots.Count > 0)
+            {
+                AdoptAccessoryChains(accRoots, head, bodyBones, externalOwned,
+                    detect, ref headHairChainCount);
+            }
+        }
+
+        // 헤어 체인 본 집합 — 명시 루트가 Head 밖을 가리키는 경우 acc 스캔과의
+        // 중복 채택(같은 본이 두 클로스 루트)을 막는다
+        private void CollectAccessoryRootsByName(
+            Animator animator, Transform head, HashSet<Transform> bodyBones,
+            HashSet<Transform> externalOwned, HairChainDetector.Result detect,
+            List<Transform> accRoots, HashSet<Transform> accClaimed)
+        {
             var hairBones = new HashSet<Transform>();
             foreach (var c in detect.chains)
                 foreach (var b in c.bones)
@@ -219,30 +280,23 @@ namespace Fbx2Vmd.ClothPhysics
                         accClaimed.Add(d); // 하위 체인 본은 중복 루트로 잡지 않음
                 }
             }
+        }
 
-            // 2.6. 이름에 안 잡힌 신체측 체인 — 토폴로지+스키닝 폴백 (일반 FBX/VRM용)
-            if (detectGarmentChainsByTopology)
-                AppendTopologyAccessoryRoots(resolver, bodyBones, accClaimed,
-                    externalOwned, skirtBoneDepths, detect, boneVerts,
-                    accRoots, report);
-
-            // 중첩 루트 제거 — 상위 루트 서브트리에 속한 루트를 빼 같은 본의 이중 시뮬레이션을 막는다
-            var accRootSet = new HashSet<Transform>(accRoots);
-            accRoots.RemoveAll(r => accRootSet.Any(o => o != r && r.IsChildOf(o)));
-
-            if (accRoots.Count > 0)
-            {
-                // 네이티브 소유 본은 체인 수집에서도 절단 — 루트가 미소유여도 중간 본이
-                // 섞여 들어가면 그 본만큼은 이중 물리가 된다
-                var acc = HairChainDetector.Detect(
-                    head, x => bodyBones.Contains(x) || externalOwned.Contains(x), accRoots);
-                // 신체측 체인에는 헤어 부위 분류(위치 추정 포함)를 적용하지 않는다
-                foreach (var ch in acc.chains)
-                    ch.part = HairPart.Accessory;
-                headHairChainCount = detect.chains.Count;
-                detect.chains.AddRange(acc.chains);
-                detect.skipped.AddRange(acc.skipped);
-            }
+        // 네이티브 소유 본은 체인 수집에서도 절단 — 루트가 미소유여도 중간 본이
+        // 섞여 들어가면 그 본만큼은 이중 물리가 된다
+        private void AdoptAccessoryChains(
+            List<Transform> accRoots, Transform head,
+            HashSet<Transform> bodyBones, HashSet<Transform> externalOwned,
+            HairChainDetector.Result detect, ref int headHairChainCount)
+        {
+            var acc = HairChainDetector.Detect(
+                head, x => bodyBones.Contains(x) || externalOwned.Contains(x), accRoots);
+            // 신체측 체인에는 헤어 부위 분류(위치 추정 포함)를 적용하지 않는다
+            foreach (var ch in acc.chains)
+                ch.part = HairPart.Accessory;
+            headHairChainCount = detect.chains.Count;
+            detect.chains.AddRange(acc.chains);
+            detect.skipped.AddRange(acc.skipped);
         }
 
         private void AppendTopologyAccessoryRoots(
@@ -370,22 +424,7 @@ namespace Fbx2Vmd.ClothPhysics
                 usePresetBaseline, skirtTuning);
             if (sr.cloth != null)
             {
-                sr.cloth.GetSerializeData2().preBuildData.enabled = usePreBuild;
-                if (skinningBones != null &&
-                    SkirtAnimationProbe.ApplyCustomSkinning(
-                        sr.cloth.SerializeData, skinningBones) == 0)
-                    report.Add("경고: 커스텀 스키닝 폴백 요청됐으나 신체 본 해석 실패 — 폴백 불가");
-                ApplyCulling(sr.cloth);
-                sr.cloth.OnBuildComplete += HandleClothBuildComplete;
-                generatedCloths.Add(sr.cloth);
-                generatedParts.Add(HairPart.Unknown);
-                generatedIsLong.Add(false);
-                report.Add($"스커트 MeshCloth 자동 생성: 고정 {sr.fixedVertexCount} + " +
-                    $"이동 {sr.moveVertexCount} 버텍스 ({sr.rendererCount}개 렌더러, " +
-                    $"콜라이더 {skirtColliders.Count}개)");
-                if (sr.extractedMeshes.Count > 0)
-                    report.Add($"스커트 메시 추출 {sr.extractedMeshes.Count}개 " +
-                        "(65535 버텍스 한도 대응 — 원본 메시에서 스커트 삼각형 분리)");
+                RegisterSkirtCloth(sr, skinningBones, skirtColliders, report);
             }
             else
             {
@@ -393,6 +432,28 @@ namespace Fbx2Vmd.ClothPhysics
                     "클로스 미생성 (메시가 스커트 본에 스키닝되지 않았거나 Read/Write 필요)");
             }
             ReportSkirtPose(poseVerdict, poseDetail, false, report);
+        }
+
+        private void RegisterSkirtCloth(
+            SkirtClothBuilder.Result sr, List<Transform> skinningBones,
+            List<ColliderComponent> skirtColliders, List<string> report)
+        {
+            sr.cloth.GetSerializeData2().preBuildData.enabled = usePreBuild;
+            if (skinningBones != null &&
+                SkirtAnimationProbe.ApplyCustomSkinning(
+                    sr.cloth.SerializeData, skinningBones) == 0)
+                report.Add("경고: 커스텀 스키닝 폴백 요청됐으나 신체 본 해석 실패 — 폴백 불가");
+            ApplyCulling(sr.cloth);
+            sr.cloth.OnBuildComplete += HandleClothBuildComplete;
+            generatedCloths.Add(sr.cloth);
+            generatedParts.Add(HairPart.Unknown);
+            generatedIsLong.Add(false);
+            report.Add($"스커트 MeshCloth 자동 생성: 고정 {sr.fixedVertexCount} + " +
+                $"이동 {sr.moveVertexCount} 버텍스 ({sr.rendererCount}개 렌더러, " +
+                $"콜라이더 {skirtColliders.Count}개)");
+            if (sr.extractedMeshes.Count > 0)
+                report.Add($"스커트 메시 추출 {sr.extractedMeshes.Count}개 " +
+                    "(65535 버텍스 한도 대응 — 원본 메시에서 스커트 삼각형 분리)");
             foreach (var w in sr.warnings)
                 report.Add("경고: " + w);
         }
