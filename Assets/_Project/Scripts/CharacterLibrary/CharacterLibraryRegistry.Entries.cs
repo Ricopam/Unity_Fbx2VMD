@@ -360,19 +360,10 @@ namespace Fbx2Vmd.CharacterLibrary
                 return false;
             }
 
-            if (!CharacterFileHasher.TryCaptureFileStat(
-                    normalizedPath, out fileSize, out lastWriteTimeUtc, out contentHash))
-            {
-                error = "파일 정보를 읽을 수 없습니다.";
-                return false;
-            }
-
-            if (!string.Equals(entry.contentHash, contentHash, StringComparison.Ordinal))
-            {
-                error = "파일 내용이 등록된 캐릭터와 다릅니다.";
-                return false;
-            }
-            return true;
+            return TryVerifyRelinkContent(
+                entry, normalizedPath,
+                out fileSize, out lastWriteTimeUtc, out contentHash,
+                out error);
         }
 
         public bool Remove(string id)
@@ -399,6 +390,32 @@ namespace Fbx2Vmd.CharacterLibrary
             return true;
         }
 
+        private static bool TryVerifyRelinkContent(
+            CharacterLibraryEntry entry,
+            string normalizedPath,
+            out long fileSize,
+            out string lastWriteTimeUtc,
+            out string contentHash,
+            out string error)
+        {
+            if (!CharacterFileHasher.TryCaptureFileStat(
+                    normalizedPath, out fileSize, out lastWriteTimeUtc,
+                    out contentHash))
+            {
+                error = "파일 정보를 읽을 수 없습니다.";
+                return false;
+            }
+
+            if (!string.Equals(
+                    entry.contentHash, contentHash,
+                    StringComparison.Ordinal))
+            {
+                error = "파일 내용이 등록된 캐릭터와 다릅니다.";
+                return false;
+            }
+            return true;
+        }
+
         private void DeletePresetFileIfExists(string entryId)
         {
             string presetFile = ResolvePresetFilePath(entryId);
@@ -421,22 +438,7 @@ namespace Fbx2Vmd.CharacterLibrary
 
 
 
-        /// <summary>
-        /// 마지막 사용 시각과 활성 캐릭터 표시를 갱신한다.
-        /// </summary>
-        public void MarkUsed(string id)
-        {
-            ReloadIfExternallyChanged();
-            CharacterLibraryEntry entry = FindById(id);
-            if (entry == null)
-            {
-                return;
-            }
 
-            entry.lastUsedAtUtc = DateTime.UtcNow.ToString("O");
-            Document.activeCharacterId = entry.id;
-            Save();
-        }
 
         /// <summary>
         /// 활성 캐릭터 기록을 지운다. 씬 캐릭터로 복원할 때 호출해

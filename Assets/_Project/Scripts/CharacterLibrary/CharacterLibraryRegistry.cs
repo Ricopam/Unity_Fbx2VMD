@@ -66,6 +66,23 @@ namespace Fbx2Vmd.CharacterLibrary
 
         public string ActiveCharacterId => Document.activeCharacterId;
 
+        /// <summary>
+        /// 마지막 사용 시각과 활성 캐릭터 표시를 갱신한다.
+        /// </summary>
+        public void MarkUsed(string id)
+        {
+            ReloadIfExternallyChanged();
+            CharacterLibraryEntry entry = FindById(id);
+            if (entry == null)
+            {
+                return;
+            }
+
+            entry.lastUsedAtUtc = DateTime.UtcNow.ToString("O");
+            Document.activeCharacterId = entry.id;
+            Save();
+        }
+
         public CharacterLibraryEntry FindById(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
