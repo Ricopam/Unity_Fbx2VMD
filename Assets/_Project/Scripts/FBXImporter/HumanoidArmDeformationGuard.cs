@@ -98,21 +98,14 @@ namespace Fbx2Vmd.FBXImporter
 
         private void LateUpdate()
         {
-            if (!InitializeIfNeeded())
-            {
-                return;
-            }
-
-            if (_poseHandler == null)
+            if (!InitializeIfNeeded() || _poseHandler == null)
             {
                 return;
             }
 
             if (ShouldPreserveCompleteEditorHumanoidPoseReference())
             {
-                RestoreHumanoidLocalPositions();
-                RestoreLimbChildLocalPositions();
-                RestoreLimbChildLocalRotations();
+                RestoreLimbBaseline();
                 RestoreLocalScales();
                 return;
             }
@@ -122,17 +115,20 @@ namespace Fbx2Vmd.FBXImporter
             {
                 LogOnce(ref _poseWarningLogged, "HumanPose에 유효하지 않은 값이 있어 이 프레임의 팔 변형 가드를 건너뜁니다.");
                 RestoreLocalScales();
-                RestoreHumanoidLocalPositions();
-                RestoreLimbChildLocalPositions();
-                RestoreLimbChildLocalRotations();
+                RestoreLimbBaseline();
                 return;
             }
 
             ClampMusclesIfEnabled();
+            RestoreLimbBaseline();
+            RestoreLocalScales();
+        }
+
+        private void RestoreLimbBaseline()
+        {
             RestoreHumanoidLocalPositions();
             RestoreLimbChildLocalPositions();
             RestoreLimbChildLocalRotations();
-            RestoreLocalScales();
         }
 
         void ClampMusclesIfEnabled()
@@ -238,6 +234,18 @@ namespace Fbx2Vmd.FBXImporter
             float safeUpperTwistLimit = Mathf.Clamp(upperTwistLimit, 0.1f, 1f);
             float safeLowerTwistLimit = Mathf.Clamp(lowerTwistLimit, 0.1f, 1f);
 
+            changed = ClampArmMuscleRange(
+                pose.muscles, count, safeStretchLimit, safeUpperTwistLimit,
+                safeLowerTwistLimit, clampStretchMuscles);
+            return changed;
+        }
+
+        private static int ClampArmMuscleRange(
+            float[] muscles, int count, float safeStretchLimit,
+            float safeUpperTwistLimit, float safeLowerTwistLimit,
+            bool clampStretchMuscles)
+        {
+            int changed = 0;
             for (int i = 0; i < count; i++)
             {
                 string muscleName = HumanTrait.MuscleName[i];
@@ -252,7 +260,7 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                float before = pose.muscles[i];
+                float before = muscles[i];
                 float after = before;
 
                 if (normalizedName.Contains("stretch"))
@@ -278,10 +286,9 @@ namespace Fbx2Vmd.FBXImporter
                     continue;
                 }
 
-                pose.muscles[i] = after;
+                muscles[i] = after;
                 changed++;
             }
-
             return changed;
         }
 
@@ -324,13 +331,7 @@ namespace Fbx2Vmd.FBXImporter
             _initialHumanoidLocalPositions.Clear();
             _initialLimbChildLocalPositions.Clear();
             _initialLimbChildLocalRotations.Clear();
-            _poseWarningLogged = false;
-            _scaleWarningLogged = false;
-            _positionWarningLogged = false;
-            _limbChildPositionWarningLogged = false;
-            _limbChildRotationWarningLogged = false;
-            _muscleWarningLogged = false;
-            _armWarningLogged = false;
+            ResetWarningFlags();
 
             foreach (Transform targetTransform in GetComponentsInChildren<Transform>(true))
             {
@@ -342,6 +343,23 @@ namespace Fbx2Vmd.FBXImporter
                 return;
             }
 
+            var humanoidBones = CaptureHumanoidBonePositions();
+            CaptureLimbChildLocalPositions(humanoidBones);
+        }
+
+        private void ResetWarningFlags()
+        {
+            _poseWarningLogged = false;
+            _scaleWarningLogged = false;
+            _positionWarningLogged = false;
+            _limbChildPositionWarningLogged = false;
+            _limbChildRotationWarningLogged = false;
+            _muscleWarningLogged = false;
+            _armWarningLogged = false;
+        }
+
+        private HashSet<Transform> CaptureHumanoidBonePositions()
+        {
             var humanoidBones = new HashSet<Transform>();
             for (int i = (int)HumanBodyBones.Hips; i < (int)HumanBodyBones.LastBone; i++)
             {
@@ -360,8 +378,7 @@ namespace Fbx2Vmd.FBXImporter
                 _initialHumanoidLocalPositions[boneTransform] = boneTransform.localPosition;
                 humanoidBones.Add(boneTransform);
             }
-
-            CaptureLimbChildLocalPositions(humanoidBones);
+            return humanoidBones;
         }
 
         private void CaptureLimbChildLocalPositions(HashSet<Transform> humanoidBones)
