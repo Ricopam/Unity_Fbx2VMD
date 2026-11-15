@@ -176,33 +176,23 @@ namespace Fbx2Vmd.ClothPhysics
                     out HashSet<Transform> bodyBones, out float torso))
                 return;
 
-            // 1. 버텍스 수집 → 콜라이더 생성 (Humanoid만 시메트리 가능, 폴백은 미러 직접 생성)
-            var smrs = animator.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-            var boneVerts = BodyColliderBuilder.GatherBoneVertices(smrs);
-            BodyColliderBuilder.BuildResult colResult = BuildBodyColliders(
-                animator, resolver, torso, boneVerts, report);
-
-            // 네이티브 스프링본(VRM 등) 소유 본 — 같은 본에 MC2를 얹으면 이중 물리가 된다.
-            // ConvertToMc2일 때도 소유 스캔은 필요 — 변환 본이 자동 탐지에 잡히면
-            // 변환 클로스와 자동 생성 클로스의 이중 시뮬레이션이 된다.
-            HashSet<Transform> externalOwned =
-                ApplyNativeGuardAndConversion(animator, torso, report);
-
-            // 2. 머리카락 체인 탐지
-            Transform head = resolver(HumanBodyBones.Head);
-            HairChainDetector.Result detect = head == null
-                ? null
-                : DetectAndFilterChains(head, bodyBones, externalOwned, report);
+            HashSet<Transform> externalOwned = BuildCollidersAndChains(
+                animator, resolver, bodyBones, torso, report,
+                out SkinnedMeshRenderer[] smrs,
+                out BodyColliderBuilder.BuildResult colResult,
+                out Dictionary<Transform, List<Vector3>> boneVerts,
+                out Transform head,
+                out HairChainDetector.Result detect);
             if (detect == null)
             {
                 Finish(report);
                 return;
             }
-            var context = CollectClothChains(
+            var context2 = CollectClothChains(
                 animator, resolver, bodyBones, boneVerts, externalOwned,
                 head, detect, report);
-            int headHairChainCount = context.headHairChainCount;
-            var skirtBoneDepths = context.skirtBoneDepths;
+            int headHairChainCount = context2.headHairChainCount;
+            var skirtBoneDepths = context2.skirtBoneDepths;
 
             BuildDynamicsAndFinish(
                 animator, resolver, smrs, torso, head, detect,
@@ -227,6 +217,31 @@ namespace Fbx2Vmd.ClothPhysics
             Finish(report);
         }
 
+
+        // 1. 버텍스 수집 → 콜라이더 생성 + 2. 머리카락 체인 탐지까지의 준비 단계.
+        // 네이티브 스프링본(VRM 등) 소유 본 — 같은 본에 MC2를 얹으면 이중 물리가 된다.
+        private HashSet<Transform> BuildCollidersAndChains(
+            Animator animator, System.Func<HumanBodyBones, Transform> resolver,
+            HashSet<Transform> bodyBones,
+            float torso, List<string> report,
+            out SkinnedMeshRenderer[] smrs,
+            out BodyColliderBuilder.BuildResult colResult,
+            out Dictionary<Transform, List<Vector3>> boneVerts,
+            out Transform head,
+            out HairChainDetector.Result detect)
+        {
+            smrs = animator.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            boneVerts = BodyColliderBuilder.GatherBoneVertices(smrs);
+            colResult = BuildBodyColliders(
+                animator, resolver, torso, boneVerts, report);
+            HashSet<Transform> externalOwned =
+                ApplyNativeGuardAndConversion(animator, torso, report);
+            head = resolver(HumanBodyBones.Head);
+            detect = head == null
+                ? null
+                : DetectAndFilterChains(head, bodyBones, externalOwned, report);
+            return externalOwned;
+        }
 
         // 스커트 본은 미리 수집 — 장식물 토폴로지 탐지의 소유 집합에도 포함한다.
         // 머리 측 체인 수 — 신체측 장식물 체인이 뒤에 추가되므로 마스크 대상 구간을 구분한다.
