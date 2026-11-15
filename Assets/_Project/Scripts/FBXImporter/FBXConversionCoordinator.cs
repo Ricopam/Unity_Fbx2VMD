@@ -48,549 +48,6 @@ namespace Fbx2Vmd.FBXImporter
             _importController = importController;
         }
 
-        internal static bool TryResolveTargetAnimator(
-            GameObject targetObject,
-            out Animator targetAnimator,
-            out string errorMessage)
-        {
-            targetAnimator = null;
-            if (targetObject == null)
-            {
-                errorMessage = "Target Character가 지정되어 있지 않습니다.";
-                return false;
-            }
-
-            targetAnimator = targetObject.GetComponent<Animator>();
-            if (targetAnimator == null ||
-                targetAnimator.avatar == null ||
-                !targetAnimator.avatar.isValid ||
-                !targetAnimator.avatar.isHuman)
-            {
-                targetAnimator = null;
-                errorMessage = "Target Character에 유효한 Humanoid Avatar가 없습니다.";
-                return false;
-            }
-
-            errorMessage = string.Empty;
-            return true;
-        }
-
-        internal PoseSpaceRetargeter CreateRetargeter(
-            GameObject importedModel,
-            GameObject targetObject,
-            Dictionary<string, string> boneMapping,
-            AnimationClip targetClip)
-        {
-            PoseSpaceRetargeter retargeter = importedModel.AddComponent<PoseSpaceRetargeter>();
-            RetargetingContext context = new RetargetingContext(
-                importedModel,
-                targetObject,
-                boneMapping,
-                targetClip);
-            RetargetingSettings settings = RetargetingSettings.CreateSnapshot(_pipeline);
-            retargeter.Initialize(context, settings);
-            return retargeter;
-        }
-
-        internal void PrepareRetargetingTarget(
-            GameObject targetObject,
-            Animator targetAnimator,
-            Animator ghostAnimator,
-            bool shouldFaceTargetToCamera,
-            bool shouldDisableMmdPostPoseCorrection,
-            Action restoreIdlePoseBeforeRetargetBaselines)
-        {
-            PrepareTargetPlaybackState(
-                targetObject,
-                targetAnimator,
-                shouldFaceTargetToCamera);
-            DisableMmdPostPoseCorrectionForRetarget(
-                targetObject,
-                shouldDisableMmdPostPoseCorrection);
-            ConfigureTargetRetargetGuards(
-                targetObject,
-                targetAnimator,
-                ghostAnimator);
-
-            restoreIdlePoseBeforeRetargetBaselines?.Invoke();
-
-            RemoveLegacyIkControl(targetObject);
-            ConfigureFinalIkFootGroundingExperiment(targetObject);
-        }
-
-        internal void ConfigureTargetRetargetGuards(
-            GameObject targetObject,
-            Animator targetAnimator,
-            Animator ghostAnimator)
-        {
-            HumanoidArmTwistRiggingGuard twistRiggingGuard =
-                ConfigureArmTwistRiggingGuard(targetObject, targetAnimator);
-            ConfigureArmDirectionGuard(targetObject, targetAnimator, ghostAnimator);
-            ConfigureArmSwingLimitGuard(targetObject, targetAnimator);
-            HumanoidArmSleeveAnchorGuard sleeveAnchorGuard =
-                ConfigureArmSleeveAnchorGuard(targetObject, targetAnimator);
-            HumanoidArmVisualTwistGuard visualTwistGuard =
-                ConfigureArmVisualTwistGuard(targetObject, targetAnimator);
-            ConfigureArmDeformationGuard(
-                targetObject,
-                twistRiggingGuard,
-                sleeveAnchorGuard,
-                visualTwistGuard);
-        }
-
-        internal void PrepareTargetPlaybackState(
-            GameObject targetObject,
-            Animator targetAnimator,
-            bool shouldFaceTargetToCamera)
-        {
-            if (targetObject == null || targetAnimator == null)
-            {
-                return;
-            }
-
-            targetObject.transform.position = Vector3.zero;
-            if (shouldFaceTargetToCamera)
-            {
-                CameraFacingController.FaceTargetToCamera(targetObject, Camera.main);
-            }
-            else
-            {
-                targetObject.transform.rotation = Quaternion.identity;
-            }
-
-            targetAnimator.applyRootMotion = false;
-            targetAnimator.runtimeAnimatorController = null;
-        }
-
-        internal static void RemoveLegacyIkControl(GameObject targetObject)
-        {
-            if (targetObject == null)
-            {
-                return;
-            }
-
-            IKControl ikControl = targetObject.GetComponent<IKControl>();
-            if (ikControl == null)
-            {
-                return;
-            }
-
-            Debug.Log("[FBXImport] 자동 retarget 경로에서 IKControl을 제거합니다.");
-            UnityEngine.Object.Destroy(ikControl);
-        }
-
-        internal void DisableMmdPostPoseCorrectionForRetarget(
-            GameObject targetObject,
-            bool shouldDisable)
-        {
-            if (!shouldDisable || targetObject == null)
-            {
-                return;
-            }
-
-            RestoreMmdPostPoseCorrectionForRetarget();
-
-            int changed = 0;
-            Component[] components = targetObject.GetComponentsInChildren<Component>(true);
-            foreach (Component component in components)
-            {
-                if (component == null)
-                {
-                    continue;
-                }
-
-                Type componentType = component.GetType();
-                if (!componentType.Name.Contains("MMD4Mecanim"))
-                {
-                    continue;
-                }
-
-                if (TrySetBooleanField(component, "pphShoulderEnabled", false))
-                {
-                    changed++;
-                }
-            }
-
-            if (changed > 0)
-            {
-                Debug.Log($"[FBXImport] Retarget 중 MMD4Mecanim 어깨 PPH 보정 {changed}개를 일시 비활성화했습니다.");
-            }
-        }
-
-        internal void RestoreMmdPostPoseCorrectionForRetarget()
-        {
-            for (int i = _retargetBooleanSnapshots.Count - 1; i >= 0; i--)
-            {
-                BooleanFieldSnapshot snapshot = _retargetBooleanSnapshots[i];
-                if (snapshot.Target == null || snapshot.Field == null)
-                {
-                    continue;
-                }
-
-                snapshot.Field.SetValue(snapshot.Target, snapshot.Value);
-            }
-
-            _retargetBooleanSnapshots.Clear();
-        }
-
-        private bool TrySetBooleanField(object target, string fieldName, bool value)
-        {
-            FieldInfo field = FindFieldInHierarchy(target.GetType(), fieldName);
-            if (field == null || field.FieldType != typeof(bool))
-            {
-                return false;
-            }
-
-            bool currentValue = (bool)field.GetValue(target);
-            if (currentValue == value)
-            {
-                return false;
-            }
-
-            _retargetBooleanSnapshots.Add(new BooleanFieldSnapshot(target, field, currentValue));
-            field.SetValue(target, value);
-            return true;
-        }
-
-        private static FieldInfo FindFieldInHierarchy(Type type, string fieldName)
-        {
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            for (Type currentType = type; currentType != null; currentType = currentType.BaseType)
-            {
-                FieldInfo field = currentType.GetField(fieldName, flags);
-                if (field != null)
-                {
-                    return field;
-                }
-            }
-
-            return null;
-        }
-
-        internal void ConfigureFinalIkFootGroundingExperiment(GameObject targetObject)
-        {
-            if (targetObject == null)
-            {
-                return;
-            }
-
-            GrounderBipedIK existingGrounder = targetObject.GetComponent<GrounderBipedIK>();
-            BipedIK existingBipedIk = targetObject.GetComponent<BipedIK>();
-            if (!_pipeline.enableFinalIkFootGroundingExperiment)
-            {
-                DisableGroundingExperiment(existingGrounder, existingBipedIk);
-                return;
-            }
-
-            BipedIK bipedIk = existingBipedIk;
-            if (bipedIk == null)
-            {
-                bipedIk = targetObject.AddComponent<BipedIK>();
-            }
-
-            Animator animator = targetObject.GetComponent<Animator>();
-            if (animator != null && animator.isHuman)
-            {
-                BipedReferences references = bipedIk.references;
-                BipedReferences.AutoDetectReferences(
-                    ref references,
-                    targetObject.transform,
-                    BipedReferences.AutoDetectParams.Default);
-                bipedIk.references = references;
-            }
-
-            bipedIk.SetToDefaults();
-            bipedIk.fixTransforms = true;
-            bipedIk.enabled = true;
-
-            GrounderBipedIK grounder = existingGrounder;
-            if (grounder == null)
-            {
-                grounder = targetObject.AddComponent<GrounderBipedIK>();
-            }
-
-            grounder.ik = bipedIk;
-            ConfigureGrounderSolver(grounder);
-
-            if (_pipeline.logFinalIkFootGroundingExperiment)
-            {
-                Debug.Log(
-                    $"[FBXImport] Final IK foot grounding experiment configured: " +
-                    $"weight={grounder.weight:F3}, maxStep={grounder.solver.maxStep:F3}, " +
-                    $"footRadius={grounder.solver.footRadius:F3}");
-            }
-        }
-
-        static void DisableGroundingExperiment(GrounderBipedIK grounder, BipedIK bipedIk)
-        {
-            if (grounder != null)
-            {
-                grounder.weight = 0f;
-                grounder.enabled = false;
-            }
-
-            if (bipedIk != null)
-            {
-                bipedIk.fixTransforms = false;
-                bipedIk.enabled = false;
-            }
-        }
-
-        void ConfigureGrounderSolver(GrounderBipedIK grounder)
-        {
-            grounder.weight = Mathf.Clamp(_pipeline.finalIkFootGroundingWeight, 0f, 0.25f);
-            grounder.spineBend = 0f;
-            grounder.spineSpeed = 0f;
-            grounder.solver.maxStep = Mathf.Clamp(_pipeline.finalIkFootGroundingMaxStep, 0f, 0.08f);
-            grounder.solver.footRadius = Mathf.Clamp(_pipeline.finalIkFootGroundingFootRadius, 0.01f, 0.2f);
-            grounder.solver.prediction = Mathf.Clamp(_pipeline.finalIkFootGroundingPrediction, 0f, 0.2f);
-            grounder.solver.footRotationWeight = Mathf.Clamp01(_pipeline.finalIkFootGroundingFootRotationWeight);
-            grounder.solver.pelvisDamper = Mathf.Clamp01(_pipeline.finalIkFootGroundingPelvisDamper);
-            grounder.enabled = grounder.weight > 0f;
-        }
-
-        internal static void RecaptureTargetGuardBaselines(
-            GameObject targetObject,
-            bool shouldRecapture)
-        {
-            if (!shouldRecapture || targetObject == null)
-            {
-                return;
-            }
-
-            HumanoidArmDeformationGuard armGuard =
-                targetObject.GetComponent<HumanoidArmDeformationGuard>();
-            if (armGuard != null && armGuard.enabled)
-            {
-                armGuard.RecaptureBaseline();
-            }
-
-            HumanoidThumbDeformationGuard thumbGuard =
-                targetObject.GetComponent<HumanoidThumbDeformationGuard>();
-            if (thumbGuard != null && thumbGuard.enabled)
-            {
-                thumbGuard.RecaptureBaseline();
-            }
-        }
-
-        internal HumanoidArmTwistRiggingGuard ConfigureArmTwistRiggingGuard(
-            GameObject targetObject,
-            Animator targetAnimator)
-        {
-            if (targetObject == null)
-            {
-                return null;
-            }
-
-            HumanoidArmTwistRiggingGuard twistRiggingGuard =
-                targetObject.GetComponent<HumanoidArmTwistRiggingGuard>();
-            if (!_pipeline.enableAnimationRiggingArmTwistCorrection)
-            {
-                if (twistRiggingGuard != null)
-                {
-                    twistRiggingGuard.DisableRigging();
-                    twistRiggingGuard.enabled = false;
-                }
-
-                DisableTargetRigBuilder(targetObject);
-                return null;
-            }
-
-            if (twistRiggingGuard == null)
-            {
-                twistRiggingGuard = targetObject.AddComponent<HumanoidArmTwistRiggingGuard>();
-            }
-
-            twistRiggingGuard.enableTwistRigging = true;
-            twistRiggingGuard.enabled = true;
-            bool configured = twistRiggingGuard.Configure(
-                targetAnimator,
-                _pipeline.AnimationRiggingArmTwistRigWeight,
-                _pipeline.AnimationRiggingUpperArmTwistWeight,
-                _pipeline.AnimationRiggingForearmTwistWeight,
-                _pipeline.logAnimationRiggingArmTwistCorrection);
-
-            return configured ? twistRiggingGuard : null;
-        }
-
-        private static void DisableTargetRigBuilder(GameObject targetObject)
-        {
-            if (targetObject == null)
-            {
-                return;
-            }
-
-            var rigBuilder =
-                targetObject.GetComponent<UnityEngine.Animations.Rigging.RigBuilder>();
-            if (rigBuilder == null)
-            {
-                return;
-            }
-
-            if (rigBuilder.graph.IsValid())
-            {
-                rigBuilder.Clear();
-            }
-
-            rigBuilder.enabled = false;
-        }
-
-        internal HumanoidArmDirectionRetargetGuard ConfigureArmDirectionGuard(
-            GameObject targetObject,
-            Animator targetAnimator,
-            Animator ghostAnimator)
-        {
-            if (targetObject == null)
-            {
-                return null;
-            }
-
-            HumanoidArmDirectionRetargetGuard directionGuard =
-                targetObject.GetComponent<HumanoidArmDirectionRetargetGuard>();
-            if (!_pipeline.enableYybArmDirectionRetargetCorrection)
-            {
-                if (directionGuard != null)
-                {
-                    directionGuard.DisableCorrection();
-                    directionGuard.enabled = false;
-                }
-
-                return null;
-            }
-
-            if (directionGuard == null)
-            {
-                directionGuard = targetObject.AddComponent<HumanoidArmDirectionRetargetGuard>();
-            }
-
-            directionGuard.enableDirectionRetarget = true;
-            directionGuard.enabled = true;
-            bool configured = directionGuard.Configure(
-                ghostAnimator,
-                targetAnimator,
-                _pipeline.YybArmDirectionUpperArmWeight,
-                _pipeline.YybArmDirectionForearmWeight,
-                _pipeline.YybArmDirectionUpperArmMaxDegrees,
-                _pipeline.YybArmDirectionForearmMaxDegrees,
-                _pipeline.YybArmDirectionLeftSideWeightScale,
-                _pipeline.YybArmDirectionRightSideWeightScale,
-                _pipeline.logYybArmDirectionRetargetCorrection);
-
-            if (!configured)
-            {
-                directionGuard.enabled = false;
-                return null;
-            }
-
-            return directionGuard;
-        }
-
-        internal HumanoidArmSwingLimitGuard ConfigureArmSwingLimitGuard(
-            GameObject targetObject,
-            Animator targetAnimator)
-        {
-            if (targetObject == null)
-            {
-                return null;
-            }
-
-            HumanoidArmSwingLimitGuard swingLimitGuard =
-                targetObject.GetComponent<HumanoidArmSwingLimitGuard>();
-            if (!_pipeline.enableYybArmSwingLimitCorrection)
-            {
-                if (swingLimitGuard != null)
-                {
-                    swingLimitGuard.enableSwingLimit = false;
-                    swingLimitGuard.enabled = false;
-                }
-
-                return null;
-            }
-
-            if (swingLimitGuard == null)
-            {
-                swingLimitGuard = targetObject.AddComponent<HumanoidArmSwingLimitGuard>();
-            }
-
-            swingLimitGuard.Configure(
-                targetAnimator,
-                true,
-                _pipeline.YybArmSwingLimitWeight,
-                _pipeline.YybArmSwingMaxDownDot,
-                _pipeline.YybArmSwingMinHandHorizontalRatio,
-                _pipeline.YybArmSwingMaxHandBelowShoulderRatio,
-                _pipeline.YybArmSwingHorizontalReachLimitWeight,
-                _pipeline.YybArmSwingMaxHandHorizontalReachRatio,
-                _pipeline.YybArmSwingHorizontalReachMaxHandBelowShoulderRatio,
-                _pipeline.YybArmSwingHorizontalReachMinElbowAngleAfterApply,
-                _pipeline.YybArmSwingRaisedPoseHorizontalReachLimitWeight,
-                _pipeline.YybArmSwingRaisedPoseMinUpperArmDownDot,
-                _pipeline.YybArmSwingRaisedPoseMaxHandBelowShoulderRatio,
-                _pipeline.YybArmSwingRaisedPoseMaxHandHorizontalReachRatio,
-                _pipeline.logYybArmSwingLimitCorrection);
-
-            return swingLimitGuard;
-        }
-
-
-
-        internal void ConfigureArmDeformationGuard(
-            GameObject targetObject,
-            HumanoidArmTwistRiggingGuard twistRiggingGuard,
-            HumanoidArmSleeveAnchorGuard sleeveAnchorGuard,
-            HumanoidArmVisualTwistGuard visualTwistGuard)
-        {
-            if (!_pipeline.attachTargetArmDeformationGuard || targetObject == null)
-            {
-                return;
-            }
-
-            HumanoidArmDeformationGuard guard =
-                targetObject.GetComponent<HumanoidArmDeformationGuard>();
-            if (guard == null)
-            {
-                guard = targetObject.AddComponent<HumanoidArmDeformationGuard>();
-            }
-
-            guard.Configure(new ArmDeformationSettings(
-                clampMusclesToHumanRange: false,
-                enableAnatomicalArmGuard: _pipeline.targetGuardClampAnatomicalArmMuscles,
-                stretchMuscleLimit: _pipeline.ArmStretchMuscleLimit,
-                upperArmTwistMuscleLimit: _pipeline.UpperArmTwistMuscleLimit,
-                lowerArmTwistMuscleLimit: _pipeline.LowerArmTwistMuscleLimit,
-                lockHumanoidBonePositions: _pipeline.ShouldLockTargetHumanoidBonePositions,
-                logCorrections: _pipeline.logArmDeformationGuardCorrections,
-                clampArmStretchMuscles: _pipeline.targetGuardClampArmStretchMuscles,
-                lockLimbChildLocalPositions: _pipeline.lockTargetLimbChildLocalPositions,
-                lockLimbChildLocalRotations: _pipeline.lockTargetLimbChildLocalRotations));
-            guard.SetLimbChildRotationExclusions(BuildLimbChildRotationExclusions(
-                twistRiggingGuard?.ControlledTransforms,
-                sleeveAnchorGuard?.ControlledTransforms,
-                visualTwistGuard?.ControlledTransforms));
-            guard.enabled = true;
-            guard.RecaptureBaseline();
-        }
-
-        private static IEnumerable<Transform> BuildLimbChildRotationExclusions(
-            params IEnumerable<Transform>[] controlledTransformGroups)
-        {
-            foreach (IEnumerable<Transform> controlledTransforms in controlledTransformGroups)
-            {
-                if (controlledTransforms == null)
-                {
-                    continue;
-                }
-
-                foreach (Transform controlledTransform in controlledTransforms)
-                {
-                    yield return controlledTransform;
-                }
-            }
-        }
-
-        /// <summary>
-        /// 요청을 검증하고 세션 기반 흐름에 위임함.
-        /// </summary>
         public async Task<FBXConversionResult> ConvertAsync(FBXConversionRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.SourcePath))
@@ -660,54 +117,123 @@ namespace Fbx2Vmd.FBXImporter
                 _pipeline.ShouldRecordVmdAfterImport);
             if (!importResult.IsSuccess)
             {
-                _pipeline.FailSession(importResult.ErrorMessage);
-                return FBXConversionResult.Fail(importResult.ErrorMessage);
+                return FailWithSession(importResult.ErrorMessage);
             }
 
-            string targetPath = importResult.ControlledImportPath;
-            string outputBaseName = importResult.OutputBaseName;
-            GameObject importedModel = importResult.ImportedModel;
+            return RunRetargetSession(
+                request, importController, importResult.ImportedModel,
+                importResult.ControlledImportPath, importResult.OutputBaseName);
+        }
 
-            if (!TryPrepareGhostAnimation(
+        private FBXConversionResult RunRetargetSession(
+            FBXConversionRequest request,
+            FBXImportController importController,
+            GameObject importedModel,
+            string targetPath,
+            string outputBaseName)
+        {
+            GameObject targetObject = _pipeline.targetCharacter;
+            if (!TryPrepareAnimationAndTarget(
                     importController,
                     importedModel,
+                    targetObject,
                     out Dictionary<string, string> boneMapping,
                     out Animation ghostAnimation,
                     out AnimationClip targetClip,
-                    out string animationErrorMessage))
-            {
-                _pipeline.FailSession(animationErrorMessage);
-                return FBXConversionResult.Fail(animationErrorMessage);
-            }
-
-            GameObject targetObject = _pipeline.targetCharacter;
-            if (!TryResolveTargetAnimator(
-                    targetObject,
                     out Animator targetAnimator,
-                    out string targetErrorMessage))
+                    out string errorMessage))
             {
-                _pipeline.FailSession(targetErrorMessage);
-                return FBXConversionResult.Fail(targetErrorMessage);
+                return FailWithSession(errorMessage);
             }
 
-#if !UNITY_EDITOR
-            if (_pipeline.ShouldUseRuntimeHumanoidPlaybackSession)
+            if (TrySucceedRuntimePlayback(
+                    targetAnimator, targetClip, outputBaseName,
+                    importedModel, request.SourcePath))
             {
-                _pipeline.PrepareRuntimeHumanoidPlayback(
-                    targetAnimator,
-                    targetClip,
-                    outputBaseName,
-                    importedModel,
-                    request.SourcePath);
                 return FBXConversionResult.Succeed(outputBaseName);
             }
-#endif
+
             RunRetargetAndDispatch(
                 request, importedModel, targetObject, targetAnimator,
                 boneMapping, ghostAnimation, targetClip, targetPath,
                 outputBaseName);
-
             return FBXConversionResult.Succeed(outputBaseName);
+        }
+
+        private bool TrySucceedRuntimePlayback(
+            Animator targetAnimator,
+            AnimationClip targetClip,
+            string outputBaseName,
+            GameObject importedModel,
+            string sourcePath)
+        {
+#if !UNITY_EDITOR
+            if (!_pipeline.ShouldUseRuntimeHumanoidPlaybackSession)
+            {
+                return false;
+            }
+            _pipeline.PrepareRuntimeHumanoidPlayback(
+                targetAnimator,
+                targetClip,
+                outputBaseName,
+                importedModel,
+                sourcePath);
+            return true;
+#else
+            return false;
+#endif
+        }
+
+        private FBXConversionResult FailWithSession(string errorMessage)
+        {
+            _pipeline.FailSession(errorMessage);
+            return FBXConversionResult.Fail(errorMessage);
+        }
+
+        private bool TryPrepareAnimationAndTarget(
+            FBXImportController importController,
+            GameObject importedModel,
+            GameObject targetObject,
+            out Dictionary<string, string> boneMapping,
+            out Animation ghostAnimation,
+            out AnimationClip targetClip,
+            out Animator targetAnimator,
+            out string errorMessage)
+        {
+            if (!TryPrepareGhostAnimation(
+                    importController,
+                    importedModel,
+                    out boneMapping,
+                    out ghostAnimation,
+                    out targetClip,
+                    out errorMessage))
+            {
+                targetAnimator = null;
+                return false;
+            }
+            return TryResolveTargetAnimator(
+                targetObject, out targetAnimator, out errorMessage);
+        }
+
+        private void ConfigureRetargeterForSession(
+            PoseSpaceRetargeter retargeter,
+            GameObject importedModel,
+            GameObject targetObject,
+            Animator targetAnimator,
+            string targetPath,
+            string sourcePath,
+            AnimationClip targetClip)
+        {
+            _pipeline.PrepareRetargeterForRecording(
+                retargeter,
+                targetObject,
+                targetAnimator,
+                targetPath,
+                sourcePath);
+#if !UNITY_EDITOR
+            // 빌드에서는 에디터 기준 클립이 없어 임포트된 모델 자체를 포즈 참조로 사용함.
+            retargeter.ConfigureRuntimeHumanoidPoseReference(importedModel, targetClip);
+#endif
         }
 
         bool TryPrepareGhostAnimation(
@@ -752,16 +278,9 @@ namespace Fbx2Vmd.FBXImporter
                 targetObject,
                 boneMapping,
                 targetClip);
-            _pipeline.PrepareRetargeterForRecording(
-                retargeter,
-                targetObject,
-                targetAnimator,
-                targetPath,
-                request.SourcePath);
-#if !UNITY_EDITOR
-            // 빌드에서는 에디터 기준 클립이 없어 임포트된 모델 자체를 포즈 참조로 사용함.
-            retargeter.ConfigureRuntimeHumanoidPoseReference(importedModel, targetClip);
-#endif
+            ConfigureRetargeterForSession(
+                retargeter, importedModel, targetObject, targetAnimator,
+                targetPath, request.SourcePath, targetClip);
 
             _pipeline.DispatchRecording(
                 ghostAnimation,
