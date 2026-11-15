@@ -355,18 +355,25 @@ namespace Fbx2Vmd.FBXImporter
                         FBX_TO_UNITY_UNIT_SCALE));
                 }
 
-                foreach (var weight in bone.VertexWeights)
-                {
-                    int vIndex = weight.VertexID;
-                    float val = weight.Weight;
-                    if (vIndex >= weights.Length) continue;
+                AccumulateBoneWeights(bone, boneIndex, weights, weightCount);
+            }
+        }
 
-                    RuntimeMeshBoneWeightCalculator.Add(
-                        ref weights[vIndex],
-                        ref weightCount[vIndex],
-                        boneIndex,
-                        val);
-                }
+        private static void AccumulateBoneWeights(
+            Assimp.Bone bone, int boneIndex,
+            BoneWeight[] weights, int[] weightCount)
+        {
+            foreach (var weight in bone.VertexWeights)
+            {
+                int vIndex = weight.VertexID;
+                float val = weight.Weight;
+                if (vIndex >= weights.Length) continue;
+
+                RuntimeMeshBoneWeightCalculator.Add(
+                    ref weights[vIndex],
+                    ref weightCount[vIndex],
+                    boneIndex,
+                    val);
             }
         }
 
