@@ -727,9 +727,9 @@ namespace Fbx2Vmd.FBXImporter
                             animator.avatar.isValid && animator.avatar.isHuman,
                         is_processing = pipeline != null && pipeline.IsProcessing,
                         has_prepared_motion = pipeline != null && pipeline.HasPreparedImportedMotion,
-                        character_manager_present = Fbx2Vmd.CharacterLibrary.CharacterLibraryManager.Current != null,
-                        character_manager_active_id = Fbx2Vmd.CharacterLibrary.CharacterLibraryManager.Current != null
-                            ? Fbx2Vmd.CharacterLibrary.CharacterLibraryManager.Current.ActiveEntryId : string.Empty,
+                        character_manager_present = Fbx2Vmd.CharacterLibrary.CharacterLibraryCoordinator.Current != null,
+                        character_manager_active_id = Fbx2Vmd.CharacterLibrary.CharacterLibraryCoordinator.Current != null
+                            ? Fbx2Vmd.CharacterLibrary.CharacterLibraryCoordinator.Current.ActiveEntryId : string.Empty,
                         is_playing_motion = pipeline != null && pipeline.IsImportedMotionPlaying,
                         is_recording = pipeline != null && pipeline.IsImportedMotionRecording,
                         recorder_recording = recorder != null && recorder.IsRecording,
@@ -1042,7 +1042,7 @@ namespace Fbx2Vmd.FBXImporter
             if (pipeline == null || pipeline.IsProcessing || pipeline.HasPreparedImportedMotion ||
                 pipeline.IsImportedMotionRecording || IsBatchRunning() || _singleFBXVmdPipeline != null || _vrmLoadTask != null)
                 throw new InvalidOperationException("모션·다른 검증이 진행 중이거나 파이프라인이 없습니다.");
-            var manager = Fbx2Vmd.CharacterLibrary.CharacterLibraryManager.Current;
+            var manager = Fbx2Vmd.CharacterLibrary.CharacterLibraryCoordinator.Current;
             if (manager != null && (manager.IsLoading || !string.IsNullOrEmpty(manager.ActiveEntryId)))
                 throw new InvalidOperationException("기존 캐릭터 세션을 먼저 종료해야 합니다.");
             foreach (var setting in UnityEngine.Object.FindObjectsByType<RecordingSetting>(FindObjectsInactive.Include, FindObjectsSortMode.None))

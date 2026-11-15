@@ -660,7 +660,7 @@ namespace Fbx2Vmd.LipSync
                 "대상 캐릭터", _targetCharacter, typeof(GameObject), true);
             if (GUILayout.Button("활성 캐릭터", GUILayout.Width(80)))
             {
-                FBXVmdPipeline pipeline = CharacterLibraryManager.Current?.BoundPipeline;
+                FBXVmdPipeline pipeline = CharacterLibraryCoordinator.Current?.BoundPipeline;
                 if (pipeline != null && pipeline.targetCharacter != null)
                 {
                     _targetCharacter = pipeline.targetCharacter;

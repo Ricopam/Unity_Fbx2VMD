@@ -95,8 +95,8 @@ namespace Tests.Editor.CharacterLibrary
                 // 전용 인스턴스를 만들고 의존성은 모두 주입한다.
                 // 편집 모드에선 Awake가 돌지 않아 정적 _current를 오염시키지 않는다.
                 managerHost = new GameObject("TestManager");
-                var manager = managerHost.AddComponent<CharacterLibraryManager>();
-                var managerType = typeof(CharacterLibraryManager);
+                var manager = managerHost.AddComponent<CharacterLibraryCoordinator>();
+                var managerType = typeof(CharacterLibraryCoordinator);
                 managerType
                     .GetField("_registry", BindingFlags.NonPublic | BindingFlags.Instance)
                     .SetValue(manager, registry);

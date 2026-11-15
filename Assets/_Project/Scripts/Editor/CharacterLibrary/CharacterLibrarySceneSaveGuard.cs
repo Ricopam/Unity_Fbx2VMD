@@ -55,9 +55,9 @@ namespace Fbx2Vmd.CharacterLibrary
                     // 저장 콜백 안에서는 유휴 가드 재초기화(변환 변경)를 하지 않는다.
                     CharacterLibrarySceneBinding.Restore(pipeline, out _, rebindGuard: false);
                     // 매니저를 거치지 않는 복원이므로 내부 상태를 정리하게 한다.
-                    if (CharacterLibraryManager.Current != null)
+                    if (CharacterLibraryCoordinator.Current != null)
                     {
-                        CharacterLibraryManager.Current.NotifyExternalRestore();
+                        CharacterLibraryCoordinator.Current.NotifyExternalRestore();
                     }
                 }
                 else

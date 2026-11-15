@@ -7621,7 +7621,7 @@ GameObject:
   - component: {fileID: 1223383498}
   - component: {fileID: 1223383497}
   m_Layer: 0
-  m_Name: CharacterLibraryManager
+  m_Name: CharacterLibraryCoordinator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7638,7 +7638,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0bef602bd86517e488ea950c15f46b15, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Fbx2Vmd.CharacterLibrary.CharacterLibraryManager
+  m_EditorClassIdentifier: Assembly-CSharp::Fbx2Vmd.CharacterLibrary.CharacterLibraryCoordinator
   _pipeline: {fileID: 0}
   _autoLoadLastCharacter: 1
 --- !u!4 &1223383498

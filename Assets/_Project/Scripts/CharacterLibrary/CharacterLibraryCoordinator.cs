@@ -11,7 +11,7 @@ namespace Fbx2Vmd.CharacterLibrary
     /// 단일 비행 잠금으로 동시 로드를 막고, 실패 시 기존 타겟을 보존한다.
     /// 에디터 창은 EnsureExists()로 이 매니저에 위임해 잠금과 레지스트리를 공유한다.
     /// </summary>
-    public sealed class CharacterLibraryManager : MonoBehaviour
+    public sealed class CharacterLibraryCoordinator : MonoBehaviour
     {
         public enum LoadState
         {
@@ -29,7 +29,7 @@ namespace Fbx2Vmd.CharacterLibrary
         [Tooltip("씬에 직접 배치한 경우에만, Play 시작 시 마지막으로 사용한 라이브러리 캐릭터를 자동으로 다시 불러옵니다.")]
         [SerializeField] private bool _autoLoadLastCharacter = true;
 
-        private static CharacterLibraryManager _current;
+        private static CharacterLibraryCoordinator _current;
 
         // EnsureExists가 만든 임시 헬퍼 여부. 헬퍼는 Start 자동 복원을 하지 않는다.
         private bool _autoCreated;
@@ -54,25 +54,25 @@ namespace Fbx2Vmd.CharacterLibrary
         /// 씬의 매니저를 돌려준다. 없으면 숨김 헬퍼 오브젝트를 만들어 반환한다.
         /// 편집 모드에서는 계층에 보이지 않고 저장되지 않는다.
         /// </summary>
-        public static CharacterLibraryManager EnsureExists()
+        public static CharacterLibraryCoordinator EnsureExists()
         {
             if (_current != null)
             {
                 return _current;
             }
 
-            _current = FindFirstObjectByType<CharacterLibraryManager>(FindObjectsInactive.Include);
+            _current = FindFirstObjectByType<CharacterLibraryCoordinator>(FindObjectsInactive.Include);
             if (_current != null)
             {
                 return _current;
             }
 
-            var host = new GameObject(nameof(CharacterLibraryManager));
+            var host = new GameObject(nameof(CharacterLibraryCoordinator));
             // Play 헬퍼는 씬 수명을 따라 종료 시 제거하고, 편집 헬퍼만 저장에서 제외함.
             host.hideFlags = Application.isPlaying
                 ? HideFlags.None
                 : HideFlags.HideInHierarchy | HideFlags.DontSave;
-            _current = host.AddComponent<CharacterLibraryManager>();
+            _current = host.AddComponent<CharacterLibraryCoordinator>();
             _current._autoCreated = true;
             return _current;
         }
@@ -88,7 +88,7 @@ namespace Fbx2Vmd.CharacterLibrary
         /// <summary>
         /// 생성 없이 현재 매니저를 돌려준다. 저장 가드 등 외부 경로가 상태를 정리할 때 사용한다.
         /// </summary>
-        public static CharacterLibraryManager Current => _current;
+        public static CharacterLibraryCoordinator Current => _current;
 
         /// <summary>
         /// 씬 저장 가드처럼 매니저를 거치지 않은 복원이 일어났을 때 내부 상태를 정리한다.

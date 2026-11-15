@@ -45,7 +45,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         internal static async System.Threading.Tasks.Task<string> ExecuteAsync(
             MainRecordingSettingsCommandEnvelope command)
         {
-            CharacterLibraryManager manager = CharacterLibraryManager.EnsureExists();
+            CharacterLibraryCoordinator manager = CharacterLibraryCoordinator.EnsureExists();
             CharacterLibraryRegistry registry = manager.Registry;
 
             switch (command.action)
@@ -91,7 +91,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         }
 
         private static async System.Threading.Tasks.Task<string> LoadCharacterAsync(
-            CharacterLibraryManager manager,
+            CharacterLibraryCoordinator manager,
             MainRecordingSettingsCommandEnvelope command)
         {
             string entryId = RequireText(command.characterId, "characterId가 필요합니다.");
@@ -106,7 +106,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         }
 
         private static string ApplyPreset(
-            CharacterLibraryManager manager,
+            CharacterLibraryCoordinator manager,
             MainRecordingSettingsCommandEnvelope command)
         {
             string entryId = RequireText(command.characterId, "characterId가 필요합니다.");
@@ -134,7 +134,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         }
 
         private static string SavePreset(
-            CharacterLibraryManager manager,
+            CharacterLibraryCoordinator manager,
             MainRecordingSettingsCommandEnvelope command)
         {
             string entryId = RequireText(command.characterId, "characterId가 필요합니다.");
@@ -164,7 +164,7 @@ namespace Fbx2Vmd.Settings.EditorTools
             return $"프리셋 저장: {preset.name} ({entry.displayName})";
         }
 
-        private static string RestoreSceneCharacter(CharacterLibraryManager manager)
+        private static string RestoreSceneCharacter(CharacterLibraryCoordinator manager)
         {
             if (!manager.RestoreSceneCharacter())
             {
@@ -370,7 +370,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         }
 
         private static string SaveFbxOverride(
-            CharacterLibraryManager manager,
+            CharacterLibraryCoordinator manager,
             MainRecordingSettingsCommandEnvelope command)
         {
             CharacterLibraryEntry entry = RequireEntry(
@@ -402,7 +402,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         }
 
         private static string ApplyFbxOverride(
-            CharacterLibraryManager manager,
+            CharacterLibraryCoordinator manager,
             MainRecordingSettingsCommandEnvelope command)
         {
             CharacterLibraryEntry entry = RequireEntry(
@@ -436,7 +436,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         }
 
         private static string DeleteFbxOverride(
-            CharacterLibraryManager manager,
+            CharacterLibraryCoordinator manager,
             MainRecordingSettingsCommandEnvelope command)
         {
             CharacterLibraryEntry entry = RequireEntry(
@@ -475,7 +475,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         /// 활성 라이브러리 캐릭터가 entry와 일치하는지 확인하고 파이프라인을 돌려준다.
         /// </summary>
         private static FBXVmdPipeline RequireLoadedCharacter(
-            CharacterLibraryManager manager, string entryId, out GameObject root)
+            CharacterLibraryCoordinator manager, string entryId, out GameObject root)
         {
             FBXVmdPipeline pipeline = manager.BoundPipeline;
             root = CharacterLibrarySceneBinding.FindActiveLibraryRoot(pipeline);

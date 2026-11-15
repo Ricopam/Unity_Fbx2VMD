@@ -11,14 +11,14 @@ namespace Fbx2Vmd.CharacterLibrary
 {
     /// <summary>
     /// 캐릭터 라이브러리 창. 캐릭터(VRM/FBX/PMX) 등록·선택 로드·제거를 제공한다.
-    /// 로드와 잠금은 씬의 CharacterLibraryManager에 위임해 단일 경로로 통일한다.
+    /// 로드와 잠금은 씬의 CharacterLibraryCoordinator에 위임해 단일 경로로 통일한다.
     /// </summary>
     public sealed class CharacterLibraryWindow : EditorWindow
     {
         private const float ThumbnailSize = 64f;
         private const float RowHeight = 72f;
 
-        private CharacterLibraryManager _manager;
+        private CharacterLibraryCoordinator _manager;
         private Vector2 _scroll;
         private string _message = string.Empty;
         private readonly Dictionary<string, Texture2D> _thumbnailCache =
@@ -31,8 +31,8 @@ namespace Fbx2Vmd.CharacterLibrary
         private readonly Dictionary<string, int> _presetSelection =
             new Dictionary<string, int>(StringComparer.Ordinal);
 
-        private CharacterLibraryManager Manager =>
-            _manager != null ? _manager : (_manager = CharacterLibraryManager.EnsureExists());
+        private CharacterLibraryCoordinator Manager =>
+            _manager != null ? _manager : (_manager = CharacterLibraryCoordinator.EnsureExists());
 
         private CharacterLibraryRegistry Registry => Manager.Registry;
         private bool IsLoading => Manager.IsLoading;
@@ -57,7 +57,7 @@ namespace Fbx2Vmd.CharacterLibrary
             ClearThumbnailCache();
         }
 
-        private void OnManagerStateChanged(CharacterLibraryManager.LoadState state)
+        private void OnManagerStateChanged(CharacterLibraryCoordinator.LoadState state)
         {
             // 비동기 로드 진행 상황을 창에 반영한다.
             Repaint();
