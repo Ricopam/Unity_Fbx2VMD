@@ -2,6 +2,8 @@
 // 네트워크 없이 검증함. 실제 API 호출은 창에서 수동 실행으로만 확인한다.
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -11,6 +13,51 @@ namespace Tests.Editor.FBXImporter
 {
     public class FootContactIntentAutoLabelerTests
     {
+        [Test]
+        public void Given_PoseChangesWithinOneUpdate_When_CapturingPreview_Then_UpdatesSkinnedPose()
+        {
+            if (UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/Resources/Import_FBX/satisfaction_2.fbx") == null ||
+                UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
+                    Fbx2Vmd.FBXImporter.FbxDiagnostics.DefaultTargetPath) == null)
+                Assert.Ignore("로컬 모션·모델 입력이 없는 환경에서는 실제 촬영 검증을 생략함");
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+                Assert.Ignore("그래픽 장치가 없는 환경에서는 실제 촬영 검증을 생략함");
+            var rig = ScriptableObject.CreateInstance<FootContactIntentAutoLabeler>();
+            RenderTexture previous = RenderTexture.active;
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            try
+            {
+                Assert.That(rig.SetupPreview("satisfaction_2.fbx", 60f, 0.907407939f),
+                    Is.True, rig.PreviewStatus);
+                var type = typeof(FootContactIntentAutoLabeler);
+                var animator = (Animator)type.GetField("_animator", flags).GetValue(rig);
+                var camera = (Camera)type.GetField("_camera", flags).GetValue(rig);
+                var ground = (GameObject)type.GetField("_ground", flags).GetValue(rig);
+                Transform shin = animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg);
+                Transform foot = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+                Vector3 target = (shin.position + foot.position) * 0.5f;
+                camera.transform.position = target + Vector3.right * 1.5f;
+                camera.transform.LookAt(target);
+                camera.orthographic = true;
+                camera.orthographicSize = 0.6f;
+                ground.SetActive(false);
+                MethodInfo capture = type.GetMethod("CaptureShot", flags);
+                byte[] before = (byte[])capture.Invoke(rig, null);
+                shin.localRotation = Quaternion.AngleAxis(60f, Vector3.forward) *
+                    shin.localRotation;
+                byte[] after = (byte[])capture.Invoke(rig, null);
+                Assert.That(before.SequenceEqual(after), Is.False,
+                    "같은 업데이트 안에서도 관절 회전이 캡처 메시 자세에 반영되어야 함");
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                rig.EndPreview();
+                Object.DestroyImmediate(rig);
+            }
+        }
+
         private const string ResponseSample =
             "{\"model\":\"jev-1.14\",\"answers\":{" +
             "\"touching_f0\":{\"type\":\"noul\",\"noul\":0.95}," +

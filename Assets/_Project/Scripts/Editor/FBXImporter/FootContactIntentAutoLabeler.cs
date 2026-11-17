@@ -997,6 +997,9 @@ namespace Fbx2Vmd.EditorTools.FBXImporter
                 return false;
             }
             if (!withRender) return true;
+            // 같은 업데이트 안의 연속 수동 촬영에서도 현재 본 행렬을 반영함.
+            foreach (var renderer in _model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                renderer.forceMatrixRecalculationPerRender = true;
             var cameraGo = new GameObject("JevLabelCamera")
             {
                 hideFlags = HideFlags.HideAndDontSave,
