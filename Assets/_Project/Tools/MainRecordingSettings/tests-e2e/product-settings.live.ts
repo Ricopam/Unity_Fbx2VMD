@@ -38,7 +38,7 @@ test("실제 설정창 등록·FBX·재생 제어와 보정 실패 비교 경로
     await screen.getByRole("button", "캐릭터").tap();
     await screen.getByRole("button", "캐릭터 라이브러리").tap();
     const previousId = (await read(fixture.settingsPath)).lastCommandResult?.commandId ?? "";
-    await screen.getByRole("button", "VRM 파일 추가…").tap();
+    await screen.getByRole("button", "캐릭터 파일 추가…").tap();
     const registered = await waitCommand("RegisterVrm", previousId);
     await expect(browser.locator("#libCount")).toContainText("1개 항목 등록됨");
     const library = await read(fixture.libraryPath);

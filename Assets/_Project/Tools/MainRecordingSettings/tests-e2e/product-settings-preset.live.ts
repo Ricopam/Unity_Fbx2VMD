@@ -36,7 +36,7 @@ test("실제 설정창 프리셋 저장·기본 지정·적용 경로를 확인�
     await screen.getByRole("button", "캐릭터").tap();
     await screen.getByRole("button", "캐릭터 라이브러리").tap();
     let lastId = (await read(fixture.settingsPath)).lastCommandResult?.commandId ?? "";
-    await screen.getByRole("button", "VRM 파일 추가…").tap();
+    await screen.getByRole("button", "캐릭터 파일 추가…").tap();
     const registered = await waitCommand("RegisterVrm", lastId);
     const library = await read(fixture.libraryPath);
     assert.equal(library.entries.length, 1);
