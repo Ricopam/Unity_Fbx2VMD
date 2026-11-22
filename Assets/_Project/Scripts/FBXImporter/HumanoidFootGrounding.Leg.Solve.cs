@@ -6,6 +6,28 @@ namespace Fbx2Vmd.FBXImporter
 {
     internal sealed partial class HumanoidFootGrounding
     {
+        // 앞뒤 탐침 간격이 이보다 짧으면 앵커 쌍 방향이 수 mm 오차에도 뒤집혀 발 yaw가 크게 비틀림.
+        // 정상 뒤꿈치·앞꿈치 간격은 약 70mm 이상, 결함 구간은 15~40mm로 측정됨(satisfaction_2).
+        internal const float MinimumPairAlignSpanPerHumanScale = 0.05f;
+
+        // 앞뒤 접촉 탐침 방향을 앵커 쌍 방향에 가중치만큼 맞춘 발 회전을 계산함.
+        // 기준선이 짧으면 방향을 신뢰할 수 없어 원래 회전을 유지함. 반대 방향 쌍은 실패로 보고함.
+        internal static bool TryAlignPairRotation(Quaternion original, Vector3 localRear,
+            Vector3 localFront, float footScale, Vector3 rearAnchor, Vector3 frontAnchor,
+            float weight, float humanScale, out Quaternion rotation)
+        {
+            rotation = original;
+            Vector3 current = original * (localFront - localRear);
+            bool isBaselineTooShort = current.magnitude * footScale <
+                humanScale * MinimumPairAlignSpanPerHumanScale;
+            if (isBaselineTooShort) return true;
+            Vector3 desired = frontAnchor - rearAnchor;
+            if (current.sqrMagnitude < 0.00000001f || desired.sqrMagnitude < 0.00000001f ||
+                Vector3.Dot(current.normalized, desired.normalized) < -0.99f) return false;
+            rotation = Quaternion.Slerp(original, Quaternion.FromToRotation(current, desired) * original, weight);
+            return true;
+        }
+
         private sealed partial class Leg
         {
             internal bool TryCalculateTarget(float frame, HumanoidGroundResponse ground, float humanScale)
@@ -23,7 +45,7 @@ namespace Fbx2Vmd.FBXImporter
                     return true;
                 if (!Sampler.TrySample())
                     return false;
-                if (!ResolveFrameContacts(frame, ground)) return false;
+                if (!ResolveFrameContacts(frame, ground, humanScale)) return false;
                 // 착지 램프 중 발 회전의 프레임당 변화를 제한해 발끝 팝 성분을 분산함.
                 // 지지가 상승하는 부분 지지 구간에만 적용해 완전 지지·해제·슬라이드의
                 // 정상 회전을 방해하지 않음.
@@ -52,7 +74,7 @@ namespace Fbx2Vmd.FBXImporter
                 return TryUpdateReach();
             }
 
-            private bool ResolveFrameContacts(float frame, HumanoidGroundResponse ground)
+            private bool ResolveFrameContacts(float frame, HumanoidGroundResponse ground, float humanScale)
             {
                 frame = Mathf.Clamp(frame, 0f, _weights.Length - 1);
                 int first = Mathf.FloorToInt(frame);
@@ -63,7 +85,7 @@ namespace Fbx2Vmd.FBXImporter
                     : Vector2.LerpUnclamped(_weights[first], _weights[second], blend);
                 if (!CollectActiveContacts(frame, ground, weights))
                     return false;
-                if (!AlignContactPairRotation())
+                if (!AlignContactPairRotation(humanScale))
                     return false;
                 return TryAlignSupportSurface(frame);
             }
@@ -97,20 +119,14 @@ namespace Fbx2Vmd.FBXImporter
                 }
                 return true; }
 
-            private bool AlignContactPairRotation()
+            private bool AlignContactPairRotation(float humanScale)
             {
-                if (_activeWeights.x > 0f && _activeWeights.y > 0f &&
-                    _activeContacts[0].CanAlignPair && _activeContacts[1].CanAlignPair)
-                {
-                    Vector3 current = _originalFootRotation * (_localContactPoints[1] - _localContactPoints[0]);
-                    Vector3 desired = _anchors[1] - _anchors[0];
-                    if (current.sqrMagnitude < 0.00000001f || desired.sqrMagnitude < 0.00000001f ||
-                        Vector3.Dot(current.normalized, desired.normalized) < -0.99f) return false;
-                    _targetFootRotation = Quaternion.Slerp(_originalFootRotation,
-                        Quaternion.FromToRotation(current, desired) * _originalFootRotation,
-                        Mathf.Min(_activeWeights.x, _activeWeights.y));
-                }
-                return true;
+                bool canAlignPair = _activeWeights.x > 0f && _activeWeights.y > 0f &&
+                    _activeContacts[0].CanAlignPair && _activeContacts[1].CanAlignPair;
+                if (!canAlignPair) return true;
+                return TryAlignPairRotation(_originalFootRotation, _localContactPoints[0],
+                    _localContactPoints[1], Foot.lossyScale.x, _anchors[0], _anchors[1],
+                    Mathf.Min(_activeWeights.x, _activeWeights.y), humanScale, out _targetFootRotation);
             }
 
             private bool ResolveWeightedTarget(float humanScale)

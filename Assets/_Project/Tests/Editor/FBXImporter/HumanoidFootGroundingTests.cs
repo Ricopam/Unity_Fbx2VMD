@@ -544,6 +544,45 @@ namespace Tests.Editor.FBXImporter
                 "밑창 관통은 기존처럼 실패로 유지됨");
         }
 
+        [Test]
+        public void Given_ShortProbeBaseline_When_AligningPairRotation_Then_KeepsOriginalRotation()
+        {
+            // satisfaction_2 9132 재현값: 중간선 근처 뒤 탐침(64)과 앞 탐침(67)이 약 15mm 간격이고
+            // 앵커 쌍 방향이 반대에 가까워 기존 정렬이 발을 크게 비틀었음.
+            Quaternion original = Quaternion.Euler(0f, 353.6f, 0f);
+            object[] arguments =
+            {
+                original, new Vector3(0.031f, -0.096f, 0.089f), new Vector3(0.016f, -0.096f, 0.087f),
+                1f, Vector3.zero, original * new Vector3(0.0145f, 0f, -0.004f), 1f, 0.98f, null
+            };
+            Assert.That((bool)PairAlign().Invoke(null, arguments), Is.True,
+                "짧은 기준선은 실패가 아니라 정렬 생략으로 처리해야 함");
+            Assert.That(Quaternion.Angle(original, (Quaternion)arguments[8]), Is.LessThan(0.01f),
+                "짧은 탐침 간격에서는 원래 발 회전을 유지해야 함");
+        }
+
+        [Test]
+        public void Given_NormalProbeBaseline_When_AligningPairRotation_Then_AlignsByWeight()
+        {
+            // 정상 뒤꿈치·앞꿈치 간격(100mm)은 기존처럼 앵커 쌍 방향으로 가중치만큼 정렬함.
+            Quaternion original = Quaternion.identity;
+            object[] arguments =
+            {
+                original, new Vector3(0f, 0f, -0.05f), new Vector3(0f, 0f, 0.05f),
+                1f, Vector3.zero, Quaternion.Euler(0f, 10f, 0f) * new Vector3(0f, 0f, 0.1f), 0.5f, 0.98f, null
+            };
+            Assert.That((bool)PairAlign().Invoke(null, arguments), Is.True);
+            Assert.That(Quaternion.Angle(original, (Quaternion)arguments[8]), Is.EqualTo(5f).Within(0.05f));
+        }
+
+        private static MethodInfo PairAlign()
+        {
+            MethodInfo method = typeof(FBXVmdPipeline).Assembly.GetType(
+                "Fbx2Vmd.FBXImporter.HumanoidFootGrounding", true).GetMethod("TryAlignPairRotation", Flags);
+            Assert.That(method, Is.Not.Null);
+            return method;
+        }
+
         private static object Invoke(object target, string name, params object[] args) =>
             target.GetType().GetMethod(name, Flags).Invoke(target, args);
 
