@@ -282,6 +282,55 @@ namespace Tests.Editor.FBXImporter
             }
         }
 
+        [Test]
+        public void Given_LaggingPrimaryAnchor_When_PairFormsWithVertexSwitch_Then_LagIsNotReleasedAtOnce()
+        {
+            // satisfaction_2 착지 첫 프레임 재현: 앞꿈치 앵커가 원본 추종 상한 때문에 뒤처진 상태에서
+            // 쌍 형성으로 정점이 바뀌면, 정점 간 이동만 즉시 반영하고 남은 지연은 상한 안에서 회수해야 함.
+            // 한 번에 방출하면 직전까지 고정된 접촉점이 수 mm 미끄러짐.
+            // 앞 정점 둘은 진행 위치가 다르고, 평평할 때만 안쪽 정점이 더 낮아 쌍 형성 시 신원이 바뀜.
+            Vector3[] vertices =
+            {
+                new Vector3(-0.05f, 0f, -0.1f), new Vector3(0.05f, 0f, -0.1f),
+                new Vector3(-0.05f, 0f, 0.3f), new Vector3(0.05f, -0.0005f, 0.22f)
+            };
+            using (Rig rig = CreateRig(out Transform foot, vertices))
+            {
+                const int frameCount = 12;
+                const int pairFrame = 10;
+                const float trackStep = 0.0002f;
+                const float driftPerFrame = 0.0008f;
+                var sources = new[] { new Vector3[frameCount], new Vector3[frameCount] };
+                var weights = new Vector2[frameCount];
+                for (int index = 0; index < frameCount; index++)
+                {
+                    sources[0][index] = Vector3.forward * (index * driftPerFrame);
+                    sources[1][index] = Vector3.forward * (0.2f + index * driftPerFrame);
+                    weights[index] = index < pairFrame ? new Vector2(0f, 1f) : new Vector2(1f, 1f);
+                }
+                // 발끝이 1도 숙여진 자세를 유지해 프레임 사이 자세 변화 없이 정점만 바뀌게 함.
+                Quaternion pitched = Quaternion.AngleAxis(1f, Vector3.right);
+                Action<float> evaluate = _ => foot.SetPositionAndRotation(Vector3.zero, pitched);
+                Type planType = typeof(FBXVmdPipeline).Assembly.GetType(
+                    "Fbx2Vmd.FBXImporter.HumanoidFootAnchorPlan", true);
+                object[] args = { foot, rig.Sampler, sources, weights, Quaternion.identity,
+                    1f, 60f, frameCount / 60f, evaluate, null, null, null, null, 0f, trackStep };
+                Assert.That(planType.GetMethod("TryBuild", Flags).Invoke(null, args), Is.True);
+                MethodInfo getSample = planType.GetMethod("GetSample", Flags);
+                object SampleAt(int frame) => getSample.Invoke(args[9], new object[] { 1, (float)frame });
+                FieldInfo firstPoint = SampleAt(0).GetType().GetField("_firstPoint", Flags);
+                Assert.That((int)firstPoint.GetValue(SampleAt(pairFrame - 1)), Is.EqualTo(2));
+                Assert.That((int)firstPoint.GetValue(SampleAt(pairFrame)), Is.EqualTo(3),
+                    "전제: 쌍 형성 프레임에 앞꿈치 정점이 바뀌어야 함");
+                Vector3 shift = (Vector3)SampleAt(pairFrame).GetType().GetField("Anchor", Flags).GetValue(SampleAt(pairFrame)) -
+                    (Vector3)SampleAt(pairFrame - 1).GetType().GetField("Anchor", Flags).GetValue(SampleAt(pairFrame - 1));
+                Vector3 vertexShift = Vector3.ProjectOnPlane(pitched * (vertices[3] - vertices[2]), Vector3.up);
+                // 정점 간 이동을 뺀 나머지는 평소 추종 상한(4×trackStep) 안이어야 함.
+                Assert.That((shift - vertexShift).magnitude, Is.LessThanOrEqualTo(4f * trackStep + 0.0001f),
+                    "쌍 형성 프레임에 누적 추종 지연이 한 번에 방출되면 안 됨");
+            }
+        }
+
         [TestCase(0, false)]
         [TestCase(1, false)]
         [TestCase(0, true)]
@@ -411,7 +460,7 @@ namespace Tests.Editor.FBXImporter
             }
         }
 
-        private static Rig CreateRig(out Transform foot)
+        private static Rig CreateRig(out Transform foot, Vector3[] vertices = null)
         {
             var root = new GameObject("앵커 정책 검증") { hideFlags = HideFlags.HideAndDontSave };
             foot = new GameObject("발").transform;
@@ -420,7 +469,7 @@ namespace Tests.Editor.FBXImporter
             toes.SetParent(foot, false);
             toes.localPosition = Vector3.forward * 0.2f;
             var mesh = new Mesh();
-            mesh.vertices = new[] { new Vector3(-0.05f, 0f, -0.1f), new Vector3(0.05f, 0f, -0.1f),
+            mesh.vertices = vertices ?? new[] { new Vector3(-0.05f, 0f, -0.1f), new Vector3(0.05f, 0f, -0.1f),
                 new Vector3(-0.05f, 0f, 0.3f), new Vector3(0.05f, 0f, 0.3f) };
             mesh.triangles = new[] { 0, 2, 1, 1, 2, 3 };
             mesh.boneWeights = new[] { Weight(), Weight(), Weight(), Weight() };
