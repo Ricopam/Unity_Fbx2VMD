@@ -28,27 +28,16 @@ namespace Fbx2Vmd.ClothPhysics
         // 본 선분과 캡슐 축의 최단 거리를 근사할 표본 수.
         const int SegmentSamples = 8;
 
-        // UniVRM 0.x가 자식 없는 말단 본에 두는 가상 꼬리 길이(m). 이 꼬리도 충돌 판정을 받음.
-        const float SpringLeafTailLength = 0.07f;
-
         /// <summary>
         /// 루트 아래 각 본과 부모를 잇는 기본 자세 선분(월드). 루트 자신의 부모 선분은 고정부라 제외함.
-        /// includeLeafTail이면 말단 본의 스프링 본 가상 꼬리 선분도 포함함.
         /// </summary>
-        public static List<(Vector3 a, Vector3 b)> CollectRestSegments(IEnumerable<Transform> roots, bool includeLeafTail = false)
+        public static List<(Vector3 a, Vector3 b)> CollectRestSegments(IEnumerable<Transform> roots)
         {
             var segments = new List<(Vector3, Vector3)>();
             foreach (var root in roots.Where(r => r != null).Distinct())
                 foreach (var bone in root.GetComponentsInChildren<Transform>(true))
-                {
                     if (bone != root)
                         segments.Add((bone.parent.position, bone.position));
-                    if (includeLeafTail && bone.childCount == 0 && bone.parent != null)
-                    {
-                        Vector3 direction = (bone.position - bone.parent.position).normalized;
-                        segments.Add((bone.position, bone.position + direction * SpringLeafTailLength));
-                    }
-                }
             return segments;
         }
 

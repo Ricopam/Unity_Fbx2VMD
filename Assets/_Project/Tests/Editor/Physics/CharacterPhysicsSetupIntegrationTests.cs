@@ -4,12 +4,13 @@ using Fbx2Vmd.ClothPhysics;
 using MagicaCloth2;
 using NUnit.Framework;
 using UnityEngine;
+using VRM;
 
 namespace Tests.Editor.ClothPhysics
 {
     /// <summary>
     /// CharacterPhysicsSetup의 비 Humanoid(Generic) 경로 통합 검증.
-    /// 이름 패턴 폴백으로 콜라이더+BoneCloth가 생성되어야 한다.
+    /// 이름 패턴 폴백으로 스프링 본과 장식물 클로스가 생성되어야 함.
     /// </summary>
     public class CharacterPhysicsSetupIntegrationTests
     {
@@ -62,7 +63,7 @@ namespace Tests.Editor.ClothPhysics
         }
 
         [Test]
-        public void Given_GenericRig_When_Setup_Then_FallbackResolvesCollidersAndCloths()
+        public void Given_GenericRig_When_Setup_Then_FallbackResolvesCollidersAndAccessory()
         {
             var root = BuildGenericModel();
             var setup = root.AddComponent<CharacterPhysicsSetup>();
@@ -70,13 +71,55 @@ namespace Tests.Editor.ClothPhysics
 
             Assert.That(setup.generatedColliders.Count, Is.GreaterThanOrEqualTo(4),
                 "폴백 해석으로 최소 상체 콜라이더가 생성되어야 합니다.\n" + setup.lastReport);
-            Assert.That(setup.generatedCloths.Count, Is.GreaterThanOrEqualTo(2),
-                "머리카락+장식물 클로스가 생성되어야 합니다.\n" + setup.lastReport);
-            Assert.That(setup.generatedParts, Contains.Item(HairPart.Front));
+            Assert.That(setup.generatedCloths.Count, Is.EqualTo(1),
+                "신체측 장식물 클로스가 생성되어야 합니다.\n" + setup.lastReport);
             Assert.That(setup.generatedParts, Contains.Item(HairPart.Accessory));
             Assert.That(setup.lastReport, Does.Contain("폴백"));
             // 중첩된 장식물 본은 하나의 체인으로 묶여야 한다 (중복 루트 금지)
             Assert.That(setup.lastReport, Does.Contain("Accessory: 체인 1개"));
+        }
+
+        [Test]
+        public void Given_GenericRig_When_Rebuilt_Then_HairUsesOnlySpringDynamics()
+        {
+            var root = BuildGenericModel();
+            var setup = root.AddComponent<CharacterPhysicsSetup>();
+            setup.Rebuild();
+            setup.Rebuild();
+
+            var spring = root.GetComponentsInChildren<SpringHairDynamics>().Single();
+            Assert.That(spring.Roots.Single().name, Is.EqualTo("hair_front_01"));
+            Assert.That(spring.ColliderGroups, Is.Not.Empty);
+            Assert.That(root.GetComponentsInChildren<VRMSpringBone>(), Is.Empty,
+                "머리카락은 UniVRM 스프링 본 대신 체인 스프링을 써야 합니다.");
+            Assert.That(setup.generatedCloths.SelectMany(c => c.SerializeData.rootBones)
+                .Any(b => b.name.StartsWith("hair_")), Is.False);
+            Assert.That(setup.generatedParts, Contains.Item(HairPart.Accessory));
+
+            setup.ClearGenerated();
+            Assert.That(root.GetComponentsInChildren<SpringHairDynamics>(), Is.Empty);
+            Assert.That(root.GetComponentsInChildren<VRMSpringBoneColliderGroup>(), Is.Empty);
+        }
+
+        [Test]
+        public void Given_GenericRig_When_HeadMoves_Then_SpringRotatesHair()
+        {
+            var root = BuildGenericModel();
+            var setup = root.AddComponent<CharacterPhysicsSetup>();
+            setup.Setup();
+            var spring = root.GetComponentsInChildren<SpringHairDynamics>().Single();
+            var hair = spring.Roots.Single().GetChild(0);
+            Quaternion rest = hair.localRotation;
+            spring.Simulate(1f / 60f);
+
+            spring.RestorePose();
+            hair.parent.parent.position += Vector3.right * 0.03f;
+            spring.Simulate(1f / 60f);
+
+            Assert.That(Quaternion.Angle(rest, hair.localRotation), Is.GreaterThan(1f));
+            spring.RestorePose();
+            Assert.That(Quaternion.Angle(rest, hair.localRotation), Is.LessThan(0.01f),
+                "물리 결과를 지우면 애니메이션 자세로 돌아가야 합니다.");
         }
 
         [Test]
@@ -126,36 +169,25 @@ namespace Tests.Editor.ClothPhysics
                 "autoSkirtCloth 꺼짐이면 스커트 없어도 완전입니다.");
         }
 
-        /// <summary>
-        /// 상호 충돌 배선 회귀: 앵커(루트 본 최다 클로스)를 제외한 모든 헤어 클로스가
-        /// 같은 앵커를 syncPartner로 선언해야 한다 — 앵커는 선언하지 않는다(한쪽만 설정).
-        /// </summary>
         [Test]
-        public void Given_GenericRig_When_Setup_Then_MutualCollisionStarWired()
+        public void Given_NativeHair_When_Mc2ConversionSelected_Then_HairKeepsNativeSpring()
         {
             var root = BuildGenericModel();
             var setup = root.AddComponent<CharacterPhysicsSetup>();
+            setup.vrmConversionMode = CharacterPhysicsSetup.VrmConversionMode.ConvertToMc2;
+            var native = root.AddComponent<VRMSpringBone>();
+            var hair = root.transform.Find("Hips/Spine/Chest/Neck/Head/hair_front_01");
+            native.RootBones.Add(hair);
+            var outfit = root.AddComponent<VRMSpringBone>();
+            outfit.RootBones.Add(root.transform.Find("Hips/Spine/Chest/ribbon_chain_01"));
+
             setup.Setup();
 
-            var hairs = setup.generatedCloths
-                .Where(c => c != null && !c.name.Contains("Skirt")).ToList();
-            Assert.That(hairs.Count, Is.GreaterThanOrEqualTo(2),
-                "상호 충돌 검증에는 헤어 클로스 2개 이상이 필요합니다.\n" + setup.lastReport);
-
-            var withSync = hairs.Where(c =>
-                c.SerializeData.selfCollisionConstraint.syncMode ==
-                SelfCollisionConstraint.SelfCollisionMode.FullMesh).ToList();
-            Assert.That(withSync.Count, Is.EqualTo(hairs.Count - 1),
-                "앵커를 제외한 전 클로스가 상호 충돌을 선언해야 합니다.");
-
-            var anchor = withSync[0].SerializeData.selfCollisionConstraint.syncPartner;
-            Assert.That(anchor, Is.Not.Null);
-            Assert.That(withSync.All(c =>
-                    c.SerializeData.selfCollisionConstraint.syncPartner == anchor),
-                Is.True, "별형 연결 — 모든 파트너가 같은 앵커를 가리켜야 합니다.");
-            Assert.That(anchor.SerializeData.selfCollisionConstraint.syncMode,
-                Is.EqualTo(SelfCollisionConstraint.SelfCollisionMode.None),
-                "앵커는 상호 충돌을 선언하지 않아야 합니다(한쪽만 설정).");
+            Assert.That(native.enabled, Is.True);
+            Assert.That(root.GetComponentsInChildren<VRMSpringBone>(), Is.EquivalentTo(new[] { native, outfit }));
+            Assert.That(outfit.enabled, Is.False);
+            Assert.That(setup.generatedCloths.SelectMany(c => c.SerializeData.rootBones),
+                Has.None.EqualTo(hair));
         }
 
         [Test]
@@ -205,7 +237,7 @@ namespace Tests.Editor.ClothPhysics
         }
 
         /// <summary>
-        /// 부위 마스크 회귀: 머리 측 Front 체인만 끄면 Front 클로스가 빠지고
+        /// 부위 마스크 회귀: 머리 측 Front 체인만 끄면 Front 스프링 본이 빠지고
         /// 신체측 Accessory 체인은 마스크 비대상이라 유지돼야 한다.
         /// </summary>
         [Test]
@@ -216,8 +248,8 @@ namespace Tests.Editor.ClothPhysics
             setup.hairPhysicsParts = HairPartMask.All & ~HairPartMask.Front;
             setup.Setup();
 
-            Assert.That(setup.generatedParts.Contains(HairPart.Front), Is.False,
-                "Front 마스크가 꺼지면 앞머리 클로스가 없어야 합니다.\n" + setup.lastReport);
+            Assert.That(root.GetComponentsInChildren<VRMSpringBone>(), Is.Empty,
+                "Front 마스크가 꺼지면 앞머리 스프링 본이 없어야 합니다.\n" + setup.lastReport);
             Assert.That(setup.generatedParts, Contains.Item(HairPart.Accessory),
                 "신체측 장식물 체인은 마스크 대상이 아니므로 유지돼야 합니다.\n" + setup.lastReport);
             Assert.That(setup.lastReport, Does.Contain("부위 마스크로 스킵"));
@@ -228,18 +260,14 @@ namespace Tests.Editor.ClothPhysics
         /// 트윈테일 전용 구성(레퍼런스식)의 직접 검증.
         /// </summary>
         [Test]
-        public void Given_MaskTailOnly_When_Setup_Then_NoHeadHairCloths()
+        public void Given_MaskTailOnly_When_Setup_Then_NoFrontHairSpring()
         {
             var root = BuildGenericModel();
             var setup = root.AddComponent<CharacterPhysicsSetup>();
             setup.hairPhysicsParts = HairPartMask.Tail;
             setup.Setup();
 
-            Assert.That(
-                setup.generatedParts.Contains(HairPart.Front)
-                    || setup.generatedParts.Contains(HairPart.Side)
-                    || setup.generatedParts.Contains(HairPart.Back), Is.False,
-                "머리 측 부위 클로스가 없어야 합니다.\n" + setup.lastReport);
+            Assert.That(root.GetComponentsInChildren<SpringHairDynamics>(), Is.Empty);
             Assert.That(setup.generatedParts, Contains.Item(HairPart.Accessory));
         }
 
@@ -247,7 +275,7 @@ namespace Tests.Editor.ClothPhysics
         /// 기본값 회귀: 마스크 미설정(All)은 기존 동작과 동일해야 한다.
         /// </summary>
         [Test]
-        public void Given_DefaultMask_When_Setup_Then_SameAsBefore()
+        public void Given_DefaultMask_When_Setup_Then_HairAndAccessoriesEnabled()
         {
             var root = BuildGenericModel();
             var setup = root.AddComponent<CharacterPhysicsSetup>();
@@ -255,7 +283,8 @@ namespace Tests.Editor.ClothPhysics
                 "신규 필드 기본값은 All이어야 기존 씬 동작이 보존됩니다.");
             setup.Setup();
 
-            Assert.That(setup.generatedParts, Contains.Item(HairPart.Front));
+            Assert.That(root.GetComponentsInChildren<SpringHairDynamics>().Single().name,
+                Is.EqualTo(SpringHairBackend.ProductPrefix + HairPart.Front));
             Assert.That(setup.generatedParts, Contains.Item(HairPart.Accessory));
         }
 
@@ -294,8 +323,8 @@ namespace Tests.Editor.ClothPhysics
 
             Assert.That(setup.generatedColliders.Count, Is.GreaterThanOrEqualTo(4),
                 "실모델에서 최소 상체 콜라이더가 생성되어야 합니다.\n" + setup.lastReport);
-            Assert.That(setup.generatedCloths.Count, Is.GreaterThanOrEqualTo(1),
-                "실모델 머리카락/장식물 체인으로 클로스가 생성되어야 합니다.\n" + setup.lastReport);
+            Assert.That(inst.GetComponentsInChildren<SpringHairDynamics>().Length, Is.GreaterThanOrEqualTo(1),
+                "실모델 머리카락에 스프링이 생성되어야 합니다.\n" + setup.lastReport);
         }
     }
 }

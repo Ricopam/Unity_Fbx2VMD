@@ -14,5 +14,7 @@ namespace Fbx2Vmd.FBXImporter
         internal const int ThumbDeformation = 29900;
         internal const int LateVisualGrounding = 29950;
         internal const int PlaybackDriver = 32000;
+        // 머리카락 스프링은 몸 최종 자세가 쓰인 뒤 계산해야 한 프레임 늦게 따라가지 않음.
+        internal const int HairSpringDynamics = 33000;
     }
 }

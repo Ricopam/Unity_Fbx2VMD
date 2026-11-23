@@ -114,37 +114,13 @@ namespace Tests.Editor.ClothPhysics
         }
 
         [Test]
-        public void Given_NoSpringAsset_When_AdapterUsed_Then_SafeFallback()
-        {
-            // 이 프로젝트에는 본 스프링 에셋 미설치 — 리플렉션 해석이 실패하고 조용히 폴백.
-            // 에셋이 임포트되면 이 테스트는 의미가 없으므로 스킵한다.
-            Assume.That(SpringHairBackend.Available, Is.False);
-            var host = new GameObject("host");
-            try
-            {
-                Assert.IsNull(SpringHairBackend.Build(
-                    host.transform, new System.Collections.Generic.List<HairChain>
-                    {
-                        new HairChain { rootBone = host.transform, part = HairPart.Tail }
-                    },
-                    HairSpringProfile.Default, null));
-                Assert.IsFalse(SpringHairBackend.ReapplyExisting(
-                    host.transform, HairSpringProfile.Default));
-            }
-            finally
-            {
-                Object.DestroyImmediate(host);
-            }
-        }
-
-        [Test]
-        public void Given_DefaultBackend_When_Created_Then_MagicaCloth2()
+        public void Given_NewSetup_When_Created_Then_SpringTuningUsesDefaultProfile()
         {
             var setup = new GameObject("setup").AddComponent<CharacterPhysicsSetup>();
             try
             {
-                Assert.That(setup.hairBackend, Is.EqualTo(HairDynamicsBackend.MagicaCloth2));
                 Assert.IsFalse(setup.springProfile.enabled);
+                Assert.That(setup.springProfile.frequency, Is.EqualTo(HairSpringProfile.Default.frequency));
             }
             finally
             {

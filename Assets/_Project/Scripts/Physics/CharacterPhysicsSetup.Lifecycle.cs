@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using MagicaCloth2;
 using UnityEngine;
@@ -7,15 +5,11 @@ using UnityEngine;
 namespace Fbx2Vmd.ClothPhysics
 {
     /// <summary>
-    /// 캐릭터에 MC2 물리를 자동 세팅하는 오케스트레이터.
-    /// ContextMenu로 실행하며, 콜라이더 자동 생성 → 머리카락 체인 탐지 →
-    /// 부위별 BoneCloth 생성 순으로 진행한다.
+    /// 머리카락 스프링 본과 의상 클로스의 초기화·재설정을 관리함.
     /// </summary>
     public partial class CharacterPhysicsSetup
     {
-        /// OnEnable 직후에는 MC2 비동기 빌드가 진행 중일 수 있으므로
-        /// 짧은 유예 시간 뒤 Update에서 판정한다.
-        /// </summary>
+        // MC2의 비동기 빌드에 유예 시간을 주고 Update에서 판정함.
         int integrityCheckDelay;
 
         /// <summary>씬 직렬화 클로스에 현재 컴포넌트 파라미터 재적용 예약.</summary>
@@ -23,6 +17,11 @@ namespace Fbx2Vmd.ClothPhysics
 
         void OnEnable()
         {
+            if (Application.isPlaying && SpringHairBackend.FindProducts(transform).Any())
+            {
+                ResolveTorsoAndHead(out float torso, out _);
+                ReapplySpringParameters(torso);
+            }
             if (Application.isPlaying && generatedCloths.Count > 0)
             {
                 graceUntilFrame = Time.frameCount + RebuildGraceFrames;
@@ -86,20 +85,12 @@ namespace Fbx2Vmd.ClothPhysics
         }
 
 
-        private void ReapplySpringBackend()
+        private int ReapplySpringParameters(float torso)
         {
-            if (SpringHairBackend.ReapplyExisting(transform, springProfile))
-            {
-                lastReport = "본 스프링 에셋 파라미터 재적용 완료";
-                Debug.Log("[CharacterPhysicsSetup] " + lastReport, this);
-            }
-            else
-            {
-                lastReport = SpringHairBackend.Available
-                    ? "재적용할 본 스프링 에셋 생성물이 없습니다. 자동 물리 설정을 먼저 실행하세요."
-                    : "본 스프링 에셋 미설치 — 현재 MC2 경로가 동작 중입니다.";
-                Debug.LogWarning(lastReport, this);
-            }
+            var springs = SpringHairBackend.FindProducts(transform).ToList();
+            foreach (var spring in springs)
+                SpringHairBackend.ApplyBodyUnit(spring, torso);
+            return springs.Count;
         }
 
     }

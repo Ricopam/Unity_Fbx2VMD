@@ -86,7 +86,7 @@ namespace Fbx2Vmd.ClothPhysics
         /// <param name="unit">모델 스케일 단위 — 거리 파라미터 스케일용</param>
         /// <param name="report">변환 기록 (null 허용)</param>
         public static Result ConvertAll(Transform setupRoot, Transform modelRoot,
-            float unit, List<string> report)
+            float unit, List<string> report, System.Predicate<VRMSpringBone> canConvert = null)
         {
             var result = new Result();
             if (setupRoot == null || modelRoot == null)
@@ -94,7 +94,7 @@ namespace Fbx2Vmd.ClothPhysics
             int index = 0;
             foreach (var spring in modelRoot.GetComponentsInChildren<VRMSpringBone>(true))
             {
-                if (spring == null)
+                if (spring == null || (canConvert != null && !canConvert(spring)))
                     continue;
                 if (!spring.isActiveAndEnabled)
                 {

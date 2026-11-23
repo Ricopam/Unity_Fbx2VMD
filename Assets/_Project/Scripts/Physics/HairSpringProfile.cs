@@ -4,17 +4,6 @@ using UnityEngine;
 namespace Fbx2Vmd.ClothPhysics
 {
     /// <summary>
-    /// 머리카락 다이내믹스 백엔드 선택.
-    /// MagicaCloth2 = 현재 구현(기본). SpringBones = 외부 본 스프링 컴포넌트 경로
-    /// (에셋이 프로젝트에 있을 때만 동작, 없으면 MC2로 폴백).
-    /// </summary>
-    public enum HairDynamicsBackend
-    {
-        MagicaCloth2 = 0,
-        SpringBones = 1,
-    }
-
-    /// <summary>
     /// 본 스프링 식 깊이 커브 — 외부 본 스프링 에셋의 Chain.CurveType과 동일한 의미·순서.
     /// t는 체인 깊이(0=루트, 1=끝). 외부 본 스프링 에셋 적용 시 (int)캐스팅이 그대로 통한다.
     /// </summary>
@@ -75,15 +64,14 @@ namespace Fbx2Vmd.ClothPhysics
     }
 
     /// <summary>
-    /// 외부 본 스프링 의미론의 머리카락 다이내믹스 프로파일.
-    /// MC2 경로에서는 ApplyToMc2가 각 필드를 MC2 파라미터로 근사 변환하고,
-    /// 외부 본 스프링 에셋 경로에서는 필드가 1:1로 대응해 그대로 주입된다.
-    /// enabled=false가 기본 — 기존 HairTuning/프리셋 경로를 그대로 유지한다.
+    /// 외부 본 스프링 의미론의 다이내믹스 프로파일. 장식물 클로스는 이 값을 MC2 파라미터로 변환함.
+    /// 머리카락 체인 스프링은 이 프로파일 대신 고정 기본값(SpringHairSettings)을 씀.
+    /// enabled=false이면 장식물은 기존 프리셋을 사용함.
     /// </summary>
     [System.Serializable]
     public struct HairSpringProfile
     {
-        [Tooltip("본 스프링 식 파라미터를 MC2에 반영할지. 꺼두면 기존 프리셋+tuning 경로 그대로")]
+        [Tooltip("켜면 장식물 클로스 프리셋에 사용자 조정값을 적용함")]
         public bool enabled;
 
         [Header("스프링 응답")]
@@ -120,7 +108,7 @@ namespace Fbx2Vmd.ClothPhysics
         [Tooltip("중력 가속도(m/s²). 본 스프링 기본 0 — 쳐짐은 애니메이션 포즈 자체가 담당")]
         public float gravity;
 
-        [Tooltip("체인끼리 구-구 상호 충돌. MC2에서는 클로스별 FullMesh 상호충돌로 변환")]
+        [Tooltip("체인끼리 구-구 상호 충돌. 현재 어느 물리 경로에서도 읽지 않음(저장 호환용으로 유지)")]
         public bool interChainCollision;
 
         public static HairSpringProfile Default => new HairSpringProfile

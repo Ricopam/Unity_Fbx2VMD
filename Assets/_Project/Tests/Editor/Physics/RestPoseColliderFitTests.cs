@@ -180,20 +180,5 @@ namespace Tests.Editor.ClothPhysics
             BodyColliderBuilder.ClearGenerated(body);
             Assert.That(body.GetComponentsInChildren<VRMSpringBoneColliderGroup>(true), Is.Empty);
         }
-
-        [Test]
-        public void Given_LeafTailOption_When_CollectingSegments_Then_AddsSpringVirtualTail()
-        {
-            var root = Chain(Vector3.zero);
-
-            var plain = RestPoseColliderFit.CollectRestSegments(new[] { root });
-            var withTail = RestPoseColliderFit.CollectRestSegments(new[] { root }, includeLeafTail: true);
-
-            Assert.That(plain.Count, Is.EqualTo(2));
-            Assert.That(withTail.Count, Is.EqualTo(3));
-            var (a, b) = withTail[2];
-            Assert.That(Vector3.Distance(a, new Vector3(0f, -0.2f, 0f)), Is.LessThan(0.0001f));
-            Assert.That(Vector3.Distance(b, new Vector3(0f, -0.27f, 0f)), Is.LessThan(0.0001f));
-        }
     }
 }

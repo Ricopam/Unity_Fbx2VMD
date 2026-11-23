@@ -7,9 +7,9 @@ using UnityEngine;
 namespace Fbx2Vmd.ClothPhysics
 {
     /// <summary>
-    /// 캐릭터에 MC2 물리를 자동 세팅하는 오케스트레이터.
+    /// 캐릭터의 머리카락 스프링 본과 의상 물리를 자동 설정함.
     /// ContextMenu로 실행하며, 콜라이더 자동 생성 → 머리카락 체인 탐지 →
-    /// 부위별 BoneCloth 생성 순으로 진행한다.
+    /// 부위별 스프링 본과 의상 클로스 생성 순으로 진행함.
     /// </summary>
     public partial class CharacterPhysicsSetup : MonoBehaviour
     {
@@ -32,7 +32,7 @@ namespace Fbx2Vmd.ClothPhysics
         [Tooltip("이름 규칙에 맞지 않는 미매핑 본도 머리카락 후보로 포함")]
         public bool includeUnknownBones = false;
 
-        [Tooltip("물리를 적용할 머리카락 부위. 끈 부위는 클로스를 만들지 않아 " +
+        [Tooltip("물리를 적용할 머리카락 부위. 끈 부위는 스프링 본을 만들지 않아 " +
                  "본이 애니메이션을 그대로 따라간다 (예: Tail만 켜면 트윈테일만 물리). " +
                  "신체측 장식물 체인은 이 마스크 대상이 아님")]
         public HairPartMask hairPhysicsParts = HairPartMask.All;
@@ -73,12 +73,7 @@ namespace Fbx2Vmd.ClothPhysics
         [Header("흔들림 조정")]
         public HairTuning tuning = HairTuning.Default;
 
-        [Header("머리카락 백엔드")]
-        [Tooltip("머리카락 다이내믹스 엔진. 본 스프링 에셋은 에셋 임포트 시에만 동작하고 미설치면 MC2로 폴백")]
-        public HairDynamicsBackend hairBackend = HairDynamicsBackend.MagicaCloth2;
-
-        [Tooltip("본 스프링 식 머리카락 파라미터. enabled면 프리셋+tuning 결과 위에 " +
-                 "스프링 의미론으로 덮어쓰고, 본 스프링 에셋 백엔드에서는 그대로 주입된다")]
+        [Tooltip("장식물 클로스 물리 조정에 사용함. 머리카락 스프링은 고정 기본값을 씀")]
         public HairSpringProfile springProfile = HairSpringProfile.Default;
 
         /// <summary>
@@ -94,7 +89,7 @@ namespace Fbx2Vmd.ClothPhysics
             // 씬 직렬화 클로스만 유효한 플레이에서 런타임 전용 스커트가 영구 누락되는 것을 막는다.
             if (Application.isPlaying &&
                 (generatedCloths.Count > 0 ||
-                 SpringHairBackend.FindProduct(transform) != null) &&
+                 SpringHairBackend.FindProducts(transform).Any()) &&
                 AllClothsAlive() && IsSetupComplete())
             {
                 lastReport = $"이미 설정 완료 상태 — 클로스 {generatedCloths.Count}개 유효/빌드 중 (재실행 생략). " +
@@ -187,7 +182,6 @@ namespace Fbx2Vmd.ClothPhysics
             BuildDynamicsAndFinish( animator, resolver, smrs, torso, head, detect, headHairChainCount, skirtBoneDepths, colResult, report);
         }
 
-        // 카운트는 머리카락 클로스만 — 스커트/VRM 변환 클로스도 generatedCloths에 들어간다
         private void BuildDynamicsAndFinish(
             Animator animator, System.Func<HumanBodyBones, Transform> resolver,
             SkinnedMeshRenderer[] smrs, float torso, Transform head,
@@ -197,10 +191,8 @@ namespace Fbx2Vmd.ClothPhysics
         {
             BuildSkirtCloth(animator, resolver, smrs, torso,
                 skirtBoneDepths, colResult, report);
-            bool springPath = BuildHairDynamics(detect, headHairChainCount,
+            BuildHairAndAccessoryDynamics(detect, headHairChainCount,
                 torso, head, colResult, report);
-            int hairClothCount = generatedCloths.Count(IsHairCloth);
-            report.Add($"머리카락 다이내믹스 생성: {(springPath ? "본 스프링 에셋 1개" : $"BoneCloth {hairClothCount}개")}");
             graceUntilFrame = Time.frameCount + RebuildGraceFrames;
             Finish(report);
         }
@@ -221,13 +213,14 @@ namespace Fbx2Vmd.ClothPhysics
             boneVerts = BodyColliderBuilder.GatherBoneVertices(smrs);
             colResult = BuildBodyColliders(
                 animator, resolver, torso, boneVerts, report);
-            HashSet<Transform> externalOwned =
-                ApplyNativeGuardAndConversion(animator, torso, report);
             head = resolver(HumanBodyBones.Head);
+            var nativeOwned = CollectNativeSprings(animator, head, torso, report);
             detect = head == null
                 ? null
-                : DetectAndFilterChains(head, bodyBones, externalOwned, report);
-            return externalOwned;
+                : DetectAndFilterChains(head, bodyBones, nativeOwned, report);
+            bool protectAccessories = vrmConversionMode == VrmConversionMode.ConvertToMc2 ||
+                (respectNativeSpringBones && vrmConversionMode != VrmConversionMode.Off);
+            return protectAccessories ? nativeOwned : new HashSet<Transform>();
         }
 
         // 스커트 본은 미리 수집 — 장식물 토폴로지 탐지의 소유 집합에도 포함한다.
@@ -251,6 +244,9 @@ namespace Fbx2Vmd.ClothPhysics
         [ContextMenu("자동 생성 물리 제거")]
         public void ClearGenerated()
         {
+            foreach (var spring in SpringHairBackend.FindProducts(transform))
+                spring.RestorePose();
+
             // 변환으로 끈 네이티브 스프링 복원 — 이 호출이 없으면 생성물만 지워져
             // 물리가 소실되고 GuardOnly 복귀도 원본을 잃는다.
             foreach (var s in convertedSprings)
@@ -262,13 +258,18 @@ namespace Fbx2Vmd.ClothPhysics
             var doomed = new List<GameObject>();
             foreach (Transform child in transform)
             {
-                if (child.name.StartsWith(ClothNamePrefix))
+                if (child.name.StartsWith(ClothNamePrefix) ||
+                    SpringHairBackend.IsGeneratedObject(transform, child))
                     doomed.Add(child.gameObject);
             }
             foreach (var go in doomed)
             {
                 if (Application.isPlaying)
+                {
+                    if (SpringHairBackend.IsGeneratedObject(transform, go.transform))
+                        go.SetActive(false);
                     Destroy(go);
+                }
                 else
                     DestroyImmediate(go);
             }
@@ -278,7 +279,7 @@ namespace Fbx2Vmd.ClothPhysics
             generatedIsLong.Clear();
         }
 
-        MagicaCloth CreateHairCloth(
+        MagicaCloth CreateAccessoryCloth(
             HairPart part, List<HairChain> chains, Dictionary<ColliderCategory, List<ColliderComponent>> collidersByCategory, float torso, Transform head, List<string> report)
         {
             if (chains.Count == 0) return null;
@@ -315,43 +316,26 @@ namespace Fbx2Vmd.ClothPhysics
             return cloth; }
 
         /// <summary>
-        /// 이미 생성된 클로스에 현재 튜닝값만 다시 적용한다 (콜라이더/체인 재생성 없음).
-        /// 인스펙터 슬라이더 조정 후 실행.
+        /// 생성된 스프링 본과 장식물 클로스에 조정값을 다시 적용함.
         /// </summary>
         [ContextMenu("흔들림 파라미터 재적용")]
         public void ReapplyParameters()
         {
-            // 본 스프링 에셋 백엔드는 클로스가 아니라 본 스프링 체인 컴포넌트에 파라미터가 산다.
-            if (hairBackend == HairDynamicsBackend.SpringBones)
-            {
-                ReapplySpringBackend();
-                return;
-            }
-            if (generatedCloths.Count == 0)
-            {
-                lastReport = "재적용할 클로스가 없습니다. 자동 물리 설정을 먼저 실행하세요.";
-                Debug.LogWarning(lastReport, this);
-                return;
-            }
             ResolveTorsoAndHead(out float torso, out Transform head);
-
-            int applied = ApplyTuningToHairCloths(torso, head);
-            var wireReport = new List<string>();
-            WireHairMutualCollision(wireReport);
-            lastReport = $"튜닝 재적용 완료: {applied}개 클로스 " +
-                $"(sway={tuning.sway:F2}, damp={tuning.dampingScale:F2}, grav={tuning.gravityScale:F2})" +
-                (wireReport.Count > 0 ? "\n" + string.Join("\n", wireReport) : "");
+            int springs = ReapplySpringParameters(torso);
+            int accessories = ApplyTuningToAccessoryCloths(torso, head);
+            lastReport = $"흔들림 재적용: 스프링 본 {springs}개, 장식물 클로스 {accessories}개";
             Debug.Log("[CharacterPhysicsSetup] " + lastReport, this);
         }
 
-        private int ApplyTuningToHairCloths(float torso, Transform head)
+        private int ApplyTuningToAccessoryCloths(float torso, Transform head)
         {
             int applied = 0;
             for (int i = 0; i < generatedCloths.Count; i++)
             {
                 var cloth = generatedCloths[i];
-                if (!IsHairCloth(cloth))
-                    continue; // MeshCloth·BoneClothLoop 스커트는 헤어 튜닝 적용 대상이 아님
+                if (!IsAccessoryCloth(cloth))
+                    continue;
                 var part = i < generatedParts.Count ? generatedParts[i] : HairPart.Unknown;
                 bool isLong = i < generatedIsLong.Count && generatedIsLong[i];
                 HairPhysicsParameters.Apply(part, cloth.SerializeData, torso, head, isLong, tuning,
@@ -382,66 +366,17 @@ namespace Fbx2Vmd.ClothPhysics
             }
         }
 
-        /// <summary>
-        /// 머리카락용 클로스인지 — 스커트(MC2Cloth_Skirt*)와 VRM 변환 클로스(MC2Cloth_Vrm*)
-        /// 는 BoneClothLoop/BoneCloth여도 제외한다. 변환 클로스는 제작자 튜닝이 정본이라
-        /// 헤어 템플릿 재적용·상호 충돌 배선 대상이 아니다.
-        /// </summary>
-        static bool IsHairCloth(MagicaCloth c)
+        static bool IsAccessoryCloth(MagicaCloth cloth)
         {
-            return c != null &&
-                c.name.StartsWith(ClothNamePrefix) &&
-                !c.name.StartsWith(ClothNamePrefix + "Skirt") &&
-                !c.name.StartsWith(ClothNamePrefix + "Vrm") &&
-                c.SerializeData.clothType == ClothProcess.ClothType.BoneCloth;
+            return cloth != null && cloth.name == ClothNamePrefix + HairPart.Accessory &&
+                cloth.SerializeData.clothType == ClothProcess.ClothType.BoneCloth;
         }
 
-        /// <summary>
-        /// 머리카락 클로스끼리 상호 충돌을 별형으로 연결한다.
-        /// MC2는 클로스당 상대를 1개만 지정 가능(한쪽만 설정하면 됨) → 루트 본이
-        /// 가장 많은 클로스(주모발)를 앵커로 삼고 나머지가 그쪽으로 충돌하게 한다.
-        /// 스커트 클로스(MC2Cloth_Skirt*)는 대상에서 제외.
-        /// </summary>
-        void WireHairMutualCollision(List<string> report)
-        {
-            var hairs = generatedCloths.Where(IsHairCloth).ToList();
-            // 재적용 대비 — 기존 상호 충돌 연결을 먼저 해제
-            UnlinkHairMutualCollision(hairs);
-            bool mutualOn = springProfile.enabled
-                ? springProfile.interChainCollision
-                : tuning.useMutualCollision;
-            if (!mutualOn || hairs.Count < 2) return;
-            var anchor = hairs.OrderByDescending(c => c.SerializeData.rootBones.Count).First();
-            int linked = 0;
-            foreach (var c in hairs)
-            {
-                var sc = c.SerializeData.selfCollisionConstraint;
-                sc.clothMass = 1.0f; // 낮은 값은 떨림 유발 — 공식 예제와 동일하게 최대 질량
-                if (c == anchor) continue;
-                sc.syncMode = SelfCollisionConstraint.SelfCollisionMode.FullMesh;
-                sc.syncPartner = anchor;
-                NotifyParameterChange(c);
-                linked++; }
-            NotifyParameterChange(anchor);
-            if (linked > 0) report.Add($"머리카락 상호 충돌: 앵커 {anchor.name} 기준 {linked}개 클로스 연결"); }
-
-        /// <summary>
-        /// 리스폰·순간이동 후 시뮬레이션을 초기 상태로 리셋한다.
-        /// keepPose=true면 현재 자세를 유지한 채 재개, false면 바인드 포즈로 리셋.
-        /// </summary>
-        /// <param name="keepPose">true=자세 유지 리셋(순간이동 폭주 방지)</param>
-        static void UnlinkHairMutualCollision(List<MagicaCloth> hairs)
-        {
-            foreach (var c in hairs)
-            {
-                var sc = c.SerializeData.selfCollisionConstraint;
-                sc.syncMode = SelfCollisionConstraint.SelfCollisionMode.None;
-                sc.syncPartner = null;
-            }
-        }
-
+        /// <summary>리스폰·순간이동 후 생성된 물리의 상태를 초기화함.</summary>
         public void ResetPhysics(bool keepPose = false)
         {
+            foreach (var spring in SpringHairBackend.FindProducts(transform))
+                spring.ResetState();
             foreach (var cloth in generatedCloths)
             {
                 if (cloth != null && cloth.IsValid())

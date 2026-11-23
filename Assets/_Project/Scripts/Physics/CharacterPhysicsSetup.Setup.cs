@@ -20,63 +20,40 @@ namespace Fbx2Vmd.ClothPhysics
             return colResult;
         }
 
-        private bool BuildHairDynamics(HairChainDetector.Result detect,
+        private void BuildHairAndAccessoryDynamics(HairChainDetector.Result detect,
             int headHairChainCount, float torso, Transform head,
             BodyColliderBuilder.BuildResult colResult, List<string> report)
         {
-            // 3. 부위별 머리카락 다이내믹스 생성 — 백엔드에 따라 MC2 BoneCloth 또는 본 스프링 에셋.
-            //    마스크로 끈 머리 부위는 클로스 미생성(본이 애니메이션 추종) — 신체측 체인은 대상 아님
-            var hairChains = FilterHairChains(detect, headHairChainCount, report);
-            var groups = hairChains.GroupBy(c => c.part);
-            bool springPath = hairBackend == HairDynamicsBackend.SpringBones &&
-                TryBuildSpringPath(hairChains, colResult, report);
-            if (!springPath)
-            {
-                BuildMc2HairCloths(groups, colResult, torso, head, report);
-                // 4. 머리카락 클로스 간 상호 충돌 배선 (꼬임 방지)
-                WireHairMutualCollision(report);
-            }
-            return springPath;
+            var hair = FilterHairChains(detect.chains.Take(headHairChainCount), report);
+            int springRoots = SpringHairBackend.Build(
+                transform, hair, colResult, torso);
+            report.Add($"머리카락 스프링 본 루트 {springRoots}개 생성");
+            if (springRoots == 0 && hair.Count > 0)
+                report.Add("주의: 스프링 본으로 구동할 수 있는 머리카락 체인이 없습니다.");
+
+            var accessories = detect.chains.Skip(headHairChainCount).GroupBy(c => c.part);
+            BuildAccessoryCloths(accessories, colResult, torso, head, report);
         }
 
-        private List<HairChain> FilterHairChains(
-            HairChainDetector.Result detect, int headHairChainCount, List<string> report)
+        private List<HairChain> FilterHairChains(IEnumerable<HairChain> chains, List<string> report)
         {
+            var hair = chains.ToList();
             if (hairPhysicsParts == HairPartMask.All)
-                return detect.chains;
-            var filtered = detect.chains
-                .Where((c, i) => i >= headHairChainCount
-                    || hairPhysicsParts.HasFlag(c.part.ToMask()))
-                .ToList();
-            foreach (var p in detect.chains.Take(headHairChainCount)
-                .Select(c => c.part).Distinct()
-                .Where(p => !hairPhysicsParts.HasFlag(p.ToMask())))
-                report.Add($"{p}: 부위 마스크로 스킵 — 본이 애니메이션 포즈를 추종");
-            return filtered;
+                return hair;
+            foreach (var part in hair.Select(c => c.part).Distinct()
+                .Where(part => !hairPhysicsParts.HasFlag(part.ToMask())))
+                report.Add($"{part}: 부위 마스크로 스킵 — 본이 애니메이션 포즈를 추종");
+            return hair.Where(c => hairPhysicsParts.HasFlag(c.part.ToMask())).ToList();
         }
 
-        private bool TryBuildSpringPath(
-            List<HairChain> hairChains,
-            BodyColliderBuilder.BuildResult colResult, List<string> report)
-        {
-            var springGo = SpringHairBackend.Build(
-                transform, hairChains, springProfile, report, colResult.colliders);
-            if (springGo != null)
-                return true;
-            report.Add(SpringHairBackend.Available
-                ? "본 스프링용 머리카락 체인이 없음 — MC2 BoneCloth로 폴백"
-                : "본 스프링 에셋 미설치 — MC2 BoneCloth로 폴백");
-            return false;
-        }
-
-        private void BuildMc2HairCloths(
+        private void BuildAccessoryCloths(
             IEnumerable<IGrouping<HairPart, HairChain>> groups,
             BodyColliderBuilder.BuildResult colResult, float torso, Transform head,
             List<string> report)
         {
             foreach (var group in groups)
             {
-                var cloth = CreateHairCloth(
+                var cloth = CreateAccessoryCloth(
                     group.Key, group.ToList(), colResult.byCategory, torso, head, report);
                 if (cloth != null)
                     generatedCloths.Add(cloth);
@@ -124,23 +101,13 @@ namespace Fbx2Vmd.ClothPhysics
 #endif
         }
 
-        private HashSet<Transform> ApplyNativeGuardAndConversion(
-            Animator animator, float torso, List<string> report)
+        private HashSet<Transform> CollectNativeSprings(
+            Animator animator, Transform head, float torso, List<string> report)
         {
-            // 네이티브 스프링본(VRM 등) 소유 본 — 같은 본에 MC2를 얹으면 이중 물리가 된다.
-            // ConvertToMc2일 때도 소유 스캔은 필요 — 변환 본이 자동 탐지에 잡히면
-            // 변환 클로스와 자동 생성 클로스의 이중 시뮬레이션이 된다.
-            bool nativeGuard = respectNativeSpringBones ||
-                vrmConversionMode == VrmConversionMode.ConvertToMc2;
-            if (vrmConversionMode == VrmConversionMode.Off)
-                nativeGuard = false;
-            var externalOwned = nativeGuard
-                ? NativeSpringBoneProbe.CollectOwnedBones(animator.transform)
-                : new HashSet<Transform>();
+            // 네이티브 머리카락과 프로젝트가 생성하는 스프링의 이중 구동을 막음.
+            var externalOwned = NativeSpringBoneProbe.CollectOwnedBones(animator.transform, transform);
             if (vrmConversionMode == VrmConversionMode.ConvertToMc2)
-            {
-                ApplyVrmConversion(animator, torso, report);
-            }
+                ApplyVrmConversion(animator, head, torso, report);
             return externalOwned;
         }
 
@@ -174,11 +141,14 @@ namespace Fbx2Vmd.ClothPhysics
 
         // C-2 변환 — 제작자 튜닝을 MC2 클로스로 이식하고 원본을 비활성.
         // 비활성 스프링은 ClearGenerated가 복원하므로 재실행·GuardOnly 복귀 모두 안전하다.
-        private void ApplyVrmConversion(Animator animator, float torso, List<string> report)
+        private void ApplyVrmConversion(Animator animator, Transform head, float torso, List<string> report)
         {
             float unit = torso > 0f ? torso / 0.6f : 1f;
             var conv = VrmSpringBoneConverter.ConvertAll(
-                transform, animator.transform, unit, report);
+                transform, animator.transform, unit, report, spring =>
+                    !SpringHairBackend.IsGeneratedObject(transform, spring.transform) &&
+                    spring.RootBones != null &&
+                    spring.RootBones.All(root => root == null || !IsHairRoot(root, head)));
             foreach (var cloth in conv.cloths)
             {
                 cloth.GetSerializeData2().preBuildData.enabled = usePreBuild;
@@ -195,6 +165,13 @@ namespace Fbx2Vmd.ClothPhysics
             if (conv.disabledSprings.Count == 0)
                 report.Add("주의: ConvertToMc2인데 변환된 스프링이 없음 — " +
                     "네이티브 소유 본 제외는 유지되므로 해당 체인에 클로스가 생성되지 않을 수 있음");
+        }
+
+        private bool IsHairRoot(Transform root, Transform head)
+        {
+            return (head != null && (root.IsChildOf(head) || head.IsChildOf(root))) ||
+                explicitHairRoots.Any(hair => hair != null &&
+                    (root.IsChildOf(hair) || hair.IsChildOf(root)));
         }
 
         private void CollectAccessoryChains(Animator animator,

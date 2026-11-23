@@ -15,7 +15,7 @@ namespace Fbx2Vmd.ClothPhysics
         /// 루트 하위의 모든 VRMSpringBone 컴포넌트를 스캔해
         /// 각 RootBones 서브트리 전체를 소유 본 집합으로 반환한다.
         /// </summary>
-        public static HashSet<Transform> CollectOwnedBones(Transform root)
+        public static HashSet<Transform> CollectOwnedBones(Transform root, Transform setupRoot = null)
         {
             var owned = new HashSet<Transform>();
             if (root == null)
@@ -23,7 +23,8 @@ namespace Fbx2Vmd.ClothPhysics
 
             foreach (var spring in root.GetComponentsInChildren<VRMSpringBone>(true))
             {
-                if (spring == null || spring.RootBones == null)
+                if (spring == null || spring.RootBones == null ||
+                    (setupRoot != null && SpringHairBackend.IsGeneratedObject(setupRoot, spring.transform)))
                     continue;
                 foreach (var rb in spring.RootBones)
                     if (rb != null)
