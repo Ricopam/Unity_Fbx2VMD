@@ -122,6 +122,9 @@ namespace Fbx2Vmd.ClothPhysics
             }
             foreach (var go in doomed)
             {
+                // 장식물 전용 축소 사본은 원본의 자식이라 원본과 함께 이미 제거됐을 수 있음.
+                if (go == null)
+                    continue;
                 if (Application.isPlaying)
                     Object.Destroy(go);
                 else

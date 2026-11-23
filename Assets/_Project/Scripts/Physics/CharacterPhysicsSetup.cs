@@ -298,6 +298,13 @@ namespace Fbx2Vmd.ClothPhysics
             cloth.GetSerializeData2().preBuildData.enabled = usePreBuild;
             var categories = HairPartColliderMapper.Map(part, maxLen, torso);
             var selected = HairPartColliderMapper.Select(categories, collidersByCategory, 32);
+            // 기본 자세에서 이미 체인을 덮는 콜라이더는 첫 프레임부터 장식물을 밀어내므로 반경을 맞춤.
+            var fitted = new List<string>();
+            selected = RestPoseColliderFit.FitAccessoryColliders(selected,
+                RestPoseColliderFit.CollectRestSegments(chains.Select(c => c.rootBone)),
+                sdata.radius.value, fitted);
+            if (fitted.Count > 0)
+                report.Add($"{part}: 기본 자세와 겹친 콜라이더 조정 — {string.Join(", ", fitted)}");
             sdata.colliderCollisionConstraint.colliderList.Clear();
             sdata.colliderCollisionConstraint.colliderList.AddRange(selected);
             ApplyCulling(cloth);
