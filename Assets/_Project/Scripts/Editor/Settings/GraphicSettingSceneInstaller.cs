@@ -7,12 +7,13 @@ namespace Fbx2Vmd.Settings.EditorTools
 {
     public static class GraphicSettingSceneInstaller
     {
-        private const string MainRecordingScenePath = "Assets/_Project/Scene/Main_Recoding.unity";
+        // 최종 기준 씬. 비교 기준 Main_Recoding에는 이미 설치돼 있어 설치 메뉴는 Main을 대상으로 함.
+        private const string MainScenePath = "Assets/_Project/Scene/Main.unity";
 
-        [MenuItem("Tools/Graphics/Install Graphic Setting In Main_recoding")]
-        public static void InstallMainRecording()
+        [MenuItem("Tools/Graphics/Install Graphic Setting In Main")]
+        public static void InstallInMainScene()
         {
-            var scene = EditorSceneManager.OpenScene(MainRecordingScenePath);
+            var scene = EditorSceneManager.OpenScene(MainScenePath);
             GraphicSetting setting = EnsureInActiveScene();
             setting.ApplyNow();
             GameViewScaleController.TryApply(setting.GameViewScaleMode);

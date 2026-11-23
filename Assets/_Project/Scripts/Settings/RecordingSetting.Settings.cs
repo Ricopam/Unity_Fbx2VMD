@@ -54,7 +54,7 @@ public sealed partial class RecordingSetting
 
     [Header("설정 팝업")]
     [InspectorName("런타임 설정 팝업")]
-    [Tooltip("Main_Recoding 실행 중 자동으로 열 설정 팝업입니다. 비어 있으면 UI_Canvas 아래에 생성합니다.")]
+    [Tooltip("Main·Main_Recoding 실행 중 자동으로 열 설정 팝업입니다. 비어 있으면 UI_Canvas 아래에 생성합니다.")]
     [SerializeField] private MainRecordingSettingsPopup settingsPopup;
 
     [InspectorName("시작 시 설정 팝업 열기")]
