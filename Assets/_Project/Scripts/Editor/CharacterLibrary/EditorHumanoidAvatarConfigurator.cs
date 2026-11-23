@@ -21,6 +21,12 @@ namespace Fbx2Vmd.CharacterLibrary
             }
 
             bool shouldReimport = false;
+            // 의상 클로스 자동 생성이 스커트 정점을 읽으므로 씬 기본 캐릭터처럼 Read/Write를 켬.
+            if (!importer.isReadable)
+            {
+                importer.isReadable = true;
+                shouldReimport = true;
+            }
             if (importer.animationType != UnityEditor.ModelImporterAnimationType.Human)
             {
                 importer.animationType = UnityEditor.ModelImporterAnimationType.Human;

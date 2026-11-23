@@ -61,6 +61,43 @@ namespace Tests.Editor.CharacterLibrary
         }
 
         [Test]
+        public void Given_Subscriber_When_Committing_Then_NotifiesSceneSourceAndNewRoot()
+        {
+            var pipelineHost = new GameObject("Pipeline");
+            var sceneChar = new GameObject("Scene Character");
+            var libRoot = new GameObject("Loaded Root");
+            GameObject receivedSource = null, receivedRoot = null;
+            Action<GameObject, GameObject> handler = (source, root) => { receivedSource = source; receivedRoot = root; };
+            Action<GameObject, GameObject> failing = (_, __) => throw new InvalidOperationException("구독자 실패");
+            CharacterLibrarySceneBinding.CharacterCommitted += failing;
+            CharacterLibrarySceneBinding.CharacterCommitted += handler;
+            try
+            {
+                var pipeline = pipelineHost.AddComponent<FBXVmdPipeline>();
+                pipeline.targetCharacter = sceneChar;
+
+                UnityEngine.TestTools.LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("구독자 실패"));
+                CharacterLibrarySceneBinding.Commit(pipeline, "entry-1", libRoot);
+
+                // 앞선 구독자가 실패해도 교체는 유지되고 다음 구독자도 알림을 받음.
+                Assert.That(pipeline.targetCharacter, Is.SameAs(libRoot));
+                Assert.That(receivedSource, Is.SameAs(sceneChar));
+                Assert.That(receivedRoot, Is.SameAs(libRoot));
+            }
+            finally
+            {
+                CharacterLibrarySceneBinding.CharacterCommitted -= failing;
+                CharacterLibrarySceneBinding.CharacterCommitted -= handler;
+                Object.DestroyImmediate(pipelineHost);
+                Object.DestroyImmediate(sceneChar);
+                if (libRoot != null)
+                {
+                    Object.DestroyImmediate(libRoot);
+                }
+            }
+        }
+
+        [Test]
         public async Task Given_LoadFails_When_SelectingCharacter_Then_PreviousTargetStaysActive()
         {
             string vrmPath = RealVrmPath;

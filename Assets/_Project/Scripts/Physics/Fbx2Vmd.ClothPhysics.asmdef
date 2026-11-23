@@ -1,7 +1,7 @@
 {
     "name": "Fbx2Vmd.ClothPhysics",
     "rootNamespace": "Fbx2Vmd.ClothPhysics",
-    "references": ["Fbx2Vmd.Profiling", "Fbx2Vmd.FBXImporter", "MagicaClothV2", "VRM", "Unity.Collections", "Unity.Mathematics"],
+    "references": ["Fbx2Vmd.Profiling", "Fbx2Vmd.FBXImporter", "Fbx2Vmd.CharacterLibrary", "MagicaClothV2", "VRM", "Unity.Collections", "Unity.Mathematics"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -15,6 +15,12 @@ namespace Fbx2Vmd.CharacterLibrary
     public static class CharacterLibrarySceneBinding
     {
         /// <summary>
+        /// 커밋 완료 후 (스왑 전 씬 캐릭터, 새 루트)로 알림. 물리 설정처럼
+        /// 이 어셈블리가 참조할 수 없는 기능이 새 캐릭터에 다시 붙을 수 있게 함.
+        /// </summary>
+        public static event System.Action<GameObject, GameObject> CharacterCommitted;
+
+        /// <summary>
         /// 검증이 끝난 인스턴스를 활성 캐릭터로 커밋한다.
         /// 기존 라이브러리 캐릭터는 파괴하고, 씬 소유 캐릭터는 비활성화로 보존한다.
         /// gltfInstance가 있으면 glTF 지연 표시 메시를 먼저 드러낸다(FBX 경로는 null).
@@ -36,6 +42,23 @@ namespace Fbx2Vmd.CharacterLibrary
 
             ApplyCommitSwap(pipeline, newRoot, previousTarget, previousDeactivated, gltfInstance);
             CleanupLibraryLeftovers(pipeline, newRoot);
+            NotifyCommitted(newRoot);
+        }
+
+        // 구독자 실패가 이미 끝난 캐릭터 교체를 되돌리지 않게 구독자별로 격리함.
+        private static void NotifyCommitted(GameObject newRoot)
+        {
+            if (CharacterCommitted == null)
+            {
+                return;
+            }
+            var marker = newRoot.GetComponent<CharacterLibraryInstance>();
+            GameObject sceneSource = marker != null ? marker.previousSceneTarget : null;
+            foreach (System.Action<GameObject, GameObject> handler in CharacterCommitted.GetInvocationList())
+            {
+                try { handler(sceneSource, newRoot); }
+                catch (System.Exception error) { Debug.LogException(error); }
+            }
         }
 
         // 신규 루트에 마커를 보장하고 이전 타겟 계승·보존을 처리함.
