@@ -167,37 +167,80 @@ namespace Fbx2Vmd.CharacterLibrary
                 throw new FileNotFoundException( $"PMX 변환기가 없습니다: {converterExe}");
             }
 
+            string generated = outputBase + ".fbx";
             var start = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = converterExe, Arguments = $"-i \"{pmxPath}\" -o \"{outputBase}\"", WorkingDirectory = converterDir, UseShellExecute = false, CreateNoWindow = true,
+                FileName = converterExe, Arguments = BuildPmxConverterArguments(pmxPath, outputBase), WorkingDirectory = converterDir, UseShellExecute = false, CreateNoWindow = true,
                 RedirectStandardOutput = true, RedirectStandardError = true, };
-            RunPmxConverter(start);
+            RunPmxConverter(start, PmxConversionTimeout);
 
-            string generated = outputBase + ".fbx";
             if (!File.Exists(generated))
             {
                 throw new FileNotFoundException( $"PMX 변환 결과가 없습니다: {generated}");
             }
         }
 
-        // 외부 변환기 프로세스를 실행하고 종료 코드·시간 초과를 검사함.
-        private static void RunPmxConverter(System.Diagnostics.ProcessStartInfo start)
+        // pmx2fbx는 -o 값의 마지막 점 뒤를 확장자로 잘라냄("_1.0ver" → "_1").
+        // .fbx를 붙여 넘겨야 점이 든 파일명도 그대로 유지됨.
+        internal static string BuildPmxConverterArguments(string pmxPath, string outputBase)
+        {
+            return $"-i \"{pmxPath}\" -o \"{outputBase}.fbx\"";
+        }
+
+        // YYB 기준 실측 236초(2026-11-23). 고해상도 모델 여유를 두고 10분으로 둠.
+        internal static readonly TimeSpan PmxConversionTimeout = TimeSpan.FromMinutes(10);
+        private const int PmxPollIntervalMs = 250;
+
+        // 외부 변환기 프로세스를 실행하고 종료 코드·시간 초과·사용자 취소를 검사함.
+        // 동기 경로라 에디터가 멈추므로 진행 표시와 취소 버튼을 함께 띄움.
+        internal static void RunPmxConverter(System.Diagnostics.ProcessStartInfo start, TimeSpan timeout)
         {
             using (var process = System.Diagnostics.Process.Start(start))
             {
                 // 변환기는 대량의 진행 출력을 내니 비동기로 비워 버퍼 데드락을 막는다.
                 _ = process.StandardOutput.ReadToEndAsync();
                 var stderrReader = process.StandardError.ReadToEndAsync();
-                if (!process.WaitForExit(120000))
+                var elapsed = System.Diagnostics.Stopwatch.StartNew();
+                try
                 {
-                    try { process.Kill(); } catch { }
-                    throw new TimeoutException("PMX 변환이 시간 안에 끝나지 않았습니다.");
+                    while (!process.WaitForExit(PmxPollIntervalMs))
+                    {
+                        bool isTimedOut = elapsed.Elapsed >= timeout;
+                        bool isCanceled = UnityEditor.EditorUtility.DisplayCancelableProgressBar(
+                            "PMX 캐릭터 변환 중",
+                            $"PMX를 FBX로 변환하고 있습니다. 경과 {(int)elapsed.Elapsed.TotalSeconds}초 / 최대 {(int)timeout.TotalSeconds}초",
+                            (float)Math.Min(1.0, elapsed.Elapsed.TotalSeconds / timeout.TotalSeconds));
+                        if (!isTimedOut && !isCanceled)
+                        {
+                            continue;
+                        }
+
+                        KillConverter(process);
+                        if (isCanceled)
+                        {
+                            throw new OperationCanceledException("PMX 변환을 취소했습니다.");
+                        }
+                        throw new TimeoutException( $"PMX 변환이 {(int)timeout.TotalSeconds}초 안에 끝나지 않았습니다.");
+                    }
                 }
+                finally
+                {
+                    UnityEditor.EditorUtility.ClearProgressBar();
+                }
+
                 if (process.ExitCode != 0)
                 {
                     throw new InvalidOperationException( $"PMX 변환 실패(exit {process.ExitCode}): {stderrReader.Result}");
                 }
             }
+        }
+
+        // 중단한 변환기를 종료함. 이미 끝난 프로세스의 종료 실패는 무시해도 결과가 같음.
+        private static void KillConverter(System.Diagnostics.Process process)
+        {
+            try { process.Kill(); }
+            catch (InvalidOperationException) { }
+            catch (System.ComponentModel.Win32Exception error) { Debug.LogWarning($"PMX 변환기 종료 실패: {error.Message}"); }
         }
 
         /// <summary>
