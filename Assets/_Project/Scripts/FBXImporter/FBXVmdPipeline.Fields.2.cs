@@ -300,12 +300,13 @@ namespace Fbx2Vmd.FBXImporter
         [SerializeField] private string _motionVideoOutputFolder= "";
         public string motionVideoOutputFolder { get => _motionVideoOutputFolder; private set => _motionVideoOutputFolder = value; }
 
-        [Tooltip("녹화 영상의 컨테이너/코덱입니다. WebM은 투명 배경(알파)을 지원해 영상 편집 시 누끼 작업 없이 캐릭터만 합성할 수 있습니다.")]
-        [SerializeField] private MotionVideoFileFormat _motionVideoFormat= MotionVideoFileFormat.WebM;
+        // 기본은 가벼운 MP4(배경 포함). 투명 배경이 필요할 때만 WebM·MOV를 고름(용량·메모리 부담 큼).
+        [Tooltip("녹화 영상의 컨테이너/코덱입니다. 기본 MP4는 배경을 포함해 가볍습니다. WebM·MOV는 투명 배경(알파)을 지원하지만 용량과 메모리 사용이 큽니다.")]
+        [SerializeField] private MotionVideoFileFormat _motionVideoFormat= MotionVideoFileFormat.Mp4;
         public MotionVideoFileFormat motionVideoFormat { get => _motionVideoFormat; private set => _motionVideoFormat = value; }
 
         [Tooltip("녹화 영상의 프레임률입니다. 녹화 타이밍과 모션 진행 단위에 함께 사용됩니다.")]
-        [SerializeField] private MotionVideoFrameRate _motionVideoFrameRate= MotionVideoFrameRate.Fps60;
+        [SerializeField] private MotionVideoFrameRate _motionVideoFrameRate= MotionVideoFrameRate.Fps30;
         public MotionVideoFrameRate motionVideoFrameRate { get => _motionVideoFrameRate; private set => _motionVideoFrameRate = value; }
 
         [Tooltip("MOV/WebM(배경 투명) 녹화 중에만 숨길 오브젝트입니다. 캐릭터만 남기려면 바닥 Plane 등을 지정합니다.")]
