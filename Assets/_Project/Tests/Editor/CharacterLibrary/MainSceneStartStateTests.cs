@@ -19,9 +19,13 @@ namespace Tests.Editor.CharacterLibrary
 
             // Animator(클래스 ID 95)가 있으면 씬에 캐릭터가 미리 배치된 것임.
             Assert.That(yaml, Does.Not.Contain("--- !u!95 &"), "Main 씬에 캐릭터(Animator)가 배치되면 안 됨");
+            // Animator 없이 메시만 남은 캐릭터도 막음(클래스 ID 137 SkinnedMeshRenderer).
+            Assert.That(yaml, Does.Not.Contain("--- !u!137 &"), "Main 씬에 캐릭터 메시가 배치되면 안 됨");
             // 프리팹으로 배치한 캐릭터는 Animator가 프리팹 안에 있으므로 프리팹 인스턴스(클래스 ID 1001)도 막음.
-            Assert.That(yaml, Does.Not.Contain("--- !u!1001 &"), "Main 씬에 캐릭터 프리팹이 배치되면 안 됨");
+            // 캐릭터가 아닌 프리팹이 필요해지면 이 검사를 프리팹 원본 기준으로 좁혀야 함.
+            Assert.That(yaml, Does.Not.Contain("--- !u!1001 &"), "Main 씬에 프리팹 인스턴스가 있음(캐릭터 프리팹 배치 금지)");
             Assert.That(yaml, Does.Contain("_autoLoadLastCharacter: 0"), "Main 씬은 Play 시 마지막 캐릭터를 자동으로 불러오지 않아야 함");
+            Assert.That(yaml, Does.Not.Contain("_autoLoadLastCharacter: 1"), "자동 복원이 켜진 캐릭터 라이브러리가 있으면 안 됨");
         }
     }
 }
