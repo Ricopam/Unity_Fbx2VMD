@@ -1575,7 +1575,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fbx2Vmd.CharacterLibrary.CharacterLibraryCoordinator
   _pipeline: {fileID: 0}
-  _autoLoadLastCharacter: 1
+  _autoLoadLastCharacter: 0
 --- !u!4 &1223383498
 Transform:
   m_ObjectHideFlags: 0
