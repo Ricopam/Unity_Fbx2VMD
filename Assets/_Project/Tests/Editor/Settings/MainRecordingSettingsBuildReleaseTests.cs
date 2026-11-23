@@ -12,7 +12,7 @@ namespace Tests.Editor.Settings
 {
     public class MainRecordingSettingsBuildReleaseTests
     {
-        private const string MainRecordingScenePath = "Assets/_Project/Scene/Main_Recoding.unity";
+        private const string MainScenePath = "Assets/_Project/Scene/Main.unity";
         private const string SubManualScenePath = "Assets/_Project/Scene/Sub_Manual.unity";
         private const string FbxImportCaptureScenePath = "Assets/_Project/Scene/FbxImport_Capture.unity";
         private const string CompanionScenePath = "Assets/_Project/Scene/MainRecording_SettingsCompanion.unity";
@@ -29,7 +29,8 @@ namespace Tests.Editor.Settings
                 .Select(scene => NormalizePath(scene.path))
                 .ToArray();
 
-            Assert.That(enabledScenePaths, Does.Contain(MainRecordingScenePath));
+            // 첫 씬이 실행 시작 씬이므로 최종 기준 Main이 맨 앞이어야 함.
+            Assert.That(enabledScenePaths.FirstOrDefault(), Is.EqualTo(MainScenePath));
             Assert.That(enabledScenePaths, Does.Not.Contain(CompanionScenePath));
             Assert.That(enabledScenePaths,
                 Does.Not.Contain("Assets/_Project/Scene/Main_Auto.unity"),
@@ -46,7 +47,7 @@ namespace Tests.Editor.Settings
 
             Assert.That(mainScenes, Is.EqualTo(new[]
             {
-                MainRecordingScenePath,
+                MainScenePath,
                 SubManualScenePath,
                 FbxImportCaptureScenePath,
             }));

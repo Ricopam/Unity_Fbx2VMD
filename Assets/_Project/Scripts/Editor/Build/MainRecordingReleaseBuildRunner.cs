@@ -9,9 +9,10 @@ namespace Fbx2Vmd.Build
 {
     public static class MainRecordingReleaseBuildRunner
     {
+        // 첫 씬이 실행 시작 씬. 최종 기준 Main은 빈 무대에서 캐릭터 불러오기부터 시작함.
         private static readonly string[] MainScenes =
         {
-            "Assets/_Project/Scene/Main_Recoding.unity",
+            "Assets/_Project/Scene/Main.unity",
             "Assets/_Project/Scene/Sub_Manual.unity",
             "Assets/_Project/Scene/FbxImport_Capture.unity",
         };
