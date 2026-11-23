@@ -28,14 +28,27 @@ namespace Fbx2Vmd.ClothPhysics
         // 본 선분과 캡슐 축의 최단 거리를 근사할 표본 수.
         const int SegmentSamples = 8;
 
-        /// <summary>루트 아래 각 본과 부모를 잇는 기본 자세 선분(월드). 루트 자신의 부모 선분은 고정부라 제외함.</summary>
-        public static List<(Vector3 a, Vector3 b)> CollectRestSegments(IEnumerable<Transform> roots)
+        // UniVRM 0.x가 자식 없는 말단 본에 두는 가상 꼬리 길이(m). 이 꼬리도 충돌 판정을 받음.
+        const float SpringLeafTailLength = 0.07f;
+
+        /// <summary>
+        /// 루트 아래 각 본과 부모를 잇는 기본 자세 선분(월드). 루트 자신의 부모 선분은 고정부라 제외함.
+        /// includeLeafTail이면 말단 본의 스프링 본 가상 꼬리 선분도 포함함.
+        /// </summary>
+        public static List<(Vector3 a, Vector3 b)> CollectRestSegments(IEnumerable<Transform> roots, bool includeLeafTail = false)
         {
             var segments = new List<(Vector3, Vector3)>();
             foreach (var root in roots.Where(r => r != null).Distinct())
                 foreach (var bone in root.GetComponentsInChildren<Transform>(true))
+                {
                     if (bone != root)
                         segments.Add((bone.parent.position, bone.position));
+                    if (includeLeafTail && bone.childCount == 0 && bone.parent != null)
+                    {
+                        Vector3 direction = (bone.position - bone.parent.position).normalized;
+                        segments.Add((bone.position, bone.position + direction * SpringLeafTailLength));
+                    }
+                }
             return segments;
         }
 
@@ -101,10 +114,15 @@ namespace Fbx2Vmd.ClothPhysics
             return copy;
         }
 
-        /// <summary>부위 전용 구 그룹을 만듦. 기본 자세 선분과 겹치는 구는 반경을 줄이거나 뺌.</summary>
+        /// <summary>
+        /// 부위 전용 구 그룹을 만듦. 기본 자세 선분과 겹치는 구는 반경을 줄이거나 뺌.
+        /// MC2 자동 대칭 콜라이더는 mirrorBones의 오른쪽 본에 반사한 그룹을 함께 만듦
+        /// (UniVRM 구 그룹에는 대칭 기능이 없어 왼쪽만 충돌하던 문제 해소).
+        /// </summary>
         public static VRMSpringBoneColliderGroup[] BuildSpringGroups(
             IEnumerable<ColliderComponent> colliders, IReadOnlyList<(Vector3 a, Vector3 b)> segments,
-            float hitRadius, string partName)
+            float hitRadius, string partName,
+            IReadOnlyDictionary<ColliderComponent, Transform> mirrorBones = null)
         {
             var groups = new List<VRMSpringBoneColliderGroup>();
             foreach (var collider in colliders.Where(c => c != null))
@@ -114,6 +132,13 @@ namespace Fbx2Vmd.ClothPhysics
                         radius: s.Radius * MaxScale(collider.transform)))
                     .ToList();
                 AddGroup(groups, collider.transform, partName, spheres, segments, hitRadius);
+
+                if (mirrorBones != null && mirrorBones.TryGetValue(collider, out var right) && right != null)
+                {
+                    Transform left = collider.transform.parent;
+                    var mirrored = spheres.Select(s => (Reflect(s.center, left.position, right.position), s.radius)).ToList();
+                    AddGroup(groups, right, partName, mirrored, segments, hitRadius);
+                }
             }
             return groups.ToArray();
         }
@@ -202,6 +227,14 @@ namespace Fbx2Vmd.ClothPhysics
                     best = Mathf.Min(best, ColliderMath.DistancePointToSegment(
                         Vector3.Lerp(a, b, i / (float)SegmentSamples), start, end));
             return best;
+        }
+
+        // 좌우 본의 중간 평면(법선=좌우 본을 잇는 방향)에 대해 반사함.
+        static Vector3 Reflect(Vector3 point, Vector3 left, Vector3 right)
+        {
+            Vector3 normal = (left - right).normalized;
+            Vector3 mid = (left + right) * 0.5f;
+            return point - 2f * Vector3.Dot(point - mid, normal) * normal;
         }
 
         static float MaxScale(Transform target)

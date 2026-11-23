@@ -38,6 +38,24 @@ namespace Fbx2Vmd.ClothPhysics
         }
 
         /// <summary>
+        /// 구 A가 구 B와 겹치면 A를 B 밖으로 내보내는 이동량을 구한다.
+        /// 참고 스프링 본 구현의 구-구 충돌 해소를 가져와 정리한 것. 중심이 겹치면 이동량 0.
+        /// </summary>
+        public static bool TrySphereSpherePush(Vector3 centerA, float radiusA, Vector3 centerB, float radiusB, out Vector3 push)
+        {
+            push = Vector3.zero;
+            Vector3 offset = centerA - centerB;
+            float sqrDistance = offset.sqrMagnitude;
+            float reach = radiusA + radiusB;
+            if (sqrDistance >= reach * reach)
+                return false;
+            float distance = Mathf.Sqrt(sqrDistance);
+            if (distance > 1e-6f)
+                push = offset / distance * (reach - distance);
+            return true;
+        }
+
+        /// <summary>
         /// 값 목록의 백분위수를 반환한다. (0~1). 빈 목록이면 0.
         /// 이상치에 강한 콜라이더 반경 산출에 사용한다.
         /// </summary>

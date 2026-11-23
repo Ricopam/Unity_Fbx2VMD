@@ -153,5 +153,47 @@ namespace Tests.Editor.ClothPhysics
             BodyColliderBuilder.ClearGenerated(body);
             Assert.That(body.GetComponentsInChildren<VRMSpringBoneColliderGroup>(true), Is.Empty);
         }
+
+        [Test]
+        public void Given_MirroredCollider_When_BuildingSpringGroups_Then_AddsRightGroupAndClearRemovesIt()
+        {
+            var body = Node("Body", null, Vector3.zero);
+            var left = Node("LeftArm", body, new Vector3(-0.3f, 0.1f, 0f));
+            var right = Node("RightArm", body, new Vector3(0.3f, 0.1f, 0f));
+            var go = new GameObject(BodyColliderBuilder.AutoNamePrefix + "UpperArm_L");
+            go.transform.SetParent(left, false);
+            var arm = go.AddComponent<MagicaSphereCollider>();
+            arm.SetSize(0.04f);
+            // 축에서 벗어난 오프셋도 좌우만 뒤집혀야 함
+            arm.center = new Vector3(-0.05f, 0.02f, 0.03f);
+            var hair = Chain(new Vector3(0f, 0.5f, -0.2f));
+
+            var groups = RestPoseColliderFit.BuildSpringGroups(new ColliderComponent[] { arm },
+                RestPoseColliderFit.CollectRestSegments(new[] { hair }), 0.005f, "Tail",
+                new Dictionary<ColliderComponent, Transform> { [arm] = right });
+
+            Assert.That(groups.Length, Is.EqualTo(2));
+            Assert.That(groups[1].transform.parent, Is.EqualTo(right));
+            var mirrored = groups[1].transform.TransformPoint(groups[1].Colliders[0].Offset);
+            Assert.That(Vector3.Distance(mirrored, new Vector3(0.35f, 0.12f, 0.03f)), Is.LessThan(0.0001f));
+
+            BodyColliderBuilder.ClearGenerated(body);
+            Assert.That(body.GetComponentsInChildren<VRMSpringBoneColliderGroup>(true), Is.Empty);
+        }
+
+        [Test]
+        public void Given_LeafTailOption_When_CollectingSegments_Then_AddsSpringVirtualTail()
+        {
+            var root = Chain(Vector3.zero);
+
+            var plain = RestPoseColliderFit.CollectRestSegments(new[] { root });
+            var withTail = RestPoseColliderFit.CollectRestSegments(new[] { root }, includeLeafTail: true);
+
+            Assert.That(plain.Count, Is.EqualTo(2));
+            Assert.That(withTail.Count, Is.EqualTo(3));
+            var (a, b) = withTail[2];
+            Assert.That(Vector3.Distance(a, new Vector3(0f, -0.2f, 0f)), Is.LessThan(0.0001f));
+            Assert.That(Vector3.Distance(b, new Vector3(0f, -0.27f, 0f)), Is.LessThan(0.0001f));
+        }
     }
 }

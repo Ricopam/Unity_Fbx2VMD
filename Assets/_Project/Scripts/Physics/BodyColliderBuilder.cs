@@ -18,6 +18,8 @@ namespace Fbx2Vmd.ClothPhysics
             public Dictionary<ColliderCategory, List<ColliderComponent>> byCategory =
                 new Dictionary<ColliderCategory, List<ColliderComponent>>();
             public List<string> warnings = new List<string>();
+            /// <summary>자동 대칭 콜라이더 → 오른쪽 본. 대칭 기능이 없는 스프링 본이 오른쪽 충돌 구를 만들 때 사용.</summary>
+            public Dictionary<ColliderComponent, Transform> mirrorBones = new Dictionary<ColliderComponent, Transform>();
         }
 
         // 콜라이더 슬롯 정의: (카테고리, 시작 본, 끝 본, 캡슐 여부, 좌우 대칭 대상)
@@ -97,7 +99,12 @@ namespace Fbx2Vmd.ClothPhysics
                 ColliderComponent col = slot.capsule && endBone != null
                     ? CreateCapsule(startBone, endBone, slot.name, boneVerts, torsoLength, radiusScale, slot.maxR) : CreateSphere(startBone, endBone, slot.name, boneVerts, torsoLength, radiusScale, slot.maxR);
                 if (col == null) continue;
-                if (slot.paired && mirrorOk) col.symmetryMode = ColliderSymmetryMode.AutomaticHumanBody;
+                if (slot.paired && mirrorOk)
+                {
+                    col.symmetryMode = ColliderSymmetryMode.AutomaticHumanBody;
+                    Transform rightBone = boneResolver(MirrorBone(slot.start));
+                    if (rightBone != null) result.mirrorBones[col] = rightBone;
+                }
                 else if (slot.paired) CreateMirrorIfPossible(col, slot, boneResolver, boneVerts, torsoLength, radiusScale, result);
                 // MC2 공식 요구사항: 스크립트로 파라미터 변경 후 UpdateParameters를 호출해야
                 // 데이터 검증과 시메트리 해석이 즉시 반영된다.
@@ -119,6 +126,12 @@ namespace Fbx2Vmd.ClothPhysics
             {
                 if (col.name.StartsWith(AutoNamePrefix))
                     doomed.Add(col.gameObject);
+            }
+            // 오른쪽 대칭 스프링 구 그룹은 신체 본 아래에 있어 원본과 함께 지워지지 않으므로 따로 모음.
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.StartsWith(RestPoseColliderFit.SpringGroupPrefix))
+                    doomed.Add(t.gameObject);
             }
             foreach (var go in doomed)
             {

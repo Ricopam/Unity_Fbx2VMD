@@ -60,5 +60,24 @@ namespace Tests.Editor.ClothPhysics
             Assert.That(sd, Is.LessThan(0f));
             Assert.That(sd, Is.EqualTo(-0.1f).Within(1e-5f));
         }
+
+        [Test]
+        public void Given_OverlappingSpheres_When_Pushing_Then_MovesAToSurface()
+        {
+            bool hit = ColliderMath.TrySphereSpherePush(new Vector3(0.05f, 0f, 0f), 0.01f, Vector3.zero, 0.1f, out Vector3 push);
+
+            Assert.That(hit, Is.True);
+            Assert.That(push.x, Is.EqualTo(0.06f).Within(1e-5f));
+            Assert.That(push.y, Is.EqualTo(0f).Within(1e-6f));
+        }
+
+        [Test]
+        public void Given_SeparatedSpheres_When_Pushing_Then_NoPush()
+        {
+            bool hit = ColliderMath.TrySphereSpherePush(new Vector3(0.2f, 0f, 0f), 0.01f, Vector3.zero, 0.1f, out Vector3 push);
+
+            Assert.That(hit, Is.False);
+            Assert.That(push, Is.EqualTo(Vector3.zero));
+        }
     }
 }
