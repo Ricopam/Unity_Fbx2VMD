@@ -35,9 +35,37 @@ namespace Tests.Editor.CharacterLibrary
         [Test]
         public void Given_SlowProcess_When_TimeoutPasses_Then_ThrowsTimeout()
         {
-            // ping 4회는 약 3초 걸림.
+            // ping 4회는 약 3초 걸림. cmd 없이 직접 실행해 종료 시 자식 프로세스가 남지 않게 함.
+            var start = Command("");
+            start.FileName = "ping.exe";
+            start.Arguments = "-n 4 127.0.0.1";
             Assert.Throws<TimeoutException>(() => FbxCharacterLoader.RunPmxConverter(
-                Command("/c ping -n 4 127.0.0.1"), TimeSpan.FromMilliseconds(500)));
+                start, TimeSpan.FromMilliseconds(500)));
+        }
+
+        [Test]
+        public void Given_InterruptedConversion_When_Cleaning_Then_RemovesPartialOutputs()
+        {
+            string folder = Path.Combine(Path.GetTempPath(), "UnityFbx2Vmd-PmxPartial", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+            try
+            {
+                string outputBase = Path.Combine(folder, "model_1.0ver");
+                string[] partials = { ".fbx", ".xml", ".model.bytes", ".extra.bytes" };
+                foreach (string suffix in partials) File.WriteAllText(outputBase + suffix, "partial");
+                string unrelated = Path.Combine(folder, "keep.png");
+                File.WriteAllText(unrelated, "texture");
+
+                FbxCharacterLoader.DeletePartialPmxOutputs(outputBase);
+
+                foreach (string suffix in partials) Assert.That(File.Exists(outputBase + suffix), Is.False, suffix);
+                Assert.That(File.Exists(unrelated), Is.True, "변환 산출물 외 파일까지 지움");
+            }
+            finally
+            {
+                try { Directory.Delete(folder, true); }
+                catch (IOException) { /* 임시 폴더 정리 실패는 판정과 무관함 */ }
+            }
         }
 
         [Test]

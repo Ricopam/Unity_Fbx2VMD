@@ -55,6 +55,14 @@ namespace Fbx2Vmd.CharacterLibrary
                 result.loadedRoot = root;
                 return result;
             }
+            catch (OperationCanceledException)
+            {
+                // 사용자가 변환 진행 표시에서 취소함 — 오류 엔트리로 남기지 않음.
+                result.cancelled = true;
+                try { DestroyRoot(root); }
+                catch (Exception destroyError) { Debug.LogException(destroyError); }
+                return result;
+            }
             catch (Exception error)
             {
                 result.error = $"캐릭터 로드 실패: {error.Message}";
@@ -172,7 +180,15 @@ namespace Fbx2Vmd.CharacterLibrary
             {
                 FileName = converterExe, Arguments = BuildPmxConverterArguments(pmxPath, outputBase), WorkingDirectory = converterDir, UseShellExecute = false, CreateNoWindow = true,
                 RedirectStandardOutput = true, RedirectStandardError = true, };
-            RunPmxConverter(start, PmxConversionTimeout);
+            try
+            {
+                RunPmxConverter(start, PmxConversionTimeout);
+            }
+            catch (Exception error) when (error is TimeoutException || error is OperationCanceledException)
+            {
+                DeletePartialPmxOutputs(outputBase);
+                throw;
+            }
 
             if (!File.Exists(generated))
             {
@@ -232,6 +248,18 @@ namespace Fbx2Vmd.CharacterLibrary
                 {
                     throw new InvalidOperationException( $"PMX 변환 실패(exit {process.ExitCode}): {stderrReader.Result}");
                 }
+            }
+        }
+
+        // 중단된 변환의 쓰다 만 출력을 지움. 남기면 다음 Refresh에서 손상 FBX 임포트 오류가 남.
+        internal static void DeletePartialPmxOutputs(string outputBase)
+        {
+            foreach (string suffix in new[] { ".fbx", ".xml", ".model.bytes", ".extra.bytes" })
+            {
+                string path = outputBase + suffix;
+                try { if (File.Exists(path)) File.Delete(path); }
+                catch (IOException error) { Debug.LogWarning($"PMX 중간 산출물 삭제 실패: {path} ({error.Message})"); }
+                catch (UnauthorizedAccessException error) { Debug.LogWarning($"PMX 중간 산출물 삭제 실패: {path} ({error.Message})"); }
             }
         }
 
