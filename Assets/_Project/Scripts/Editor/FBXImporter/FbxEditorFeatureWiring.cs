@@ -22,6 +22,8 @@ namespace Fbx2Vmd.FBXImporter
             HumanoidReferenceEditorHooks.ApplyManualPoseReference = EditorHumanoidReferenceApplier.ApplyManualPoseReference;
             CharacterLibrary.CharacterLibraryEditorHooks.EnsureHumanoidAvatar =
                 CharacterLibrary.EditorHumanoidAvatarConfigurator.EnsureHumanoidAvatar;
+            CharacterLibrary.CharacterLibraryEditorHooks.CopyMaterialRemaps =
+                CharacterLibrary.EditorModelMaterialRemapCopier.CopyFromSource;
             FbxImportEditorHooks.ConfigureEditorImportSettings =
                 EditorFbxImportSettingsDriver.ConfigureEditorImportSettingsIfNeeded;
         }

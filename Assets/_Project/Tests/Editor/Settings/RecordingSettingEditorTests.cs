@@ -1085,6 +1085,8 @@ namespace Tests.Editor.Settings
                 Is.EqualTo(MainRecordingScenePath));
             Assert.That(File.Exists(MainRecordingScenePath), Is.True);
             Assert.That(InvokeStatic<bool>(launcherType, "ShouldOpenForScene", MainRecordingScenePath), Is.True);
+            Assert.That(InvokeStatic<bool>(launcherType, "ShouldOpenForScene", "Assets/_Project/Scene/Main.unity"), Is.True,
+                "최종 기준 Main 씬도 설정창·Play 가드 대상이어야 함");
             Assert.That(InvokeStatic<bool>(launcherType, "ShouldOpenForScene", SubManualScenePath), Is.False);
             Assert.That(MainRecordingSettingsSurfacePolicy.EditorSurfacePolicy, Does.Contain("Electron"));
             Assert.That(MainRecordingSettingsSurfacePolicy.EditorSurfacePolicy, Does.Contain("Web UI"));

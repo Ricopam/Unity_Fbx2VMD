@@ -11,5 +11,8 @@ namespace Fbx2Vmd.CharacterLibrary
     {
         // 에디터에서만 ModelImporter Humanoid 아바타 설정을 수행함
         internal static Action<string> EnsureHumanoidAvatar;
+
+        // 에디터에서만 원본 FBX의 재질 연결을 관리 폴더 사본에 복사함(원본 경로, 사본 에셋 경로)
+        internal static Action<string, string> CopyMaterialRemaps;
     }
 }

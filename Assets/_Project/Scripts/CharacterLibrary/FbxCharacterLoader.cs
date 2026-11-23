@@ -131,7 +131,7 @@ namespace Fbx2Vmd.CharacterLibrary
                 }
             }
 
-            return ImportAndEnsureHumanoid(targetPath, folderName);
+            return ImportAndEnsureHumanoid(sourcePath, targetPath, folderName);
         }
 
         // PMX는 Unity가 직접 임포트하지 못하므로 벤더된 pmx2fbx로
@@ -149,7 +149,7 @@ namespace Fbx2Vmd.CharacterLibrary
         }
 
         // 생성된 파일을 임포트하고 Humanoid 아바타 보장 훅을 호출함.
-        private static string ImportAndEnsureHumanoid(string targetPath, string folderName)
+        private static string ImportAndEnsureHumanoid(string sourcePath, string targetPath, string folderName)
         {
             if (!File.Exists(targetPath))
             {
@@ -158,6 +158,8 @@ namespace Fbx2Vmd.CharacterLibrary
 
             string relativePath = "Assets/" + IMPORTED_CHARACTERS_FOLDER + "/" + folderName + "/" + Path.GetFileName(targetPath);
             UnityEditor.AssetDatabase.ImportAsset( relativePath, UnityEditor.ImportAssetOptions.ForceUpdate);
+            // 사본에는 원본 .meta의 재질 연결이 없어 텍스처 없는 재질로 보이므로 원본 연결을 옮김.
+            CharacterLibraryEditorHooks.CopyMaterialRemaps?.Invoke(sourcePath, relativePath);
             CharacterLibraryEditorHooks.EnsureHumanoidAvatar?.Invoke(relativePath);
             return relativePath;
         }

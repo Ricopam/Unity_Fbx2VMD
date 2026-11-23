@@ -9,7 +9,6 @@ namespace Fbx2Vmd.Settings.EditorTools
     [InitializeOnLoad]
     public static class GraphicSettingGameViewScaleAutoApplier
     {
-        private const string MainRecordingScenePath = "Assets/_Project/Scene/Main_Recoding.unity";
         private static bool isScheduled;
 
         static GraphicSettingGameViewScaleAutoApplier()
@@ -43,7 +42,7 @@ namespace Fbx2Vmd.Settings.EditorTools
 
         private static void OnSceneOpened(Scene scene, OpenSceneMode mode)
         {
-            if (scene.path == MainRecordingScenePath)
+            if (MainRecordingSettingsCompanionLauncher.ShouldOpenForScene(scene.path))
             {
                 ScheduleApply();
             }
@@ -58,7 +57,7 @@ namespace Fbx2Vmd.Settings.EditorTools
         private static GraphicSetting FindActiveSceneGraphicSetting()
         {
             Scene activeScene = SceneManager.GetActiveScene();
-            if (!activeScene.IsValid() || activeScene.path != MainRecordingScenePath)
+            if (!activeScene.IsValid() || !MainRecordingSettingsCompanionLauncher.ShouldOpenForScene(activeScene.path))
             {
                 return null;
             }

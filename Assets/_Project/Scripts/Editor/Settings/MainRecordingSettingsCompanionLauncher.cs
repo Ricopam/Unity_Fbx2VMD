@@ -14,6 +14,8 @@ namespace Fbx2Vmd.Settings.EditorTools
         public const string GeneralMenuPath = "Window/General/Main Recording Settings";
 
         private const string MainRecordingScenePath = "Assets/_Project/Scene/Main_Recoding.unity";
+        // 최종 기준 씬. Main_Recoding과 동등 동작이 확인될 때까지 두 씬 모두 제품 씬으로 취급함.
+        private const string MainScenePath = "Assets/_Project/Scene/Main.unity";
         private const string ElectronAppRoot = "Assets/_Project/Tools/MainRecordingSettings";
         private const string NpmExecutableName = "npm";
         private const string NpmArguments = "run start:prod";
@@ -73,9 +75,12 @@ namespace Fbx2Vmd.Settings.EditorTools
             return CanLaunchWebSettings();
         }
 
+        /// <summary>설정창·Play 가드·게임 뷰 배율을 적용할 제품 씬인지.</summary>
         public static bool ShouldOpenForScene(string scenePath)
         {
-            return string.Equals(NormalizeScenePath(scenePath), MainRecordingScenePath, StringComparison.OrdinalIgnoreCase);
+            string normalized = NormalizeScenePath(scenePath);
+            return string.Equals(normalized, MainRecordingScenePath, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalized, MainScenePath, StringComparison.OrdinalIgnoreCase);
         }
 
         public static MainRecordingSettingsLaunchPlan CreateDefaultLaunchPlan()
