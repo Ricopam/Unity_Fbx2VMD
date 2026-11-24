@@ -73,6 +73,10 @@ namespace Fbx2Vmd.FBXImporter
             PrepareCore(targetAnimator, clip, null);
         }
 
+        // 시연 녹화 전 하체 보정이 모두 켜졌는지 확인하는 읽기 전용 상태.
+        internal bool IsGroundResponseEnabled => _isGroundResponseEnabled;
+        internal bool IsFootStepDiffusionEnabled => _useFootStepDiffusion;
+
         internal void SetGroundResponseEnabled(bool isEnabled)
         {
             _isGroundResponseEnabled = isEnabled;

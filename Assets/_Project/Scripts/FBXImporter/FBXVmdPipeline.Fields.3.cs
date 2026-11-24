@@ -374,6 +374,18 @@ namespace Fbx2Vmd.FBXImporter
         // 준비된 재생 세션의 접지 반응을 토글함 — 시연 영상 끔/켬 비교 경로.
         internal void SetImportedMotionGroundResponse(bool isEnabled) =>
             _humanoidMotionPlaybackController?.SetGroundResponseEnabled(isEnabled);
+        internal bool IsImportedMotionGroundResponseEnabled =>
+            _humanoidMotionPlaybackController?.IsGroundResponseEnabled ?? false;
+        // 스위치가 켜져도 데이터 부족으로 드라이버가 초기화되지 않으면 실제로는 꺼진 것이므로 활성 여부를 봄.
+        internal bool IsImportedMotionIkGoalFootDriveActive =>
+            _humanoidMotionPlaybackController?.IsIkGoalFootDriveActive ?? false;
+        // 표면 보정 스위치가 켜져 있어도 준비 오류·재생 장애면 실제로 적용되지 않음.
+        internal string CurrentNativeSkinningCorrectionFault =>
+            !string.IsNullOrEmpty(_nativeSkinningCorrectionSetupError) ? _nativeSkinningCorrectionSetupError
+            : (_nativeSkinningCorrectionPlaybackDriver?.IsFaulted ?? false) ? _nativeSkinningCorrectionPlaybackDriver.FailureMessage
+            : string.Empty;
+        internal bool IsImportedMotionFootStepDiffusionEnabled =>
+            _humanoidMotionPlaybackController?.IsFootStepDiffusionEnabled ?? false;
 #if UNITY_EDITOR
         internal bool ShouldUseEditorHumanoidPlaybackSession =>
             Application.isPlaying && !EditorDiagnosticSession.IsRecordingOverrideActive;
