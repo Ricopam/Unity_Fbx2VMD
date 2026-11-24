@@ -506,3 +506,16 @@ __pycache__/
 # 테스트 중단 시 남는 회귀 픽스처 임시 폴더
 /Assets/HistoricalHumanoidRegression_*
 /Assets/HistoricalHumanoidRegression_*.meta
+
+# === md 문서는 사용자가 허락한 것만 업로드 ===
+# 기본은 모든 md 차단. 허락된 md는 아래 ! 예외로 하나씩 추가함.
+*.md
+!README.md
+
+# === 시연 영상 녹화·편집(Remotion) — 로컬 전용, Git 업로드 대상 아님 ===
+/Tools/DemoRecorder/
+/Tools/DemoVideo/
+/Assets/_Project/Scripts/Editor/DemoRecording/
+/Assets/_Project/Scripts/Editor/DemoRecording.meta
+/Assets/_Project/Tests/Editor/DemoRecording/
+/Assets/_Project/Tests/Editor/DemoRecording.meta
