@@ -186,8 +186,9 @@ namespace Fbx2Vmd.Settings.EditorTools
             PlayModeStateChange playModeState,
             Func<bool> openSettings)
         {
-            if (!ShouldAutoLaunchWebSettingsForPlayMode(scenePath, isBatchMode, playModeState) ||
-                SessionState.GetBool(SessionLaunchKey, false))
+            // 세션당 한 번만 실행하면 사용자가 설정창을 닫은 뒤 다시 Play해도 열리지 않으므로 Play 진입마다 요청함.
+            // 이미 열려 있으면 Electron 단일 실행 잠금(electron/main.js)이 새 프로세스를 끝내고 기존 창을 앞으로 가져옴.
+            if (!ShouldAutoLaunchWebSettingsForPlayMode(scenePath, isBatchMode, playModeState))
             {
                 return false;
             }

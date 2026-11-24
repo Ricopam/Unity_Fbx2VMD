@@ -1421,7 +1421,7 @@ namespace Tests.Editor.Settings
         }
 
         [Test]
-        public void Given_CompanionAutoLaunchAlreadyRan_When_PlayModeExits_Then_KeepsEditorSessionLaunch()
+        public void Given_CompanionAutoLaunchAlreadyRan_When_PlayingAgain_Then_RequestsLaunchAgain()
         {
             Type launcherType = RequireType(SettingsLauncherTypeName);
             int launchCount = 0;
@@ -1445,6 +1445,8 @@ namespace Tests.Editor.Settings
 
                 InvokeStatic<object>(launcherType, "OnPlayModeStateChanged", PlayModeStateChange.ExitingPlayMode);
 
+                // 설정창을 닫은 뒤 다시 Play해도 열려야 함(이전에는 세션당 한 번만 실행해 다시 열리지 않았음).
+                // 이미 열려 있으면 Electron 단일 실행 잠금이 새 프로세스를 끝내고 기존 창을 앞으로 가져옴.
                 Assert.That(
                     InvokeStatic<bool>(
                         launcherType,
@@ -1453,20 +1455,21 @@ namespace Tests.Editor.Settings
                         false,
                         PlayModeStateChange.EnteredPlayMode,
                         openSettings),
-                    Is.False);
+                    Is.True);
 
                 InvokeStatic<object>(launcherType, "OnPlayModeStateChanged", PlayModeStateChange.EnteredEditMode);
 
+                // Play 진입이 아닌 상태 변화에서는 실행하지 않음
                 Assert.That(
                     InvokeStatic<bool>(
                         launcherType,
                         "TryAutoLaunchWebSettingsForPlayModeForTests",
                         MainRecordingScenePath,
                         false,
-                        PlayModeStateChange.EnteredPlayMode,
+                        PlayModeStateChange.EnteredEditMode,
                         openSettings),
                     Is.False);
-                Assert.That(launchCount, Is.EqualTo(1));
+                Assert.That(launchCount, Is.EqualTo(2));
             }
             finally
             {
@@ -1499,7 +1502,7 @@ namespace Tests.Editor.Settings
         }
 
         [Test]
-        public void Given_MainRecordingScene_When_AutoLaunchingEditorPlayMode_Then_InvokesWebSettingsLauncherOnce()
+        public void Given_MainRecordingScene_When_AutoLaunchingEditorPlayMode_Then_InvokesWebSettingsLauncherEachPlay()
         {
             Type launcherType = RequireType(SettingsLauncherTypeName);
             int launchCount = 0;
@@ -1525,17 +1528,25 @@ namespace Tests.Editor.Settings
                     false,
                     PlayModeStateChange.EnteredPlayMode,
                     openSettings);
-                bool duplicateLaunch = InvokeStatic<bool>(
+                bool nextPlayLaunch = InvokeStatic<bool>(
                     launcherType,
                     "TryAutoLaunchWebSettingsForPlayModeForTests",
                     MainRecordingScenePath,
                     false,
                     PlayModeStateChange.EnteredPlayMode,
                     openSettings);
+                bool batchLaunch = InvokeStatic<bool>(
+                    launcherType,
+                    "TryAutoLaunchWebSettingsForPlayModeForTests",
+                    MainRecordingScenePath,
+                    true,
+                    PlayModeStateChange.EnteredPlayMode,
+                    openSettings);
 
                 Assert.That(firstLaunch, Is.True);
-                Assert.That(duplicateLaunch, Is.False);
-                Assert.That(launchCount, Is.EqualTo(1));
+                Assert.That(nextPlayLaunch, Is.True);
+                Assert.That(batchLaunch, Is.False);
+                Assert.That(launchCount, Is.EqualTo(2));
                 Assert.That(settingsPath, Does.EndWith("main-recording-settings.json"));
             }
             finally
