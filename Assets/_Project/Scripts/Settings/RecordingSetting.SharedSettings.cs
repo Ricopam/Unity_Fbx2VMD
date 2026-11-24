@@ -87,18 +87,7 @@ public sealed partial class RecordingSetting
             FBXVmdPipeline pipeline = recordingFBXVmdPipeline;
             if (isPlaying && pipeline != null)
             {
-                state.hasPreparedMotion = pipeline.HasPreparedImportedMotion;
-                state.isPlayingMotion = pipeline.IsImportedMotionPlaying;
-                state.isPreparingMotion = pipeline.IsPreparingImportedMotionCorrection;
-                state.isRecording = pipeline.IsImportedMotionRecording;
-                state.motionTimeSeconds = pipeline.ImportedMotionCurrentTimeSeconds;
-                state.motionError = pipeline.SessionState == FBXVmdPipeline.FBXSessionState.Failed ? pipeline.LastSessionMessage : string.Empty;
-                state.isSurfaceCorrectionEnabled = pipeline.IsNativeSkinningCorrectionEnabled;
-                state.surfaceCorrectionFailure = pipeline.LastNativeSkinningCorrectionFailure;
-                GameObject target = pipeline.targetCharacter;
-                state.hasTargetCharacter = target != null;
-                state.targetCharacterName = target != null ? target.name : string.Empty;
-                state.isImportingFbx = pipeline.IsProcessing;
+                WriteMotionAndCharacterState(state, pipeline);
                 WriteTimelineAndRecordingState(state, pipeline);
                 CharacterCorrectionStatusReader.Read(state, pipeline);
             }
@@ -108,6 +97,22 @@ public sealed partial class RecordingSetting
         {
             Debug.LogWarning($"[RecordingSetting] 모션 상태 기록 실패: {exception.Message}");
         }
+    }
+
+    private static void WriteMotionAndCharacterState(MainRecordingSettingsState state, FBXVmdPipeline pipeline)
+    {
+        state.hasPreparedMotion = pipeline.HasPreparedImportedMotion;
+        state.isPlayingMotion = pipeline.IsImportedMotionPlaying;
+        state.isPreparingMotion = pipeline.IsPreparingImportedMotionCorrection;
+        state.isRecording = pipeline.IsImportedMotionRecording;
+        state.motionTimeSeconds = pipeline.ImportedMotionCurrentTimeSeconds;
+        state.motionError = pipeline.SessionState == FBXVmdPipeline.FBXSessionState.Failed ? pipeline.LastSessionMessage : string.Empty;
+        state.isSurfaceCorrectionEnabled = pipeline.IsNativeSkinningCorrectionEnabled;
+        state.surfaceCorrectionFailure = pipeline.LastNativeSkinningCorrectionFailure;
+        GameObject target = pipeline.targetCharacter;
+        state.hasTargetCharacter = target != null;
+        state.targetCharacterName = target != null ? target.name : string.Empty;
+        state.isImportingFbx = pipeline.IsProcessing;
     }
 
     private void WriteTimelineAndRecordingState(MainRecordingSettingsState state, FBXVmdPipeline pipeline)

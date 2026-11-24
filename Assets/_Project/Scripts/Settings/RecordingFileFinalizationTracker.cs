@@ -32,18 +32,12 @@ namespace Fbx2Vmd.Settings
         {
             if (isRecording)
             {
-                // 정지 뒤 실패 판정에 쓰도록 녹화 중에 경로를 확보함.
-                if (!string.IsNullOrEmpty(currentOutputPath))
-                {
-                    OutputPath = currentOutputPath;
-                }
-
-                HasFailed = false;
-                ResetFinalization();
+                RememberRecording(currentOutputPath);
                 return;
             }
 
-            if (string.IsNullOrEmpty(OutputPath) || IsFinalized || readSize == null)
+            bool hasPendingFile = !string.IsNullOrEmpty(OutputPath) && !IsFinalized && readSize != null;
+            if (!hasPendingFile)
             {
                 return;
             }
@@ -51,13 +45,34 @@ namespace Fbx2Vmd.Settings
             bool recorderDroppedOutput = string.IsNullOrEmpty(currentOutputPath);
             if (recorderDroppedOutput)
             {
-                OutputPath = string.Empty;
-                HasFailed = true;
-                ResetFinalization();
+                MarkFailed();
                 return;
             }
 
-            long size = readSize(OutputPath);
+            ObserveFileSize(readSize(OutputPath));
+        }
+
+        // 정지 뒤 실패 판정에 쓰도록 녹화 중에 경로를 확보함.
+        private void RememberRecording(string currentOutputPath)
+        {
+            if (!string.IsNullOrEmpty(currentOutputPath))
+            {
+                OutputPath = currentOutputPath;
+            }
+
+            HasFailed = false;
+            ResetFinalization();
+        }
+
+        private void MarkFailed()
+        {
+            OutputPath = string.Empty;
+            HasFailed = true;
+            ResetFinalization();
+        }
+
+        private void ObserveFileSize(long size)
+        {
             if (size > 0 && size == lastObservedSize)
             {
                 stablePolls++;
