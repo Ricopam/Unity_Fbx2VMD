@@ -28,27 +28,28 @@ test("onboarding shell renders one page-owned settings region without the camera
   assert.doesNotMatch(html, /class="tree-item selected"/);
 });
 
-test("onboarding shell exposes FBX import and motion playback cards", async () => {
+// 확정 시안: 작업 단계 목록(캐릭터 → 모션 → 보정·물리 → 재생 → 녹화)과 단계별 화면.
+test("작업 화면은 다섯 단계 목록과 단계별 화면을 순서대로 노출한다", async () => {
   const html = await fs.readFile(htmlUrl, "utf8");
 
-  assert.equal((html.match(/class="onboarding-card/g) ?? []).length, 5);
-  assert.match(html, /data-card="motion-playback"/);
-  // 캐릭터 없이 시작하는 Main 씬에서는 캐릭터 선택이 FBX 가져오기보다 먼저 와야 함
-  assert.match(html, /data-card="character-select"[\s\S]*data-card="fbx-import"/);
-  assert.match(html, /data-card="character-select"[\s\S]*id="characterSelect"[\s\S]*id="loadCharacterButton"/);
-  assert.match(html, /data-card="fbx-import"[\s\S]*id="importStatus"/);
-  for (const id of ["playMotionButton", "pauseMotionButton", "stopMotionButton"]) {
+  const order = ["character", "motion", "physics", "playback", "recording"];
+  const steps = [...html.matchAll(/data-wf-step="([a-z]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(steps, order);
+  const panels = [...html.matchAll(/data-wf-panel="([a-z]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(panels, order);
+  // 잠긴 단계는 이유를 보여 줄 자리가 있어야 함
+  assert.equal((html.match(/data-wf-lock hidden/g) ?? []).length, 5);
+  assert.match(html, /data-wf-panel="character"[\s\S]*id="characterSelect"[\s\S]*id="loadCharacterButton"/);
+  assert.match(html, /data-wf-panel="motion"[\s\S]*id="importButton"[\s\S]*id="wfImportMeter"/);
+  assert.match(html, /data-wf-panel="playback"[\s\S]*id="wfTimeline"[\s\S]*id="playMotionButton"[\s\S]*id="wfSeekInput"/);
+  assert.match(html, /data-wf-panel="recording"[\s\S]*id="wfRecordStart"[\s\S]*id="wfRecordStop"/);
+  for (const id of ["playMotionButton", "pauseMotionButton", "stopMotionButton", "wfRecordStart"]) {
     assert.match(html, new RegExp(`id="${id}"[^>]*type="button"[^>]*disabled`));
   }
-  assert.match(html, /<article class="onboarding-card card-primary" data-card="fbx-import">/);
-  assert.match(html, /<article class="onboarding-card card-secondary" data-card="interaction">/);
-  assert.match(html, /<article class="onboarding-card card-tertiary" data-card="community">/);
-  assert.match(html, /data-card="fbx-import"[\s\S]*id="importButton"[\s\S]*FBX 가져오기/);
   assert.doesNotMatch(html, /id="fbxPath"/);
   assert.doesNotMatch(html, /id="chooseFbxButton"/);
-  assert.doesNotMatch(html, />파일 선택<\/button>/);
-  assert.match(html, /data-card="interaction"[\s\S]*준비중/);
-  assert.match(html, /data-card="community"[\s\S]*준비중/);
+  // Unity와 연결되지 않은 '준비중' 카드는 동작하는 것처럼 보이지 않게 두지 않음(PRD 수용 기준 7)
+  assert.doesNotMatch(html, /data-card="interaction"|data-card="community"/);
 });
 
 test("layout CSS keeps the 1265x675 reference frame and separates onboarding from detail panels", async () => {
@@ -62,7 +63,7 @@ test("layout CSS keeps the 1265x675 reference frame and separates onboarding fro
   assert.match(css, /--rail-width:\s*56px;/);
   assert.match(css, /--sidebar-width:\s*249px;/);
   assert.match(css, /\.content-pane\s*{[\s\S]*overflow-y:\s*auto;/);
-  assert.match(css, /\.onboarding-card\s*{[\s\S]*border-radius:\s*8px;/);
+  assert.match(css, /\.wf-section\s*{[\s\S]*border-radius:\s*8px;/);
   assert.match(css, /\.tree-status\s*{[\s\S]*display:\s*none;/);
   assert.match(css, /\.tree-item\.selected \.tree-status\s*{[\s\S]*display:\s*inline-block;/);
 });

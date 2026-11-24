@@ -105,9 +105,11 @@ export function resolveRecordingView(state, isUnityPlaying, { isStartRequested =
     return { ...base, phase: "recording", canStop: true, progressPercent: percent(state.recordingProgress),
       message: "녹화하고 있어요. 다른 단계는 잠겨 있어요." };
   }
-  // 보정 준비가 끝나야 녹화가 시작되므로 그동안은 대기 상태로 두고 취소만 허용한다.
-  if (isStartRequested && state.isPreparingMotion === true) {
-    return { ...base, phase: "starting", canCancelStart: true, message: "표면 보정을 준비한 뒤 녹화를 시작해요." };
+  // 보정 준비가 끝나야 녹화가 시작되므로 그동안은 대기 상태로 두고 준비 중에만 취소를 허용한다.
+  if (isStartRequested) {
+    const isPreparing = state.isPreparingMotion === true;
+    return { ...base, phase: "starting", canCancelStart: isPreparing,
+      message: isPreparing ? "표면 보정을 준비한 뒤 녹화를 시작해요." : "녹화 시작을 요청했어요. Unity 응답을 기다리는 중이에요." };
   }
   if (state.isRecordingFileFailed === true) {
     return { ...base, phase: "failed", canStart: true, message: "녹화 파일을 끝까지 저장하지 못했어요. 다시 녹화해 주세요." };
@@ -192,4 +194,26 @@ function physicsSub(state) {
 
 function physicsBadge(state) {
   return resolveCorrectionSummary(state).warnings.length ? "warning" : "done";
+}
+
+// 녹화 시작 요청의 수명. 명령 직후 상태는 Unity 처리 전 값이라 그것만으로 해제하지 않는다.
+// 녹화가 시작되거나, 보정 준비를 한 번 본 뒤 준비가 끝나거나, 둘 다 없이 회답 대기 한도가 지나면 해제한다.
+const START_REQUEST_TIMEOUT_MS = 15000;
+
+export function advanceStartRequest(request, state, nowMs, { requested = false } = {}) {
+  const current = requested ? { requestedAtMs: nowMs, sawPreparing: false } : request;
+  if (!current || state.isRecording === true) return null;
+  const isPreparing = state.isPreparingMotion === true;
+  if (isPreparing) return current.sawPreparing ? current : { ...current, sawPreparing: true };
+  if (current.sawPreparing) return null;
+  return nowMs - current.requestedAtMs > START_REQUEST_TIMEOUT_MS ? null : current;
+}
+
+// 저장 파일의 폴더. 드라이브 루트(C:\a.mp4)는 "C:"가 아니라 "C:\"로 돌려줘 현재 디렉터리로 해석되지 않게 한다.
+export function folderOfFile(filePath) {
+  const text = String(filePath || "");
+  const cut = Math.max(text.lastIndexOf("/"), text.lastIndexOf("\\"));
+  if (cut < 0) return "";
+  const folder = text.slice(0, cut);
+  return /^[A-Za-z]:$/.test(folder) ? `${folder}${text[cut]}` : folder;
 }

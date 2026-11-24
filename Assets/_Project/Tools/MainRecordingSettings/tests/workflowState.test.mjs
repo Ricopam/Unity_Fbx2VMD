@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  advanceStartRequest,
+  folderOfFile,
   formatTimecode,
   parseSeekFrame,
   resolveCorrectionSummary,
@@ -148,6 +150,11 @@ test("녹화 화면은 준비·대기·진행·저장 확인·완료·실패를 
   const waiting = resolveRecordingView({ ...ready, isPreparingMotion: true }, true, { isStartRequested: true });
   assert.equal(waiting.phase, "starting");
   assert.equal(waiting.canCancelStart, true);
+  // Unity가 아직 명령을 처리하기 전에도 시작 버튼을 다시 열지 않음.
+  const queued = resolveRecordingView(ready, true, { isStartRequested: true });
+  assert.equal(queued.phase, "starting");
+  assert.equal(queued.canStart, false);
+  assert.equal(queued.canCancelStart, false);
   const live = resolveRecordingView({ ...ready, isRecording: true, recordingProgress: 0.3, currentFrameIndex: 1869 }, true);
   assert.equal(live.phase, "recording");
   assert.equal(live.canStop, true);
@@ -175,3 +182,26 @@ test("시간 표기는 분:초.십분의일초이며 잘못된 값은 0으로 �
 function pick(summary) {
   return { appliedCount: summary.appliedCount, total: summary.total, warnings: summary.warnings };
 }
+
+test("녹화 시작 요청은 녹화가 시작되거나 보정 준비를 본 뒤 끝나야 해제된다", () => {
+  const request = advanceStartRequest(null, ready, 1000, { requested: true });
+  assert.deepEqual(request, { requestedAtMs: 1000, sawPreparing: false });
+  // 명령 처리 전 상태(준비 아님)로는 해제하지 않음 — 이전 결함 재현
+  assert.ok(advanceStartRequest(request, ready, 2000));
+  const preparing = advanceStartRequest(request, { ...ready, isPreparingMotion: true }, 3000);
+  assert.equal(preparing.sawPreparing, true);
+  assert.ok(advanceStartRequest(preparing, { ...ready, isPreparingMotion: true }, 400000));
+  assert.equal(advanceStartRequest(preparing, ready, 400500), null);
+  assert.equal(advanceStartRequest(request, { ...ready, isRecording: true }, 2500), null);
+  // 준비도 녹화도 보이지 않으면 회답 대기 한도 뒤 해제
+  assert.equal(advanceStartRequest(request, ready, 1000 + 15001), null);
+  assert.equal(advanceStartRequest(null, ready, 5000), null);
+});
+
+test("녹화 파일 폴더는 Windows 드라이브 루트도 올바른 경로로 만든다", () => {
+  assert.equal(folderOfFile("D:/Recordings/satisfaction_2.mp4"), "D:/Recordings");
+  assert.equal(folderOfFile("D:\\Recordings\\a.mp4"), "D:\\Recordings");
+  assert.equal(folderOfFile("C:\\a.mp4"), "C:\\");
+  assert.equal(folderOfFile("a.mp4"), "");
+  assert.equal(folderOfFile(""), "");
+});

@@ -65,6 +65,34 @@
 
         <aside class="sidebar" aria-label="장면 계층">
           <div class="sidebar-page" data-sidebar-page="assistant" data-default-panel="onboarding" hidden>
+            <section class="tree-section wf-steps" aria-labelledby="treeWorkflow">
+              <h2 id="treeWorkflow">작업 단계</h2>
+              <button class="tree-item wf-step" type="button" data-panel-target="onboarding" data-wf-step="character">
+                <span class="wf-step-num" aria-hidden="true">1</span>
+                <span class="wf-step-text"><span class="wf-step-label">캐릭터</span><span class="wf-step-sub" data-wf-sub></span></span>
+                <span class="wf-badge" data-wf-step-badge></span>
+              </button>
+              <button class="tree-item wf-step" type="button" data-panel-target="wf-motion" data-wf-step="motion">
+                <span class="wf-step-num" aria-hidden="true">2</span>
+                <span class="wf-step-text"><span class="wf-step-label">모션(FBX)</span><span class="wf-step-sub" data-wf-sub></span></span>
+                <span class="wf-badge" data-wf-step-badge></span>
+              </button>
+              <button class="tree-item wf-step" type="button" data-panel-target="wf-physics" data-wf-step="physics">
+                <span class="wf-step-num" aria-hidden="true">3</span>
+                <span class="wf-step-text"><span class="wf-step-label">보정·물리</span><span class="wf-step-sub" data-wf-sub></span></span>
+                <span class="wf-badge" data-wf-step-badge></span>
+              </button>
+              <button class="tree-item wf-step" type="button" data-panel-target="wf-playback" data-wf-step="playback">
+                <span class="wf-step-num" aria-hidden="true">4</span>
+                <span class="wf-step-text"><span class="wf-step-label">재생</span><span class="wf-step-sub" data-wf-sub></span></span>
+                <span class="wf-badge" data-wf-step-badge></span>
+              </button>
+              <button class="tree-item wf-step" type="button" data-panel-target="wf-recording" data-wf-step="recording">
+                <span class="wf-step-num" aria-hidden="true">5</span>
+                <span class="wf-step-text"><span class="wf-step-label">녹화</span><span class="wf-step-sub" data-wf-sub></span></span>
+                <span class="wf-badge" data-wf-step-badge></span>
+              </button>
+            </section>
           </div>
 
           <div class="sidebar-page" data-sidebar-page="character" data-default-panel="upperbody" hidden>
@@ -183,66 +211,123 @@
             </div>
           </header>
 
-          <div class="panel-view" data-panel-view="onboarding">
-            <section class="card-stack" aria-label="설정 시작">
-              <article class="onboarding-card card-primary" data-card="character-select">
-                <div class="card-copy">
-                  <h2>1. 캐릭터 선택</h2>
-                  <p id="characterSelectStatus" role="status">Unity Play 상태에서 캐릭터를 불러올 수 있습니다.</p>
-                </div>
-                <div class="character-action-row">
-                  <select id="characterSelect" class="lb-select" aria-label="불러올 캐릭터" disabled></select>
-                  <button id="loadCharacterButton" class="card-button card-button-primary" type="button" disabled>캐릭터 불러오기</button>
-                </div>
-              </article>
-
-              <article class="onboarding-card card-primary" data-card="fbx-import">
-                <div class="card-copy">
-                  <h2>2. FBX 파일 임포트</h2>
-                  <p>FBX 파일을 선택해 프로젝트로 가져오고 모션 캡쳐 설정을 시작합니다.</p>
-                  <p id="importStatus" role="status">먼저 1단계에서 캐릭터를 불러와 주세요.</p>
-                </div>
-                <div class="fbx-action-row">
-                  <button id="importButton" class="card-button card-button-primary" type="button" aria-label="FBX 파일 가져오기">FBX 가져오기</button>
-                </div>
-              </article>
-
-              <article class="onboarding-card card-secondary" data-card="motion-playback">
-                <div class="card-copy">
-                  <h2>모션 재생</h2>
-                  <p id="motionStatus" role="status">FBX를 먼저 가져와 주세요.</p>
-                </div>
-                <div class="fbx-action-row" role="group" aria-label="모션 재생 제어">
-                  <button id="playMotionButton" class="card-button" type="button" disabled>재생</button>
-                  <button id="pauseMotionButton" class="card-button" type="button" disabled>일시정지</button>
-                  <button id="stopMotionButton" class="card-button" type="button" disabled>정지</button>
-                  <button id="surfaceCorrectionButton" class="card-button" type="button" disabled>표면 보정 끄기</button>
-                </div>
-              </article>
-
-              <article class="onboarding-card card-secondary" data-card="interaction">
-                <div class="card-copy">
-                  <h2>상호작용 설정</h2>
-                  <p>시청자 상호작용 설정은 다음 단계에서 연결합니다.</p>
-                </div>
-                <button class="card-button" type="button" disabled>준비중</button>
-              </article>
-
-              <article class="onboarding-card card-tertiary" data-card="community">
-                <div class="card-copy">
-                  <h2>커뮤니티 참여</h2>
-                  <p>질문이나 의견을 남기는 흐름은 Web UI 기본 구조가 안정된 뒤 확장합니다.</p>
-                </div>
-                <button class="card-button" type="button" disabled>준비중</button>
-              </article>
+          <div class="panel-view wf-panel" data-panel-view="onboarding" data-wf-panel="character">
+            <header class="wf-head">
+              <span class="wf-badge" data-wf-badge="character"></span>
+            </header>
+            <p class="wf-lock" data-wf-lock hidden><span class="wf-lock-icon" aria-hidden="true"></span><span data-wf-lock-text></span></p>
+            <section class="wf-section" data-wf-body aria-labelledby="wfCharacterLibraryTitle">
+              <h3 id="wfCharacterLibraryTitle" class="wf-section-title">라이브러리</h3>
+              <p id="characterSelectStatus" class="wf-note" role="status">Unity Play 상태에서 캐릭터를 불러올 수 있습니다.</p>
+              <div class="character-action-row">
+                <select id="characterSelect" class="lb-select" aria-label="불러올 캐릭터" disabled></select>
+                <button id="loadCharacterButton" class="card-button card-button-primary" type="button" disabled>캐릭터 불러오기</button>
+              </div>
             </section>
+          </div>
 
+          <div class="panel-view wf-panel" data-panel-view="wf-motion" data-wf-panel="motion" hidden>
+            <header class="wf-head">
+              <span class="wf-badge" data-wf-badge="motion"></span>
+            </header>
+            <p class="wf-lock" data-wf-lock hidden><span class="wf-lock-icon" aria-hidden="true"></span><span data-wf-lock-text></span></p>
+            <section class="wf-section" data-wf-body aria-labelledby="wfMotionFileTitle">
+              <h3 id="wfMotionFileTitle" class="wf-section-title">FBX 파일</h3>
+              <p id="importStatus" class="wf-note" role="status">먼저 캐릭터를 불러와 주세요.</p>
+              <div class="fbx-action-row">
+                <button id="importButton" class="card-button card-button-primary" type="button" aria-label="FBX 파일 가져오기">FBX 가져오기</button>
+              </div>
+              <div class="wf-progress" id="wfImportProgress" hidden>
+                <p class="wf-big" id="wfImportPercent">0%</p>
+                <progress class="wf-meter" id="wfImportMeter" max="100" value="0" aria-label="FBX 적용 진행률">0%</progress>
+                <p class="wf-note">적용에 약 1분 걸려요. 그동안 Unity가 응답하지 않아도 실패가 아니에요. 10분이 지나도 끝나지 않으면 실패로 알려 드려요.</p>
+              </div>
+              <dl class="wf-facts" id="wfMotionFacts" hidden>
+                <dt>적용한 모션</dt><dd id="wfMotionClip">-</dd>
+                <dt>길이</dt><dd id="wfMotionLength">-</dd>
+                <dt>프레임</dt><dd id="wfMotionFrames">-</dd>
+              </dl>
+              <p class="wf-note">처음 쓰는 모션은 표면 보정 준비에 약 6분이 더 걸려요.</p>
+            </section>
+          </div>
+
+          <div class="panel-view wf-panel" data-panel-view="wf-physics" data-wf-panel="physics" hidden>
+            <header class="wf-head">
+              <span class="wf-badge" data-wf-badge="physics"></span>
+            </header>
+            <p class="wf-lock" data-wf-lock hidden><span class="wf-lock-icon" aria-hidden="true"></span><span data-wf-lock-text></span></p>
+            <section class="wf-section" data-wf-body aria-labelledby="wfCorrectionTitle">
+              <h3 id="wfCorrectionTitle" class="wf-section-title">적용 상태</h3>
+              <dl class="wf-facts" id="wfCorrectionList"></dl>
+              <ul class="wf-warnings" id="wfCorrectionWarnings" aria-label="경고"></ul>
+              <p class="wf-note">보정·물리는 모션을 적용할 때 자동으로 적용돼요. 세부 조절은 아직 없어요.</p>
+            </section>
+          </div>
+
+          <div class="panel-view wf-panel" data-panel-view="wf-playback" data-wf-panel="playback" hidden>
+            <header class="wf-head">
+              <span class="wf-badge" data-wf-badge="playback"></span>
+            </header>
+            <p class="wf-lock" data-wf-lock hidden><span class="wf-lock-icon" aria-hidden="true"></span><span data-wf-lock-text></span></p>
+            <section class="wf-section" data-wf-body aria-labelledby="wfTimelineTitle">
+              <h3 id="wfTimelineTitle" class="wf-section-title">타임라인</h3>
+              <p class="wf-time"><span id="wfTime">00:00.0</span> <span class="wf-time-total">/ <span id="wfTimeTotal">00:00.0</span></span></p>
+              <p class="wf-frame-line" id="wfFrameLine">- / -프레임</p>
+              <input class="wf-timeline" id="wfTimeline" type="range" min="1" max="1" value="1" step="1" aria-label="타임라인" />
+              <div class="fbx-action-row" role="group" aria-label="모션 재생 제어">
+                <button id="playMotionButton" class="card-button card-button-primary" type="button" disabled>재생</button>
+                <button id="pauseMotionButton" class="card-button" type="button" disabled>일시정지</button>
+                <button id="stopMotionButton" class="card-button" type="button" disabled>정지</button>
+              </div>
+              <div class="wf-seek">
+                <label class="wf-label" for="wfSeekInput">프레임으로 이동</label>
+                <div class="wf-seek-row">
+                  <input class="lb-input wf-seek-input" id="wfSeekInput" type="number" min="1" step="1" inputmode="numeric" aria-describedby="wfSeekHint" />
+                  <button id="wfSeekButton" class="card-button" type="button">이동</button>
+                </div>
+                <p class="wf-note" id="wfSeekHint">입력 후 Enter를 눌러도 이동해요.</p>
+              </div>
+              <p id="motionStatus" class="wf-note" role="status">FBX를 먼저 가져와 주세요.</p>
+            </section>
+            <section class="wf-section" data-wf-body aria-labelledby="wfCompareTitle">
+              <h3 id="wfCompareTitle" class="wf-section-title">표면 보정 비교</h3>
+              <p class="wf-note">끄면 보정 전 모습과 비교할 수 있어요.</p>
+              <button id="surfaceCorrectionButton" class="card-button" type="button" disabled>표면 보정 끄기</button>
+            </section>
+          </div>
+
+          <div class="panel-view wf-panel" data-panel-view="wf-recording" data-wf-panel="recording" hidden>
+            <header class="wf-head">
+              <span class="wf-badge" data-wf-badge="recording"></span>
+            </header>
+            <p class="wf-lock" data-wf-lock hidden><span class="wf-lock-icon" aria-hidden="true"></span><span data-wf-lock-text></span></p>
+            <section class="wf-section" data-wf-body aria-labelledby="wfRecordTitle">
+              <h3 id="wfRecordTitle" class="wf-section-title">영상 녹화</h3>
+              <p class="wf-note" id="wfRecordStatus" role="status">녹화할 준비가 됐어요.</p>
+              <div class="wf-progress" id="wfRecordProgress" hidden>
+                <p class="wf-big" id="wfRecordPercent">0%</p>
+                <progress class="wf-meter" id="wfRecordMeter" max="100" value="0" aria-label="녹화 진행률">0%</progress>
+                <p class="wf-note" id="wfRecordFrame">-</p>
+              </div>
+              <dl class="wf-facts" id="wfRecordFileFacts" hidden>
+                <dt>저장 파일</dt><dd id="wfRecordFile">-</dd>
+              </dl>
+              <div class="fbx-action-row">
+                <button id="wfRecordStart" class="card-button card-button-primary" type="button" disabled>녹화 시작하기</button>
+                <button id="wfRecordStop" class="card-button" type="button" hidden>녹화 중지</button>
+                <button id="wfRecordCancel" class="card-button" type="button" hidden>시작 취소</button>
+                <button id="wfOpenRecordingFolder" class="card-button" type="button" hidden>폴더 열기</button>
+              </div>
+              <p class="wf-note">녹화는 설정의 영상 형식·해상도로 처음부터 끝까지 저장해요. 같은 이름의 파일이 있으면 덮어써요. 녹화하는 동안 캐릭터·모션·재생 조작이 잠겨요.</p>
+            </section>
+          </div>
+
+          <div class="wf-footer">
             <p id="feedback" class="feedback" data-tone="info" role="status" aria-live="polite"></p>
-
-            <section class="event-panel" aria-labelledby="eventLogTitle">
-              <h2 id="eventLogTitle">이벤트 로그</h2>
+            <details class="event-panel">
+              <summary id="eventLogTitle">이벤트 로그</summary>
               <div id="eventLog" class="event-log" data-empty="true"></div>
-            </section>
+            </details>
           </div>
           <section id="lowerBodyPanel" class="panel-view lowerbody-panel" data-panel-view="lowerbody" aria-labelledby="settingsTitle" hidden>
             <div class="lb-main">

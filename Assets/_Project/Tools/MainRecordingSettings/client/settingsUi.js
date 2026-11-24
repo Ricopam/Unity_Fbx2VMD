@@ -7,6 +7,7 @@ import {
   postMotionCommand
 } from "./settingsApi.js";
 import { bootstrapCharacterSelectCard } from "./characterSelectCard.js";
+import { bootstrapWorkflowPanel } from "./workflowPanel.js";
 
 const statusLabels = {
   idle: "연결 안 됨",
@@ -18,7 +19,11 @@ const statusLabels = {
 
 // 패널 전환 시 상단 헤더에 표시할 제목
 const panelTitles = {
-  onboarding: "Onboarding Assistant",
+  onboarding: "캐릭터",
+  "wf-motion": "모션(FBX)",
+  "wf-physics": "보정·물리",
+  "wf-playback": "재생",
+  "wf-recording": "녹화",
   camera: "카메라 파라미터",
   light: "Directional Light & Ambient",
   upperbody: "상체 보정 파라미터",
@@ -153,6 +158,7 @@ export function bootstrapSettingsUi(root = document, {
   let motionState = {};
   let isMotionSubmitting = false;
   let pendingMotionCommandId = "";
+  let pendingMotionSuccessMessage = "";
   let motionCommandDeadline = 0;
   let pendingImport = null;
   const characterCard = bootstrapCharacterSelectCard(root, {
@@ -162,6 +168,11 @@ export function bootstrapSettingsUi(root = document, {
       refreshControls();
     },
     onLibraryUnavailable: (error) => appendLog("캐릭터 목록 조회 실패", error.message)
+  });
+  const workflow = bootstrapWorkflowPanel(root, {
+    sendMotionCommand: submitMotionCommand,
+    openPath: globalThis.window?.settingsShell?.openPath,
+    onFeedback: setFeedback
   });
   const autoConnection = createSettingsAutoConnectionController({
     createWebSocketChannel,
@@ -192,7 +203,8 @@ export function bootstrapSettingsUi(root = document, {
       const result = document.lastCommandResult;
       if (pendingMotionCommandId && result?.commandId === pendingMotionCommandId && result.state !== "running") {
         pendingMotionCommandId = "";
-        setFeedback(result.message, result.state === "success" ? "success" : "error");
+        const succeeded = result.state === "success";
+        setFeedback(succeeded && pendingMotionSuccessMessage ? pendingMotionSuccessMessage : result.message, succeeded ? "success" : "error");
       } else if (pendingMotionCommandId && Date.now() >= motionCommandDeadline) {
         pendingMotionCommandId = "";
         setFeedback("모션 명령 응답이 지연됩니다. 현재 상태를 확인한 뒤 다시 시도해 주세요.", "error");
@@ -224,25 +236,35 @@ export function bootstrapSettingsUi(root = document, {
     [elements.surfaceCorrectionButton, () => motionState.isSurfaceCorrectionEnabled === false
       ? "EnableNativeSkinningCorrection" : "DisableNativeSkinningCorrection"]
   ]) {
-    button?.addEventListener("click", async () => {
+    button?.addEventListener("click", () => {
       if (button.disabled) return;
-      isMotionSubmitting = true;
-      refreshControls();
-      try {
-        const result = await postMotionCommand({
-          apiBaseUrl: getBridgeConfig().apiBaseUrl ?? DEFAULT_API_BASE_URL,
-          action: typeof action === "function" ? action() : action
-        });
-        pendingMotionCommandId = result.commandId;
-        motionCommandDeadline = Date.now() + 15000;
-        setFeedback("모션 명령 응답을 기다리는 중입니다.", "loading");
-      } catch (error) {
-        setFeedback(error.message, "error");
-      } finally {
-        isMotionSubmitting = false;
-        refreshControls();
-      }
+      void submitMotionCommand(typeof action === "function" ? action() : action);
     });
+  }
+
+  // 모든 모션 명령(재생·녹화·프레임 이동)은 한 번에 하나만 보내고 Unity 회답으로 결과를 표시한다.
+  async function submitMotionCommand(action, extra = {}, successMessage = "") {
+    if (isMotionSubmitting || pendingMotionCommandId) return false;
+    isMotionSubmitting = true;
+    refreshControls();
+    try {
+      const result = await postMotionCommand({
+        apiBaseUrl: getBridgeConfig().apiBaseUrl ?? DEFAULT_API_BASE_URL,
+        action,
+        ...extra
+      });
+      pendingMotionCommandId = result.commandId;
+      pendingMotionSuccessMessage = successMessage;
+      motionCommandDeadline = Date.now() + 15000;
+      setFeedback("Unity 응답을 기다리는 중입니다.", "loading");
+      return true;
+    } catch (error) {
+      setFeedback(error.message, "error");
+      return false;
+    } finally {
+      isMotionSubmitting = false;
+      refreshControls();
+    }
   }
 
   elements.importButton.addEventListener("click", async () => {
@@ -472,6 +494,11 @@ export function bootstrapSettingsUi(root = document, {
       elements.surfaceCorrectionButton.disabled = !controls.canStop;
       elements.surfaceCorrectionButton.textContent = motionState.isSurfaceCorrectionEnabled === false ? "표면 보정 켜기" : "표면 보정 끄기";
     }
+    workflow.update(motionState, isPlaying, {
+      isBusy: isMotionSubmitting || !!pendingMotionCommandId,
+      isImportPending: !!pendingImport,
+      isCharacterLoading: characterCard.isLoading
+    });
   }
 
   function setConnectionStatus(status) {

@@ -535,7 +535,8 @@ function registerIpcHandlers() {
     // 폴더 열기 용도만 허용한다 — 임의 파일/실행 파일을 open 동사로 기동하는 것을 막는다.
     const stat = await fs.stat(targetPath.trim()).catch(() => null);
     if (!stat?.isDirectory()) {
-      return "";
+      // 빈 문자열은 shell.openPath의 성공 의미와 겹치므로 실패 이유를 돌려준다.
+      return "폴더를 찾을 수 없습니다.";
     }
 
     return shell.openPath(targetPath.trim());
