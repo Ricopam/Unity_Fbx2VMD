@@ -326,6 +326,10 @@ namespace Fbx2Vmd.FBXImporter
         public string SessionStatusMessage => LastSessionMessage;
         public float ImportedMotionRecordingProgress =>
             _humanoidMotionRecordingController?.NormalizedRecordingProgress ?? 0f;
+        // 마지막으로 평가된 프레임의 하체 접지 상태 이름(Applied·Fallback·NoGround·Disabled·Unavailable).
+        public string ImportedMotionFootGroundingStatus =>
+            (_humanoidMotionPlaybackController?.LastGroundingStatus ??
+                HumanoidFootGroundingStatus.Unavailable).ToString();
         public string ImportedMotionRecordingOutputPath =>
             _humanoidMotionRecordingController?.OutputFilePath ?? string.Empty;
         public bool HasPreparedImportedMotion =>

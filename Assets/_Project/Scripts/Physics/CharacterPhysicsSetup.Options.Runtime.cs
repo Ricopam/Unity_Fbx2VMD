@@ -39,5 +39,20 @@ namespace Fbx2Vmd.ClothPhysics
         [TextArea]
         [System.NonSerialized] public string lastReport = "";
 
+        // 클로스 라이브러리 타입을 모르는 어셈블리(설정창 상태 게시)도 수를 읽을 수 있게 노출함.
+        public int GeneratedClothCount => generatedCloths.Count;
+
+        /// <summary>빌드가 끝나 시뮬레이션 가능한 클로스 수 — 설정창·점검 도구의 'n/m 생성' 표시용.</summary>
+        public int CountValidCloths()
+        {
+            int count = 0;
+            foreach (MagicaCloth cloth in generatedCloths)
+            {
+                if (cloth != null && cloth.IsValid())
+                    count++;
+            }
+            return count;
+        }
+
     }
 }

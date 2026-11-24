@@ -1,7 +1,7 @@
 {
     "name": "Fbx2Vmd.Settings",
     "rootNamespace": "Fbx2Vmd.Settings",
-    "references": ["Fbx2Vmd.FBXImporter", "Unity.TextMeshPro", "Unity.RenderPipelines.Universal.Runtime", "Unity.Postprocessing.Runtime", "VMDRecorderSample"],
+    "references": ["Fbx2Vmd.FBXImporter", "Fbx2Vmd.ClothPhysics", "Unity.TextMeshPro", "Unity.RenderPipelines.Universal.Runtime", "Unity.Postprocessing.Runtime", "VMDRecorderSample"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -37,6 +37,12 @@ namespace Fbx2Vmd.Settings
         public string recordingOutputPath = string.Empty;
         public bool isRecordingFileFinalized;
         public bool isRecordingFileFailed;
+        // 보정·물리 적용 상태(설정창은 읽기 전용 표시).
+        public string footGroundingStatus = string.Empty;
+        public bool isThumbGuardEnabled;
+        public int clothCount;
+        public int validClothCount;
+        public int hairSpringCount;
 
         public static MainRecordingSettingsState Create(string playMode, DateTime utcNow)
         {

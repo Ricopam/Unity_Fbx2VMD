@@ -228,7 +228,7 @@ namespace Fbx2Vmd.FBXImporter
                 material.HasProperty("_MainTex") && material.mainTexture != null);
             var setup = _character.GetComponent<CharacterPhysicsSetup>();
             _report.cloth_count = setup != null ? setup.generatedCloths.Count : 0;
-            _report.valid_cloth_count = setup != null ? setup.generatedCloths.Count(cloth => cloth != null && cloth.IsValid()) : 0;
+            _report.valid_cloth_count = setup != null ? setup.CountValidCloths() : 0;
             _report.hair_spring_count = _character.GetComponentsInChildren<SpringHairDynamics>(true).Length;
         }
 

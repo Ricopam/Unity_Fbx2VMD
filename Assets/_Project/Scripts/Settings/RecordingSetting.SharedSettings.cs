@@ -100,6 +100,7 @@ public sealed partial class RecordingSetting
                 state.targetCharacterName = target != null ? target.name : string.Empty;
                 state.isImportingFbx = pipeline.IsProcessing;
                 WriteTimelineAndRecordingState(state, pipeline);
+                CharacterCorrectionStatusReader.Read(state, pipeline);
             }
             sharedSettingsFileSession.WriteMotionState(state);
         }
