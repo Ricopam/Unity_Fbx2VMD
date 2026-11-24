@@ -371,6 +371,9 @@ namespace Fbx2Vmd.FBXImporter
         // 준비된 재생 세션의 정지 발 순간이동 확산을 토글한다 — A/B 검증과 롤백 경로.
         internal void SetImportedMotionFootStepDiffusion(bool isEnabled) =>
             _humanoidMotionPlaybackController?.SetFootStepDiffusion(isEnabled);
+        // 준비된 재생 세션의 접지 반응을 토글함 — 시연 영상 끔/켬 비교 경로.
+        internal void SetImportedMotionGroundResponse(bool isEnabled) =>
+            _humanoidMotionPlaybackController?.SetGroundResponseEnabled(isEnabled);
 #if UNITY_EDITOR
         internal bool ShouldUseEditorHumanoidPlaybackSession =>
             Application.isPlaying && !EditorDiagnosticSession.IsRecordingOverrideActive;
