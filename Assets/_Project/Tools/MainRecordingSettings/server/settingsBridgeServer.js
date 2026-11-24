@@ -238,7 +238,7 @@ async function handleHttpRequest({
       }
       const body = await readJsonBody(request);
       const result = await withCommandQueueLock(() => queueMotionCommand({
-        settingsPath, action: body.action, now, createCommandId
+        settingsPath, action: body.action, frameIndex: body.frameIndex, now, createCommandId
       }));
       broadcast({ type: "motion-command", ...result });
       sendJsonResponse(response, 200, result);

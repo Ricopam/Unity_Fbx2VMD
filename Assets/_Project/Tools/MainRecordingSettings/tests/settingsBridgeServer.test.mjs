@@ -16,7 +16,7 @@ test("모션 명령은 허용된 동작만 접수하고 대기 명령을 보존�
   const post = action => fetch(`${bridge.baseUrl}/motion-command`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action })
   });
-  for (const action of ["PlayImportedMotion", "PauseImportedMotion", "StopImportedMotion", "EnableNativeSkinningCorrection", "DisableNativeSkinningCorrection"]) {
+  for (const action of ["PlayImportedMotion", "PauseImportedMotion", "StopImportedMotion", "EnableNativeSkinningCorrection", "DisableNativeSkinningCorrection", "StartMotionRecording"]) {
     await fs.writeFile(settingsPath, JSON.stringify({ runtimeState: { playMode: "playing" }, fbxPath: "fixture.fbx" }));
     const accepted = await post(action);
     assert.equal(accepted.status, 200);
@@ -39,7 +39,9 @@ test("모션 명령은 Edit·녹화·잘못된 동작에서 파일을 변경하�
   for (const [runtimeState, action, status] of [
     [{ playMode: "stopped" }, "PlayImportedMotion", 409],
     [{ playMode: "playing", isRecording: true }, "StopImportedMotion", 400],
-    [{ playMode: "playing" }, "StartRecording", 400]
+    [{ playMode: "playing" }, "StartRecording", 400],
+    [{ playMode: "playing", isRecording: true }, "StartMotionRecording", 400],
+    [{ playMode: "playing" }, "StopMotionRecording", 400]
   ]) {
     const original = JSON.stringify({ runtimeState, captureWidth: 3840 });
     await fs.writeFile(settingsPath, original);
@@ -49,6 +51,43 @@ test("모션 명령은 Edit·녹화·잘못된 동작에서 파일을 변경하�
     assert.equal(response.status, status);
     assert.equal(await fs.readFile(settingsPath, "utf8"), original);
   }
+});
+
+// 녹화 중지는 녹화 중에만 받는다 — 다른 모션 명령과 잠금 규칙이 반대다.
+test("녹화 중에는 녹화 중지 명령만 접수한다", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "motion-bridge-stop-"));
+  const settingsPath = path.join(root, "settings.json");
+  const bridge = createSettingsBridgeServer({ settingsPath, port: 0, createCommandId: () => "stop-1" });
+  await bridge.listen();
+  t.after(async () => { await bridge.close(); await fs.rm(root, { recursive: true, force: true }); });
+  await fs.writeFile(settingsPath, JSON.stringify({ runtimeState: { playMode: "playing", isRecording: true } }));
+  const response = await fetch(`${bridge.baseUrl}/motion-command`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "StopMotionRecording" })
+  });
+  assert.equal(response.status, 200);
+  assert.equal(JSON.parse(await fs.readFile(settingsPath, "utf8")).pendingCommand.action, "StopMotionRecording");
+});
+
+test("프레임 이동 명령은 0 이상 정수 프레임만 paramsJson으로 전달한다", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "motion-bridge-seek-"));
+  const settingsPath = path.join(root, "settings.json");
+  const bridge = createSettingsBridgeServer({ settingsPath, port: 0, createCommandId: () => "seek-1" });
+  await bridge.listen();
+  t.after(async () => { await bridge.close(); await fs.rm(root, { recursive: true, force: true }); });
+  const post = body => fetch(`${bridge.baseUrl}/motion-command`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+  });
+  for (const frameIndex of [-1, 1.5, "12", undefined, 1e20, 6234]) {
+    const original = JSON.stringify({ runtimeState: { playMode: "playing", lastFrameIndex: 6233 } });
+    await fs.writeFile(settingsPath, original);
+    assert.equal((await post({ action: "SeekMotionFrame", frameIndex })).status, 400);
+    assert.equal(await fs.readFile(settingsPath, "utf8"), original);
+  }
+  await fs.writeFile(settingsPath, JSON.stringify({ runtimeState: { playMode: "playing" } }));
+  assert.equal((await post({ action: "SeekMotionFrame", frameIndex: 1244 })).status, 200);
+  const saved = JSON.parse(await fs.readFile(settingsPath, "utf8"));
+  assert.equal(saved.pendingCommand.action, "SeekMotionFrame");
+  assert.deepEqual(JSON.parse(saved.pendingCommand.paramsJson), { frameIndex: 1244 });
 });
 
 test("settings bridge accepts POST /import-fbx and writes command document", async () => {

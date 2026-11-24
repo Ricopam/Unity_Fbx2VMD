@@ -12,8 +12,13 @@ export const PLAY_MODE_PLAYING = "playing";
 export const PLAY_MODE_STOPPED = "stopped";
 export const MOTION_COMMAND_ACTIONS = Object.freeze([
   "PlayImportedMotion", "PauseImportedMotion", "StopImportedMotion",
-  "EnableNativeSkinningCorrection", "DisableNativeSkinningCorrection"
+  "EnableNativeSkinningCorrection", "DisableNativeSkinningCorrection",
+  "StartMotionRecording", "StopMotionRecording", "SeekMotionFrame"
 ]);
+const STOP_RECORDING_ACTION = "StopMotionRecording";
+const SEEK_FRAME_ACTION = "SeekMotionFrame";
+// Unity int 필드(frameIndex)로 넘칠 수 있는 값을 막는다.
+const MAX_UNITY_INT = 2147483647;
 
 // Unity 측 MainRecordingSettingsCommandEnvelope의 캐릭터 액션 상수와 동일하게 유지한다.
 export const CHARACTER_COMMAND_ACTIONS = Object.freeze([
@@ -129,23 +134,41 @@ export async function queueImportFbxCommand({
 }
 
 export async function queueMotionCommand({
-  settingsPath = resolveSettingsFilePath(), action,
+  settingsPath = resolveSettingsFilePath(), action, frameIndex,
   now = () => new Date(), createCommandId = createDefaultCommandId
 } = {}) {
   if (!MOTION_COMMAND_ACTIONS.includes(action)) {
     throw new Error("지원하지 않는 모션 명령입니다.");
   }
+  const isSeek = action === SEEK_FRAME_ACTION;
+  if (isSeek && !(Number.isInteger(frameIndex) && frameIndex >= 0 && frameIndex <= MAX_UNITY_INT)) {
+    throw new Error("이동할 프레임은 0 이상의 정수여야 합니다.");
+  }
   const document = normalizeDocument(await loadSettingsDocument(settingsPath));
   const runtimeState = await readRuntimeState({ settingsPath, now });
-  if (runtimeState.playMode !== PLAY_MODE_PLAYING || runtimeState.isRecording === true) {
-    throw new Error("녹화 중이 아닌 Unity Play 상태에서만 모션을 제어할 수 있습니다.");
+  if (runtimeState.playMode !== PLAY_MODE_PLAYING) {
+    throw new Error("Unity Play 상태에서만 모션을 제어할 수 있습니다.");
+  }
+  // 녹화 중지는 녹화 중에만, 나머지 모션 명령은 녹화 중이 아닐 때만 받는다.
+  const isRecording = runtimeState.isRecording === true;
+  const isStopRecording = action === STOP_RECORDING_ACTION;
+  if (isRecording && !isStopRecording) {
+    throw new Error("녹화 중에는 모션을 제어할 수 없습니다.");
+  }
+  if (!isRecording && isStopRecording) {
+    throw new Error("녹화 중이 아니어서 중지할 녹화가 없습니다.");
+  }
+  // 마지막 프레임을 넘는 값이 조용히 마지막 프레임으로 바뀌어 성공으로 보이지 않게 거절한다.
+  if (isSeek && Number.isInteger(runtimeState.lastFrameIndex) && frameIndex > runtimeState.lastFrameIndex) {
+    throw new Error(`이동할 프레임은 ${runtimeState.lastFrameIndex + 1}프레임 이하여야 합니다.`);
   }
   rejectIfCommandPending(document);
   const commandId = createCommandId();
   const timestamp = now().toISOString();
   document.updatedAtUtc = timestamp;
   document.pendingCommand = {
-    ...createEmptyCommandEnvelope(), commandId, action, requestedAtUtc: timestamp
+    ...createEmptyCommandEnvelope(), commandId, action, requestedAtUtc: timestamp,
+    paramsJson: isSeek ? JSON.stringify({ frameIndex }) : ""
   };
   await saveSettingsDocument(settingsPath, document);
   return { accepted: true, commandId, action, settingsPath };

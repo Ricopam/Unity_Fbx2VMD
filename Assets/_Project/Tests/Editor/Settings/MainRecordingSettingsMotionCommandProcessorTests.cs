@@ -25,6 +25,8 @@ namespace Tests.Editor.Settings
         [TestCase("StopImportedMotion")]
         [TestCase("EnableNativeSkinningCorrection")]
         [TestCase("DisableNativeSkinningCorrection")]
+        [TestCase("StartMotionRecording")]
+        [TestCase("SeekMotionFrame")]
         public void AcceptedCommand_RepeatedEnvelope_ExecutesOnce(string action)
         {
             var document = CreateDocument(action);
@@ -43,7 +45,9 @@ namespace Tests.Editor.Settings
         [TestCase("StopImportedMotion")]
         [TestCase("EnableNativeSkinningCorrection")]
         [TestCase("DisableNativeSkinningCorrection")]
-        public void Recording_RejectsEveryMotionCommand(string action)
+        [TestCase("StartMotionRecording")]
+        [TestCase("SeekMotionFrame")]
+        public void Recording_RejectsEveryMotionCommandExceptStop(string action)
         {
             var document = CreateDocument(action);
             int calls = 0;
@@ -51,6 +55,28 @@ namespace Tests.Editor.Settings
             Assert.That(calls, Is.Zero);
             Assert.That(document.lastCommandResult.state, Is.EqualTo("error"));
             Assert.That(document.pendingCommand.IsPending(), Is.False);
+        }
+
+        // 녹화 중지는 녹화 중에만 의미가 있으므로 다른 모션 명령과 잠금 규칙이 반대임.
+        [Test]
+        public void Recording_AcceptsStopRecording()
+        {
+            var document = CreateDocument("StopMotionRecording");
+            int calls = 0;
+            Process(document, received => { Assert.That(received, Is.EqualTo("StopMotionRecording")); calls++; return true; }, isRecording: true);
+            Assert.That(calls, Is.EqualTo(1));
+            Assert.That(document.lastCommandResult.state, Is.EqualTo("success"));
+        }
+
+        [Test]
+        public void NotRecording_RejectsStopRecording()
+        {
+            var document = CreateDocument("StopMotionRecording");
+            int calls = 0;
+            Process(document, _ => { calls++; return true; });
+            Assert.That(calls, Is.Zero);
+            Assert.That(document.lastCommandResult.state, Is.EqualTo("error"));
+            Assert.That(document.lastCommandResult.message, Does.Contain("녹화 중이 아니"));
         }
 
         [Test]

@@ -20,6 +20,8 @@ public sealed partial class RecordingSetting
         (fileManager, path) => fileManager.TryStartFbxImportFromSharedSettings(path);
     private Func<FBXVmdPipeline, string, bool> sharedSettingsFbxImportStarter =
         DefaultSharedSettingsFbxImportStarter;
+    private readonly RecordingFileFinalizationTracker recordingFileTracker =
+        new RecordingFileFinalizationTracker();
 
     public MainRecordingSettingsActionResult LoadSharedSettings()
     {
@@ -97,6 +99,7 @@ public sealed partial class RecordingSetting
                 state.hasTargetCharacter = target != null;
                 state.targetCharacterName = target != null ? target.name : string.Empty;
                 state.isImportingFbx = pipeline.IsProcessing;
+                WriteTimelineAndRecordingState(state, pipeline);
             }
             sharedSettingsFileSession.WriteMotionState(state);
         }
@@ -104,6 +107,53 @@ public sealed partial class RecordingSetting
         {
             Debug.LogWarning($"[RecordingSetting] 모션 상태 기록 실패: {exception.Message}");
         }
+    }
+
+    private void WriteTimelineAndRecordingState(MainRecordingSettingsState state, FBXVmdPipeline pipeline)
+    {
+        state.currentFrameIndex = pipeline.ImportedMotionCurrentFrameIndex;
+        state.lastFrameIndex = pipeline.ImportedMotionLastFrameIndex;
+        state.motionFrameRate = pipeline.ImportedMotionFrameRate;
+        state.motionClipLengthSeconds = pipeline.ImportedMotionClipLengthSeconds;
+        state.motionClipName = pipeline.ImportedMotionClipName;
+        state.sessionProgress = pipeline.SessionProgress;
+        state.sessionMessage = pipeline.SessionStatusMessage;
+        state.recordingProgress = pipeline.ImportedMotionRecordingProgress;
+        recordingFileTracker.Observe(
+            pipeline.IsImportedMotionRecording,
+            pipeline.ImportedMotionRecordingOutputPath,
+            ReadFileSizeOrMissing);
+        state.recordingOutputPath = recordingFileTracker.OutputPath;
+        state.isRecordingFileFinalized = recordingFileTracker.IsFinalized;
+        state.isRecordingFileFailed = recordingFileTracker.HasFailed;
+    }
+
+    // 파일 정보 읽기 실패가 상태 게시 전체를 막지 않도록 '없음'으로 처리함.
+    private static long ReadFileSizeOrMissing(string path)
+    {
+        try
+        {
+            return File.Exists(path) ? new FileInfo(path).Length : -1;
+        }
+        catch (IOException)
+        {
+            return -1;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return -1;
+        }
+    }
+
+    private bool TryStartMotionRecording(FBXVmdPipeline pipeline)
+    {
+        if (!pipeline.TryStartImportedMotionRecording())
+        {
+            return false;
+        }
+
+        recordingFileTracker.BeginNewRecording();
+        return true;
     }
 
     private MainRecordingSettingsActionResult WriteRuntimePlayModeState(string playMode)
@@ -165,6 +215,12 @@ public sealed partial class RecordingSetting
                 MainRecordingSettingsCommandEnvelope.StopImportedMotionAction => resolvedFBXVmdPipeline.TryStopImportedMotion(),
                 MainRecordingSettingsCommandEnvelope.EnableNativeSkinningCorrectionAction => resolvedFBXVmdPipeline.TrySetNativeSkinningCorrectionEnabled(true),
                 MainRecordingSettingsCommandEnvelope.DisableNativeSkinningCorrectionAction => resolvedFBXVmdPipeline.TrySetNativeSkinningCorrectionEnabled(false),
+                MainRecordingSettingsCommandEnvelope.StartMotionRecordingAction => TryStartMotionRecording(resolvedFBXVmdPipeline),
+                MainRecordingSettingsCommandEnvelope.StopMotionRecordingAction => resolvedFBXVmdPipeline.TryStopImportedMotionRecording(),
+                // 처리기는 실행 뒤에 명령을 비우므로 실행 시점의 paramsJson은 아직 남아 있음.
+                MainRecordingSettingsCommandEnvelope.SeekMotionFrameAction =>
+                    MainRecordingSettingsSeekParams.TryReadFrameIndex(document.pendingCommand?.paramsJson, out int frameIndex) &&
+                    resolvedFBXVmdPipeline.TrySeekImportedMotionFrame(frameIndex),
                 _ => false,
             };
         return sharedSettingsMotionCommandProcessor.TryProcess(

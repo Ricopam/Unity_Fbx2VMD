@@ -99,6 +99,7 @@ namespace Fbx2Vmd.FBXImporter
                 || state == FBXSessionState.Failed
                 || state == FBXSessionState.Cancelled);
             LastSessionMessage = message ?? string.Empty;
+            SessionProgress = Mathf.Clamp01(progress);
             if (shouldLog)
             {
                 Debug.Log($"[FBXImport] 상태 변경됨. 상태={state}, 메시지={message}");

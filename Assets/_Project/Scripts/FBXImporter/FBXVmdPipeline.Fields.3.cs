@@ -321,6 +321,13 @@ namespace Fbx2Vmd.FBXImporter
         internal FBXConversionCoordinator ConversionCoordinator => _conversionCoordinator;
         internal FBXSessionState SessionState => _sessionState;
         internal string LastSessionMessage { get; private set; } = string.Empty;
+        // 설정창 상태 게시용: 마지막 세션 진행률(0~1)과 안내 문구.
+        public float SessionProgress { get; private set; }
+        public string SessionStatusMessage => LastSessionMessage;
+        public float ImportedMotionRecordingProgress =>
+            _humanoidMotionRecordingController?.NormalizedRecordingProgress ?? 0f;
+        public string ImportedMotionRecordingOutputPath =>
+            _humanoidMotionRecordingController?.OutputFilePath ?? string.Empty;
         public bool HasPreparedImportedMotion =>
             _humanoidMotionPlaybackController?.IsPrepared ?? false;
         public bool IsImportedMotionPlaying =>

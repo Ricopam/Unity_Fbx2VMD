@@ -11,6 +11,10 @@ namespace Fbx2Vmd.Settings
         public const string StopImportedMotionAction = "StopImportedMotion";
         public const string EnableNativeSkinningCorrectionAction = "EnableNativeSkinningCorrection";
         public const string DisableNativeSkinningCorrectionAction = "DisableNativeSkinningCorrection";
+        public const string StartMotionRecordingAction = "StartMotionRecording";
+        public const string StopMotionRecordingAction = "StopMotionRecording";
+        // paramsJson {"frameIndex": n}(0 기반)로 이동할 프레임을 전달함.
+        public const string SeekMotionFrameAction = "SeekMotionFrame";
         public const string LoadCharacterAction = "LoadCharacter";
         public const string ApplyPresetAction = "ApplyPreset";
         public const string SavePresetAction = "SavePreset";

@@ -56,11 +56,12 @@ export function createRuntimeStateRequest({ apiBaseUrl = DEFAULT_API_BASE_URL } 
   };
 }
 
-export async function postMotionCommand({ apiBaseUrl = DEFAULT_API_BASE_URL, action, fetchImpl = globalThis.fetch }) {
+// frameIndex는 SeekMotionFrame에서만 쓰는 0 기반 프레임 번호다.
+export async function postMotionCommand({ apiBaseUrl = DEFAULT_API_BASE_URL, action, frameIndex, fetchImpl = globalThis.fetch }) {
   const response = await fetchImpl(`${normalizeBaseUrl(apiBaseUrl)}/motion-command`, withBridgeToken({
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action })
+    body: JSON.stringify(frameIndex === undefined ? { action } : { action, frameIndex })
   }));
   if (!response.ok) {
     throw new Error(`모션 요청 실패 (${response.status}): ${await response.text()}`);

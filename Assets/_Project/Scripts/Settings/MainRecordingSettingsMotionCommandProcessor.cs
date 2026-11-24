@@ -48,7 +48,10 @@ namespace Fbx2Vmd.Settings
                    action == MainRecordingSettingsCommandEnvelope.PauseImportedMotionAction ||
                    action == MainRecordingSettingsCommandEnvelope.StopImportedMotionAction ||
                    action == MainRecordingSettingsCommandEnvelope.EnableNativeSkinningCorrectionAction ||
-                   action == MainRecordingSettingsCommandEnvelope.DisableNativeSkinningCorrectionAction;
+                   action == MainRecordingSettingsCommandEnvelope.DisableNativeSkinningCorrectionAction ||
+                   action == MainRecordingSettingsCommandEnvelope.StartMotionRecordingAction ||
+                   action == MainRecordingSettingsCommandEnvelope.StopMotionRecordingAction ||
+                   action == MainRecordingSettingsCommandEnvelope.SeekMotionFrameAction;
         }
 
         private static MainRecordingSettingsCommandResult Execute(
@@ -62,9 +65,16 @@ namespace Fbx2Vmd.Settings
                 return Fail(command, "초기 설정의 이전 모션 명령을 취소했습니다. 다시 요청해 주세요.");
             }
 
-            if (isRecording)
+            // 녹화 중지는 녹화 중에만, 나머지 모션 명령은 녹화 중이 아닐 때만 받음.
+            bool isStopRecording = command.action == MainRecordingSettingsCommandEnvelope.StopMotionRecordingAction;
+            if (isRecording && !isStopRecording)
             {
                 return Fail(command, "녹화 중에는 모션 재생 상태를 변경할 수 없습니다.");
+            }
+
+            if (!isRecording && isStopRecording)
+            {
+                return Fail(command, "녹화 중이 아니어서 중지할 녹화가 없습니다.");
             }
 
             if (tryExecute == null)
