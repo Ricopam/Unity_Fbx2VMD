@@ -19,8 +19,15 @@ public sealed partial class RecordingSetting : MonoBehaviour
         PullDiagnosticsFromFBXVmdPipeline();
     }
 
-    private static void HandlePlaybackControlsEnsureRequested(FBXVmdPipeline pipeline)
-        => HumanoidMotionPlaybackControlsView.Ensure(pipeline);
+    private void HandlePlaybackControlsEnsureRequested(FBXVmdPipeline pipeline)
+    {
+        if (!showGameViewMotionControls)
+        {
+            return;
+        }
+
+        HumanoidMotionPlaybackControlsView.Ensure(pipeline);
+    }
 
     private void Awake()
     {

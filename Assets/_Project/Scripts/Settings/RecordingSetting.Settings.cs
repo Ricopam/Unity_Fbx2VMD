@@ -61,6 +61,11 @@ public sealed partial class RecordingSetting
     [Tooltip("빌드 실행 또는 Play Mode 시작 시 설정 팝업을 자동으로 한 번 엽니다.")]
     [SerializeField] private bool openSettingsPopupOnStart = true;
 
+    // Main 씬은 모든 조작을 설정창으로 옮겨 끔(PRD 수용 기준 1). Main_Recoding 전환 경로는 기존 동작 유지.
+    [InspectorName("Game view 재생 컨트롤 표시")]
+    [Tooltip("켜면 Play 중 FBX 버튼을 본떠 재생·정지·녹화 버튼과 타임라인을 Game view에 만듭니다.")]
+    [SerializeField] private bool showGameViewMotionControls = true;
+
     [Header("공유 설정 파일")]
     [InspectorName("시작 시 공유 설정 로드")]
     [Tooltip("Play 시작 시 companion/Editor mirror가 저장한 공유 설정 파일을 읽습니다.")]
