@@ -153,6 +153,13 @@ export function bootstrapWorkflowPanel(root, { sendMotionCommand, openPath, onFe
       meter.textContent = importView.text;
     }
     syncImportTicker(importView.visible);
+    // 단계 목록 요약은 잘리므로 실패 이유는 모션 화면 본문에 전부 보임.
+    const motionError = $("#wfMotionError");
+    if (motionError) {
+      const hasFailure = state.hasPreparedMotion !== true && !!state.motionError && !importView.visible;
+      motionError.hidden = !hasFailure;
+      setText(motionError, hasFailure ? `가져오기에 실패했어요. ${state.motionError} 다른 FBX 파일을 골라 다시 시도해 주세요.` : "");
+    }
     const facts = $("#wfMotionFacts");
     const playback = resolvePlaybackView(state);
     if (facts) facts.hidden = state.hasPreparedMotion !== true;
