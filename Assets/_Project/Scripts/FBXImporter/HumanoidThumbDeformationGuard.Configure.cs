@@ -77,6 +77,7 @@ namespace Fbx2Vmd.FBXImporter
         {
             targetAnimator = animator;
             linkedPoseSpaceRetargeter = poseSpaceRetargeter;
+            _hasSearchedMissingRetargeter = false;
             proximalMaxLocalAngle = Mathf.Clamp(
                 suppressPoseShapingWithManualReference
                     ? Mathf.Max(proximalLimit, ManualThumbReferenceMinProximalMaxLocalAngle)

@@ -6,6 +6,8 @@ namespace Fbx2Vmd.FBXImporter
     {
         [SerializeField] private Animator targetAnimator;
         [SerializeField] private PoseSpaceRetargeter linkedPoseSpaceRetargeter;
+        // 연결된 리타게터가 없음을 이미 확인했는지. 재설정 때 초기화함(직렬화하지 않음).
+        private bool _hasSearchedMissingRetargeter;
         [SerializeField, Range(0f, 90f)] private float proximalMaxLocalAngle = 28f;
         [SerializeField, Range(0f, 120f)] private float intermediateMaxLocalAngle = 55f;
         [SerializeField, Range(0f, 120f)] private float distalMaxLocalAngle = 55f;

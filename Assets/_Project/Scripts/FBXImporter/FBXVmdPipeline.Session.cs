@@ -238,6 +238,15 @@ namespace Fbx2Vmd.FBXImporter
             _pendingNativeSkinningPlaybackRequest =
                 NativeSkinningPendingPlaybackRequest.None;
             _nativeSkinningCorrectionSetupError = string.Empty;
+            // 엄지 보정 가드는 예전 리타게터 경로에서만 붙어 재생 경로에서는 엄지 첫 마디가 한도를 넘었음.
+            // 가드는 붙는 순간의 자세를 기준으로 삼으므로, 재생 컨트롤러가 0프레임 자세를 입히기 전에
+            // 대기 자세로 되돌린 뒤 붙임. 실행은 재생 자세 적용 뒤·표면 보정 표시(32000) 전.
+            RestoreIdlePoseBeforeRetargetBaselines();
+            HumanoidThumbDeformationGuardApplier.Apply(
+                targetAnimator != null ? targetAnimator.gameObject : null,
+                targetAnimator,
+                null,
+                CreateThumbDeformationGuardOptions());
             InitializePlaybackController(
                 targetAnimator,
                 clip,

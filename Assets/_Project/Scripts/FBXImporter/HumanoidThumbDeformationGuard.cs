@@ -174,6 +174,12 @@ namespace Fbx2Vmd.FBXImporter
                 return linkedPoseSpaceRetargeter;
             }
 
+            // FBX 재생 경로에는 리타게터가 없어 매번 씬 전체를 찾게 되므로, 한 번 찾고 없으면 다음 설정까지 기억함.
+            if (linkedPoseSpaceRetargeter == null && _hasSearchedMissingRetargeter)
+            {
+                return null;
+            }
+
             if (targetAnimator != null)
             {
                 PoseSpaceRetargeter[] retargeters = FindObjectsByType<PoseSpaceRetargeter>(FindObjectsSortMode.InstanceID);
@@ -192,6 +198,7 @@ namespace Fbx2Vmd.FBXImporter
                 linkedPoseSpaceRetargeter = GetComponent<PoseSpaceRetargeter>();
             }
 
+            _hasSearchedMissingRetargeter = linkedPoseSpaceRetargeter == null;
             return linkedPoseSpaceRetargeter;
         }
 
