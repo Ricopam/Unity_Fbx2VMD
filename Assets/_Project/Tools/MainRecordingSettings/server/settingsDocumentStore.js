@@ -76,11 +76,31 @@ export function createDefaultSettingsDocument() {
   };
 }
 
+// Unity가 1초마다 상태 파일을 교체(File.Replace)하는 순간에는 열기가 잠깐 실패하거나 쓰는 중인 내용을 읽을 수 있다.
+const TRANSIENT_READ_CODES = new Set(["EBUSY", "EPERM", "EACCES"]);
+const RUNTIME_STATE_READ_ATTEMPTS = 5;
+
+async function readRuntimeStateText(filePath, readFileImpl, retryDelayMs) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      const text = await readFileImpl(filePath, "utf8");
+      JSON.parse(text);
+      return text;
+    } catch (error) {
+      const isTransient = TRANSIENT_READ_CODES.has(error.code) || error instanceof SyntaxError;
+      if (!isTransient || attempt >= RUNTIME_STATE_READ_ATTEMPTS) throw error;
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+}
+
 export async function readRuntimeState({
-  settingsPath = resolveSettingsFilePath(), now = () => new Date()
+  settingsPath = resolveSettingsFilePath(), now = () => new Date(),
+  readFileImpl = fs.readFile, retryDelayMs = 30
 } = {}) {
   try {
-    const state = normalizeRuntimeState(JSON.parse(await fs.readFile(`${settingsPath}.runtime-state.json`, "utf8")));
+    const text = await readRuntimeStateText(`${settingsPath}.runtime-state.json`, readFileImpl, retryDelayMs);
+    const state = normalizeRuntimeState(JSON.parse(text));
     const ageMs = now().getTime() - Date.parse(state.updatedAtUtc);
     if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > 10000) {
       return { ...createDefaultRuntimeState(), settingsPath };

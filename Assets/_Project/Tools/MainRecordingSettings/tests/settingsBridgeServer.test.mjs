@@ -472,3 +472,19 @@ test("settings bridge rejects a second character command while one is pending", 
     await bridge.close();
   }
 });
+
+// 재현(S6 전체 녹화 실기): 요청 처리 중 예외가 나도 브리지 프로세스가 죽지 않고 다음 요청을 처리해야 한다.
+test("요청 처리 예외는 500 응답으로 바꾸고 서버는 계속 동작한다", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "bridge-error-"));
+  const settingsPath = path.join(root, "settings.json");
+  // 상태 파일 자리에 폴더를 두어 읽기가 EISDIR로 실패하게 한다.
+  await fs.mkdir(`${settingsPath}.runtime-state.json`);
+  const bridge = createSettingsBridgeServer({ settingsPath, port: 0 });
+  await bridge.listen();
+  t.after(async () => { await bridge.close(); await fs.rm(root, { recursive: true, force: true }); });
+  const failed = await fetch(`${bridge.baseUrl}/state`);
+  assert.equal(failed.status, 500);
+  assert.match((await failed.json()).error, /상태를 읽지 못했습니다/);
+  const health = await fetch(`${bridge.baseUrl}/health`);
+  assert.equal(health.status, 200);
+});

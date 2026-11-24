@@ -291,3 +291,30 @@ test("queueImportFbxCommand rejects while a command is pending", async () => {
     /대기 중/
   );
 });
+
+// 재현(S6 전체 녹화 실기): Unity가 1초마다 상태 파일을 교체하는 순간 열기가 EBUSY로 실패해 브리지가 종료됐다.
+test("실행 상태 읽기는 잠깐 잠긴 파일(EBUSY)·쓰는 중인 내용을 다시 읽는다", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "runtime-busy-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const settingsPath = path.join(root, "settings.json");
+  const now = () => new Date("2026-11-24T12:00:01Z");
+  const body = JSON.stringify({ playMode: "playing", updatedAtUtc: "2026-11-24T12:00:00Z", currentFrameIndex: 42 });
+  const failures = [Object.assign(new Error("busy"), { code: "EBUSY" }), null];
+  let calls = 0;
+  const readFileImpl = async () => {
+    calls += 1;
+    if (calls === 1) throw failures[0];
+    if (calls === 2) return body.slice(0, 10);
+    return body;
+  };
+  const state = await readRuntimeState({ settingsPath, now, readFileImpl, retryDelayMs: 0 });
+  assert.equal(state.currentFrameIndex, 42);
+  assert.equal(calls, 3);
+});
+
+test("실행 상태 읽기는 계속 잠겨 있으면 오류를 올린다(서버가 응답으로 변환)", async () => {
+  const busy = Object.assign(new Error("busy"), { code: "EBUSY" });
+  await assert.rejects(
+    readRuntimeState({ settingsPath: "C:/nowhere/settings.json", readFileImpl: async () => { throw busy; }, retryDelayMs: 0 }),
+    /busy/);
+});

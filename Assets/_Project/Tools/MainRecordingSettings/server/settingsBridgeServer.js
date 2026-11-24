@@ -39,17 +39,26 @@ export function createSettingsBridgeServer({
     return run;
   };
   const server = http.createServer(async (request, response) => {
-    await handleHttpRequest({
-      request,
-      response,
-      settingsPath,
-      libraryPath,
-      now,
-      createCommandId,
-      broadcast,
-      token,
-      withCommandQueueLock
-    });
+    // 요청 하나의 예외가 처리되지 않은 거부로 번져 브리지(설정창 메인 프로세스)가 종료되지 않게 막는다.
+    try {
+      await handleHttpRequest({
+        request,
+        response,
+        settingsPath,
+        libraryPath,
+        now,
+        createCommandId,
+        broadcast,
+        token,
+        withCommandQueueLock
+      });
+    } catch (error) {
+      if (response.headersSent) {
+        response.end();
+        return;
+      }
+      sendJsonResponse(response, 500, { error: `Unity 상태를 읽지 못했습니다: ${error.message}` });
+    }
   });
   const webSocketServer = new WebSocketServer({ noServer: true });
 
