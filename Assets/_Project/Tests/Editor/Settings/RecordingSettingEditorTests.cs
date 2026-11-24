@@ -1875,7 +1875,8 @@ namespace Tests.Editor.Settings
             Assert.That(index, Does.Contain("class=\"rail\""));
             Assert.That(index, Does.Contain("class=\"sidebar\""));
             Assert.That(index, Does.Contain("id=\"statusBadge\""));
-            Assert.That(index, Does.Contain("FBX 파일 임포트"));
+            // 홈은 다섯 단계 작업 화면이며 FBX 가져오기는 모션 단계 화면에 있음.
+            Assert.That(index, Does.Contain("data-wf-panel=\"motion\""));
             Assert.That(index, Does.Contain("FBX 가져오기"));
             Assert.That(styles, Does.Contain("--reference-width: 1265px"));
             Assert.That(styles, Does.Contain("--reference-height: 675px"));
