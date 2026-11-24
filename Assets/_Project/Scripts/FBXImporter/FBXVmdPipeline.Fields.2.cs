@@ -309,6 +309,11 @@ namespace Fbx2Vmd.FBXImporter
         [SerializeField] private MotionVideoFrameRate _motionVideoFrameRate= MotionVideoFrameRate.Fps30;
         public MotionVideoFrameRate motionVideoFrameRate { get => _motionVideoFrameRate; private set => _motionVideoFrameRate = value; }
 
+        // Game 창이 작으면 영상도 작게 저장되어 참고 자료가 흐려지므로 고정 해상도를 기본으로 함.
+        [Tooltip("녹화 영상의 해상도입니다. Game 창 크기와 관계없이 이 크기로 카메라를 렌더링해 저장합니다.")]
+        [SerializeField] private MotionVideoResolution _motionVideoResolution= MotionVideoResolution.FullHd;
+        public MotionVideoResolution motionVideoResolution { get => _motionVideoResolution; private set => _motionVideoResolution = value; }
+
         [Tooltip("MOV/WebM(배경 투명) 녹화 중에만 숨길 오브젝트입니다. 캐릭터만 남기려면 바닥 Plane 등을 지정합니다.")]
         [SerializeField] private GameObject[] _alphaRecordingHiddenObjects= null;
         public GameObject[] alphaRecordingHiddenObjects { get => _alphaRecordingHiddenObjects; private set => _alphaRecordingHiddenObjects = value; }

@@ -46,7 +46,7 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
-            // GameView 현재 크기로 기록해 녹화 중 화면 해상도가 바뀌지 않게 함.
+            // 카메라 입력으로 지정 해상도를 렌더링하므로 녹화 중 Game 창 크기는 바뀌지 않음.
             var settings = CreateMotionVideoRecordingSettings(
                 rangeStartSeconds,
                 rangeEndSeconds);
@@ -279,10 +279,11 @@ namespace Fbx2Vmd.FBXImporter
             float rangeStartSeconds,
             float rangeEndSeconds)
         {
+            Vector2Int size = _motionVideoResolution.ToPixelSize(Screen.width, Screen.height);
             return new MotionVideoRecordingSettings(
                 _preparedMotionName,
-                Screen.width,
-                Screen.height,
+                size.x,
+                size.y,
                 (float)_motionVideoFrameRate,
                 outputDirectory: _motionVideoOutputFolder,
                 format: _motionVideoFormat,

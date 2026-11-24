@@ -831,6 +831,7 @@ namespace Fbx2Vmd.FBXImporter
             EditorDrawUtility.DrawProperty(serializedObject, "_motionVideoFormat", "영상 파일 형식", showWarningOnNull: true);
             EditorDrawUtility.DrawProperty(serializedObject, "_alphaRecordingHiddenObjects", "MOV/WebM 녹화 시 숨길 오브젝트", showWarningOnNull: false);
             EditorDrawUtility.DrawProperty(serializedObject, "_motionVideoFrameRate", "영상 FPS", showWarningOnNull: true);
+            EditorDrawUtility.DrawProperty(serializedObject, "_motionVideoResolution", "영상 해상도", showWarningOnNull: true);
             EditorGUILayout.HelpBox(
                 "영상 FPS가 높을수록 녹화 중 재생이 느려 보입니다. 프레임마다 정확한 시각을 기록하는 모드라 출력 영상의 길이와 속도는 그대로입니다.",
                 MessageType.None);
