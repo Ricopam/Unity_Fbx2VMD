@@ -502,3 +502,7 @@ __pycache__/
 /Assets/_Project/Scene/Main_Recoding.meta
 /Assets/_Project/Scene/Sub_Manual/
 /Assets/_Project/Scene/Sub_Manual.meta
+
+# 테스트 중단 시 남는 회귀 픽스처 임시 폴더
+/Assets/HistoricalHumanoidRegression_*
+/Assets/HistoricalHumanoidRegression_*.meta
