@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using Fbx2Vmd.FBXImporter;
@@ -93,8 +94,6 @@ namespace Tests.Editor.Settings
                 "Assets/_Project/Scripts/FBXImporter/RecordingDiagnosticsSettings.cs";
             const string recordingSettingSourcePath =
                 "Assets/_Project/Scripts/Settings/RecordingSetting.cs";
-            const string pipelineSourcePath =
-                "Assets/_Project/Scripts/FBXImporter/FBXVmdPipeline.cs";
             const string diagnosticsSettingsTypeName =
                 "Fbx2Vmd.FBXImporter.RecordingDiagnosticsSettings, Fbx2Vmd.FBXImporter";
 
@@ -103,7 +102,10 @@ namespace Tests.Editor.Settings
 
             string diagnosticsSettingsSource = File.ReadAllText(diagnosticsSettingsSourcePath);
             string recordingSettingSource = ReadRecordingSettingSources();
-            string pipelineSource = File.ReadAllText(pipelineSourcePath);
+            // FBXVmdPipeline은 partial 파일로 나뉘어 있으므로 전체를 합쳐 검사함.
+            string pipelineSource = string.Concat(
+                Directory.GetFiles("Assets/_Project/Scripts/FBXImporter", "FBXVmdPipeline*.cs")
+                    .Select(File.ReadAllText));
 
             Assert.That(diagnosticsSettingsSource, Does.Contain("public readonly struct RecordingDiagnosticsSettings"));
             Assert.That(diagnosticsSettingsSource, Does.Not.Contain("MonoBehaviour"));

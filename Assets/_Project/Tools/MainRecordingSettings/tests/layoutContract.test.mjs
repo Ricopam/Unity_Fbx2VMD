@@ -181,7 +181,8 @@ test("library, lipsync, and audio I/O panels declare the Stitch sections and con
   for (const id of ["libPipeline", "libList", "libPresetEditor", "libSceneRestore", "libCmdResult"]) {
     assert.match(libraryPanel[0], new RegExp(`id="${id}"`));
   }
-  assert.match(libraryPanel[0], /VRM 파일 추가/);
+  // PMX·VRM·FBX 캐릭터를 모두 받으므로 형식 중립 문구를 씀.
+  assert.match(libraryPanel[0], /캐릭터 파일 추가/);
   assert.match(libraryPanel[0], /라이브러리 폴더 열기/);
   assert.match(libraryPanel[0], /등록된 캐릭터 목록/);
   // 캐릭터 행은 characterPanel.js가 레지스트리 스냅샷으로 동적 렌더링한다.
