@@ -16,6 +16,8 @@ namespace Fbx2Vmd.ClothPhysics
         [SerializeField] private Transform[] roots = System.Array.Empty<Transform>();
         [SerializeField] private VRMSpringBoneColliderGroup[] colliderGroups = System.Array.Empty<VRMSpringBoneColliderGroup>();
         [SerializeField] private float unit = 1f;
+        // 부위마다 흔들림 세기가 다름. 이 값이 생기기 전에 저장된 생성물은 Unknown(긴 머리 설정)으로 읽힘.
+        [SerializeField] private HairPart part = HairPart.Unknown;
 
         private readonly List<SpringHairChain> chains = new List<SpringHairChain>();
         private readonly List<(Vector3 center, float radius)> spheres = new List<(Vector3, float)>();
@@ -24,10 +26,14 @@ namespace Fbx2Vmd.ClothPhysics
 
         public IReadOnlyList<VRMSpringBoneColliderGroup> ColliderGroups => colliderGroups;
 
-        /// <summary>구동할 루트 본과 충돌 구 그룹을 지정함. 체인은 다음 계산 때 다시 만듦.</summary>
-        public void Configure(IEnumerable<Transform> rootBones, IEnumerable<VRMSpringBoneColliderGroup> groups)
+        public HairPart Part => part;
+
+        /// <summary>구동할 루트 본과 충돌 구 그룹, 부위를 지정함. 체인은 다음 계산 때 다시 만듦.</summary>
+        public void Configure(IEnumerable<Transform> rootBones, IEnumerable<VRMSpringBoneColliderGroup> groups,
+            HairPart hairPart)
         {
             RestorePose();
+            part = hairPart;
             roots = rootBones.Where(root => root != null).Distinct().ToArray();
             colliderGroups = groups.Where(group => group != null).ToArray();
             chains.Clear();
@@ -60,7 +66,7 @@ namespace Fbx2Vmd.ClothPhysics
                 BuildChains();
             ReadSpheres();
             // 머리카락은 고정 기본값을 씀. 캐릭터 설정의 프로파일은 장식물 클로스 조정용임.
-            var settings = new SpringHairSettings(unit);
+            var settings = new SpringHairSettings(unit, part);
             foreach (var chain in chains)
                 chain.Step(deltaTime, settings, spheres);
         }

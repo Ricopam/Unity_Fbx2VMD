@@ -33,7 +33,8 @@ namespace Fbx2Vmd.ClothPhysics
             var selected = SelectChains(chains).ToList();
             float unit = BodyUnit(torso);
             // 기본 자세 머리카락과 겹치지 않게 맞출 때 본 반경은 깊이 평균을 씀.
-            float hitRadius = new SpringHairSettings(unit).AverageCollisionRadius;
+            // 충돌 반경 곡선은 부위와 무관하게 같음.
+            float hitRadius = new SpringHairSettings(unit, HairPart.Unknown).AverageCollisionRadius;
             foreach (var part in selected.GroupBy(chain => chain.part))
             {
                 var product = new GameObject(ProductPrefix + part.Key);
@@ -46,7 +47,7 @@ namespace Fbx2Vmd.ClothPhysics
                 var groups = RestPoseColliderFit.BuildSpringGroups(
                     HairPartColliderMapper.Select(categories, body.byCategory),
                     RestPoseColliderFit.CollectRestSegments(roots), hitRadius, part.Key.ToString(), body.mirrorBones);
-                spring.Configure(roots, groups);
+                spring.Configure(roots, groups, part.Key);
                 spring.SetBodyUnit(unit);
                 product.SetActive(true);
                 rootCount += roots.Count;
