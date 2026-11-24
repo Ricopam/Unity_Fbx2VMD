@@ -2,6 +2,7 @@ using System.Linq;
 using System.Reflection;
 using Fbx2Vmd.FBXImporter;
 using NUnit.Framework;
+using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -33,6 +34,8 @@ namespace Tests.Editor.Settings
             {
                 Component[] components = scene.GetRootGameObjects()
                     .SelectMany(root => root.GetComponentsInChildren<Component>(true))
+                    // 스크립트가 빠진(Missing) 컴포넌트는 null로 와서 엉뚱한 예외를 내므로 제외함.
+                    .Where(component => component != null)
                     .ToArray();
                 string[] uiObjects = components
                     .Where(component => component is Canvas || component is Selectable ||
@@ -56,18 +59,20 @@ namespace Tests.Editor.Settings
             }
         }
 
-        // 다른 씬(Main_Recoding)의 FBX 버튼을 본떠 재생 컨트롤을 만드는 경로가 꺼져 있으면 컴포넌트를 붙이지 않음.
-        [Test]
-        public void ControlsDisabled_PipelineRequest_DoesNotBuildPlaybackControls()
+        // 켜짐(Main_Recoding 전환 경로)은 기존처럼 FBX 버튼을 본떠 컨트롤을 만들고, 꺼짐(Main)은 만들지 않음.
+        [TestCase(true, true)]
+        [TestCase(false, false)]
+        public void PipelineRequest_BuildsPlaybackControlsOnlyWhenEnabled(bool showControls, bool expectControls)
         {
             var settingObject = new GameObject("Setting");
             var pipelineObject = new GameObject("FBXVmdPipeline");
-            var buttonObject = new GameObject("FBX_Button", typeof(RectTransform), typeof(Button));
+            var canvasObject = new GameObject("UI_Canvas", typeof(RectTransform), typeof(Canvas));
             try
             {
+                CreateButtonTemplate(canvasObject.transform);
                 RecordingSetting setting = settingObject.AddComponent<RecordingSetting>();
                 var serialized = new SerializedObject(setting);
-                serialized.FindProperty(ShowControlsField).boolValue = false;
+                serialized.FindProperty(ShowControlsField).boolValue = showControls;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 FBXVmdPipeline pipeline = pipelineObject.AddComponent<FBXVmdPipeline>();
 
@@ -80,14 +85,23 @@ namespace Tests.Editor.Settings
                 Assert.That(
                     pipelineObject.GetComponents<MonoBehaviour>()
                         .Any(component => component.GetType().Name == "HumanoidMotionPlaybackControlsView"),
-                    Is.False);
+                    Is.EqualTo(expectControls));
             }
             finally
             {
-                Object.DestroyImmediate(buttonObject);
+                Object.DestroyImmediate(canvasObject);
                 Object.DestroyImmediate(pipelineObject);
                 Object.DestroyImmediate(settingObject);
             }
+        }
+
+        private static void CreateButtonTemplate(Transform parent)
+        {
+            var buttonObject = new GameObject("FBX_Button", typeof(RectTransform), typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(parent, false);
+            var labelObject = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            labelObject.transform.SetParent(buttonObject.transform, false);
+            labelObject.GetComponent<TextMeshProUGUI>().text = "FBX 임포트";
         }
     }
 }
