@@ -294,7 +294,7 @@ namespace Fbx2Vmd.CharacterLibrary
             SetState(LoadState.Activating);
             try
             {
-                CharacterLibrarySceneBinding.Commit( _pipeline, entry.id, result.Root, result.instance); } catch (System.Exception error)
+                CharacterLibrarySceneBinding.Commit( _pipeline, entry.id, result.Root, result.instance, entry.displayName); } catch (System.Exception error)
             {
                 // 커밋 중 오류가 나도 로드된 루트가 남지 않게 정리한다.
                 CharacterLoader.DestroyResult(result);

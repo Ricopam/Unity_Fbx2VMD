@@ -21,6 +21,32 @@ namespace Tests.Editor.CharacterLibrary
             "ExportedProject", "Assets", "StreamingAssets", "Characters",
             "HatsuneMikuNT.vrm"));
 
+        // 설정창은 대상 캐릭터의 오브젝트 이름을 현재 캐릭터로 보여 주므로 라이브러리 표시 이름을 붙임.
+        [TestCase("YYB Hatsune Miku_default_1.0ver", "YYB Hatsune Miku_default_1.0ver")]
+        [TestCase("", "Library Character")]
+        [TestCase(null, "Library Character")]
+        public void Given_DisplayName_When_Commit_Then_RootUsesLibraryName(string displayName, string expected)
+        {
+            var pipelineHost = new GameObject("Pipeline");
+            var libRoot = new GameObject("Loaded Root");
+            try
+            {
+                var pipeline = pipelineHost.AddComponent<FBXVmdPipeline>();
+                CharacterLibrarySceneBinding.Commit(pipeline, "entry-1", libRoot, displayName: displayName);
+                Assert.That(libRoot.name, Is.EqualTo(expected));
+                // 이전 루트 정리는 이름이 아니라 표식 컴포넌트로 찾으므로 이름이 바뀌어도 그대로 찾음.
+                Assert.That(CharacterLibrarySceneBinding.FindActiveLibraryRoot(pipeline), Is.SameAs(libRoot));
+            }
+            finally
+            {
+                Object.DestroyImmediate(pipelineHost);
+                if (libRoot != null)
+                {
+                    Object.DestroyImmediate(libRoot);
+                }
+            }
+        }
+
         [Test]
         public void Given_SceneCharacter_When_CommitAndRestore_Then_SwapsAndReturnsPrevious()
         {

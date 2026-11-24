@@ -14,6 +14,7 @@ namespace Fbx2Vmd.CharacterLibrary
     /// </summary>
     public static class CharacterLibrarySceneBinding
     {
+        private const string DefaultRootName = "Library Character";
         /// <summary>
         /// 커밋 완료 후 (스왑 전 씬 캐릭터, 새 루트)로 알림. 물리 설정처럼
         /// 이 어셈블리가 참조할 수 없는 기능이 새 캐릭터에 다시 붙을 수 있게 함.
@@ -27,7 +28,7 @@ namespace Fbx2Vmd.CharacterLibrary
         /// </summary>
         public static void Commit(
             FBXVmdPipeline pipeline, string entryId, GameObject newRoot,
-            RuntimeGltfInstance gltfInstance = null)
+            RuntimeGltfInstance gltfInstance = null, string displayName = null)
         {
             if (pipeline == null || newRoot == null)
             {
@@ -40,7 +41,7 @@ namespace Fbx2Vmd.CharacterLibrary
             bool previousDeactivated = ResolveCommitMarker(
                 newRoot, entryId, previousTarget, previousLibrary);
 
-            ApplyCommitSwap(pipeline, newRoot, previousTarget, previousDeactivated, gltfInstance);
+            ApplyCommitSwap(pipeline, newRoot, previousTarget, previousDeactivated, gltfInstance, displayName);
             CleanupLibraryLeftovers(pipeline, newRoot);
             NotifyCommitted(newRoot);
         }
@@ -92,11 +93,11 @@ namespace Fbx2Vmd.CharacterLibrary
 
         static void ApplyCommitSwap(
             FBXVmdPipeline pipeline, GameObject newRoot, GameObject previousTarget,
-            bool previousDeactivated, RuntimeGltfInstance gltfInstance)
+            bool previousDeactivated, RuntimeGltfInstance gltfInstance, string displayName)
         {
             try
             {
-                ApplySwapVisuals(pipeline, newRoot, gltfInstance);
+                ApplySwapVisuals(pipeline, newRoot, gltfInstance, displayName);
             }
             catch
             {
@@ -115,9 +116,11 @@ namespace Fbx2Vmd.CharacterLibrary
 
         // 배치·툰 룩·활성화·타겟 교체를 한 번에 적용함.
         private static void ApplySwapVisuals(
-            FBXVmdPipeline pipeline, GameObject newRoot, RuntimeGltfInstance gltfInstance)
+            FBXVmdPipeline pipeline, GameObject newRoot, RuntimeGltfInstance gltfInstance, string displayName)
         {
-            newRoot.name = "Library Character";
+            // 설정창이 대상 오브젝트 이름을 현재 캐릭터로 보여 주므로 라이브러리 표시 이름을 씀.
+            // 이전 루트 정리는 CharacterLibraryInstance 표식으로 찾아 이름과 무관함.
+            newRoot.name = string.IsNullOrWhiteSpace(displayName) ? DefaultRootName : displayName;
             newRoot.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             gltfInstance?.ShowMeshes();
 
