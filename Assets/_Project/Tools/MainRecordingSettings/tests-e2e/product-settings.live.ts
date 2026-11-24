@@ -50,7 +50,8 @@ test("실제 설정창 등록·FBX·재생 제어와 보정 실패 비교 경로
     evidence.loaded = await capture();
     assert.equal((evidence.loaded as { avatar_valid: boolean }).avatar_valid, true);
     assert.equal((evidence.loaded as { character_manager_active_id: string }).character_manager_active_id, library.entries[0].id);
-    await screen.getByRole("button", "온보딩").tap();
+    await screen.getByRole("button", "작업 단계").tap();
+    await screen.getByRole("button", /^모션\(FBX\)/).tap();
     await screen.getByRole("button", "FBX 파일 가져오기").tap();
     const deadline = Date.now() + 300000;
     let ready = false;
@@ -81,6 +82,8 @@ test("실제 설정창 등록·FBX·재생 제어와 보정 실패 비교 경로
       throw new Error("실제 모션 상태 대기 시간 초과");
     };
     let lastId = (await read(fixture.settingsPath)).lastCommandResult?.commandId ?? "";
+    // 재생 조작은 재생 단계 화면에 있다(단계 행 이름은 '재생 · 상태'로 시작).
+    await screen.getByRole("button", /^재생.+/).tap();
     await screen.getByRole("button", "재생", { exact: true }).tap();
     lastId = (await waitCommand("PlayImportedMotion", lastId)).commandId;
     const initialPlayback = await waitMotion(state => state.session_state === "Failed" || (state.is_playing_motion && state.motion_current_frame > 5), 1800000);

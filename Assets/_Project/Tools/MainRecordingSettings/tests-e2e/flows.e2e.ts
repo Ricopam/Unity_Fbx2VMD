@@ -18,21 +18,25 @@ test("레일·트리 탐색으로 립싱크 패널을 연다", async ({ app, scr
 
 test("FBX 가져오기 요청이 성공 피드백과 이벤트 로그를 남긴다", async ({ app, screen, browser }) => {
   await app.open();
+  await screen.getByRole("button", /^모션\(FBX\)/).tap();
   await screen.getByRole("button", "FBX 파일 가져오기").tap();
   await expect(browser.locator("#feedback")).toContainText("보냈습니다");
+  // 이벤트 로그는 접힌 영역이므로 펼친 뒤 확인한다.
+  await screen.getByText("이벤트 로그").tap();
   await expect(browser.locator("#eventLog")).toContainText("accepted");
 });
 
-// Unity 폴러가 없는 e2e 환경에서는 큐잉된 명령이 소비되지 않으므로
-// 두 번째 요청은 브리지의 중복 거절(400)이 피드백으로 표면화되어야 한다.
-test("대기 중인 명령이 있으면 두 번째 가져오기가 거절 피드백을 보인다", async ({ app, screen, browser }) => {
+// Unity 폴러가 없는 e2e 환경에서는 큐잉된 명령이 소비되지 않는다.
+// 가져오기 대기 중에는 버튼을 잠가 두 번째 요청 자체를 막는다(브리지 중복 거절은 단위 테스트가 검증).
+test("가져오기 응답을 기다리는 동안 두 번째 가져오기를 막는다", async ({ app, screen, browser }) => {
   await app.open();
+  await screen.getByRole("button", /^모션\(FBX\)/).tap();
   const importButton = screen.getByRole("button", "FBX 파일 가져오기");
   await importButton.tap();
   await expect(browser.locator("#feedback")).toContainText("보냈습니다");
 
-  await importButton.tap();
-  await expect(browser.locator("#feedback")).toContainText("HTTP 오류 400");
+  await expect(importButton).toBeDisabled();
+  await expect(importButton).toHaveText("가져오는 중...");
 });
 
 test("테마 토글이 메뉴에서 다크 테마를 끄고 켠다", async ({ app, screen }) => {

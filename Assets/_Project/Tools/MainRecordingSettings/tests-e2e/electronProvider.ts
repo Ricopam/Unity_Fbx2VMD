@@ -88,7 +88,10 @@ export function electronProvider({ unitySession }: { unitySession?: UnitySession
           }
         }
       } else {
-        fs.writeFileSync(settingsPath, JSON.stringify({ runtimeState: { playMode: "playing" } }));
+        // 캐릭터 없이는 모션 단계가 잠기므로(가져오기 거절) 캐릭터를 불러온 Play 상태로 시작한다.
+        fs.writeFileSync(settingsPath, JSON.stringify({
+          runtimeState: { playMode: "playing", hasTargetCharacter: true, targetCharacterName: "E2E Character" }
+        }));
         fs.writeFileSync(fbxPath, "e2e placeholder fbx\n", "utf8");
         fs.writeFileSync(libraryPath, JSON.stringify({ entries: [] }));
       }
