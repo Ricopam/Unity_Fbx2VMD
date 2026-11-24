@@ -18,6 +18,30 @@ function toFileUrl(filePath) {
   return filePath ? `file:///${String(filePath).replace(/\\/g, "/").replace(/^\/+/, "")}` : "";
 }
 
+// 불러오기 시간이 짧은 형식부터: FBX는 바로, VRM은 짧게, PMX는 변환에 수 분 걸림.
+const FORMAT_LOAD_ORDER = Object.freeze({ FBX: 0, VRM: 1, PMX: 2 });
+
+function modelName(character) {
+  return (character.displayName || character.id || "").trim();
+}
+
+// 사용자 결정(2026-11-24): 표시 이름이 같으면 같은 모델로 보고 한 항목으로 묶음(라이브러리 데이터는 그대로).
+// 대표는 지금 캐릭터가 묶음에 있으면 그것, 없으면 빨리 불러오는 형식. 묶음 순서는 처음 나온 순서를 유지함.
+function groupSameModel(characters, activeCharacterId) {
+  const groups = new Map();
+  for (const character of characters) {
+    const key = modelName(character) || character.id;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(character);
+  }
+  const loadRank = (character) => FORMAT_LOAD_ORDER[formatOf(character)] ?? Object.keys(FORMAT_LOAD_ORDER).length;
+  return [...groups.values()].map((members) => ({
+    members,
+    representative: members.find((member) => member.id === activeCharacterId)
+      ?? [...members].sort((left, right) => loadRank(left) - loadRank(right))[0]
+  }));
+}
+
 // 같은 이름의 캐릭터가 형식만 다르게 여러 번 등록될 수 있어 형식과 파일 이름을 함께 보여 줌.
 export function formatCharacterOption(character) {
   const extension = formatOf(character);
@@ -36,19 +60,21 @@ export function resolveCharacterSelectView({
   isLibraryUnavailable = false
 } = {}) {
   const loadable = (library.characters ?? []).filter((character) => character.status !== "missing");
-  const options = loadable.map((character) => ({
-    value: character.id,
-    label: formatCharacterOption({ ...character, isActive: character.id === library.activeCharacterId }),
-    isPmx: /\.pmx$/i.test(character.sourcePath || "")
+  const models = groupSameModel(loadable, library.activeCharacterId);
+  const options = models.map(({ representative }) => ({
+    value: representative.id,
+    label: formatCharacterOption({ ...representative, isActive: representative.id === library.activeCharacterId }),
+    isPmx: /\.pmx$/i.test(representative.sourcePath || "")
   }));
   const hasCharacter = runtimeState.hasTargetCharacter === true;
   // 활성 기록만으로는 지금 불러온 캐릭터라고 단정하지 않고 Unity에 캐릭터가 있을 때만 표시함.
-  const cards = loadable.map((character) => ({
-    value: character.id,
-    name: character.displayName || character.id,
-    format: formatOf(character),
-    thumbnailUrl: toFileUrl(character.thumbnailPath),
-    isCurrent: hasCharacter && character.id === library.activeCharacterId
+  const cards = models.map(({ representative, members }) => ({
+    value: representative.id,
+    name: modelName(representative),
+    format: formatOf(representative),
+    // 대표에 썸네일이 없으면 같은 모델의 다른 항목 썸네일을 빌려 씀.
+    thumbnailUrl: toFileUrl(representative.thumbnailPath || members.find((member) => member.thumbnailPath)?.thumbnailPath),
+    isCurrent: hasCharacter && representative.id === library.activeCharacterId
   }));
   const currentName = hasCharacter ? (runtimeState.targetCharacterName || "캐릭터") : "";
   const busy = isLoading || runtimeState.isImportingFbx === true || runtimeState.isRecording === true;

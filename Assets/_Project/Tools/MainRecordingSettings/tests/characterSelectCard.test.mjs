@@ -94,19 +94,43 @@ test("FBX 처리로 Unity가 멈춰 상태가 끊겨도 실패로 보지 않고 
   assert.equal(finished.feedback.tone, "success");
 });
 
-test("같은 이름 캐릭터는 파일 형식으로 구분하고 현재 캐릭터를 기본 선택한다", () => {
+// 사용자 결정(2026-11-24): 표시 이름이 같으면 같은 모델로 보고 카드 한 장으로 묶는다(라이브러리 데이터는 그대로).
+test("표시 이름이 같은 캐릭터는 카드 한 장으로 묶고 지금 캐릭터를 대표로 쓴다", () => {
   const twins = {
-    activeCharacterId: "fbx",
+    activeCharacterId: "pmx",
     characters: [
-      { id: "pmx", displayName: "YYB Miku", status: "ready", sourcePath: "C:\Downloads\YYB.pmx" },
-      { id: "fbx", displayName: "YYB Miku", status: "ready", sourcePath: "D:/Project/YYB.fbx" }
+      { id: "pmx", displayName: "YYB Miku", status: "ready", sourcePath: "C:/Downloads/YYB.pmx" },
+      { id: "fbx", displayName: "YYB Miku ", status: "ready", sourcePath: "D:/Project/YYB.fbx", thumbnailPath: "C:/Lib/fbx.png" }
     ]
   };
-  const view = resolveCharacterSelectView({ library: twins, isPlaying: true });
-  assert.deepEqual(view.options.map((option) => option.label), ["YYB Miku (PMX)", "YYB Miku (FBX) · 현재"]);
-  assert.equal(view.selectedId, "fbx");
+  const view = resolveCharacterSelectView({
+    library: twins, isPlaying: true, runtimeState: { hasTargetCharacter: true, targetCharacterName: "YYB Miku" }
+  });
+  assert.deepEqual(view.cards, [
+    { value: "pmx", name: "YYB Miku", format: "PMX", thumbnailUrl: "file:///C:/Lib/fbx.png", isCurrent: true }
+  ]);
+  assert.equal(view.options.length, 1);
+  assert.equal(view.selectedId, "pmx");
+});
 
-  const loadingPmx = resolveCharacterSelectView({ library: twins, isPlaying: false, isLoading: true, selectedId: "pmx" });
+test("지금 캐릭터가 없으면 빨리 불러오는 형식(FBX → VRM → PMX)을 대표로 쓴다", () => {
+  const library = { characters: [
+    { id: "pmx", displayName: "YYB Miku", status: "ready", sourcePath: "C:/YYB.pmx", thumbnailPath: "C:/Lib/pmx.png" },
+    { id: "fbx", displayName: "YYB Miku", status: "ready", sourcePath: "C:/YYB.fbx" },
+    { id: "vrm-a", displayName: "NT", status: "ready", sourcePath: "C:/NT.pmx" },
+    { id: "vrm-b", displayName: "NT", status: "ready", sourcePath: "C:/NT.vrm" },
+    { id: "other", displayName: "Other", status: "ready", sourcePath: "C:/Other.pmx" }
+  ] };
+  const view = resolveCharacterSelectView({ library, isPlaying: true });
+  assert.deepEqual(view.cards.map((card) => [card.value, card.format]), [["fbx", "FBX"], ["vrm-b", "VRM"], ["other", "PMX"]]);
+  // 대표에 썸네일이 없으면 같은 모델의 다른 항목 썸네일을 빌려 씀
+  assert.equal(view.cards[0].thumbnailUrl, "file:///C:/Lib/pmx.png");
+  assert.equal(view.selectedId, "fbx");
+});
+
+test("PMX만 있는 캐릭터를 불러올 때는 변환 시간을 안내한다", () => {
+  const library = { characters: [{ id: "pmx", displayName: "YYB Miku", status: "ready", sourcePath: "C:/YYB.pmx" }] };
+  const loadingPmx = resolveCharacterSelectView({ library, isPlaying: false, isLoading: true, selectedId: "pmx" });
   assert.match(loadingPmx.message, /PMX/);
 });
 
