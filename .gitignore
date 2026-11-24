@@ -519,3 +519,23 @@ __pycache__/
 /Assets/_Project/Scripts/Editor/DemoRecording.meta
 /Assets/_Project/Tests/Editor/DemoRecording/
 /Assets/_Project/Tests/Editor/DemoRecording.meta
+
+# === 영상 파일은 사용자가 허락한 것만 업로드 ===
+# 위의 Assets/Packages 영상 예외보다 뒤에 두어 모든 위치에서 기본 차단함.
+# 허락된 영상은 이 블록 아래에 ! 예외로 하나씩 추가함.
+*.mp4
+*.mp4.meta
+*.webm
+*.webm.meta
+*.mov
+*.mov.meta
+*.avi
+*.avi.meta
+*.mkv
+*.mkv.meta
+*.m4v
+*.m4v.meta
+*.wmv
+*.wmv.meta
+*.flv
+*.flv.meta
