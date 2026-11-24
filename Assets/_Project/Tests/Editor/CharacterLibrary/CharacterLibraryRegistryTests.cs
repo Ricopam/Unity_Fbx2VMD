@@ -420,6 +420,31 @@ namespace Tests.Editor.CharacterLibrary
             Assert.That(File.ReadAllText(libraryFile), Is.EqualTo(originalJson));
         }
 
+        // FBX·PMX처럼 파일에 썸네일이 없는 항목은 불러온 뒤 찍은 이미지를 붙이고, 이미 있으면 덮어쓰지 않음.
+        [Test]
+        public void Given_EntryWithoutThumbnail_When_AttachingGenerated_Then_SavesOnce()
+        {
+            string folder = CreateTempFolder();
+            string modelPath = Path.Combine(folder, "yyb.fbx");
+            File.WriteAllBytes(modelPath, new byte[] { 5, 6, 7 });
+            string libraryFile = Path.Combine(folder, "characters.json");
+            var registry = CreateRegistry(folder, libraryFile);
+            CharacterLibraryEntry entry = registry.Register(modelPath).entry;
+            Assert.That(entry.thumbnailFileName, Is.Empty);
+            // 렌더링 실패(이미지 없음)는 항목을 바꾸지 않음
+            Assert.That(registry.TryAttachGeneratedThumbnail(entry.id, null), Is.False);
+            Assert.That(entry.thumbnailFileName, Is.Empty);
+
+            Assert.That(registry.TryAttachGeneratedThumbnail(entry.id, new byte[] { 1, 2, 3 }), Is.True);
+            string thumbnailPath = registry.ResolveThumbnailPath(entry);
+            Assert.That(File.ReadAllBytes(thumbnailPath), Is.EqualTo(new byte[] { 1, 2, 3 }));
+            Assert.That(File.ReadAllText(libraryFile), Does.Contain(entry.thumbnailFileName));
+
+            Assert.That(registry.TryAttachGeneratedThumbnail(entry.id, new byte[] { 9 }), Is.False);
+            Assert.That(File.ReadAllBytes(thumbnailPath), Is.EqualTo(new byte[] { 1, 2, 3 }));
+            Assert.That(registry.TryAttachGeneratedThumbnail("missing-id", new byte[] { 1 }), Is.False);
+        }
+
         private static CharacterLibraryRegistry CreateRegistry(string folder, string libraryFile = null)
         {
             return new CharacterLibraryRegistry(

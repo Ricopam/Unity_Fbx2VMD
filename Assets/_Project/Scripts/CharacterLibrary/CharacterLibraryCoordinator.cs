@@ -310,6 +310,8 @@ namespace Fbx2Vmd.CharacterLibrary
                 Debug.LogException(error);
                 _lastError = $"라이브러리 기록 저장 실패: {error.Message}"; }
             SetState(LoadState.Active);
+            // 파일에 썸네일이 없는 캐릭터(FBX·PMX)는 불러온 모습을 찍어 라이브러리 썸네일로 씀.
+            CharacterThumbnailCapture.CaptureMissing(this, Registry, entry, result.Root);
             return true; }
 
         // 커밋된 엔트리를 Ready로 갱신하고 기본 프리셋이 있으면 자동 적용한다(실패해도 로드는 유지).

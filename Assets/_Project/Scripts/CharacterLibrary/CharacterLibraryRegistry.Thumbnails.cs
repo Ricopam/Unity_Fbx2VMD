@@ -22,6 +22,28 @@ namespace Fbx2Vmd.CharacterLibrary
                 LibraryFilePath, entry.thumbnailFileName);
         }
 
+        /// <summary>
+        /// 썸네일이 없는 항목에 불러온 뒤 찍은 이미지를 붙임. 이미 있으면 덮어쓰지 않음.
+        /// </summary>
+        public bool TryAttachGeneratedThumbnail(string entryId, byte[] png)
+        {
+            CharacterLibraryEntry entry = FindById(entryId);
+            if (entry == null || !string.IsNullOrEmpty(entry.thumbnailFileName))
+            {
+                return false;
+            }
+
+            string fileName = TryWriteThumbnail(entry.id, png);
+            if (string.IsNullOrEmpty(fileName))
+            {
+                return false;
+            }
+
+            entry.thumbnailFileName = fileName;
+            Save();
+            return true;
+        }
+
         private string TryWriteThumbnail(string entryId, byte[] png)
         {
             if (png == null || png.Length == 0)
