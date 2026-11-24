@@ -498,6 +498,7 @@ export function bootstrapSettingsUi(root = document, {
     workflow.update(motionState, isPlaying, {
       isBusy: isMotionSubmitting || !!pendingMotionCommandId,
       isImportPending: !!pendingImport,
+      importStartedAtMs: pendingImport?.sentAtMs,
       isCharacterLoading: characterCard.isLoading
     });
   }

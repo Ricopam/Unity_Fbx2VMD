@@ -2,7 +2,9 @@ import {
   advanceStartRequest,
   folderOfFile,
   parseSeekFrame,
+  recordingFeedbackFor,
   resolveCorrectionSummary,
+  resolveImportView,
   resolvePlaybackView,
   resolveRecordingView,
   resolveWorkflowSteps
@@ -22,6 +24,9 @@ export function bootstrapWorkflowPanel(root, { sendMotionCommand, openPath, onFe
   let startRequest = null;
   let isDraggingTimeline = false;
   let stepContext = {};
+  let lastRecordingPhase;
+  // Unity가 멈춰 상태가 오지 않아도 경과 시간이 흐르도록 처리 표시 중에만 1초마다 다시 그림.
+  let importTicker = null;
 
   $("#wfSeekButton")?.addEventListener("click", seekFromInput);
   $("#wfSeekInput")?.addEventListener("keydown", (event) => {
@@ -99,7 +104,7 @@ export function bootstrapWorkflowPanel(root, { sendMotionCommand, openPath, onFe
   }
 
   function render() {
-    const steps = resolveWorkflowSteps(state, isUnityPlaying, stepContext);
+    const steps = resolveWorkflowSteps(state, isUnityPlaying, { ...stepContext, nowMs: Date.now() });
     for (const item of steps) {
       renderStepRow(item);
       renderStepPanel(item);
@@ -133,16 +138,21 @@ export function bootstrapWorkflowPanel(root, { sendMotionCommand, openPath, onFe
   }
 
   function renderMotion() {
-    const importing = state.isImportingFbx === true;
+    const importView = resolveImportView(state, { ...stepContext, nowMs: Date.now() });
     const progress = $("#wfImportProgress");
-    if (progress) progress.hidden = !importing;
-    const percent = Math.round(Math.min(1, Math.max(0, state.sessionProgress ?? 0)) * 100);
-    setText($("#wfImportPercent"), `${percent}%`);
+    if (progress) progress.hidden = !importView.visible;
+    setText($("#wfImportPercent"), importView.text);
     const meter = $("#wfImportMeter");
     if (meter) {
-      meter.value = percent;
-      meter.textContent = `${percent}%`;
+      // 진행률을 모르면 값 속성을 빼 막대를 '진행 중' 표시로 둠.
+      if (importView.meterPercent === null) {
+        meter.removeAttribute?.("value");
+      } else {
+        meter.value = importView.meterPercent;
+      }
+      meter.textContent = importView.text;
     }
+    syncImportTicker(importView.visible);
     const facts = $("#wfMotionFacts");
     const playback = resolvePlaybackView(state);
     if (facts) facts.hidden = state.hasPreparedMotion !== true;
@@ -205,6 +215,9 @@ export function bootstrapWorkflowPanel(root, { sendMotionCommand, openPath, onFe
   function renderRecording() {
     startRequest = advanceStartRequest(startRequest, state, Date.now());
     const view = resolveRecordingView(state, isUnityPlaying, { isStartRequested: startRequest !== null });
+    const feedback = recordingFeedbackFor(lastRecordingPhase, view.phase);
+    lastRecordingPhase = view.phase;
+    if (feedback) onFeedback?.(feedback.message, feedback.tone);
     setText($("#wfRecordStatus"), view.message);
     const showProgress = view.phase === "recording";
     const progress = $("#wfRecordProgress");
@@ -226,6 +239,16 @@ export function bootstrapWorkflowPanel(root, { sendMotionCommand, openPath, onFe
     setButton("#wfOpenRecordingFolder", { show: view.phase === "saved", enabled: true });
   }
 
+  function syncImportTicker(isVisible) {
+    if (isVisible && !importTicker) {
+      importTicker = setInterval(render, 1000);
+      importTicker.unref?.();
+    } else if (!isVisible && importTicker) {
+      clearInterval(importTicker);
+      importTicker = null;
+    }
+  }
+
   function setButton(selector, { show, enabled, label }) {
     const button = $(selector);
     if (!button) return;
@@ -235,11 +258,11 @@ export function bootstrapWorkflowPanel(root, { sendMotionCommand, openPath, onFe
   }
 
   return {
-    update(nextState, nextIsUnityPlaying, { isBusy: nextIsBusy = false, isImportPending = false, isCharacterLoading = false } = {}) {
+    update(nextState, nextIsUnityPlaying, { isBusy: nextIsBusy = false, isImportPending = false, isCharacterLoading = false, importStartedAtMs } = {}) {
       state = nextState ?? {};
       isUnityPlaying = nextIsUnityPlaying === true;
       isBusy = nextIsBusy;
-      stepContext = { isImportPending, isCharacterLoading };
+      stepContext = { isImportPending, isCharacterLoading, importStartedAtMs };
       render();
     }
   };

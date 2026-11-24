@@ -131,7 +131,7 @@ function locked(id, reason) {
   return step(id, { locked: true, lockReason: reason, sub: reason });
 }
 
-export function resolveWorkflowSteps(state, isUnityPlaying, { isImportPending = false, isCharacterLoading = false } = {}) {
+export function resolveWorkflowSteps(state, isUnityPlaying, { isImportPending = false, isCharacterLoading = false, importStartedAtMs, nowMs } = {}) {
   const isImporting = state.isImportingFbx === true || isImportPending;
   // Unity가 FBX를 처리하며 멈추면 Play 상태가 끊긴 것처럼 보이므로 가져오기 대기 중에는 처리 화면을 유지한다.
   if (!isUnityPlaying && !isImportPending) {
@@ -156,7 +156,7 @@ export function resolveWorkflowSteps(state, isUnityPlaying, { isImportPending = 
   if (isImporting) {
     const after = "모션 적용이 끝나면 쓸 수 있어요.";
     return [character,
-      step("motion", { sub: `적용 중 · ${percent(state.sessionProgress)}%`, badge: "progress" }),
+      step("motion", { sub: `적용 중 · ${resolveImportView(state, { isImportPending, importStartedAtMs, nowMs }).text}`, badge: "progress" }),
       locked("physics", after), locked("playback", after), locked("recording", after)];
   }
   if (!hasCharacter) {
@@ -216,4 +216,32 @@ export function folderOfFile(filePath) {
   if (cut < 0) return "";
   const folder = text.slice(0, cut);
   return /^[A-Za-z]:$/.test(folder) ? `${folder}${text[cut]}` : folder;
+}
+
+function formatElapsed(ms) {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  return seconds < 60 ? `${seconds}초 지남` : `${Math.floor(seconds / 60)}분 ${seconds % 60}초 지남`;
+}
+
+// FBX 처리 중에는 Unity 메인 스레드가 멈춰 진행률이 0에서 100%로만 바뀌므로,
+// 설정창이 보낸 요청이면 경과 시간을 먼저 보이고 Unity가 보낸 중간 진행률이 있을 때만 함께 보인다.
+export function resolveImportView(state, { isImportPending = false, importStartedAtMs, nowMs = Date.now() } = {}) {
+  const isImporting = state.isImportingFbx === true;
+  const visible = isImportPending || isImporting;
+  const progress = state.sessionProgress;
+  const hasReportedProgress = isImporting && Number.isFinite(progress) && progress > 0 && progress < 1;
+  const percentText = `${percent(progress)}%`;
+  const elapsedText = Number.isFinite(importStartedAtMs) ? formatElapsed(nowMs - importStartedAtMs) : "";
+  const text = elapsedText
+    ? (hasReportedProgress ? `${elapsedText} · ${percentText}` : elapsedText)
+    : percentText;
+  return { visible, text, meterPercent: hasReportedProgress ? percent(progress) : (elapsedText ? null : percent(progress)) };
+}
+
+// 녹화가 저장·실패로 바뀌는 순간에만 공용 안내를 갱신해 '시작 요청' 같은 이전 안내가 남지 않게 한다.
+export function recordingFeedbackFor(previousPhase, nextPhase) {
+  if (!previousPhase || previousPhase === nextPhase) return null;
+  if (nextPhase === "saved") return { message: "녹화 파일을 저장했어요.", tone: "success" };
+  if (nextPhase === "failed") return { message: "녹화 파일을 끝까지 저장하지 못했어요. 다시 녹화해 주세요.", tone: "error" };
+  return null;
 }

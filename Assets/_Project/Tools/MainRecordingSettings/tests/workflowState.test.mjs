@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   advanceStartRequest,
+  recordingFeedbackFor,
+  resolveImportView,
   folderOfFile,
   formatTimecode,
   parseSeekFrame,
@@ -204,4 +206,26 @@ test("녹화 파일 폴더는 Windows 드라이브 루트도 올바른 경로로
   assert.equal(folderOfFile("C:\\a.mp4"), "C:\\");
   assert.equal(folderOfFile("a.mp4"), "");
   assert.equal(folderOfFile(""), "");
+});
+
+// FBX 처리 중 Unity 메인 스레드가 멈춰 진행률이 갱신되지 않으므로(S6 실기) 요청 뒤 경과 시간을 보인다.
+test("FBX 처리 표시는 요청 대기 중에도 보이고 경과 시간을 우선한다", () => {
+  assert.equal(resolveImportView({}, {}).visible, false);
+  const pending = resolveImportView({ sessionProgress: 0 }, { isImportPending: true, importStartedAtMs: 1000, nowMs: 39000 });
+  assert.deepEqual(pending, { visible: true, text: "38초 지남", meterPercent: null });
+  const reported = resolveImportView({ isImportingFbx: true, sessionProgress: 0.62 }, { isImportPending: true, importStartedAtMs: 1000, nowMs: 61000 });
+  assert.deepEqual(reported, { visible: true, text: "1분 0초 지남 · 62%", meterPercent: 62 });
+  // 설정창 밖에서 시작된 처리는 시작 시각을 몰라 진행률만 보인다.
+  assert.deepEqual(resolveImportView({ isImportingFbx: true, sessionProgress: 0.4 }, {}), { visible: true, text: "40%", meterPercent: 40 });
+  const steps = resolveWorkflowSteps({ playMode: "stopped" }, false, { isImportPending: true, importStartedAtMs: 0, nowMs: 5000 });
+  assert.equal(steps.find((step) => step.id === "motion").sub, "적용 중 · 5초 지남");
+});
+
+test("녹화가 저장·실패로 바뀔 때만 공용 안내를 갱신한다", () => {
+  assert.deepEqual(recordingFeedbackFor("saving", "saved"), { message: "녹화 파일을 저장했어요.", tone: "success" });
+  assert.deepEqual(recordingFeedbackFor("recording", "failed"), { message: "녹화 파일을 끝까지 저장하지 못했어요. 다시 녹화해 주세요.", tone: "error" });
+  assert.equal(recordingFeedbackFor("saved", "saved"), null);
+  // 화면을 처음 열 때 이미 저장된 상태라면 새 소식이 아니므로 알리지 않음
+  assert.equal(recordingFeedbackFor(undefined, "saved"), null);
+  assert.equal(recordingFeedbackFor("ready", "recording"), null);
 });
