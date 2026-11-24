@@ -174,6 +174,7 @@ export function bootstrapSettingsUi(root = document, {
     openPath: globalThis.window?.settingsShell?.openPath,
     onFeedback: setFeedback
   });
+  root.querySelector?.("#menuOpenDataFolder")?.addEventListener("click", () => void openDataFolder());
   const autoConnection = createSettingsAutoConnectionController({
     createWebSocketChannel,
     apiBaseUrl: () => getBridgeConfig().apiBaseUrl ?? DEFAULT_API_BASE_URL,
@@ -499,6 +500,22 @@ export function bootstrapSettingsUi(root = document, {
       isImportPending: !!pendingImport,
       isCharacterLoading: characterCard.isLoading
     });
+  }
+
+  async function openDataFolder() {
+    const folder = getBridgeConfig().dataDirectory;
+    const openPath = globalThis.window?.settingsShell?.openPath;
+    if (!folder || typeof openPath !== "function") {
+      setFeedback("현재 환경에서는 데이터 폴더를 열 수 없습니다.", "error");
+      return;
+    }
+    try {
+      // 셸은 성공하면 빈 문자열, 실패하면 오류 문구를 돌려준다.
+      const failure = await openPath(folder);
+      setFeedback(failure ? `데이터 폴더를 열지 못했습니다: ${failure}` : "데이터 폴더를 열었습니다.", failure ? "error" : "success");
+    } catch (error) {
+      setFeedback(`데이터 폴더를 열지 못했습니다: ${error.message}`, "error");
+    }
   }
 
   function setConnectionStatus(status) {

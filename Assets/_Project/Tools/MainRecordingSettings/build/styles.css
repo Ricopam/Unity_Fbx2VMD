@@ -2912,3 +2912,10 @@ input {
     transition: none;
   }
 }
+
+/* 숨긴 진입점(연결 안 된 패널·동작 없는 메뉴)은 표시 방식 지정과 무관하게 감춤 */
+.rail-button[hidden],
+.menu-item[hidden],
+.tree-section[hidden] {
+  display: none !important;
+}

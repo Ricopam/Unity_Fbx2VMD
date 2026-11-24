@@ -485,7 +485,9 @@ function registerIpcHandlers() {
     event.returnValue = bridgeServer ? {
       apiBaseUrl: bridgeServer.baseUrl,
       wsUrl: `${bridgeServer.wsUrl}/settings`,
-      token: bridgeServer.token
+      token: bridgeServer.token,
+      // 설정 문서가 있는 폴더 — 메뉴의 '데이터 폴더 열기'가 씀.
+      dataDirectory: path.dirname(bridgeServer.settingsPath)
     } : null;
   });
   ipcMain.handle("boogle:get-workbench-url", async () => {

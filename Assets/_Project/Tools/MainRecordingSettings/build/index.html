@@ -10,13 +10,13 @@
     <main class="settings-app" data-theme="dark">
       <div class="app-shell" data-shell="main-recording-settings" data-active-panel="onboarding">
         <nav class="rail" aria-label="설정 도구">
-          <button class="rail-button" type="button" aria-label="온보딩" data-rail-page="assistant" data-panel-target="onboarding">
+          <button class="rail-button" type="button" aria-label="작업 단계" data-rail-page="assistant" data-panel-target="onboarding">
             <svg class="rail-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 3 7v10l9 5 9-5V7l-9-5Zm0 2.2 6.5 3.6L12 11.4 5.5 7.8 12 4.2ZM5 9.5l6 3.4v6.9l-6-3.4V9.5Zm14 0v6.9l-6 3.4v-6.9l6-3.4Z"/></svg>
           </button>
-          <button class="rail-button" type="button" aria-label="노드 그래프">
+          <button class="rail-button" type="button" aria-label="노드 그래프" hidden>
             <svg class="rail-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4a2.5 2.5 0 0 1 2.4 3.1l3.4 3.4a2.5 2.5 0 1 1-1.4 1.5l-3.4-3.4a2.5 2.5 0 0 1-2 0L7.6 12a2.5 2.5 0 1 1-1.4-1.5l3.4-3.4A2.5 2.5 0 0 1 12 4Zm0 14a2.5 2.5 0 0 1 2.5 2.5h-5A2.5 2.5 0 0 1 12 18Z"/></svg>
           </button>
-          <button class="rail-button" type="button" aria-label="조명 도구" data-rail-page="environment">
+          <button class="rail-button" type="button" aria-label="조명 도구" data-rail-page="environment" hidden>
             <svg class="rail-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2Zm-2 18h4a2 2 0 0 1-4 0Z"/></svg>
           </button>
           <button class="rail-button rail-button-active" type="button" aria-label="캐릭터" data-rail-page="character">
@@ -36,18 +36,18 @@
           <div class="menu-context-name">FBX2VMD</div>
           <div class="menu-divider"></div>
           <div class="menu-group">
-            <button class="menu-item" type="button">
+            <button class="menu-item" type="button" id="menuOpenDataFolder">
               <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 3 7v10l9 5 9-5V7l-9-5Zm0 2.2 6.6 3.7L12 11.6 5.4 7.9 12 4.2ZM5 9.7l6 3.3v6.8l-6-3.4V9.7Zm8 10.1V13l6-3.3v6.7l-6 3.4Z"/></svg>
               <span>데이터 폴더 열기</span>
             </button>
-            <button class="menu-item" type="button">
+            <button class="menu-item" type="button" hidden>
               <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 3h2v16h16v2H3V3Zm5 13-1.4-1.4L11 10l3 3 5.4-5.4L20.8 9 14 15.8l-3-3L8 16Z"/></svg>
               <span>로그 폴더 열기</span>
             </button>
           </div>
           <div class="menu-divider"></div>
           <div class="menu-group">
-            <button class="menu-item" type="button" id="menuOpenSettings">
+            <button class="menu-item" type="button" id="menuOpenSettings" hidden>
               <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m19.4 13 .1-1-.1-1 2.1-1.7-2-3.4-2.5 1a7.6 7.6 0 0 0-1.7-1L15 4h-4l-.4 2.9a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.4L6.5 12l-.1 1 .1 1-2.1 1.7 2 3.4 2.5-1a7.6 7.6 0 0 0 1.7 1l.3 2.9h4l.4-2.9a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.4L17.5 13l1.9 0ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"/></svg>
               <span>설정</span>
               <svg class="menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m9 6 6 6-6 6-1.4-1.4L12.2 12 7.6 7.4 9 6Z"/></svg>
@@ -95,7 +95,7 @@
             </section>
           </div>
 
-          <div class="sidebar-page" data-sidebar-page="character" data-default-panel="upperbody" hidden>
+          <div class="sidebar-page" data-sidebar-page="character" data-default-panel="library" hidden>
           <section class="tree-section" aria-labelledby="treeLibrary">
             <h2 id="treeLibrary"><span class="tree-chev" aria-hidden="true"></span>라이브러리</h2>
             <button class="tree-item" type="button" data-panel-target="library" aria-controls="libraryPanel">
@@ -104,7 +104,7 @@
               <span class="tree-status" aria-hidden="true"></span>
             </button>
           </section>
-          <section class="tree-section" aria-labelledby="treeCharacter">
+          <section class="tree-section" aria-labelledby="treeCharacter" hidden>
             <h2 id="treeCharacter"><span class="tree-chev" aria-hidden="true"></span>캐릭터</h2>
             <button class="tree-item" type="button">
               <span class="tree-icon person-icon" aria-hidden="true"></span>

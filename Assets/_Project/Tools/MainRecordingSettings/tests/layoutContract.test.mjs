@@ -23,7 +23,7 @@ test("onboarding shell renders one page-owned settings region without the camera
   const html = await fs.readFile(htmlUrl, "utf8");
 
   assert.match(html, /<div class="app-shell" data-shell="main-recording-settings" data-active-panel="onboarding">/);
-  assert.match(html, /aria-label="온보딩" data-rail-page="assistant" data-panel-target="onboarding"/);
+  assert.match(html, /aria-label="작업 단계" data-rail-page="assistant" data-panel-target="onboarding"/);
   assert.doesNotMatch(html, /<aside class="detail-panel"/);
   assert.doesNotMatch(html, /class="tree-item selected"/);
 });
@@ -81,12 +81,12 @@ test("sidebar splits character and environment pages — shader moved to environ
     assert.match(html, new RegExp(`data-panel-view="${panel}"[\\s\\S]*hidden`));
   }
   // 레일 페이지 전환: 온보딩(큐브) / 캐릭터(사람) / 환경 설정(전구) / 오디오(이퀄라이저)
-  assert.match(html, /aria-label="온보딩" data-rail-page="assistant"/);
+  assert.match(html, /aria-label="작업 단계" data-rail-page="assistant"/);
   assert.match(html, /aria-label="캐릭터" data-rail-page="character"/);
   assert.match(html, /aria-label="조명 도구" data-rail-page="environment"/);
   assert.match(html, /aria-label="오디오 및 립싱크" data-rail-page="audio"/);
   assert.match(html, /data-sidebar-page="assistant" data-default-panel="onboarding"/);
-  assert.match(html, /data-sidebar-page="character" data-default-panel="upperbody"/);
+  assert.match(html, /data-sidebar-page="character" data-default-panel="library"/);
   assert.match(html, /data-sidebar-page="environment" data-default-panel="camera"/);
   assert.match(html, /data-sidebar-page="audio" data-default-panel="lipsync"/);
   // 온보딩은 사이드바 선택지가 아니라 레일 페이지 버튼으로 연다.
@@ -240,4 +240,19 @@ test("onboarding CSS keeps the FBX action compact without copying bundled refere
   assert.match(css, /\.card-button\s*{[\s\S]*min-width:\s*96px;[\s\S]*min-height:\s*32px;/);
   assert.doesNotMatch(css, /build\/assets\//);
   assert.doesNotMatch(css, /primeicons|noto-sans-sc|radio-canada/i);
+});
+
+// PRD 수용 기준 7: Unity와 연결되지 않은 조절 패널과 동작 없는 메뉴는 진입점을 숨겨 동작하는 것처럼 보이지 않게 함.
+test("연결 안 된 조절 패널·동작 없는 메뉴의 진입점은 숨긴다", async () => {
+  const html = await fs.readFile(htmlUrl, "utf8");
+  assert.match(html, /aria-label="노드 그래프" hidden>/);
+  assert.match(html, /aria-label="조명 도구" data-rail-page="environment" hidden>/);
+  assert.match(html, /aria-labelledby="treeCharacter" hidden>/);
+  assert.match(html, /id="menuOpenSettings" hidden>/);
+  assert.match(html, /<button class="menu-item" type="button" hidden>[\s\S]*?로그 폴더 열기/);
+  // 동작하는 기능은 그대로 노출함
+  assert.doesNotMatch(html, /aria-label="캐릭터" data-rail-page="character" hidden/);
+  assert.doesNotMatch(html, /aria-label="오디오 및 립싱크" data-rail-page="audio" hidden/);
+  assert.match(html, /id="menuOpenDataFolder">/);
+  assert.match(html, /id="themeMenuToggle"/);
 });
