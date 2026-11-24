@@ -19,6 +19,10 @@ namespace Fbx2Vmd.Settings
         public string motionError = string.Empty;
         public bool isSurfaceCorrectionEnabled = true;
         public string surfaceCorrectionFailure = string.Empty;
+        // 설정창이 캐릭터 선택 전 FBX 가져오기를 막고, 가져오기 진행·완료를 실제 상태로 표시하는 데 씀.
+        public bool hasTargetCharacter;
+        public string targetCharacterName = string.Empty;
+        public bool isImportingFbx;
 
         public static MainRecordingSettingsState Create(string playMode, DateTime utcNow)
         {

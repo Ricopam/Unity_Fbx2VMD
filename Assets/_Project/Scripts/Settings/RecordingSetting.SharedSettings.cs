@@ -93,6 +93,10 @@ public sealed partial class RecordingSetting
                 state.motionError = pipeline.SessionState == FBXVmdPipeline.FBXSessionState.Failed ? pipeline.LastSessionMessage : string.Empty;
                 state.isSurfaceCorrectionEnabled = pipeline.IsNativeSkinningCorrectionEnabled;
                 state.surfaceCorrectionFailure = pipeline.LastNativeSkinningCorrectionFailure;
+                GameObject target = pipeline.targetCharacter;
+                state.hasTargetCharacter = target != null;
+                state.targetCharacterName = target != null ? target.name : string.Empty;
+                state.isImportingFbx = pipeline.IsProcessing;
             }
             sharedSettingsFileSession.WriteMotionState(state);
         }

@@ -86,8 +86,17 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
             }
 
+            // Main 씬은 캐릭터 없이 시작하므로, 처리 도중 실패시키지 않고 요청 단계에서 안내함.
+            if (_pipeline.targetCharacter == null)
+            {
+                _pipeline.SetSessionState(FBXVmdPipeline.FBXSessionState.Failed, MissingCharacterMessage, 0f);
+                return false;
+            }
+
             _pipeline.ProcessFBXAsync(sourcePath.Trim());
             return true;
         }
+
+        internal const string MissingCharacterMessage = "캐릭터를 먼저 불러와 주세요. 설정창 홈의 캐릭터 선택에서 불러올 수 있습니다.";
     }
 }
