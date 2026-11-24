@@ -31,8 +31,12 @@ test("onboarding shell renders one page-owned settings region without the camera
 test("onboarding shell exposes FBX import and motion playback cards", async () => {
   const html = await fs.readFile(htmlUrl, "utf8");
 
-  assert.equal((html.match(/class="onboarding-card/g) ?? []).length, 4);
+  assert.equal((html.match(/class="onboarding-card/g) ?? []).length, 5);
   assert.match(html, /data-card="motion-playback"/);
+  // 캐릭터 없이 시작하는 Main 씬에서는 캐릭터 선택이 FBX 가져오기보다 먼저 와야 함
+  assert.match(html, /data-card="character-select"[\s\S]*data-card="fbx-import"/);
+  assert.match(html, /data-card="character-select"[\s\S]*id="characterSelect"[\s\S]*id="loadCharacterButton"/);
+  assert.match(html, /data-card="fbx-import"[\s\S]*id="importStatus"/);
   for (const id of ["playMotionButton", "pauseMotionButton", "stopMotionButton"]) {
     assert.match(html, new RegExp(`id="${id}"[^>]*type="button"[^>]*disabled`));
   }

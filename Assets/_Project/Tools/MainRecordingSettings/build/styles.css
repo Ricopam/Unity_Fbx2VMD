@@ -451,6 +451,22 @@ h1 {
   margin-top: 20px;
 }
 
+/* 캐릭터 선택 카드: 목록은 남은 폭을 채우고 버튼은 내용 폭 유지 */
+.character-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* 라이브러리 패널의 촘촘한 목록 글꼴 대신 카드 버튼과 같은 글꼴·높이로 맞춤 */
+.character-action-row .lb-select {
+  min-height: 32px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
 .file-field {
   display: grid;
   gap: 6px;

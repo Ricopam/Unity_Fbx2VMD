@@ -49,7 +49,7 @@ test("FBX import primary button opens the file picker and submits the selected f
       return {
         ok: true,
         status: 200,
-        json: async () => ({ runtimeState: { playMode: "playing", updatedAtUtc: "" } })
+        json: async () => ({ runtimeState: { playMode: "playing", updatedAtUtc: "", hasTargetCharacter: true, targetCharacterName: "Library Character" } })
       };
     }
 
@@ -89,13 +89,53 @@ test("FBX import primary button opens the file picker and submits the selected f
     assert.deepEqual(JSON.parse(requests[0].init.body), {
       fbxPath: "C:/Motion/sample.fbx"
     });
-    assert.equal(elements["#feedback"].textContent, "FBX 가져오기 요청을 보냈습니다.");
+    assert.match(elements["#feedback"].textContent, /FBX 가져오기 요청을 보냈습니다/);
+    assert.equal(elements["#feedback"].dataset.tone, "loading");
     assert.equal(elements["#eventLog"].dataset.empty, "false");
   } finally {
     for (const handler of beforeUnloadHandlers) {
       handler();
     }
 
+    globalThis.document = previousDocument;
+    globalThis.fetch = previousFetch;
+    globalThis.window = previousWindow;
+  }
+});
+
+test("FBX import stays locked during Play until a character is loaded", async () => {
+  const elements = {
+    ".app-shell": createFakeElement("div"),
+    "#importButton": createFakeElement("button"),
+    "#importStatus": createFakeElement("p"),
+    "#statusBadge": createFakeElement("div"),
+    "#statusText": createFakeElement("span"),
+    "#feedback": createFakeElement("p"),
+    "#eventLog": createFakeElement("div")
+  };
+  const root = { querySelector: (selector) => elements[selector] ?? null };
+  const previousDocument = globalThis.document;
+  const previousFetch = globalThis.fetch;
+  const previousWindow = globalThis.window;
+  const handlers = [];
+  globalThis.document = { createElement: () => createFakeElement("div") };
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ runtimeState: { playMode: "playing", updatedAtUtc: "", hasTargetCharacter: false } })
+  });
+  globalThis.window = {
+    mainRecordingSettingsBridgeConfig: { apiBaseUrl: "http://localhost:4100", wsUrl: "ws://localhost:4100/settings" },
+    settingsShell: { chooseFbxFile: async () => "C:/Motion/sample.fbx" },
+    addEventListener: (type, handler) => { if (type === "beforeunload") handlers.push(handler); }
+  };
+  try {
+    bootstrapSettingsUi(root, { createWebSocketChannel: fakeChannel });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(elements["#importButton"].disabled, true);
+    assert.match(elements["#importStatus"].textContent, /캐릭터를 불러와/);
+  } finally {
+    for (const handler of handlers) handler();
     globalThis.document = previousDocument;
     globalThis.fetch = previousFetch;
     globalThis.window = previousWindow;

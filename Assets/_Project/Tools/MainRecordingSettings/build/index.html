@@ -185,10 +185,22 @@
 
           <div class="panel-view" data-panel-view="onboarding">
             <section class="card-stack" aria-label="설정 시작">
+              <article class="onboarding-card card-primary" data-card="character-select">
+                <div class="card-copy">
+                  <h2>1. 캐릭터 선택</h2>
+                  <p id="characterSelectStatus" role="status">Unity Play 상태에서 캐릭터를 불러올 수 있습니다.</p>
+                </div>
+                <div class="character-action-row">
+                  <select id="characterSelect" class="lb-select" aria-label="불러올 캐릭터" disabled></select>
+                  <button id="loadCharacterButton" class="card-button card-button-primary" type="button" disabled>캐릭터 불러오기</button>
+                </div>
+              </article>
+
               <article class="onboarding-card card-primary" data-card="fbx-import">
                 <div class="card-copy">
-                  <h2>FBX 파일 임포트</h2>
+                  <h2>2. FBX 파일 임포트</h2>
                   <p>FBX 파일을 선택해 프로젝트로 가져오고 모션 캡쳐 설정을 시작합니다.</p>
+                  <p id="importStatus" role="status">먼저 1단계에서 캐릭터를 불러와 주세요.</p>
                 </div>
                 <div class="fbx-action-row">
                   <button id="importButton" class="card-button card-button-primary" type="button" aria-label="FBX 파일 가져오기">FBX 가져오기</button>

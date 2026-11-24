@@ -6,6 +6,7 @@ import {
   postImportFbx,
   postMotionCommand
 } from "./settingsApi.js";
+import { bootstrapCharacterSelectCard } from "./characterSelectCard.js";
 
 const statusLabels = {
   idle: "연결 안 됨",
@@ -92,6 +93,7 @@ export function bootstrapSettingsUi(root = document, {
   const elements = {
     shell: root.querySelector(".app-shell"),
     importButton: root.querySelector("#importButton"),
+    importStatus: root.querySelector("#importStatus"),
     playMotionButton: root.querySelector("#playMotionButton"),
     pauseMotionButton: root.querySelector("#pauseMotionButton"),
     stopMotionButton: root.querySelector("#stopMotionButton"),
@@ -152,6 +154,15 @@ export function bootstrapSettingsUi(root = document, {
   let isMotionSubmitting = false;
   let pendingMotionCommandId = "";
   let motionCommandDeadline = 0;
+  let pendingImport = null;
+  const characterCard = bootstrapCharacterSelectCard(root, {
+    apiBaseUrl: () => getBridgeConfig().apiBaseUrl ?? DEFAULT_API_BASE_URL,
+    onFeedback: (message, tone) => {
+      setFeedback(message, tone);
+      refreshControls();
+    },
+    onLibraryUnavailable: (error) => appendLog("캐릭터 목록 조회 실패", error.message)
+  });
   const autoConnection = createSettingsAutoConnectionController({
     createWebSocketChannel,
     apiBaseUrl: () => getBridgeConfig().apiBaseUrl ?? DEFAULT_API_BASE_URL,
@@ -164,7 +175,9 @@ export function bootstrapSettingsUi(root = document, {
       const wasPlaying = isPlaying;
       isPlaying = playMode === "playing";
       refreshControls();
-      if (wasPlaying !== isPlaying) {
+      // 가져오기·캐릭터 불러오기 중 Unity가 멈춰 Play가 끊긴 것처럼 보여도 진행 안내를 덮지 않음.
+      const isWaitingForUnity = !!pendingImport || characterCard.isLoading;
+      if (wasPlaying !== isPlaying && !isWaitingForUnity) {
         setFeedback(isPlaying
           ? "가져오기 버튼을 누르면 FBX 파일 선택 창이 열립니다."
           : "Unity Play 상태에서 FBX 가져오기를 사용할 수 있습니다.", "info");
@@ -173,6 +186,9 @@ export function bootstrapSettingsUi(root = document, {
     onMessage: (message) => appendLog("수신", message),
     onStateChange: (document) => {
       motionState = document.runtimeState ?? {};
+      const progress = resolveImportProgress(pendingImport, motionState, Date.now());
+      pendingImport = progress.pending;
+      if (progress.feedback) setFeedback(progress.feedback.message, progress.feedback.tone);
       const result = document.lastCommandResult;
       if (pendingMotionCommandId && result?.commandId === pendingMotionCommandId && result.state !== "running") {
         pendingMotionCommandId = "";
@@ -186,6 +202,8 @@ export function bootstrapSettingsUi(root = document, {
     onError: () => {
       isPlaying = false;
       motionState = {};
+      // 브리지가 끊기면 결과를 받을 수 없으므로 가져오기 대기를 정리해 버튼이 잠긴 채 남지 않게 함.
+      pendingImport = null;
       refreshControls();
       setFeedback("Unity 상태 확인 또는 WebSocket 연결에 실패했습니다.", "error");
     }
@@ -228,7 +246,7 @@ export function bootstrapSettingsUi(root = document, {
   }
 
   elements.importButton.addEventListener("click", async () => {
-    if (isSubmitting || !isPlaying) {
+    if (!resolveImportGate(motionState, isPlaying, importGateOptions()).canImport) {
       return;
     }
 
@@ -255,7 +273,13 @@ export function bootstrapSettingsUi(root = document, {
         fbxPath: selectedPath
       });
       appendLog("HTTP 응답", result);
-      setFeedback("FBX 가져오기 요청을 보냈습니다.", "success");
+      pendingImport = {
+        sentAtMs: Date.now(),
+        sawImporting: false,
+        errorAtSend: motionState.motionError || "",
+        preparedAtSend: motionState.hasPreparedMotion === true
+      };
+      setFeedback("FBX 가져오기 요청을 보냈습니다. Unity 처리 결과를 기다리는 중입니다.", "loading");
     } catch (error) {
       setFeedback(error.message, "error");
     } finally {
@@ -294,6 +318,8 @@ export function bootstrapSettingsUi(root = document, {
     }
 
     elements.shell.dataset.activePanel = panelName;
+    // 라이브러리 패널에서 새로 등록한 캐릭터가 홈 목록에도 보이도록 홈 복귀 때 다시 읽음.
+    if (panelName === "onboarding" && isPlaying) void characterCard.refreshLibrary();
     const title = panelTitles[panelName];
     const titleElement = elements.shell.querySelector?.("#settingsTitle");
     if (title && titleElement) {
@@ -427,9 +453,16 @@ export function bootstrapSettingsUi(root = document, {
     target.removeAttribute("aria-current");
   }
 
+  function importGateOptions() {
+    return { isSubmitting, isPending: !!pendingImport, isCharacterLoading: characterCard.isLoading };
+  }
+
   function refreshControls() {
-    elements.importButton.disabled = isSubmitting || !isPlaying;
-    elements.importButton.textContent = isSubmitting ? "가져오는 중..." : "FBX 가져오기";
+    const importGate = resolveImportGate(motionState, isPlaying, importGateOptions());
+    elements.importButton.disabled = !importGate.canImport;
+    elements.importButton.textContent = isSubmitting || pendingImport ? "가져오는 중..." : "FBX 가져오기";
+    if (elements.importStatus) elements.importStatus.textContent = importGate.message;
+    characterCard.update(motionState, isPlaying);
     const controls = resolveMotionControls(motionState, isPlaying, isMotionSubmitting || !!pendingMotionCommandId);
     if (elements.playMotionButton) elements.playMotionButton.disabled = !controls.canPlay;
     if (elements.pauseMotionButton) elements.pauseMotionButton.disabled = !controls.canPause;
@@ -486,6 +519,60 @@ function formatPayload(payload) {
   }
 
   return JSON.stringify(payload);
+}
+
+// FBX 가져오기 버튼 가능 여부와 안내. 캐릭터가 없으면 Unity가 실패하므로 먼저 막음.
+export function resolveImportGate(state, isUnityPlaying, { isSubmitting = false, isPending = false, isCharacterLoading = false } = {}) {
+  const hasCharacter = state.hasTargetCharacter === true;
+  const busy = isSubmitting || isPending || isCharacterLoading || state.isImportingFbx === true || state.isRecording === true;
+  const message = !isUnityPlaying ? "Unity Play 상태에서 사용할 수 있습니다."
+    : isCharacterLoading ? "캐릭터를 불러오는 중입니다."
+    : !hasCharacter ? "먼저 1단계에서 캐릭터를 불러와 주세요."
+    : state.isImportingFbx === true || isPending ? "Unity가 FBX를 처리하고 있습니다."
+    : state.isRecording === true ? "녹화 중에는 FBX를 가져올 수 없습니다."
+    : `대상 캐릭터: ${state.targetCharacterName || "캐릭터"}`;
+  return { canImport: isUnityPlaying && hasCharacter && !busy, message };
+}
+
+// FBX 임포트는 Unity 메인 스레드를 1~2분 멈추게 해 상태 갱신이 끊길 수 있음.
+// 그동안은 실패로 보지 않고, 갱신이 살아 있는데도 시작 신호가 없을 때만 실패로 봄.
+const IMPORT_START_TIMEOUT_MS = 300000;
+// Play 종료·Unity 종료로 응답이 영영 없을 때 대기를 끝내는 전체 한도.
+const IMPORT_TOTAL_TIMEOUT_MS = 600000;
+const IMPORT_BUSY_MESSAGE = "Unity가 FBX를 불러오고 있습니다. 처리 중에는 Unity가 잠시 멈출 수 있습니다.";
+
+// 가져오기 요청 뒤 Unity 실행 상태로 실제 결과를 판정함.
+// 요청 전 오류 문구는 이전 실패일 수 있어 새로 바뀐 오류만 이번 결과로 봄.
+export function resolveImportProgress(pending, state, nowMs) {
+  if (!pending) return { pending: null, feedback: null };
+  if (nowMs - pending.sentAtMs > IMPORT_TOTAL_TIMEOUT_MS) {
+    return { pending: null, feedback: { message: "FBX 가져오기 응답이 없습니다. Unity Play 상태와 콘솔을 확인한 뒤 다시 시도해 주세요.", tone: "error" } };
+  }
+  const busyFeedback = { message: IMPORT_BUSY_MESSAGE, tone: "loading" };
+  // 상태 파일이 오래되면 브리지가 기본값(Play 아님)을 돌려줌 — 처리 중 멈춤으로 보고 계속 기다림.
+  if (state.playMode !== "playing") {
+    return { pending, feedback: busyFeedback };
+  }
+  const error = state.motionError || "";
+  if (error && error !== pending.errorAtSend) {
+    return { pending: null, feedback: { message: `FBX 가져오기 실패: ${error}`, tone: "error" } };
+  }
+  // 처리가 시작됐거나 오류가 비면 이전 오류는 사라진 것이므로, 같은 문구의 새 실패도 잡도록 비움.
+  if (state.isImportingFbx === true) {
+    return { pending: { ...pending, sawImporting: true, errorAtSend: "" }, feedback: busyFeedback };
+  }
+  if (!error && pending.errorAtSend) {
+    pending = { ...pending, errorAtSend: "" };
+  }
+  // 멈춘 동안 시작·끝을 모두 놓쳐도, 요청 전에 없던 준비 완료가 생겼으면 이번 가져오기 결과로 봄.
+  const isNewlyPrepared = pending.sawImporting || pending.preparedAtSend !== true;
+  if (isNewlyPrepared && state.hasPreparedMotion === true) {
+    return { pending: null, feedback: { message: "FBX 가져오기 완료. 모션을 재생할 수 있습니다.", tone: "success" } };
+  }
+  if (!pending.sawImporting && nowMs - pending.sentAtMs > IMPORT_START_TIMEOUT_MS) {
+    return { pending: null, feedback: { message: "Unity가 FBX 가져오기를 시작하지 않았습니다. 이벤트 로그와 Unity 콘솔을 확인해 주세요.", tone: "error" } };
+  }
+  return { pending, feedback: null };
 }
 
 export function resolveMotionControls(state, isUnityPlaying, isBusy = false) {
