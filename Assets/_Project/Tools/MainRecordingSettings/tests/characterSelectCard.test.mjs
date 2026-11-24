@@ -162,7 +162,14 @@ function createFakeElement(tagName) {
     textContent: "",
     value: "",
     dataset: {},
+    attributes: {},
     children: [],
+    setAttribute(name, value) {
+      element.attributes[name] = String(value);
+    },
+    getAttribute(name) {
+      return element.attributes[name] ?? null;
+    },
     appendChild(child) {
       element.children.push(child);
       if (!element.value && child.value) element.value = child.value;
@@ -171,8 +178,8 @@ function createFakeElement(tagName) {
     addEventListener(type, handler) {
       listeners[type] = handler;
     },
-    async dispatch(type) {
-      await listeners[type]?.();
+    async dispatch(type, event = {}) {
+      await listeners[type]?.({ target: element, preventDefault() {}, ...event });
     }
   };
   // textContent 비우기는 자식 목록 초기화와 같게 취급함
@@ -246,4 +253,66 @@ test("캐릭터 불러오기 실패 결과를 오류로 안내하고 다시 누�
   assert.match(feedback.at(-1).message, /캐릭터 파일이 없습니다/);
   assert.equal(card.isLoading, false);
   assert.equal(elements["#loadCharacterButton"].disabled, false);
+});
+
+// 확정 시안: 라이브러리 캐릭터를 이미지 카드로 보여 주고 고른 카드와 지금 캐릭터를 구분함.
+test("캐릭터 카드는 이미지·이름·형식·지금 캐릭터 여부를 보여 준다", () => {
+  const twins = {
+    activeCharacterId: "nt",
+    characters: [
+      { id: "yyb", displayName: "YYB Miku", status: "ready", sourcePath: "C:/Models/YYB.pmx", thumbnailPath: "" },
+      { id: "nt", displayName: "NT", status: "ready", sourcePath: "D:/Models/NT.vrm", thumbnailPath: "C:\\Lib\\thumbnails\\nt.png" }
+    ]
+  };
+  const view = resolveCharacterSelectView({
+    library: twins, isPlaying: true, runtimeState: { hasTargetCharacter: true, targetCharacterName: "NT" }
+  });
+  assert.deepEqual(view.cards, [
+    { value: "yyb", name: "YYB Miku", format: "PMX", thumbnailUrl: "", isCurrent: false },
+    { value: "nt", name: "NT", format: "VRM", thumbnailUrl: "file:///C:/Lib/thumbnails/nt.png", isCurrent: true }
+  ]);
+  // 캐릭터를 아직 불러오지 않았으면 활성 기록이 있어도 '지금 캐릭터'로 표시하지 않음
+  const notLoaded = resolveCharacterSelectView({ library: twins, isPlaying: true });
+  assert.equal(notLoaded.cards.every((card) => !card.isCurrent), true);
+});
+
+test("다른 카드를 고르면 그 캐릭터를 불러오고 고른 카드만 선택 상태가 된다", async () => {
+  const two = { characters: [
+    { id: "yyb", displayName: "YYB Miku", status: "ready", sourcePath: "C:/YYB.pmx" },
+    { id: "nt", displayName: "NT", status: "ready", sourcePath: "C:/NT.vrm" }
+  ] };
+  const elements = {
+    "#characterSelect": createFakeElement("div"),
+    "#loadCharacterButton": createFakeElement("button"),
+    "#characterSelectStatus": createFakeElement("p")
+  };
+  const root = { querySelector: (selector) => elements[selector] ?? null, createElement: (tag) => createFakeElement(tag) };
+  const posts = [];
+  const fetchImpl = async (url, init = {}) => {
+    if (url.endsWith("/characters")) return jsonResponse(two);
+    if (url.endsWith("/command-result")) return jsonResponse({ commandId: "cmd-nt", state: "success", message: "ok" });
+    posts.push(JSON.parse(init.body));
+    return jsonResponse({ accepted: true, commandId: "cmd-nt" });
+  };
+  const card = bootstrapCharacterSelectCard(root, {
+    fetchImpl, apiBaseUrl: () => "http://localhost:4100",
+    setTimeoutImpl: (callback) => { void callback(); return 0; }
+  });
+  card.update({ playMode: "playing" }, true);
+  await card.refreshLibrary();
+  const cards = elements["#characterSelect"].children;
+  assert.equal(cards.length, 2);
+  assert.deepEqual(cards.map((item) => item.getAttribute("aria-checked")), ["true", "false"]);
+  assert.deepEqual(cards.map((item) => item.tabIndex), [0, -1]);
+
+  await cards[1].dispatch("click");
+  assert.deepEqual(cards.map((item) => item.getAttribute("aria-checked")), ["false", "true"]);
+  // 화살표 키로도 선택이 움직임(시안의 라디오 묶음 규칙)
+  await elements["#characterSelect"].dispatch("keydown", { key: "ArrowRight", target: cards[1] });
+  assert.deepEqual(cards.map((item) => item.getAttribute("aria-checked")), ["true", "false"]);
+  await elements["#characterSelect"].dispatch("keydown", { key: "ArrowLeft", target: cards[0] });
+
+  await elements["#loadCharacterButton"].dispatch("click");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(posts, [{ action: "LoadCharacter", characterId: "nt" }]);
 });

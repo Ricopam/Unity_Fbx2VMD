@@ -8,11 +8,19 @@ const RESULT_POLL_INTERVAL_MS = 700;
 // PMX는 불러올 때마다 FBX로 변환해 수 분 걸릴 수 있음.
 const LOAD_TIMEOUT_MS = 600000;
 
+function formatOf(character) {
+  const fileName = (character.sourcePath || "").split(/[\\/]/).pop() || "";
+  return (fileName.match(/\.([^.]+)$/)?.[1] || "").toUpperCase();
+}
+
+// 라이브러리 썸네일은 로컬 파일이므로 설정창(file 출처)에서 읽을 수 있는 주소로 바꿈.
+function toFileUrl(filePath) {
+  return filePath ? `file:///${String(filePath).replace(/\\/g, "/").replace(/^\/+/, "")}` : "";
+}
+
 // 같은 이름의 캐릭터가 형식만 다르게 여러 번 등록될 수 있어 형식과 파일 이름을 함께 보여 줌.
 export function formatCharacterOption(character) {
-  const sourcePath = character.sourcePath || "";
-  const fileName = sourcePath.split(/[\\/]/).pop() || "";
-  const extension = (fileName.match(/\.([^.]+)$/)?.[1] || "").toUpperCase();
+  const extension = formatOf(character);
   const name = character.displayName || character.id;
   const isActive = character.isActive === true;
   return [name, extension && `(${extension})`, isActive && "· 현재"].filter(Boolean).join(" ");
@@ -34,6 +42,14 @@ export function resolveCharacterSelectView({
     isPmx: /\.pmx$/i.test(character.sourcePath || "")
   }));
   const hasCharacter = runtimeState.hasTargetCharacter === true;
+  // 활성 기록만으로는 지금 불러온 캐릭터라고 단정하지 않고 Unity에 캐릭터가 있을 때만 표시함.
+  const cards = loadable.map((character) => ({
+    value: character.id,
+    name: character.displayName || character.id,
+    format: formatOf(character),
+    thumbnailUrl: toFileUrl(character.thumbnailPath),
+    isCurrent: hasCharacter && character.id === library.activeCharacterId
+  }));
   const currentName = hasCharacter ? (runtimeState.targetCharacterName || "캐릭터") : "";
   const busy = isLoading || runtimeState.isImportingFbx === true || runtimeState.isRecording === true;
   const selected = options.find((option) => option.value === selectedId)
@@ -53,6 +69,7 @@ export function resolveCharacterSelectView({
     : "불러올 캐릭터를 선택해 주세요.";
   return {
     options: options.map(({ value, label }) => ({ value, label })),
+    cards,
     selectedId: selected?.value ?? "",
     canLoad: isPlaying && !busy && options.length > 0,
     hasCharacter,
@@ -69,7 +86,7 @@ export function bootstrapCharacterSelectCard(root, {
 } = {}) {
   const $ = (selector) => root.querySelector?.(selector) ?? null;
   const elements = {
-    select: $("#characterSelect"),
+    cards: $("#characterSelect"),
     loadButton: $("#loadCharacterButton"),
     status: $("#characterSelectStatus")
   };
@@ -80,26 +97,35 @@ export function bootstrapCharacterSelectCard(root, {
   let isLoading = false;
   let pendingCommandId = "";
   let loadDeadline = 0;
-  let renderedOptionsKey = "";
+  let selectedId = "";
+  let renderedCardsKey = "";
+  let cardElements = [];
+
+  const make = (tag) => root.createElement?.(tag) ?? globalThis.document?.createElement(tag);
+
+  function currentView() {
+    return resolveCharacterSelectView({ library, runtimeState, isPlaying, isLoading, selectedId, isLibraryUnavailable });
+  }
 
   function render() {
-    const view = resolveCharacterSelectView({
-      library, runtimeState, isPlaying, isLoading, selectedId: elements.select?.value ?? "", isLibraryUnavailable
-    });
-    if (elements.select) {
-      const optionsKey = view.options.map((option) => `${option.value}\u0000${option.label}`).join("\u0001");
-      if (optionsKey !== renderedOptionsKey) {
-        renderedOptionsKey = optionsKey;
-        elements.select.textContent = "";
-        for (const option of view.options) {
-          const element = root.createElement?.("option") ?? globalThis.document?.createElement("option");
-          element.value = option.value;
-          element.textContent = option.label;
-          elements.select.appendChild(element);
-        }
+    const view = currentView();
+    selectedId = view.selectedId;
+    if (elements.cards) {
+      const cardsKey = view.cards.map((card) =>
+        [card.value, card.name, card.format, card.thumbnailUrl, card.isCurrent].join("\u0000")).join("\u0001");
+      if (cardsKey !== renderedCardsKey) {
+        renderedCardsKey = cardsKey;
+        elements.cards.textContent = "";
+        cardElements = view.cards.map((card) => elements.cards.appendChild(createCard(card)));
       }
-      elements.select.value = view.selectedId;
-      elements.select.disabled = !view.canLoad;
+      // 고른 카드만 Tab 정지점이 되고, 묶음 안 이동은 화살표로 함(라디오 묶음 규칙).
+      for (const cardElement of cardElements) {
+        const isPicked = cardElement.dataset.value === view.selectedId;
+        cardElement.setAttribute("aria-checked", String(isPicked));
+        cardElement.tabIndex = isPicked ? 0 : -1;
+        cardElement.disabled = !view.canLoad;
+      }
+      elements.cards.setAttribute?.("aria-disabled", String(!view.canLoad));
     }
     if (elements.loadButton) {
       elements.loadButton.disabled = !view.canLoad;
@@ -120,10 +146,66 @@ export function bootstrapCharacterSelectCard(root, {
     render();
   }
 
-  async function loadSelected() {
-    const view = resolveCharacterSelectView({
-      library, runtimeState, isPlaying, isLoading, selectedId: elements.select?.value ?? "", isLibraryUnavailable
+  function createCard(card) {
+    const button = make("button");
+    button.type = "button";
+    button.className = "wf-pick";
+    button.dataset.value = card.value;
+    button.setAttribute("role", "radio");
+    button.setAttribute("aria-label", [card.name, card.format, card.isCurrent && "지금 캐릭터"].filter(Boolean).join(", "));
+    const picture = make("span");
+    picture.className = "wf-pick-img";
+    if (card.thumbnailUrl) {
+      const image = make("img");
+      image.src = card.thumbnailUrl;
+      image.alt = "";
+      picture.appendChild(image);
+    } else {
+      // 썸네일이 없는 캐릭터는 이름 첫 글자로 자리를 채움.
+      picture.textContent = Array.from(card.name)[0] ?? "";
+      picture.setAttribute("aria-hidden", "true");
+    }
+    button.appendChild(picture);
+    const check = make("span");
+    check.className = "wf-pick-check";
+    check.setAttribute("aria-hidden", "true");
+    button.appendChild(check);
+    if (card.isCurrent) {
+      const now = make("span");
+      now.className = "wf-pick-now";
+      now.textContent = "지금 캐릭터";
+      button.appendChild(now);
+    }
+    const name = make("span");
+    name.className = "wf-pick-name";
+    name.textContent = card.name;
+    button.appendChild(name);
+    const format = make("span");
+    format.className = "wf-fmt";
+    format.textContent = card.format || "형식 미확인";
+    button.appendChild(format);
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      selectedId = card.value;
+      render();
     });
+    return button;
+  }
+
+  const ARROW_STEP = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 };
+  elements.cards?.addEventListener("keydown", (event) => {
+    const index = cardElements.indexOf(event.target);
+    const hasModifier = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+    if (index < 0 || hasModifier || !(event.key in ARROW_STEP) || event.target.disabled) return;
+    event.preventDefault();
+    const next = cardElements[(index + ARROW_STEP[event.key] + cardElements.length) % cardElements.length];
+    selectedId = next.dataset.value;
+    render();
+    next.focus?.();
+  });
+
+  async function loadSelected() {
+    const view = currentView();
     if (!view.canLoad || !view.selectedId) return;
     isLoading = true;
     render();
