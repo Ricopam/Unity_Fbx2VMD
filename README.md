@@ -6,11 +6,11 @@
 
 ## 시연 영상
 
-캐릭터 선택부터 녹화 결과까지 전체 흐름을 담은 52초 영상입니다(소리 없음). 아래 이미지나 링크를 누르면 영상이 열립니다.
+캐릭터 선택부터 녹화 결과까지 전체 흐름을 담은 52초 영상입니다(소리 없음).
 
-[![시연 영상 열기](Media/Readme/01-overview.gif)](Media/Readme/fbx2vmd-demo.mp4)
+https://github.com/user-attachments/assets/07eb81c7-b58e-4a6e-a1b6-a76bea73bf1c
 
-[시연 영상 보기 (MP4, 1920×1080, 52초)](Media/Readme/fbx2vmd-demo.mp4)
+[영상 파일 받기 (MP4, 1920×1080, 52초)](Media/Readme/fbx2vmd-demo.mp4)
 
 ## 처리 파이프라인
 
