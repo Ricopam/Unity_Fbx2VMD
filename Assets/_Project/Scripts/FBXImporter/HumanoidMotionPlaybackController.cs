@@ -167,6 +167,9 @@ namespace Fbx2Vmd.FBXImporter
             ClipName = clip.name;
             PreparedClip = clip;
             CurrentTimeSeconds = 0f;
+            // 접점·목표 준비보다 먼저, 리타깃 비율 차이로 바닥 아래로 내려간 만큼 몸 높이를 클립 단위로 맞춤.
+            _player.ApplyVerticalOffset(HumanoidPlaybackFloorOffset.Resolve(targetAnimator, _player.EvaluateAt,
+                ClipLengthSeconds, ClipFrameRate, _groundResponse));
             _player.EvaluateAt(CurrentTimeSeconds);
             _poseFrameEditor.Initialize(targetAnimator);
             initializeCanonicalPoseReference?.Invoke();

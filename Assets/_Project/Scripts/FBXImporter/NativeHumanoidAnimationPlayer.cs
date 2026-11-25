@@ -23,8 +23,26 @@ namespace Fbx2Vmd.FBXImporter
         private Vector3 _rootPositionAnchor;
         private Quaternion _rootRotationAnchor;
         private bool _hasRootTranslationAnchor;
+        // 재생 동안 루트에 더한 클립 단위 몸 높이 보정값(m). Dispose에서 되돌림.
+        private float _verticalOffset;
 
         internal bool IsInitialized => _graph.IsValid();
+
+        internal float VerticalOffset => _verticalOffset;
+
+        /// <summary>
+        /// 재생 동안 루트 높이를 클립 단위 상수만큼 옮김. 다시 부르면 이전 값을 대체하며 누적하지 않음.
+        /// 재생기는 루트 XZ만 갱신하므로 Y에 더한 값은 정리할 때까지 그대로 유지됨.
+        /// </summary>
+        internal void ApplyVerticalOffset(float offset)
+        {
+            if (!IsInitialized)
+                throw new InvalidOperationException("Native Humanoid 재생기를 먼저 초기화해야 합니다.");
+            if (float.IsNaN(offset) || float.IsInfinity(offset))
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            _targetAnimator.transform.position += Vector3.up * (offset - _verticalOffset);
+            _verticalOffset = offset;
+        }
 
         internal bool IsFootIkEnabled =>
             IsInitialized && _clipPlayable.GetApplyFootIK();
@@ -91,6 +109,7 @@ namespace Fbx2Vmd.FBXImporter
 
             if (_targetAnimator != null)
             {
+                _targetAnimator.transform.position -= Vector3.up * _verticalOffset;
                 RestoreEditorRootTranslationAnchor();
                 _targetAnimator.applyRootMotion = _originalApplyRootMotion;
                 _targetAnimator.cullingMode = _originalCullingMode;
@@ -104,6 +123,7 @@ namespace Fbx2Vmd.FBXImporter
             _rootPositionAnchor = Vector3.zero;
             _rootRotationAnchor = Quaternion.identity;
             _hasRootTranslationAnchor = false;
+            _verticalOffset = 0f;
         }
 
         private void ApplyEditorRootTranslation(float timeSeconds)
