@@ -84,6 +84,56 @@ namespace Tests.Editor.FBXImporter
             Assert.That(Call("TrySample"), Is.EqualTo(false));
         }
 
+        // 재현: 캐릭터 선택 직후 재생을 준비하면 MagicaCloth가 뒤늦게 렌더러 메시를 복제본으로 바꾸고
+        // 본 배열 끝에 렌더러 Transform을 덧붙여, 이전에는 클립 전체가 접지 Fallback이 됨.
+        [Test]
+        public void Given_ClothCustomMeshSwapAfterCreate_When_Sampling_Then_KeepsSameSolePoints()
+        {
+            CreateSampler();
+            Assert.That(Call("TrySample"), Is.EqualTo(true));
+            Vector3[] before = (Vector3[])((Vector3[])GetTypeUnderTest().GetProperty("LocalSolePoints", Flags).GetValue(_sampler)).Clone();
+            Mesh custom = UnityEngine.Object.Instantiate(_mesh);
+            try
+            {
+                custom.bindposes = new[] { _mesh.bindposes[0], _mesh.bindposes[1], Matrix4x4.identity };
+                _skin.sharedMesh = custom;
+                _skin.bones = new[] { _foot, _toes, _root.transform };
+                Assert.That(Call("TrySample"), Is.EqualTo(true));
+                var after = (Vector3[])GetTypeUnderTest().GetProperty("LocalSolePoints", Flags).GetValue(_sampler);
+                for (int i = 0; i < before.Length; i++)
+                    Assert.That(Vector3.Distance(before[i], after[i]), Is.LessThan(0.0001f));
+
+                // 클로스 비활성화로 원본 메시가 돌아와도 같은 표면으로 계속 샘플링함.
+                _skin.sharedMesh = _mesh;
+                _skin.bones = new[] { _foot, _toes };
+                Assert.That(Call("TrySample"), Is.EqualTo(true));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(custom);
+            }
+        }
+
+        [Test]
+        public void Given_SwappedMeshWithDifferentFootInfluence_When_Sampling_Then_Rejects()
+        {
+            CreateSampler();
+            Assert.That(Call("TrySample"), Is.EqualTo(true));
+            Mesh other = UnityEngine.Object.Instantiate(_mesh);
+            try
+            {
+                BoneWeight[] weights = other.boneWeights;
+                weights[0] = new BoneWeight { boneIndex0 = 1, weight0 = 1f };
+                other.boneWeights = weights;
+                _skin.sharedMesh = other;
+                Assert.That(Call("TrySample"), Is.EqualTo(false));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(other);
+            }
+        }
+
         [Test]
         public void Given_InvalidScaleOrMissingToes_When_Creating_Then_Rejects()
         {

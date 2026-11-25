@@ -153,7 +153,7 @@ namespace Fbx2Vmd.FBXImporter
                 if (weights.Length != mesh.vertexCount) return false;
                 if (!TryCollectFootVertices(bones, weights, out List<int> vertices)) return false;
                 if (vertices.Count == 0) continue;
-                var surface = new Surface(renderer, mesh, bones);
+                var surface = new Surface(renderer, mesh, bones, weights, vertices);
                 _surfaces.Add(surface);
                 if (!surface.TryBake()) return false;
                 if (!AccumulateSurfacePoints(surface, vertices, up, forward, candidates,
