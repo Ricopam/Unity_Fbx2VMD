@@ -4,7 +4,13 @@
 
 모션캡처 FBX를 MMD·VRM·사람형 FBX 캐릭터에 자동으로 입히고, 발 접지·관절 표면·의상 물리를 자동 보정해 재생하고 영상으로 녹화하는 Unity 에디터 제작 도구입니다.
 
-![개요](Media/Readme/01-overview.gif)
+## 시연 영상
+
+캐릭터 선택부터 녹화 결과까지 전체 흐름을 담은 52초 영상입니다(소리 없음). 아래 이미지나 링크를 누르면 영상이 열립니다.
+
+[![시연 영상 열기](Media/Readme/01-overview.gif)](Media/Readme/fbx2vmd-demo.mp4)
+
+[시연 영상 보기 (MP4, 1920×1080, 52초)](Media/Readme/fbx2vmd-demo.mp4)
 
 ## 처리 파이프라인
 
