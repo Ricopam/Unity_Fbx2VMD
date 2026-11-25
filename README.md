@@ -10,8 +10,6 @@
 
 https://github.com/user-attachments/assets/07eb81c7-b58e-4a6e-a1b6-a76bea73bf1c
 
-[영상 파일 받기 (MP4, 1920×1080, 52초)](Media/Readme/fbx2vmd-demo.mp4)
-
 ## 처리 파이프라인
 
 설정창 하나로 아래 순서를 진행합니다. Inspector는 개발·진단용으로만 씁니다.
