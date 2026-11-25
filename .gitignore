@@ -539,3 +539,7 @@ __pycache__/
 *.wmv.meta
 *.flv
 *.flv.meta
+
+# === README 시연 GIF — 사용자 허락(2026-11-25)으로 이 폴더 GIF만 업로드 ===
+# 전역 설정의 *.gif 차단을 이 폴더에서만 해제함.
+!/Media/Readme/*.gif
