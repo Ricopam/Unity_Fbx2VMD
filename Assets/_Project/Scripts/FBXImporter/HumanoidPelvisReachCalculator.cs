@@ -9,6 +9,8 @@ namespace Fbx2Vmd.FBXImporter
     internal static class HumanoidPelvisReachCalculator
     {
         internal const float DefaultDampingThresholdRadians = 2.8f;
+        // 이 값 이상이면 완전 지지로 보고 지지 비례 해제를 적용하지 않음.
+        private const float FullSupportWeight = 0.999f;
 
         internal readonly struct Leg
         {
@@ -109,6 +111,35 @@ namespace Fbx2Vmd.FBXImporter
                 return false;
 
             offset = candidate;
+            footOffsets = new Vector2(leftShift, rightShift);
+            return true;
+        }
+
+        /// <summary>
+        /// 부분 지지에서 골반 낮춤을 완전 지지 낮춤 × 지지 가중치 이상으로 유지해 해제 시 한 프레임 튐을 나눔.
+        /// </summary>
+        internal static bool TryFadeOffsetWithSupport(Leg left, Leg right, Leg fullLeft, Leg fullRight,
+            Vector3 up, float maximumOffset, ref float offset, ref Vector2 footOffsets)
+        {
+            float support = Mathf.Max(left.SupportWeight, right.SupportWeight);
+            bool isPartialSupport = support > 0f && support < FullSupportWeight;
+            if (!isPartialSupport || !IsFinite(offset) ||
+                !TryCalculateOffset(fullLeft, fullRight, up, maximumOffset, out float fullOffset, out _))
+                return false;
+
+            // 더 내리는 쪽만 채택함. 지금 필요한 낮춤이 더 크면 기존 계산을 그대로 씀.
+            float faded = fullOffset * support;
+            if (faded >= offset)
+                return false;
+
+            up = up.normalized;
+            if (!TryCalculateFootOffset(left, up, faded, out float leftShift) ||
+                !TryCalculateFootOffset(right, up, faded, out float rightShift) ||
+                !CanReach(left, up, faded, leftShift) ||
+                !CanReach(right, up, faded, rightShift))
+                return false;
+
+            offset = faded;
             footOffsets = new Vector2(leftShift, rightShift);
             return true;
         }

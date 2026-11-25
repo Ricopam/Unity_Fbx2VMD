@@ -248,10 +248,20 @@ namespace Fbx2Vmd.FBXImporter
             footOffsets = Vector2.zero;
             UsedPhysicalReach = false;
             EvaluationStage = "reach";
-            if (!HasGround || HumanoidPelvisReachCalculator.TryCalculateOffset(
-                    _left.BuildReach(true), _right.BuildReach(true), Vector3.up,
-                    PelvisMaximumOffset, out offset, out footOffsets))
+            if (!HasGround)
                 return true;
+
+            HumanoidPelvisReachCalculator.Leg left = _left.BuildReach(true);
+            HumanoidPelvisReachCalculator.Leg right = _right.BuildReach(true);
+            if (HumanoidPelvisReachCalculator.TryCalculateOffset(left, right, Vector3.up,
+                    PelvisMaximumOffset, out offset, out footOffsets))
+            {
+                // 부분 지지 해제 중에는 골반 낮춤을 지지 가중치만큼 남겨 한 프레임 복귀 튐을 나눔.
+                HumanoidPelvisReachCalculator.TryFadeOffsetWithSupport(left, right,
+                    _left.BuildReach(true, true), _right.BuildReach(true, true), Vector3.up,
+                    PelvisMaximumOffset, ref offset, ref footOffsets);
+                return true;
+            }
 
             // 감쇠와 양발 지지가 충돌하면 본을 늘리지 않고 실제 길이 한도로 판단함.
             UsedPhysicalReach = true;

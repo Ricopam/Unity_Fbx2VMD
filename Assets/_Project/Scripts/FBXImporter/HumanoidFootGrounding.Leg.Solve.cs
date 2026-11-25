@@ -32,7 +32,7 @@ namespace Fbx2Vmd.FBXImporter
         {
             internal bool TryCalculateTarget(float frame, HumanoidGroundResponse ground, float humanScale)
             {
-                _target = _originalFootPosition;
+                _target = _fullSupportTarget = _originalFootPosition;
                 _targetFootRotation = _originalFootRotation;
                 _support = 0f;
                 _activeWeights = Vector2.zero;
@@ -65,10 +65,13 @@ namespace Fbx2Vmd.FBXImporter
                 if (!ResolveWeightedTarget(humanScale))
                     return false;
                 Diagnostic.weighted_contact_error_m = CalculatePlannedContactError(_target);
+                Vector3 weightedTarget = _target;
                 if (!HumanoidSoleGroundConstraint.TryLiftAbovePlane(_target, _targetFootRotation,
                         Sampler.LocalSolePoints, Foot.lossyScale.x, _ground.point, _ground.normal,
                         out _target, out float lift))
                     return false;
+                // 밑창 들어 올림은 보간 뒤 이동이라 완전 지지 목표에도 같은 양만 더함(1/지지 증폭 방지).
+                _fullSupportTarget += _target - weightedTarget;
                 Diagnostic.lift_m = lift;
                 Diagnostic.lifted_contact_error_m = CalculatePlannedContactError(_target);
                 return TryUpdateReach();
@@ -155,6 +158,7 @@ namespace Fbx2Vmd.FBXImporter
                         weightedTarget / totalWeight, fullSupportTarget,
                         fullSupportCount, humanScale);
                     _target = Vector3.LerpUnclamped(_originalFootPosition, target, _support);
+                    _fullSupportTarget = target;
                 }
                 return true; }
 
@@ -246,10 +250,22 @@ namespace Fbx2Vmd.FBXImporter
                 _targetFootRotation = Quaternion.Slerp(_targetFootRotation, corrected, _activeWeights.y);
             }
 
-            internal HumanoidPelvisReachCalculator.Leg BuildReach(bool dampExtension) =>
-                new HumanoidPelvisReachCalculator.Leg(Upper.position - _target,
-                    _upperToKnee.magnitude, _kneeToFoot.magnitude, _support, _clearance,
-                    dampExtension ? _maximumReach : (double)_upperToKnee.magnitude + _kneeToFoot.magnitude);
+            // fullSupport는 보간 전 완전 지지 목표와 그 거리의 감쇠 도달로 구성함. 지지가 없으면 공중 다리 그대로 둠.
+            internal HumanoidPelvisReachCalculator.Leg BuildReach(bool dampExtension, bool fullSupport = false)
+            {
+                bool isUnweighted = fullSupport && _support > 0f;
+                Vector3 target = isUnweighted ? _fullSupportTarget : _target;
+                double physicalReach = (double)_upperToKnee.magnitude + _kneeToFoot.magnitude;
+                double reach = dampExtension ? _maximumReach : physicalReach;
+                if (isUnweighted && dampExtension)
+                    reach = HumanoidPelvisReachCalculator.TryCalculateExtensionReach(_upperToKnee.magnitude,
+                        _kneeToFoot.magnitude, Vector3.Angle(-_upperToKnee, _kneeToFoot) * Mathf.Deg2Rad,
+                        Vector3.Distance(Upper.position, target), 1f,
+                        HumanoidPelvisReachCalculator.DefaultDampingThresholdRadians, out float fullReach)
+                        ? fullReach : physicalReach;
+                return new HumanoidPelvisReachCalculator.Leg(Upper.position - target, _upperToKnee.magnitude,
+                    _kneeToFoot.magnitude, isUnweighted ? 1f : _support, _clearance, reach);
+            }
 
             internal float TotalBoneLength => _upperToKnee.magnitude + _kneeToFoot.magnitude;
 
@@ -343,6 +359,8 @@ namespace Fbx2Vmd.FBXImporter
             }
 
             private float _support, _clearance, _maximumReach;
+            // 지지 가중치 보간 전 목표임. 부분 지지 해제의 골반 낮춤 기준으로만 씀.
+            private Vector3 _fullSupportTarget;
             private RaycastHit _ground;
             // 착지 램프 중 목표 발 회전의 프레임당 변화 상한에 사용하는 직전 상태임.
             private Quaternion _prevTargetFootRotation;
